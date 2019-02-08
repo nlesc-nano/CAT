@@ -17,7 +17,7 @@ from qmflows.templates.templates import get_template
 
 from .jobs import (job_single_point, job_geometry_opt, job_freq)
 from .ligand_dissociate import dissociate_ligand
-from ..attachment.qd_functions import (to_atnum, merge_mol)
+from ..qd_functions import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
 
 
