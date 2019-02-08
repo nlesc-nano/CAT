@@ -54,8 +54,8 @@ Finally install the package:
     
 - Install QMFlows_ using pip:
   - ``pip install git+https://github.com/SCM-NV/qmflows@master#egg=qmflows-0.3.0``
-  
- - Install **CAT** using pip:
+ 
+- Install **CAT** using pip:
   - ``pip install git+https://github.com/BvB93/CAT@master=CAT-0.1.0``
 
 Now you are ready to use **CAT**. 
