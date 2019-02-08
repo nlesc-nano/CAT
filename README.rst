@@ -3,6 +3,7 @@ Compound Attachment/Analysis Tool
 #################################
 
 CAT is a collection of tools designed for the construction, and subsequent analysis, of various chemical compounds.
+See the documentation_ for further information
 
 Installation
 ============
@@ -61,6 +62,7 @@ Input files
 
 An example input file, input.py, is located in the example_ directory.
 
+.. _documentation: https://cat.readthedocs.io/en/latest/
 .. _miniconda: http://conda.pydata.org/miniconda.html
 .. _anaconda: https://www.continuum.io/downloads
 .. _installConda: http://conda.pydata.org/docs/install/quick.html
