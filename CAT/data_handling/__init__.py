@@ -8,7 +8,7 @@ from .sanitize_input import (get_job_settings, lower_dict_keys)
 
 __all__ = [
     'read_database', 'compare_database', 'write_database',
-    'read_mol', 'set_prop', 
+    'read_mol', 'set_prop',
     'export_mol',
     'get_job_settings', 'lower_dict_keys'
 ]

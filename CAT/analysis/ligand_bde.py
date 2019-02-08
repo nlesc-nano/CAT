@@ -17,7 +17,7 @@ from qmflows.templates.templates import get_template
 
 from .jobs import (job_single_point, job_geometry_opt, job_freq)
 from .ligand_dissociate import dissociate_ligand
-from ..attachment.qd_functions import (to_atnum, merge_mol)
+from ..qd_functions import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
 
 
@@ -119,8 +119,6 @@ def get_bde_ddG(tot, lig, core, job=None, s=None):
     dG = (G_lig + G_core) - G_tot
     dE = (E_lig + E_core) - E_tot
     ddG = dG - dE
-
-    import pdb; pdb.set_trace()
     finish()
 
     return ddG
@@ -205,4 +203,3 @@ def get_topology(mol, idx_list, max_dist=5.0):
     dist_count = np.bincount(np.where(dist <= max_dist)[0])
 
     return [neighbour_dict[i] for i in dist_count]
-

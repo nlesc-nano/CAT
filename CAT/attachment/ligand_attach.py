@@ -58,10 +58,10 @@ def rot_mol_angle(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=Fa
     """
     Define a m*3*3 rotation matrix using vec1 and vec2.
     Depending on the dimension of xyz_array, vec1 & vec2 the following operations can be conducted:
-        Rotate 1 molecule by 1 rotation matrix     >  1 rotated molecule
-        Rotate 1 molecule by m rotation matrices   >  m copies of the molecule, each rotated differently
-        Rotate m molecules by 1 rotation matrix    >  m molecules rotated in an identical fashion
-        Rotate m molecules by m rotation matrices  >  m molecules, each rotated differently
+        Rotate 1 molecule by 1 rotation matrix    > 1 rotated molecule
+        Rotate 1 molecule by m rotation matrices  > m copies of the mol at different rotations
+        Rotate m molecules by 1 rotation matrix   > m molecules rotated in an identical fashion
+        Rotate m molecules by m rotation matrices > m molecules, each rotated differently
 
     Numpy arrays and (nested) iterable consisting of PLAMS atoms can be used interchangeably for
     xyz_array and mol_other; Atomic coordinates will be extracted if necessary and cast into an
