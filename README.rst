@@ -15,11 +15,9 @@ Installation
 
   - ``conda create -n CAT`` 
 
-- Activate the new virtual environment
-  
-  - ``source activate CAT``
-
-To exit the virtual environment type  ``source deactivate``.
+To virtual environment can be enabled and disabled by typing:
+  - Enable: ``conda activate CAT`` 
+  - Disable: ``conda deactivate``
     
     
 .. _dependecies:
@@ -27,12 +25,7 @@ To exit the virtual environment type  ``source deactivate``.
 Dependencies installation
 -------------------------
 
-- Type in your terminal:
-
-  - ``conda activate qmflows``  
-
 Using the conda environment the following packages should be installed:    
-
 
 - install rdkit_ using conda:
 
