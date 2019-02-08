@@ -1,6 +1,6 @@
 
-.. image:: https://travis-ci.org/BVB93/CAT.svg?branch=master
-   :target: https://travis-ci.org/BVB93/CAT 
+.. image:: https://travis-ci.org/BvB93/CAT.svg?branch=master
+   :target: https://travis-ci.org/BvB93/CAT 
 .. image:: https://img.shields.io/badge/python-3.6-blue.svg
 
 #################################
