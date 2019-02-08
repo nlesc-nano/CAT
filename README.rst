@@ -1,6 +1,6 @@
-################################################################################
+#################################
 Compound Attachment/Analysis Tool
-################################################################################
+#################################
 
 CAT is a collection of tools designed for the construction, and subsequent analysis, of various chemical compounds.
 
@@ -61,6 +61,11 @@ Finally install the package:
 
 Now you are ready to use **CAT**. 
 
+Input files
+============
+
+An example input file is located in the example_ directory.
+
 .. _miniconda: http://conda.pydata.org/miniconda.html
 .. _anaconda: https://www.continuum.io/downloads
 .. _installConda: http://conda.pydata.org/docs/install/quick.html
@@ -73,3 +78,4 @@ Now you are ready to use **CAT**.
 .. _examples: https://github.com/SCM-NV/qmflows/tree/master/src/qmflows/examples
 .. _PLAMS: https://github.com/SCM-NV/PLAMS
 .. _QMFlows: https://github.com/SCM-NV/qmflows
+.. _example: https://github.com/BvB93/CAT/tree/master/CAT/examples
