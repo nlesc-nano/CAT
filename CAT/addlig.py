@@ -1,7 +1,10 @@
-from scm.plams.core.functions import read_molecules
-import time
-from .components.dye import bob, mono_di_substitution
 import os
+import time
+
+from scm.plams.core.functions import read_molecules
+
+from .attachment.dye import bob, mono_di_substitution
+
 
 # Time measuring
 start = time.time()
