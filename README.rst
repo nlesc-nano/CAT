@@ -3,7 +3,7 @@ Compound Attachment/Analysis Tool
 #################################
 
 CAT is a collection of tools designed for the construction, and subsequent analysis, of various chemical compounds.
-See the documentation_ for further information
+Further information is provided in the documentation_.
 
 Installation
 ============
