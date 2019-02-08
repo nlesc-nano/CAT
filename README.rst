@@ -29,7 +29,7 @@ Dependencies installation
 
 - Type in your terminal:
 
-  ``conda activate qmflows``  
+  - ``conda activate qmflows``  
 
 Using the conda environment the following packages should be installed:    
 
@@ -37,6 +37,7 @@ Using the conda environment the following packages should be installed:
 - install rdkit_ using conda:
 
   - ``conda install -y -q --name CAT -c rdkit rdkit``
+  
 
 - install HDF5_ using conda:
 
@@ -56,7 +57,7 @@ Finally install the package:
   - ``pip install git+https://github.com/SCM-NV/qmflows@master#egg=qmflows-0.3.0``
  
 - Install **CAT** using pip:
-  - ``pip install git+https://github.com/BvB93/CAT@master=CAT-0.1.0``
+  - ``pip install git+https://github.com/BvB93/CAT@master#egg=CAT-0.1.0``
 
 Now you are ready to use **CAT**. 
 
