@@ -64,7 +64,7 @@ Now you are ready to use **CAT**.
 Input files
 ============
 
-An example input file is located in the example_ directory.
+An example input file, input.py, is located in the example_ directory.
 
 .. _miniconda: http://conda.pydata.org/miniconda.html
 .. _anaconda: https://www.continuum.io/downloads
