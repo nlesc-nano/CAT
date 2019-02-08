@@ -58,4 +58,17 @@ Finally install the package:
  - Install **CAT** using pip:
   - ``pip install git+https://github.com/BvB93/CAT@master=CAT-0.1.0``
 
-Now you are ready to use **CAT**.  
+Now you are ready to use **CAT**. 
+
+.. _miniconda: http://conda.pydata.org/miniconda.html
+.. _anaconda: https://www.continuum.io/downloads
+.. _installConda: http://conda.pydata.org/docs/install/quick.html
+.. _Noodles: http://nlesc.github.io/noodles/
+.. _HDF5: http://www.h5py.org/ 
+.. _here: https://www.python.org/downloads/
+.. _rdkit: http://www.rdkit.org
+.. _jupyter-notebook: http://jupyter.org/
+.. _tutorial-qmflows: https://github.com/SCM-NV/qmflows/tree/master/jupyterNotebooks
+.. _examples: https://github.com/SCM-NV/qmflows/tree/master/src/qmflows/examples
+.. _PLAMS: https://github.com/SCM-NV/PLAMS
+.. _QMFlows: https://github.com/SCM-NV/qmflows
