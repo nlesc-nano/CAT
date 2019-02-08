@@ -7,7 +7,7 @@ import itertools
 
 import pandas as pd
 
-from scm.plams.molecule.mol import Molecule
+from scm.plams.mol.molecule import Molecule
 from scm.plams.core.errors import PlamsError
 import scm.plams.interfaces.molecule.rdkit as molkit
 

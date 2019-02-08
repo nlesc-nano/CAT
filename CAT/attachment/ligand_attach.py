@@ -9,7 +9,7 @@ from scm.plams.mol.molecule import Molecule
 from scm.plams.core.settings import Settings
 import scm.plams.interfaces.molecule.rdkit as molkit
 
-from .qd_functions import (merge_mol, get_atom_index)
+from ..qd_functions import (merge_mol, get_atom_index)
 from ..analysis.jobs import ams_job_uff_opt
 from ..data_handling.mol_export import export_mol
 

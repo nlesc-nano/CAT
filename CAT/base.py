@@ -10,13 +10,14 @@ from scm.plams.mol.atom import Atom
 from scm.plams.core.errors import MoleculeError
 
 from .misc import (check_sys_var, get_time, create_dir)
+from .qd_functions import (to_atnum, find_substructure, find_substructure_split)
+from .analysis.asa import init_asa
 from .analysis.jobs import ams_job_mopac_crs
 from .analysis.ligand_bde import init_bde
 from .data_handling.database import (read_database, write_database)
 from .data_handling.mol_import import read_mol
 from .data_handling.sanitize_input import (get_job_settings, lower_dict_keys)
 from .attachment.ligand_opt import optimize_ligand
-from .attachment.qd_functions import (to_atnum, find_substructure, find_substructure_split, qd_int)
 from .attachment.ligand_attach import (ligand_to_qd, qd_opt)
 
 
@@ -196,7 +197,7 @@ def prep_qd(qd_list, path, arg):
     # Calculate the interaction between ligands on the quantum dot surface
     if arg['qd_int']:
         print(get_time() + 'calculating ligand distortion and inter-ligand interaction...')
-        qd_list = list(qd_int(qd) for qd in qd_list)
+        qd_list = list(init_asa(qd) for qd in qd_list)
 
     # Calculate the interaction between ligands on the quantum dot surface upon removal of CdX2
     if arg['qd_dissociate']:

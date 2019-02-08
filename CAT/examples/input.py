@@ -30,11 +30,11 @@ argument_dict = {
     'dummy': 'Cl',
     'use_database': False,
     'ligand_opt': True,
-    'ligand_crs': False,
+    'ligand_crs': True,
     'qd_opt': True,
-    'qd_int': False,
+    'qd_int': True,
     'qd_dissociate': {
-        'job1': None, 's1': None, 
+        'job1': None, 's1': None,
         'job2': None, 's2': None
     },
     'maxiter': 1000,
