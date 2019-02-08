@@ -36,11 +36,11 @@ Using the conda environment the following packages should be installed:
 
 - install rdkit_ using conda:
 
-  - ``conda install -y -q --name qmflows -c rdkit rdkit``
+  - ``conda install -y -q --name CAT -c rdkit rdkit``
 
 - install HDF5_ using conda:
 
-  - ``conda install -y -q --name qmflows -c anaconda h5py``
+  - ``conda install -y -q --name CAT -c anaconda h5py``
     
     
 .. _installation:
@@ -52,7 +52,10 @@ Finally install the package:
 - Update PLAMS_ using pip:
   - ``pip install git+https://github.com/SCM-NV/PLAMS@master#egg=plams-1.2``
     
-- Install **CAT** using pip:
+- Install QMFlows_ using pip:
   - ``pip install git+https://github.com/SCM-NV/qmflows@master#egg=qmflows-0.3.0``
+  
+ - Install **CAT** using pip:
+  - ``pip install git+https://github.com/BvB93/CAT@master=CAT-0.1.0``
 
 Now you are ready to use **CAT**.  
