@@ -15,8 +15,10 @@ Installation
 
   - ``conda create -n CAT`` 
 
-To virtual environment can be enabled and disabled by typing:
+- The virtual environment can be enabled and disabled by typing:
+
   - Enable: ``conda activate CAT`` 
+  
   - Disable: ``conda deactivate``
     
     
@@ -29,12 +31,12 @@ Using the conda environment the following packages should be installed:
 
 - install rdkit_ using conda:
 
-  - ``conda install -y -q --name CAT -c rdkit rdkit``
+  - ``conda install -y --name CAT -c rdkit rdkit``
   
 
 - install HDF5_ using conda:
 
-  - ``conda install -y -q --name CAT -c anaconda h5py``
+  - ``conda install -y --name CAT -c anaconda h5py``
     
     
 .. _installation:
