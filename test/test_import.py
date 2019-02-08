@@ -79,6 +79,7 @@ def test_input():
     ligand_crs: False
     qd_opt: False
     qd_int: True
+    qd_dissociate: False
     maxiter: 500
     split: True
     """)
