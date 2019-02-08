@@ -2,12 +2,12 @@ import os
 import pytest
 import yaml
 
-from scm.plams import Molecule
-import qmflows.qd as QD
-from qmflows.components.qd_import_export import (read_mol, read_mol_xyz, read_mol_pdb, read_mol_mol)
+from scm.plams.mol.molecule import Molecule
+import CAT.base as CAT
+from CAT.data_handling.mol_import import (read_mol, read_mol_xyz, read_mol_pdb, read_mol_mol)
 
-path = os.path.abspath('test/test_QD/test_QD_files')
-# path = os.path.join(os.getcwd(), 'test_qd_files')
+path = os.path.abspath('test/test_files')
+# path = os.path.join(os.getcwd(), 'test_files')
 
 
 def test_read_mol_1():
@@ -55,7 +55,7 @@ def test_read_mol_2():
 
 
 def test_input():
-    path = os.path.abspath('test/test_QD')
+    path = os.path.abspath('test')
     # path = os.getcwd()
     input_cores = yaml.load("""
     -   - Cd68Se55.xyz
@@ -71,9 +71,8 @@ def test_input():
     """)
 
     argument_dict = yaml.load("""
-    dir_name_list: [test_QD_files, test_QD_files, test_QD_files]
+    dir_name_list: [test_files, test_files, test_files]
     dummy: Cl
-    database_name: [ligand_database.xlsx, QD_database.xlsx]
     use_database: True
     core_opt: False
     ligand_opt: True
@@ -84,8 +83,8 @@ def test_input():
     split: True
     """)
 
-    qd_list, core_list, ligand_list = QD.prep(input_ligands, input_cores, path, argument_dict)
-    QD.prep(input_ligands, input_cores, path, argument_dict)
+    qd_list, core_list, ligand_list = CAT.prep(input_ligands, input_cores, path, argument_dict)
+    CAT.prep(input_ligands, input_cores, path, argument_dict)
     formula_set = set([qd.get_formula() for qd in qd_list])
 
     assert isinstance(qd_list, list)
@@ -96,19 +95,19 @@ def test_input():
 
     print(True)
     argument_dict['use_database'] = False
-    QD.prep(input_ligands, input_cores, path, argument_dict)
+    CAT.prep(input_ligands, input_cores, path, argument_dict)
     argument_dict['ligand_opt'] = False
-    QD.prep(input_ligands, input_cores, path, argument_dict)
+    CAT.prep(input_ligands, input_cores, path, argument_dict)
     argument_dict['split'] = False
-    QD.prep(input_ligands, input_cores, path, argument_dict)
+    CAT.prep(input_ligands, input_cores, path, argument_dict)
     argument_dict['dummy'] = 'Cd'
-    QD.prep(input_ligands, input_cores, path, argument_dict)
+    CAT.prep(input_ligands, input_cores, path, argument_dict)
     argument_dict['qd_int'] = False
-    QD.prep(input_ligands, input_cores, path, argument_dict)
+    CAT.prep(input_ligands, input_cores, path, argument_dict)
 
     os.remove(os.path.join(path, 'Ligand_database.xlsx'))
     exclusion = ['AcOH.mol', 'AcOH.pdb', 'AcOH.txt', 'AcOH.xyz', 'Cd68Se55.xyz']
-    path = os.path.join(path, 'test_QD_files')
+    path = os.path.join(path, 'test_files')
     for file in reversed(os.listdir(path)):
         if file not in exclusion:
             os.remove(os.path.join(path, file))
