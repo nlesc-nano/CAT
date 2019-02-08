@@ -102,4 +102,4 @@ venv.bak/
 
 # mypy
 .mypy_cache/
-CAT/analysis/timeit_test.py
+tests/timeit_test.py

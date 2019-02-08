@@ -1,3 +1,5 @@
+""" A module with miscellaneous functions. """
+
 __all__ = ['check_sys_var', 'dict_concatenate', 'create_dir', 'get_time']
 
 import os

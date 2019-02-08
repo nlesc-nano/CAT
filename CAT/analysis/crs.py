@@ -1,3 +1,5 @@
+""" A module designed for running COSMO-RS Jobs. """
+
 __all__ = ['CRSResults', 'CRSJob']
 
 import numpy as np

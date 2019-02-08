@@ -1,3 +1,5 @@
+""" A module designed for running Jobs. """
+
 __all__ = ['check_sys_var', 'ams_job_mopac_crs', 'ams_job_mopac_opt', 'ams_job_mopac_sp',
            'ams_job_uff_opt']
 
@@ -23,9 +25,11 @@ from scm.plams.interfaces.thirdparty.cp2k import Cp2kJob
 from scm.plams.interfaces.thirdparty.dirac import DiracJob
 from scm.plams.interfaces.thirdparty.gamess import GamessJob
 
-from .qd_functions import (adf_connectivity, fix_h, fix_carboxyl, get_time, from_mol_other)
-from ..data_handling.mol_export import export_mol
 from qmflows.templates.templates import get_template
+
+from ..misc import get_time
+from ..attachment.qd_functions import (adf_connectivity, fix_h, fix_carboxyl, from_mol_other)
+from ..data_handling.mol_export import export_mol
 
 
 def get_entropy(mol, freqs, T=298.15):

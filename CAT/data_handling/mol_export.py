@@ -1,10 +1,12 @@
+""" A module related to the exporting of molecules. """
+
 __all__ = ['export_mol']
 
 import os
 
 import scm.plams.interfaces.molecule.rdkit as molkit
 
-from ..qd_functions import get_time
+from ..misc import get_time
 
 
 def export_mol(mol, message='Mol:\t\t\t\t'):

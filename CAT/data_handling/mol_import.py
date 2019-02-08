@@ -1,17 +1,19 @@
-__all__ = ['read_mol', 'set_prop', 'create_dir']
+""" A module related to the importing of molecules. """
+
+__all__ = ['read_mol', 'set_prop']
 
 import os
 import itertools
 
 import pandas as pd
 
-from scm.plams import Molecule
-from scm.plams.core import errors
+from scm.plams.molecule.mol import Molecule
+from scm.plams.core.errors import PlamsError
 import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit import Chem
 
-from ..qd_functions import get_time
+from ..misc import (get_time, dict_concatenate)
 
 
 def read_mol(input_mol, path, is_core=False):
@@ -177,7 +179,7 @@ def read_mol_xyz(mol, mol_dict):
     try:
         mol_path = os.path.join(mol_dict['path'], mol_dict['name'] + '.xyz')
         return Molecule(mol_path, inputformat='xyz')
-    except (Exception, errors.PlamsError) as ex:
+    except (Exception, PlamsError) as ex:
         print_exception(read_mol_xyz.__code__, ex, mol_path)
 
 
@@ -188,7 +190,7 @@ def read_mol_pdb(mol, mol_dict):
     try:
         mol_path = os.path.join(mol_dict['path'], mol_dict['name'] + '.pdb')
         return molkit.readpdb(mol_path)
-    except (Exception, errors.PlamsError) as ex:
+    except (Exception, PlamsError) as ex:
         print_exception(read_mol_pdb.__code__, ex, mol_path)
 
 
@@ -199,7 +201,7 @@ def read_mol_mol(mol, mol_dict):
     try:
         mol_path = os.path.join(mol_dict['path'], mol_dict['name'] + '.mol')
         return molkit.from_rdmol(Chem.MolFromMolFile(mol_path, removeHs=False))
-    except (Exception, errors.PlamsError) as ex:
+    except (Exception, PlamsError) as ex:
         print_exception(read_mol_mol.__code__, ex, mol_path)
 
 
@@ -209,7 +211,7 @@ def read_mol_smiles(mol, mol_dict):
     """
     try:
         return molkit.from_smiles(mol)
-    except (Exception, errors.PlamsError) as ex:
+    except (Exception, PlamsError) as ex:
         print_exception(read_mol_smiles.__code__, ex, mol)
 
 
@@ -219,7 +221,7 @@ def read_mol_plams(mol, mol_dict):
     """
     try:
         return mol
-    except (Exception, errors.PlamsError) as ex:
+    except (Exception, PlamsError) as ex:
         print_exception(read_mol_plams.__code__, ex, mol)
 
 
@@ -229,7 +231,7 @@ def read_mol_rdkit(mol, mol_dict):
     """
     try:
         return molkit.from_rdmol(mol)
-    except (Exception, errors.PlamsError) as ex:
+    except (Exception, PlamsError) as ex:
         print_exception(read_mol_rdkit.__code__, ex, mol)
 
 
@@ -241,7 +243,7 @@ def read_mol_folder(mol, mol_dict):
         mol_path = os.path.join(mol_dict['path'], mol_dict['name'])
         file_list = [[file, mol_dict] for file in os.listdir(mol_path)]
         return read_mol(file_list, mol_dict['path'], mol_dict['is_core'])
-    except (Exception, errors.PlamsError) as ex:
+    except (Exception, PlamsError) as ex:
         print_exception(read_mol_folder.__code__, ex, mol_path)
 
 
@@ -257,7 +259,7 @@ def read_mol_txt(mol, mol_dict):
                      file]
         file_list = [[file, mol_dict] for file in file_list if len(file) >= 2]
         return read_mol(file_list, mol_dict['path'], mol_dict['is_core'])
-    except (Exception, errors.PlamsError) as ex:
+    except (Exception, PlamsError) as ex:
         print_exception(read_mol_txt.__code__, ex, mol_path)
 
 
@@ -270,7 +272,7 @@ def read_mol_excel(mol, mol_dict):
         file_list = list(pd.read_excel(mol_path, sheet_name=mol_dict['sheet_name']))
         file_list = [[file, mol_dict] for file in file_list[mol_dict['column']][mol_dict['row']:]]
         return read_mol(file_list, mol_dict['path'], mol_dict['is_core'])
-    except (Exception, errors.PlamsError) as ex:
+    except (Exception, PlamsError) as ex:
         print_exception(read_mol_excel.__code__, ex, mol_path)
 
 

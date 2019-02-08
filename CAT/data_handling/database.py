@@ -1,3 +1,5 @@
+""" A module which manages all interactions with the database. """
+
 __all__ = ['read_database', 'compare_database', 'write_database']
 
 import os

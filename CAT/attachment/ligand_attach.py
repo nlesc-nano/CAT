@@ -1,15 +1,17 @@
+""" A module designed for attaching ligands to cores. """
+
 __all__ = ['ligand_to_qd', 'qd_opt']
 
-from scipy.spatial.distance import cdist
 import numpy as np
+from scipy.spatial.distance import cdist
 
-from scm.plams import Molecule
+from scm.plams.mol.molecule import Molecule
 from scm.plams.core.settings import Settings
 import scm.plams.interfaces.molecule.rdkit as molkit
 
-from .qd_import_export import export_mol
 from .qd_functions import (merge_mol, get_atom_index)
-from .qd_ams import ams_job_uff_opt
+from ..analysis.jobs import ams_job_uff_opt
+from ..data_handling.mol_export import export_mol
 
 
 def sanitize_dim_2(arg):

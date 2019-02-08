@@ -1,3 +1,5 @@
+""" A module designed for the calculation of Bond Dissociation Energies (BDE). """
+
 __all__ = ['init_bde']
 
 from itertools import chain
@@ -6,16 +8,17 @@ import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
 
-from scm.plams import (Molecule, Atom)
+from scm.plams.mol.molecule import Molecule
+from scm.plams.mol.atom import Atom
 from scm.plams.core.functions import (init, finish, config)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 
-from .qd_ams import (job_single_point, job_geometry_opt, job_freq)
-from .qd_functions import (to_atnum, merge_mol)
-from .qd_dissociate import dissociate_ligand
-from .qd_ligand_rotate import rot_mol_angle
+from qmflows.templates.templates import get_template
 
-from ..templates.templates import get_template
+from .jobs import (job_single_point, job_geometry_opt, job_freq)
+from .ligand_dissociate import dissociate_ligand
+from ..attachment.qd_functions import (to_atnum, merge_mol)
+from ..attachment.ligand_attach import rot_mol_angle
 
 
 def init_bde(mol, job1=None, job2=None, s1=None, s2=None):

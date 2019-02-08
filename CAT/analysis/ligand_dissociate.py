@@ -1,4 +1,6 @@
-__all__ = ['get_topology_dict', 'dissociate_ligand']
+""" A module designed for generating structures with dissociated ligands. """
+
+__all__ = ['get_topology_dict']
 
 import copy
 import itertools

@@ -1,18 +1,22 @@
+""" A module handling the interaction with all other modules, functing as recipe. """
+
 __all__ = ['prep']
 
-import itertools
 import time
+from itertools import chain
 from os.path import join
 
-from scm.plams import (Atom, MoleculeError)
+from scm.plams.mol.atom import Atom
+from scm.plams.core.errors import MoleculeError
 
-from .components import qd_ams as QD_ams
-from .components import qd_bde as QD_BDE
-from .components import qd_database as QD_database
-from .components import qd_functions as QD_scripts
-from .components import qd_import_export as QD_inout
-from .components import qd_ligand_opt as QD_ligand_opt
-from .components import qd_ligand_rotate as QD_ligand_rotate
+from .misc import (check_sys_var, get_time, create_dir)
+from .analysis.jobs import ams_job_mopac_crs
+from .analysis.ligand_bde import init_bde
+from .data_handling.database import (read_database, write_database)
+from .data_handling.mol_import import read_mol
+from .attachment.ligand_opt import optimize_ligand
+from .attachment.qd_functions import (to_atnum, find_substructure, find_substructure_split, qd_int)
+from .attachment.ligand_attach import (ligand_to_qd, qd_opt)
 
 
 def prep(input_ligands, input_cores, path, arg):
@@ -31,9 +35,9 @@ def prep(input_ligands, input_cores, path, arg):
     print('\n')
 
     # Create the result directories (if they do not exist) and ligand and core lists
-    cor_dir, lig_dir, qd_dir = [QD_inout.create_dir(name, path) for name in arg['dir_name_list']]
-    ligand_list = QD_inout.read_mol(input_ligands, lig_dir)
-    core_list = QD_inout.read_mol(input_cores, cor_dir, is_core=True)
+    cor_dir, lig_dir, qd_dir = [create_dir(name, path) for name in arg['dir_name_list']]
+    ligand_list = read_mol(input_ligands, lig_dir)
+    core_list = read_mol(input_cores, cor_dir, is_core=True)
 
     # Raises an error if mol_list is empty
     if not ligand_list:
@@ -49,7 +53,7 @@ def prep(input_ligands, input_cores, path, arg):
     ligand_list = prep_ligand_1(ligand_list, path, arg)
 
     # Combine the core with the ligands, yielding qd, and format the resulting list
-    qd_list = list(QD_ligand_rotate.ligand_to_qd(core, ligand, qd_dir) for core
+    qd_list = list(ligand_to_qd(core, ligand, qd_dir) for core
                    in core_list for ligand in ligand_list)
 
     # Optimize the quantum dots, perform an activation strain analyses and read/write the results
@@ -57,7 +61,7 @@ def prep(input_ligands, input_cores, path, arg):
 
     # The End
     time_end = time.time()
-    message = '\n' + QD_scripts.get_time()
+    message = '\n' + get_time()
     message += 'Total elapsed time:\t\t' + '%.4f' % (time_end - time_start) + ' sec'
     print(message)
 
@@ -72,7 +76,7 @@ def prep_core(core, arg):
     arg <dict>: A dictionary containing all (optional) arguments.
     """
     # Checks the if the dummy is a string (atomic symbol) or integer (atomic number)
-    dummy = QD_scripts.to_atnum(arg['dummy'])
+    dummy = to_atnum(arg['dummy'])
 
     # Returns the indices (integer) of all dummy atom ligand placeholders in the core
     # An additional dummy atom is added at the core center of mass for orientating the ligands
@@ -105,27 +109,27 @@ def prep_ligand_1(ligand_list, path, arg):
     """
     # Open the ligand database and check if the specified ligand(s) is already present
     if arg['use_database']:
-        ligand_database = QD_database.read_database(path, database_name='Ligand_database')
+        ligand_database = read_database(path, database_name='Ligand_database')
     else:
         ligand_database = None
 
     # Optimize all ligands and find their functional groups
-    ligand_list = list(itertools.chain.from_iterable(prep_ligand_2(ligand, ligand_database, arg) for
+    ligand_list = list(chain.from_iterable(prep_ligand_2(ligand, ligand_database, arg) for
                                                      ligand in ligand_list))
     if not ligand_list:
         raise IndexError('No valid ligand functional groups found, aborting run')
 
     if arg['ligand_crs']:
-        QD_ams.check_sys_var()
+        check_sys_var()
         for ligand in ligand_list:
-            QD_ams.ams_job_mopac_crs(ligand)
+            ams_job_mopac_crs(ligand)
 
     # Write new entries to the ligand database
     if arg['use_database']:
         if not arg['ligand_opt']:
             for ligand in ligand_list:
                 ligand.properties.entry = True
-        QD_database.write_database(ligand_list, ligand_database, path, mol_type='ligand')
+        write_database(ligand_list, ligand_database, path, mol_type='ligand')
 
     return ligand_list
 
@@ -145,7 +149,7 @@ def prep_ligand_2(ligand, database, arg):
 
     # Identify functional groups within the ligand and add a dummy atom to the center of mass.
     if not ligand.properties.dummies:
-        ligand_list = QD_scripts.find_substructure(ligand, split)
+        ligand_list = find_substructure(ligand, split)
     else:
         if len(ligand.properties.dummies) == 1:
             ligand.properties.dummies = ligand.properties.dummies[0] -1
@@ -153,10 +157,10 @@ def prep_ligand_2(ligand, database, arg):
         elif len(ligand.properties.dummies) == 2:
             ligand.properties.dummies = [i - 1 for i in ligand.properties.dummies]
             split = True
-        ligand_list = [QD_scripts.find_substructure_split(ligand, ligand.properties.dummies, split)]
+        ligand_list = [find_substructure_split(ligand, ligand.properties.dummies, split)]
 
     # Handles all interaction between the database, the ligand and the ligand optimization
-    ligand_list = [QD_ligand_opt.optimize_ligand(ligand, database, arg['ligand_opt']) for
+    ligand_list = [optimize_ligand(ligand, database, arg['ligand_opt']) for
                    ligand in ligand_list if ligand_list]
 
     return ligand_list
@@ -167,7 +171,7 @@ def get_job_settings(arg_dict, jobs=1):
     """
     if isinstance(arg_dict, bool):
         ret = [None for i in range(jobs*2)]
-        print(QD_scripts.get_time() + 'No user-specified jobs & settings found for qd_dissociate, \
+        print(get_time() + 'No user-specified jobs & settings found for qd_dissociate, \
               switching to defaults')
     else:
         try:
@@ -181,12 +185,12 @@ def get_job_settings(arg_dict, jobs=1):
         if len_ret < jobs*2:
             for i in range(jobs*2 - len_ret):
                 ret.append(None)
-            print(QD_scripts.get_time() + 'No jobs & settings have been specified found for the \
+            print(get_time() + 'No jobs & settings have been specified found for the \
                   last ' + str(jobs - len_ret/2) + ' jobs, switching to defaults')
         # Pop entries from ret if it is larger than 2 * *jobs*
         elif len_ret > jobs*2:
             ret = ret[0:jobs*2]
-            print(QD_scripts.get_time() + str(len_ret / 2) + ' jobs have been specified while the \
+            print(get_time() + str(len_ret / 2) + ' jobs have been specified while the \
                   argument only support ' + str(jobs) + ', the last ' + str(len_ret/2 - jobs) \
                   + ' jobs and their settings will be ignored')
 
@@ -231,19 +235,19 @@ def prep_qd(qd_list, path, arg):
 
     # Open the quantum dot database and check if the specified quantum dot(s) is already present
     if arg['use_database']:
-        qd_database = QD_database.read_database(path, database_name='QD_database')
+        qd_database = read_database(path, database_name='QD_database')
     else:
         qd_database = None
 
     # Optimize the qd with the core frozen
     if arg['qd_opt']:
-        QD_ams.check_sys_var()
-        qd_list = list(QD_ligand_rotate.qd_opt(qd, qd_database, arg) for qd in qd_list)
+        check_sys_var()
+        qd_list = list(qd_opt(qd, qd_database, arg) for qd in qd_list)
 
     # Calculate the interaction between ligands on the quantum dot surface
     if arg['qd_int']:
-        print(QD_scripts.get_time() + 'calculating ligand distortion and inter-ligand interaction...')
-        qd_list = list(QD_scripts.qd_int(qd) for qd in qd_list)
+        print(get_time() + 'calculating ligand distortion and inter-ligand interaction...')
+        qd_list = list(qd_int(qd) for qd in qd_list)
 
     # Calculate the interaction between ligands on the quantum dot surface upon removal of CdX2
     if arg['qd_dissociate']:
@@ -252,9 +256,9 @@ def prep_qd(qd_list, path, arg):
         s1, s2 = lower_dict_keys(s1), lower_dict_keys(s2)
 
         # Start the BDE calculation
-        print(QD_scripts.get_time() + 'calculating ligand dissociation energy...')
+        print(get_time() + 'calculating ligand dissociation energy...')
         for qd in qd_list:
-            qd.properties.energy.BDE = QD_BDE.init_bde(qd, job1=job1, job2=job2, s1=s1, s2=s2)
+            qd.properties.energy.BDE = init_bde(qd, job1=job1, job2=job2, s1=s1, s2=s2)
             df = qd.properties.energy.BDE
             df.to_excel(join(path, qd.properties.name + '_BDE.xlsx'))
 
@@ -263,6 +267,6 @@ def prep_qd(qd_list, path, arg):
         if not arg['qd_opt']:
             for qd in qd_list:
                 qd.properties.entry = True
-        QD_database.write_database(qd_list, qd_database, path, mol_type='qd')
+        write_database(qd_list, qd_database, path, mol_type='qd')
 
     return qd_list

@@ -1,16 +1,22 @@
+""" A module with miscellaneous functions related to manipulating moleculair geometries. """
+
 __all__ = ['find_substructure', 'find_substructure_split', 'merge_mol', 'qd_int',
-           'adf_connectivity', 'fix_h', 'fix_carboxyl', 'from_mol_other', 'from_rdmol', 'get_time']
+           'adf_connectivity', 'fix_h', 'fix_carboxyl', 'from_mol_other', 'from_rdmol']
 
 import time
 import itertools
 
-from scm.plams import Atom, Molecule, Bond
+from scm.plams.mol.molecule import Molecule
+from scm.plams.mol.atom import Atom
+from scm.plams.mol.bond import Bond
 from scm.plams.core.functions import add_to_class
 from scm.plams.tools.periodic_table import PeriodicTable
 import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit import Chem
 from rdkit.Chem import AllChem, rdMolTransforms
+
+from ..misc import get_time
 
 
 @add_to_class(Molecule)

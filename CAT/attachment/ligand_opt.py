@@ -1,9 +1,12 @@
+""" A module designed for optimizing the geometry of ligands. """
+
 __all__ = ['optimize_ligand']
 
 import itertools
 import numpy as np
 
-from scm.plams import (Molecule, Atom)
+from scm.plams.mol.molecule import Molecule
+from scm.plams.mol.atom import Atom
 from scm.plams.core.errors import MoleculeError
 from scm.plams.core.functions import add_to_class
 from scm.plams.tools.units import Units
@@ -12,11 +15,10 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit.Chem import AllChem
 
-from .qd_functions import (to_symbol, fix_carboxyl, get_time, get_bond_index,
-                           from_mol_other, from_rdmol)
-from .qd_ligand_rotate import (rot_mol_angle, sanitize_dim_2)
-from .qd_database import compare_database
-from .qd_import_export import export_mol
+from .qd_functions import (to_symbol, fix_carboxyl, get_bond_index, from_mol_other, from_rdmol)
+from .ligand_attach import (rot_mol_angle, sanitize_dim_2)
+from ..data_handling.database import compare_database
+from ..data_handling.mol_export import export_mol
 
 
 def optimize_ligand(ligand, database, opt=True):
