@@ -1,10 +1,31 @@
-__all__ = ['get_job_settings']
+__all__ = ['get_job_settings', 'lower_dict_keys']
 
 import time
 import itertools
 from os.path import join
 
-from .misc import get_time
+from ..misc import get_time
+
+
+def lower_dict_keys(dic):
+    """ Turn all keys in a dictionary, or class derived from dictionary, to lowercase.
+    Dictionaries are searched recursivly. """
+    if isinstance(dic, dict):
+        for key in dic:
+            # Check if a key is lowercase; turn to lowercase if not
+            try:
+                key_lower = key.lower()
+                if key != key_lower:
+                    dic[key_lower] = dic[key]
+                    del dic[key]
+            except AttributeError:
+                pass
+
+            # Check if a value is a dictionary or a class derived from dictionary
+            if isinstance(dic[key_lower], dict):
+                dic[key_lower] = lower_dict_keys(dic[key_lower])
+
+    return dic
 
 
 def get_job_settings(arg_dict, jobs=1):

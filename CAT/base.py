@@ -14,6 +14,7 @@ from .analysis.jobs import ams_job_mopac_crs
 from .analysis.ligand_bde import init_bde
 from .data_handling.database import (read_database, write_database)
 from .data_handling.mol_import import read_mol
+from .data_handling.sanitize_input import (get_job_settings, lower_dict_keys)
 from .attachment.ligand_opt import optimize_ligand
 from .attachment.qd_functions import (to_atnum, find_substructure, find_substructure_split, qd_int)
 from .attachment.ligand_attach import (ligand_to_qd, qd_opt)
@@ -164,58 +165,6 @@ def prep_ligand_2(ligand, database, arg):
                    ligand in ligand_list if ligand_list]
 
     return ligand_list
-
-
-def get_job_settings(arg_dict, jobs=1):
-    """
-    """
-    if isinstance(arg_dict, bool):
-        ret = [None for i in range(jobs*2)]
-        print(get_time() + 'No user-specified jobs & settings found for qd_dissociate, \
-              switching to defaults')
-    else:
-        try:
-            ret = [arg_dict[item] for item in arg_dict]
-            len_ret = len(ret)
-        except TypeError:
-            raise TypeError('Only booleans, dictiories or dictionary derived objects are \
-                            valid when defining jobs')
-
-        # Pad with <None> ret if is smaller than 2 * *jobs*
-        if len_ret < jobs*2:
-            for i in range(jobs*2 - len_ret):
-                ret.append(None)
-            print(get_time() + 'No jobs & settings have been specified found for the \
-                  last ' + str(jobs - len_ret/2) + ' jobs, switching to defaults')
-        # Pop entries from ret if it is larger than 2 * *jobs*
-        elif len_ret > jobs*2:
-            ret = ret[0:jobs*2]
-            print(get_time() + str(len_ret / 2) + ' jobs have been specified while the \
-                  argument only support ' + str(jobs) + ', the last ' + str(len_ret/2 - jobs) \
-                  + ' jobs and their settings will be ignored')
-
-    return ret
-
-
-def lower_dict_keys(dic):
-    """ Turn all keys in a dictionary, or class derived from dictionary, to lowercase.
-    Dictionaries are searched recursivly. """
-    if isinstance(dic, dict):
-        for key in dic:
-            # Check if a key is lowercase; turn to lowercase if not
-            try:
-                key_lower = key.lower()
-                if key != key_lower:
-                    dic[key_lower] = dic[key]
-                    del dic[key]
-            except AttributeError:
-                pass
-
-            # Check if a value is a dictionary or a class derived from dictionary
-            if isinstance(dic[key_lower], dict):
-                dic[key_lower] = lower_dict_keys(dic[key_lower])
-
-    return dic
 
 
 def prep_qd(qd_list, path, arg):
