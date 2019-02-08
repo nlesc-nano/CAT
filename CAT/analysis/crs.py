@@ -26,9 +26,9 @@ class CRSResults(SCMResults):
         E = self.readkf('ACTIVITYCOEF', 'deltag')[0]
         return Units.convert(E, 'kcal/mol', unit)
 
-
     def get_sigma(self, section, unit='kcal/mol'):
-        """ Grab all values of sigma and the sigmapotential/profile, combine them into a dictionary or pandas dataframe. """
+        """ Grab all values of sigma and the sigmapotential/profile;
+        combine them into a dictionary or pandas dataframe. """
         sigma = self._sigma_y(section, unit)
         if self.readkf('PURE' + section) is not None:
             sigma['mixture'] = self._sigma_y(section, unit)
@@ -38,18 +38,15 @@ class CRSResults(SCMResults):
         except AttributeError:
             return sigma
 
-
     def get_sigma_profile(self, unit='kcal/mol'):
         """ Returns all sigma profiles, expressed in *unit*.
         Returns a dictionary of numpy arrays or, if available, a pandas dataframe. """
         return self.get_sigma('SIGMAPOTENTIAL', unit)
 
-
     def get_sigma_potential(self):
         """ Returns all sigma profiles, expressed in *unit*.
         Returns a dictionary of numpy arrays or, if available, a pandas dataframe. """
         return self.get_sigma('SIGMAPROFILE')
-
 
     def _sigma_x(self, section):
         """ Construct all values of sigma. """
@@ -57,7 +54,6 @@ class CRSResults(SCMResults):
         nitems = self.readkf(section, 'nitems')
         step = int((1 + 2 * min_max) / nitems)
         return np.arange(-min_max, min_max, step)
-
 
     def _sigma_y(self, section, unit='kcal/mol'):
         """ Get all values of . """

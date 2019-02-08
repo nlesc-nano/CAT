@@ -85,7 +85,7 @@ def prep_core(core, arg):
     if not core.properties.dummies:
         core.properties.dummies = [atom for atom in core.atoms if atom.atnum == dummy]
     else:
-         core.properties.dummies = [core[index] for index in core.properties.dummies]
+        core.properties.dummies = [core[index] for index in core.properties.dummies]
 
     # Delete all core dummy atoms
     for at in reversed(core.properties.dummies):
@@ -117,7 +117,7 @@ def prep_ligand_1(ligand_list, path, arg):
 
     # Optimize all ligands and find their functional groups
     ligand_list = list(chain.from_iterable(prep_ligand_2(ligand, ligand_database, arg) for
-                                                     ligand in ligand_list))
+                                           ligand in ligand_list))
     if not ligand_list:
         raise IndexError('No valid ligand functional groups found, aborting run')
 
@@ -154,7 +154,7 @@ def prep_ligand_2(ligand, database, arg):
         ligand_list = find_substructure(ligand, split)
     else:
         if len(ligand.properties.dummies) == 1:
-            ligand.properties.dummies = ligand.properties.dummies[0] -1
+            ligand.properties.dummies = ligand.properties.dummies[0] - 1
             split = False
         elif len(ligand.properties.dummies) == 2:
             ligand.properties.dummies = [i - 1 for i in ligand.properties.dummies]

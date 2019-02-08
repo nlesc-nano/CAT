@@ -53,7 +53,7 @@ def get_job_settings(arg_dict, jobs=1):
         elif len_ret > jobs*2:
             ret = ret[0:jobs*2]
             print(get_time() + str(len_ret / 2) + ' jobs have been specified while the \
-                  argument only support ' + str(jobs) + ', the last ' + str(len_ret/2 - jobs) \
+                  argument only support ' + str(jobs) + ', the last ' + str(len_ret/2 - jobs)
                   + ' jobs and their settings will be ignored')
 
     return ret
