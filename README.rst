@@ -38,14 +38,11 @@ Dependencies installation
 
 Using the conda environment the following packages should be installed:    
 
-- install rdkit_ using conda:
+- install the following two packages using conda:
 
-  - ``conda install -y --name CAT -c rdkit rdkit``
-  
+  - rdkit_: ``conda install -y --name CAT -c rdkit rdkit``
 
-- install HDF5_ using conda:
-
-  - ``conda install -y --name CAT -c anaconda h5py``
+  - HDF5_: ``conda install -y --name CAT -c anaconda h5py``
     
     
 .. _installation:
@@ -55,7 +52,7 @@ Package installation
 Finally install the package:
 
 - Update PLAMS_ using pip:
-  - ``pip install git+https://github.com/SCM-NV/PLAMS@master#egg=plams-1.2``
+  - ``pip install git+https://github.com/SCM-NV/PLAMS@master#egg=plams-1.2 --upgrade``
     
 - Install QMFlows_ using pip:
   - ``pip install git+https://github.com/SCM-NV/qmflows@master#egg=qmflows-0.3.0``
