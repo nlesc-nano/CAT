@@ -1,4 +1,4 @@
-""" A module handling the interaction with all other modules, functing as recipe. """
+""" A module handling the interaction with all other modules, functioning as recipe. """
 
 __all__ = ['prep']
 
