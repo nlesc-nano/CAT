@@ -1,7 +1,10 @@
 
 .. image:: https://travis-ci.org/BvB93/CAT.svg?branch=master
-   :target: https://travis-ci.org/BvB93/CAT 
+   :target: https://travis-ci.org/BvB93/CAT
+.. image:: https://readthedocs.org/projects/cat/badge/?version=latest
+   :target: https://cat.readthedocs.io/en/latest
 .. image:: https://img.shields.io/badge/python-3.6-blue.svg
+   :target: https://www.python.org
 
 #################################
 Compound Attachment/Analysis Tool
