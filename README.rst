@@ -70,7 +70,7 @@ An example input file, input.py, is located in the example_ directory.
 .. _documentation: https://cat.readthedocs.io/en/latest/
 .. _miniconda: http://conda.pydata.org/miniconda.html
 .. _anaconda: https://www.continuum.io/downloads
-.. _installConda: http://conda.pydata.org/docs/install/quick.html
+.. _installConda: https://docs.anaconda.com/anaconda/install/
 .. _Noodles: http://nlesc.github.io/noodles/
 .. _HDF5: http://www.h5py.org/ 
 .. _here: https://www.python.org/downloads/
