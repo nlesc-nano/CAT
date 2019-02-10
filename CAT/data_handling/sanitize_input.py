@@ -1,3 +1,5 @@
+""" A module designed for sanitizing and interpreting the input file. """
+
 __all__ = ['get_job_settings', 'lower_dict_keys']
 
 import time
