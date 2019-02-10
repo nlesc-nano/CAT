@@ -38,8 +38,6 @@ Dependencies installation
 
 Using the conda environment the following packages should be installed:    
 
-install the following two packages using conda:
-
 - rdkit_: ``conda install -y --name CAT -c rdkit rdkit``
 
 - HDF5_: ``conda install -y --name CAT -c anaconda h5py``
@@ -49,9 +47,7 @@ install the following two packages using conda:
 
 Package installation
 --------------------
-Finally install the package:
-
-Update or install the following packages using pip:
+Finally, update or install the following packages, including **CAT**, using pip:
 
 - PLAMS_: ``pip install git+https://github.com/SCM-NV/PLAMS@master#egg=plams-1.2 --upgrade``
    
