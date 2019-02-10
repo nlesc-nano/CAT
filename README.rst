@@ -24,7 +24,7 @@ Installation
 
   - ``conda create -n CAT`` 
 
-- The virtual environment can be enabled and disabled by typing:
+- The virtual environment can be enabled and disabled by, respectively, typing:
 
   - Enable: ``conda activate CAT`` 
   
