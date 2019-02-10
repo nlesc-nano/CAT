@@ -15,10 +15,6 @@ input_cores = yaml.load("""
     - core_indices: [130, 149, 137, 143]
 """)
 
-# Cd176Se147.xyz    - core_indices: [338, 375, 327, 372, 341, 355, 374, 356, 340]
-# Cd68Se55.xyz    - core_indices: [130, 149, 137, 143]
-
-
 # The input ligands from path/ligand/
 input_ligands = yaml.load("""
 - OC(C)=O
