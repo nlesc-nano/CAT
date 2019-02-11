@@ -1,16 +1,14 @@
 """ A module designed for attaching ligands to cores. """
 
-__all__ = ['ligand_to_qd', 'qd_opt']
+__all__ = ['ligand_to_qd']
 
 import numpy as np
 from scipy.spatial.distance import cdist
 
 from scm.plams.mol.molecule import Molecule
 from scm.plams.core.settings import Settings
-import scm.plams.interfaces.molecule.rdkit as molkit
 
 from ..qd_functions import (merge_mol, get_atom_index)
-from ..analysis.jobs import ams_job_uff_opt
 from ..data_handling.mol_export import export_mol
 
 
@@ -229,34 +227,6 @@ def array_to_qd(mol, xyz_array, mol_other=False):
     if not mol_other:
         return mol_list
     mol_other.merge_mol(mol_list)
-
-
-def qd_opt(mol, database, arg):
-    """
-    Check if the to be optimized quantom dot has previously been optimized.
-    Pull if the structure from the database if it has, otherwise perform a geometry optimization.
-    mol <plams.Molecule> The input quantom dot with the 'name' property.
-    database <pd.DataFrame>: A database of previous calculations.
-    return <plams.Molecule>: An optimized quantom dot.
-    """
-    name = mol.properties.name.rsplit('.', 1)[0]
-    if database is None:
-        mol = ams_job_uff_opt(mol, arg['maxiter'])
-        mol.properties.entry = False
-    elif database.empty or name not in list(database['Quantum_dot_name']):
-        mol = ams_job_uff_opt(mol, arg['maxiter'])
-        mol.properties.entry = True
-    else:
-        index = list(database['Quantum_dot_name']).index(name)
-        try:
-            mol_new = molkit.readpdb(database['Quantum_dot_opt_pdb'][index])
-            mol_new.properties = mol.properties
-            mol = mol_new
-        except FileNotFoundError:
-            mol = ams_job_uff_opt(mol, arg['maxiter'])
-            mol.properties.entry = True
-
-    return mol
 
 
 def ligand_to_qd(core, ligand, qd_folder):

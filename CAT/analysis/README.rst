@@ -32,6 +32,12 @@ ligand_dissociate.py
 
 A module designed for generating structures with dissociated ligands.
 
+~~~~~~~~~~~~~~~~~~~
+ligand_solvation.py
+~~~~~~~~~~~~~~~~~~~
+
+A module designed for calculating solvation energies.
+
 ~~~~~~~~~~~~~~
 thermo_chem.py
 ~~~~~~~~~~~~~~
