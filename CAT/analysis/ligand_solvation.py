@@ -2,19 +2,28 @@
 
 __all__ = ['init_solv']
 
+import os
+from os.path import (join, dirname)
+
 from scm.plams.core.jobrunner import JobRunner
 from scm.plams.core.functions import (init, finish)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
-from scm.plams.interfaces.adfsuite.adfsuite import ADFJob
+from scm.plams.interfaces.adfsuite.adf import ADFJob
 
 from qmflows.templates.templates import get_template
 
 from .crs import CRSJob
 
 
-def init_solv(mol):
+def init_solv(mol, solvent_list=None, job1=None, s1=None, job2=None, s2=None):
     """ Initialize the solvation energy calculation. """
-    pass
+    if solvent_list is None:
+        path = join(join(dirname(dirname(__file__)), 'data'), 'coskf')
+        solvent_list = [join(path, solv) for solv in os.listdir(path)]
+
+    coskf = get_surface_charge(mol, job=job1, s=s1)
+    solv_dict = get_solv(mol, solvent_list, coskf, job=job2, s=s2)
+    mol.properties.energy.E_solv = solv_dict
 
 
 def get_surface_charge(mol, job=None, s=None):
@@ -48,6 +57,7 @@ def get_solv(mol, solvent_list, coskf, job=None, s=None):
     if job is None and s is None:
         job = CRSJob
         s = get_template('qd.json')['COSMO-RS activity coefficient']
+        s.input.update(get_template('crs.json')['MOPAC PM6'])
     elif job is None or s is None:
         finish()
         raise TypeError('job & s should neither or both be None')
