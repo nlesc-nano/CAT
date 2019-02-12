@@ -41,7 +41,7 @@ setup(
     ],
     test_suite='tests',
     install_requires=[
-        'h5py', 'numpy', 'noodles==0.3.1', 'plams>=1.2', 'pymonad',
+        'h5py', 'numpy', 'noodles==0.3.1', 'plams>=1.2', 'pymonad', 'schema',
         'pyparsing', 'filelock', 'openpyxl', 'pyyaml', 'xlrd', 'scipy'
     ],
     dependency_links=[
