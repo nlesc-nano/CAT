@@ -7,7 +7,6 @@ from os.path import (join, dirname)
 
 from scm.plams.core.jobrunner import JobRunner
 from scm.plams.core.functions import (init, finish)
-from scm.plams.interfaces.adfsuite.ams import AMSJob
 from scm.plams.interfaces.adfsuite.adf import ADFJob
 
 from qmflows.templates.templates import get_template
@@ -15,29 +14,21 @@ from qmflows.templates.templates import get_template
 from .crs import CRSJob
 
 
-def init_solv(mol, solvent_list=None, job1=None, s1=None, job2=None, s2=None):
+def init_solv(mol, job_recipe, solvent_list=None):
     """ Initialize the solvation energy calculation. """
     if solvent_list is None:
         path = join(join(dirname(dirname(__file__)), 'data'), 'coskf')
         solvent_list = [join(path, solv) for solv in os.listdir(path) if not
                         '__init__.py' or not 'README.rst']
 
-    coskf = get_surface_charge(mol, job=job1, s=s1)
-    solv_dict = get_solv(mol, solvent_list, coskf, job=job2, s=s2)
+    coskf = get_surface_charge(mol, job=job_recipe.job1, s=job_recipe.s1)
+    solv_dict = get_solv(mol, solvent_list, coskf, job=job_recipe.job2, s=job_recipe.s2)
     mol.properties.energy.E_solv = solv_dict
 
 
 def get_surface_charge(mol, job=None, s=None):
     """ Construct the COSMO surface of the *mol*. """
     init(path=mol.properties.path, folder='coskf')
-
-    # Switch to default settings if no job & s are <None>
-    if job is None and s is None:
-        job = AMSJob
-        s = get_template('qd.json')['COSMO-MOPAC']
-    elif job is None or s is None:
-        finish()
-        raise TypeError('job & s should neither or both be None')
 
     # Special procedure for ADF jobs
     # Use the gas-phase electronic structure as a fragment for the COSMO single point
@@ -53,15 +44,6 @@ def get_surface_charge(mol, job=None, s=None):
 def get_solv(mol, solvent_list, coskf, job=None, s=None):
     """ Calculate the solvation energy of *mol* in various *solvents*. """
     init(path=mol.properties.path, folder='crs')
-
-    # Switch to default settings if no job & s are <None>
-    if job is None and s is None:
-        job = CRSJob
-        s = get_template('qd.json')['COSMO-RS activity coefficient']
-        s.input.update(get_template('crs.json')['MOPAC PM6'])
-    elif job is None or s is None:
-        finish()
-        raise TypeError('job & s should neither or both be None')
 
     # Prepare the job settings
     s.input.Compound._h = coskf

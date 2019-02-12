@@ -12,7 +12,6 @@ path = '/Users/basvanbeek/Documents/CdSe/Week_5'
 input_cores = yaml.load("""
 -   - Cd68Se55.xyz
     - guess_bonds: False
-    - core_indices: [130, 149, 137, 143]
 """)
 
 # The input ligands from path/ligand/
@@ -29,11 +28,7 @@ argument_dict = {
     'ligand_crs': True,
     'qd_opt': True,
     'qd_int': True,
-    'qd_dissociate': {
-        'job1': None, 's1': None,
-        'job2': None, 's2': None
-    },
-    'maxiter': 1000,
+    'qd_dissociate': True,
     'split': True,
 }
 

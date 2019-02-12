@@ -10,13 +10,13 @@ from scm.plams.mol.atom import Atom
 from scm.plams.core.errors import MoleculeError
 
 from .misc import (check_sys_var, get_time, create_dir)
-from .qd_functions import (to_atnum, find_substructure, find_substructure_split)
+from .qd_functions import (find_substructure, find_substructure_split)
 from .analysis.asa import init_asa
 from .analysis.ligand_bde import init_bde
 from .analysis.ligand_solvation import init_solv
 from .data_handling.database import (read_database, write_database)
 from .data_handling.mol_import import read_mol
-from .data_handling.sanitize_input import (get_job_settings, lower_dict_keys)
+from .data_handling.sanitize_input import sanitize_arg_dict
 from .attachment.qd_opt import init_qd_opt
 from .attachment.ligand_opt import optimize_ligand
 from .attachment.ligand_attach import ligand_to_qd
@@ -36,6 +36,8 @@ def prep(input_ligands, input_cores, path, arg):
     # The start
     time_start = time.time()
     print('\n')
+
+    arg = sanitize_arg_dict(arg)
 
     # Create the result directories (if they do not exist) and ligand and core lists
     cor_dir, lig_dir, qd_dir = [create_dir(name, path) for name in arg['dir_name_list']]
@@ -79,7 +81,7 @@ def prep_core(core, arg):
     arg <dict>: A dictionary containing all (optional) arguments.
     """
     # Checks the if the dummy is a string (atomic symbol) or integer (atomic number)
-    dummy = to_atnum(arg['dummy'])
+    dummy = arg['dummy']
 
     # Returns the indices (integer) of all dummy atom ligand placeholders in the core
     # An additional dummy atom is added at the core center of mass for orientating the ligands
@@ -122,10 +124,10 @@ def prep_ligand_1(ligand_list, path, arg):
     if not ligand_list:
         raise IndexError('No valid ligand functional groups found, aborting run')
 
-    if arg['ligand_crs']:
+    if arg.ligand_crs:
         check_sys_var()
         for ligand in ligand_list:
-            init_solv(ligand)
+            init_solv(ligand, arg.ligand_crs)
 
     # Write new entries to the ligand database
     if arg['use_database']:
@@ -191,10 +193,9 @@ def prep_qd(qd_list, path, arg):
         qd_database = None
 
     # Optimize the qd with the core frozen
-    if arg['qd_opt']:
+    if arg.qd_opt:
         check_sys_var()
-        job1, s1, job2, s2 = get_job_settings(arg['qd_dissociate'], jobs=2)
-        qd_list = list(init_qd_opt(qd, qd_database, job1=job1, job2=job2, s1=s1, s2=s2) for qd in qd_list)
+        qd_list = list(init_qd_opt(qd, qd_database, arg.qd_opt) for qd in qd_list)
 
     # Calculate the interaction between ligands on the quantum dot surface
     if arg['qd_int']:
@@ -202,15 +203,11 @@ def prep_qd(qd_list, path, arg):
         qd_list = list(init_asa(qd) for qd in qd_list)
 
     # Calculate the interaction between ligands on the quantum dot surface upon removal of CdX2
-    if arg['qd_dissociate']:
-        # Extract the job type and input settings
-        job1, s1, job2, s2 = get_job_settings(arg['qd_dissociate'], jobs=2)
-        s1, s2 = lower_dict_keys(s1), lower_dict_keys(s2)
-
+    if arg.qd_dissociate:
         # Start the BDE calculation
         print(get_time() + 'calculating ligand dissociation energy...')
         for qd in qd_list:
-            qd.properties.energy.BDE = init_bde(qd, job1=job1, job2=job2, s1=s1, s2=s2)
+            qd.properties.energy.BDE = init_bde(qd, arg.qd_dissociate)
             df = qd.properties.energy.BDE
             df.to_excel(join(path, qd.properties.name + '_BDE.xlsx'))
 
