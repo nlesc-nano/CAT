@@ -12,13 +12,14 @@ from scm.plams.core.errors import MoleculeError
 from .misc import (check_sys_var, get_time, create_dir)
 from .qd_functions import (to_atnum, find_substructure, find_substructure_split)
 from .analysis.asa import init_asa
-from .analysis.jobs import ams_job_mopac_crs
 from .analysis.ligand_bde import init_bde
+from .analysis.ligand_solvation import init_solv
 from .data_handling.database import (read_database, write_database)
 from .data_handling.mol_import import read_mol
 from .data_handling.sanitize_input import (get_job_settings, lower_dict_keys)
+from .attachment.qd_opt import qd_opt
 from .attachment.ligand_opt import optimize_ligand
-from .attachment.ligand_attach import (ligand_to_qd, qd_opt)
+from .attachment.ligand_attach import ligand_to_qd
 
 
 def prep(input_ligands, input_cores, path, arg):
@@ -124,7 +125,7 @@ def prep_ligand_1(ligand_list, path, arg):
     if arg['ligand_crs']:
         check_sys_var()
         for ligand in ligand_list:
-            ams_job_mopac_crs(ligand)
+            init_solv(ligand)
 
     # Write new entries to the ligand database
     if arg['use_database']:
