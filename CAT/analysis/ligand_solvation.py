@@ -19,7 +19,8 @@ def init_solv(mol, solvent_list=None, job1=None, s1=None, job2=None, s2=None):
     """ Initialize the solvation energy calculation. """
     if solvent_list is None:
         path = join(join(dirname(dirname(__file__)), 'data'), 'coskf')
-        solvent_list = [join(path, solv) for solv in os.listdir(path)]
+        solvent_list = [join(path, solv) for solv in os.listdir(path) if not
+                        '__init__.py' or not 'README.rst']
 
     coskf = get_surface_charge(mol, job=job1, s=s1)
     solv_dict = get_solv(mol, solvent_list, coskf, job=job2, s=s2)
