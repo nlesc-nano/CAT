@@ -17,7 +17,7 @@ from .analysis.ligand_solvation import init_solv
 from .data_handling.database import (read_database, write_database)
 from .data_handling.mol_import import read_mol
 from .data_handling.sanitize_input import (get_job_settings, lower_dict_keys)
-from .attachment.qd_opt import qd_opt
+from .attachment.qd_opt import init_qd_opt
 from .attachment.ligand_opt import optimize_ligand
 from .attachment.ligand_attach import ligand_to_qd
 
@@ -193,7 +193,8 @@ def prep_qd(qd_list, path, arg):
     # Optimize the qd with the core frozen
     if arg['qd_opt']:
         check_sys_var()
-        qd_list = list(qd_opt(qd, qd_database, arg) for qd in qd_list)
+        job1, s1, job2, s2 = get_job_settings(arg['qd_dissociate'], jobs=2)
+        qd_list = list(init_qd_opt(qd, qd_database, job1=job1, job2=job2, s1=s1, s2=s2) for qd in qd_list)
 
     # Calculate the interaction between ligands on the quantum dot surface
     if arg['qd_int']:
