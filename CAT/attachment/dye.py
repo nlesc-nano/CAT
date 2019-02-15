@@ -18,10 +18,10 @@ def prep_for_rot(ligand_list, core):
     core: A PLAMS molecule with the properties.core_h & .core_other attributes (PLAMS Atoms)
     """
     # Extract various atoms from the ligand and core properties attribute
-    lig_h = [lig.properties.h for lig in ligand_list]
-    lig_other = [lig.properties.other for lig in ligand_list]
-    core_h = core.properties.h
-    core_other = core.properties.other
+    lig_h = [lig.properties.h[0] for lig in ligand_list]
+    lig_other = [lig.properties.other[0] for lig in ligand_list]
+    core_h = core.properties.h.pop(0)
+    core_other = core.properties.other.pop(0)
 
     # Define ligand and core vector
     lig_vec = Molecule().as_array(atom_subset=lig_other) - Molecule().as_array(atom_subset=lig_h)
@@ -78,13 +78,23 @@ def bob(mol):
     """
     comment = mol.properties.comment
     comment = comment.split()
-    del mol.properties.comment
-    try:
-        mol.properties.h = int(comment[0])
-        mol.properties.other = int(comment[1])
-    except (IndexError, ValueError) as ex:
-        print(ex)
-        pass
+
+    # Mark other
+    mol.properties.other = []
+    for i in comment:
+        try:
+            at = mol[int(i)]
+            mol.properties.other.append(at)
+        except (IndexError, ValueError) as ex:
+            print(ex)
+            pass
+
+    # Mark hydrogens attached to other
+    mol.properties.h = []
+    for at in mol.properties.other:
+        for bond in at.bonds:
+            mol.properties.h.append(bond.other_end(at))
+
 
 
 def monosubstitution(input_ligands, input_cores):
