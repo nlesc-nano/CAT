@@ -40,7 +40,7 @@ def prep(input_ligands, input_cores, path, arg):
     arg = sanitize_arg_dict(arg)
 
     # Create the result directories (if they do not exist) and ligand and core lists
-    cor_dir, lig_dir, qd_dir = [create_dir(name, path) for name in arg['dir_name_list']]
+    cor_dir, lig_dir, qd_dir = [create_dir(name, path) for name in arg.dir_name_list]
     ligand_list = read_mol(input_ligands, lig_dir)
     core_list = read_mol(input_cores, cor_dir, is_core=True)
 
@@ -81,7 +81,7 @@ def prep_core(core, arg):
     arg <dict>: A dictionary containing all (optional) arguments.
     """
     # Checks the if the dummy is a string (atomic symbol) or integer (atomic number)
-    dummy = arg['dummy']
+    dummy = arg.dummy
 
     # Returns the indices (integer) of all dummy atom ligand placeholders in the core
     # An additional dummy atom is added at the core center of mass for orientating the ligands
@@ -113,7 +113,7 @@ def prep_ligand_1(ligand_list, path, arg):
     return <list>[<plams.Molecule>]: A copy of all ligands for each identified functional group.
     """
     # Open the ligand database and check if the specified ligand(s) is already present
-    if arg['use_database']:
+    if arg.use_database:
         ligand_database = read_database(path, database_name='Ligand_database')
     else:
         ligand_database = None
@@ -130,8 +130,8 @@ def prep_ligand_1(ligand_list, path, arg):
             init_solv(ligand, arg.ligand_crs)
 
     # Write new entries to the ligand database
-    if arg['use_database']:
-        if not arg['ligand_opt']:
+    if arg.use_database:
+        if not arg.ligand_opt:
             for ligand in ligand_list:
                 ligand.properties.entry = True
         write_database(ligand_list, ligand_database, path, mol_type='ligand')
@@ -165,7 +165,7 @@ def prep_ligand_2(ligand, database, arg):
         ligand_list = [find_substructure_split(ligand, ligand.properties.dummies, split)]
 
     # Handles all interaction between the database, the ligand and the ligand optimization
-    ligand_list = [optimize_ligand(ligand, database, arg['ligand_opt']) for
+    ligand_list = [optimize_ligand(ligand, database, arg.ligand_opt) for
                    ligand in ligand_list if ligand_list]
 
     return ligand_list
@@ -187,7 +187,7 @@ def prep_qd(qd_list, path, arg):
         raise IndexError('No valid quantum dots found, aborting')
 
     # Open the quantum dot database and check if the specified quantum dot(s) is already present
-    if arg['use_database']:
+    if arg.use_database:
         qd_database = read_database(path, database_name='QD_database')
     else:
         qd_database = None
@@ -198,7 +198,7 @@ def prep_qd(qd_list, path, arg):
         qd_list = list(init_qd_opt(qd, qd_database, arg.qd_opt) for qd in qd_list)
 
     # Calculate the interaction between ligands on the quantum dot surface
-    if arg['qd_int']:
+    if arg.qd_int:
         print(get_time() + 'calculating ligand distortion and inter-ligand interaction...')
         qd_list = list(init_asa(qd) for qd in qd_list)
 
@@ -212,8 +212,8 @@ def prep_qd(qd_list, path, arg):
             df.to_excel(join(path, qd.properties.name + '_BDE.xlsx'))
 
     # Write the new quantum dot results to the quantum dot database
-    if arg['use_database']:
-        if not arg['qd_opt']:
+    if arg.use_database:
+        if not arg.qd_opt:
             for qd in qd_list:
                 qd.properties.entry = True
         write_database(qd_list, qd_database, path, mol_type='qd')
