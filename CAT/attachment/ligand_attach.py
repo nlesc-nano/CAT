@@ -116,9 +116,6 @@ def rot_mol_angle(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=Fa
             mult = (np.asarray(bond_length) / np.linalg.norm(vec2, axis=1))[:, None]
             xyz_array -= (vec2 * mult)[:, None, :]
 
-    # Return a n*3 or m*n*3 array
-    if xyz_array.shape[0] == 1:
-        return xyz_array[0]
     return xyz_array
 
 
@@ -201,10 +198,6 @@ def rot_mol_axis(xyz_array, vec, dist_to_self=True, atoms_other=None, step=(1/16
             ret_array[i] = xyz[idx_min]
             min_dist[i] = np.nanmin(dist_array[idx_min])
         xyz_array = ret_array
-
-    # Reshape a m*n*3 array to a n*3 array if m == 1
-    if xyz_array.shape[0] == 1:
-        xyz_array = xyz_array[0]
 
     if ret_min_dist:
         return xyz_array, min_dist

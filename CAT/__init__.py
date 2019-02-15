@@ -12,7 +12,7 @@ from .analysis import (
 )
 
 from .attachment import (
-    qd_opt, optimize_ligand, ligand_to_qd, bob, substitution, multi_substitution
+    qd_opt, optimize_ligand, ligand_to_qd, bob_ligand, bob_core, substitution, multi_substitution
 )
 
 from .data_handling import (
@@ -29,6 +29,7 @@ __all__ = [
     'init_bde', 'get_thermo', 'get_entropy', 'dissociate_ligand', 'init_solv',
 
     'qd_opt', 'optimize_ligand', 'ligand_to_qd', 'substitution', 'multi_substitution',
+    'bob_ligand', 'bob_core',
 
     'read_database', 'compare_database', 'write_database', 'export_mol', 'read_mol',
     'set_prop', 'sanitize_arg_dict',
@@ -36,6 +37,4 @@ __all__ = [
     'prep',
 
     'get_template',
-
-    'bob', 'substitution'
 ]

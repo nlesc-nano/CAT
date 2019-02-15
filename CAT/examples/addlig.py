@@ -4,7 +4,7 @@ from os.path import (join, exists)
 
 from scm.plams.core.functions import read_molecules
 
-from CAT.attachment.dye import bob, substitution
+from CAT.attachment.dye import bob_ligand, bob_core, substitution
 
 
 ##################################          input             #####################################
@@ -15,7 +15,7 @@ start = time.time()
 
 # Path to the working folder where are prepared molecules and where folder with new coordinares
 # will be made with the specific name
-path = os.get_cwd()
+path = '/Users/basvanbeek/Downloads/dye'
 input_ligands = read_molecules(join(path, 'LIGANDS'))
 input_ligands = list(input_ligands.values())
 input_cores = read_molecules(join(path, 'CORES'))
@@ -24,12 +24,12 @@ input_cores = list(input_cores.values())
 # Bob does what Bob has to do.
 for lig in input_ligands:
     lig.guess_bonds()
-    bob(lig, ligand=True)
+    bob_ligand(lig)
 
 # As it is written so shall it be.
 for core in input_cores:
     core.guess_bonds()
-    bob(core)
+    bob_core(core)
 
 ##############################          output folder             #################################
 
@@ -44,6 +44,8 @@ if not exists(join(path, new_dir)):
 
 # Generate structures by combining ligands and cores
 monosub_molecules = substitution(input_ligands, input_cores)
+# di_molecules = substitution(input_ligands, monosub_molecules)
+# tri_molecules = substitution(input_ligands, di_molecules)
 
 # Export molecules to if the minimum core/ligand distance is smaller than min_dist
 min_dist = 0.0
