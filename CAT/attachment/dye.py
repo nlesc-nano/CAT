@@ -28,7 +28,7 @@ def connect_ligands_to_core(lig_dict, core):
     try:
         core_vec = core.properties.vec[0]
     except IndexError:
-        return
+        return []
 
     # Construct keyword arguments
     kwarg1, kwarg2 = get_args(core, lig_idx)
@@ -118,10 +118,7 @@ def substitution(input_ligands, input_cores, rep=False):
     lig_vec = np.array([lig.properties.vec for lig in input_ligands])
     lig_dict = {'lig_list': input_ligands, 'lig_idx': lig_idx, 'lig_vec': lig_vec}
 
-    if not rep:
-        ret = [connect_ligands_to_core(lig_dict, core) for core in input_cores]
-    else:
-        ret = (connect_ligands_to_core(lig_dict, core)[i:] for i, core in enumerate(input_cores))
+    ret = (connect_ligands_to_core(lig_dict, core) for core in input_cores)
     return list(chain.from_iterable(ret))
 
 
