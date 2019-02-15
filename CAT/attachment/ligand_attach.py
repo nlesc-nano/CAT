@@ -1,16 +1,14 @@
 """ A module designed for attaching ligands to cores. """
 
-__all__ = ['ligand_to_qd', 'qd_opt']
+__all__ = ['ligand_to_qd']
 
 import numpy as np
 from scipy.spatial.distance import cdist
 
 from scm.plams.mol.molecule import Molecule
 from scm.plams.core.settings import Settings
-import scm.plams.interfaces.molecule.rdkit as molkit
 
 from ..qd_functions import (merge_mol, get_atom_index)
-from ..analysis.jobs import ams_job_uff_opt
 from ..data_handling.mol_export import export_mol
 
 
@@ -58,10 +56,10 @@ def rot_mol_angle(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=Fa
     """
     Define a m*3*3 rotation matrix using vec1 and vec2.
     Depending on the dimension of xyz_array, vec1 & vec2 the following operations can be conducted:
-        Rotate 1 molecule by 1 rotation matrix     >  1 rotated molecule
-        Rotate 1 molecule by m rotation matrices   >  m copies of the molecule, each rotated differently
-        Rotate m molecules by 1 rotation matrix    >  m molecules rotated in an identical fashion
-        Rotate m molecules by m rotation matrices  >  m molecules, each rotated differently
+        Rotate 1 molecule by 1 rotation matrix    > 1 rotated molecule
+        Rotate 1 molecule by m rotation matrices  > m copies of the mol at different rotations
+        Rotate m molecules by 1 rotation matrix   > m molecules rotated in an identical fashion
+        Rotate m molecules by m rotation matrices > m molecules, each rotated differently
 
     Numpy arrays and (nested) iterable consisting of PLAMS atoms can be used interchangeably for
     xyz_array and mol_other; Atomic coordinates will be extracted if necessary and cast into an
@@ -229,34 +227,6 @@ def array_to_qd(mol, xyz_array, mol_other=False):
     if not mol_other:
         return mol_list
     mol_other.merge_mol(mol_list)
-
-
-def qd_opt(mol, database, arg):
-    """
-    Check if the to be optimized quantom dot has previously been optimized.
-    Pull if the structure from the database if it has, otherwise perform a geometry optimization.
-    mol <plams.Molecule> The input quantom dot with the 'name' property.
-    database <pd.DataFrame>: A database of previous calculations.
-    return <plams.Molecule>: An optimized quantom dot.
-    """
-    name = mol.properties.name.rsplit('.', 1)[0]
-    if database is None:
-        mol = ams_job_uff_opt(mol, arg['maxiter'])
-        mol.properties.entry = False
-    elif database.empty or name not in list(database['Quantum_dot_name']):
-        mol = ams_job_uff_opt(mol, arg['maxiter'])
-        mol.properties.entry = True
-    else:
-        index = list(database['Quantum_dot_name']).index(name)
-        try:
-            mol_new = molkit.readpdb(database['Quantum_dot_opt_pdb'][index])
-            mol_new.properties = mol.properties
-            mol = mol_new
-        except FileNotFoundError:
-            mol = ams_job_uff_opt(mol, arg['maxiter'])
-            mol.properties.entry = True
-
-    return mol
 
 
 def ligand_to_qd(core, ligand, qd_folder):

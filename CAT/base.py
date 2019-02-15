@@ -1,4 +1,4 @@
-""" A module handling the interaction with all other modules, functing as recipe. """
+""" A module handling the interaction with all other modules, functioning as recipe. """
 
 __all__ = ['prep']
 
@@ -10,15 +10,16 @@ from scm.plams.mol.atom import Atom
 from scm.plams.core.errors import MoleculeError
 
 from .misc import (check_sys_var, get_time, create_dir)
-from .qd_functions import (to_atnum, find_substructure, find_substructure_split)
+from .qd_functions import (find_substructure, find_substructure_split)
 from .analysis.asa import init_asa
-from .analysis.jobs import ams_job_mopac_crs
 from .analysis.ligand_bde import init_bde
+from .analysis.ligand_solvation import init_solv
 from .data_handling.database import (read_database, write_database)
 from .data_handling.mol_import import read_mol
-from .data_handling.sanitize_input import (get_job_settings, lower_dict_keys)
+from .data_handling.sanitize_input import sanitize_arg_dict
+from .attachment.qd_opt import init_qd_opt
 from .attachment.ligand_opt import optimize_ligand
-from .attachment.ligand_attach import (ligand_to_qd, qd_opt)
+from .attachment.ligand_attach import ligand_to_qd
 
 
 def prep(input_ligands, input_cores, path, arg):
@@ -36,8 +37,10 @@ def prep(input_ligands, input_cores, path, arg):
     time_start = time.time()
     print('\n')
 
+    arg = sanitize_arg_dict(arg)
+
     # Create the result directories (if they do not exist) and ligand and core lists
-    cor_dir, lig_dir, qd_dir = [create_dir(name, path) for name in arg['dir_name_list']]
+    cor_dir, lig_dir, qd_dir = [create_dir(name, path) for name in arg.dir_name_list]
     ligand_list = read_mol(input_ligands, lig_dir)
     core_list = read_mol(input_cores, cor_dir, is_core=True)
 
@@ -78,14 +81,14 @@ def prep_core(core, arg):
     arg <dict>: A dictionary containing all (optional) arguments.
     """
     # Checks the if the dummy is a string (atomic symbol) or integer (atomic number)
-    dummy = to_atnum(arg['dummy'])
+    dummy = arg.dummy
 
     # Returns the indices (integer) of all dummy atom ligand placeholders in the core
     # An additional dummy atom is added at the core center of mass for orientating the ligands
     if not core.properties.dummies:
         core.properties.dummies = [atom for atom in core.atoms if atom.atnum == dummy]
     else:
-         core.properties.dummies = [core[index] for index in core.properties.dummies]
+        core.properties.dummies = [core[index] for index in core.properties.dummies]
 
     # Delete all core dummy atoms
     for at in reversed(core.properties.dummies):
@@ -110,25 +113,25 @@ def prep_ligand_1(ligand_list, path, arg):
     return <list>[<plams.Molecule>]: A copy of all ligands for each identified functional group.
     """
     # Open the ligand database and check if the specified ligand(s) is already present
-    if arg['use_database']:
+    if arg.use_database:
         ligand_database = read_database(path, database_name='Ligand_database')
     else:
         ligand_database = None
 
     # Optimize all ligands and find their functional groups
     ligand_list = list(chain.from_iterable(prep_ligand_2(ligand, ligand_database, arg) for
-                                                     ligand in ligand_list))
+                                           ligand in ligand_list))
     if not ligand_list:
         raise IndexError('No valid ligand functional groups found, aborting run')
 
-    if arg['ligand_crs']:
+    if arg.ligand_crs:
         check_sys_var()
         for ligand in ligand_list:
-            ams_job_mopac_crs(ligand)
+            init_solv(ligand, arg.ligand_crs)
 
     # Write new entries to the ligand database
-    if arg['use_database']:
-        if not arg['ligand_opt']:
+    if arg.use_database:
+        if not arg.ligand_opt:
             for ligand in ligand_list:
                 ligand.properties.entry = True
         write_database(ligand_list, ligand_database, path, mol_type='ligand')
@@ -154,7 +157,7 @@ def prep_ligand_2(ligand, database, arg):
         ligand_list = find_substructure(ligand, split)
     else:
         if len(ligand.properties.dummies) == 1:
-            ligand.properties.dummies = ligand.properties.dummies[0] -1
+            ligand.properties.dummies = ligand.properties.dummies[0] - 1
             split = False
         elif len(ligand.properties.dummies) == 2:
             ligand.properties.dummies = [i - 1 for i in ligand.properties.dummies]
@@ -162,7 +165,7 @@ def prep_ligand_2(ligand, database, arg):
         ligand_list = [find_substructure_split(ligand, ligand.properties.dummies, split)]
 
     # Handles all interaction between the database, the ligand and the ligand optimization
-    ligand_list = [optimize_ligand(ligand, database, arg['ligand_opt']) for
+    ligand_list = [optimize_ligand(ligand, database, arg.ligand_opt) for
                    ligand in ligand_list if ligand_list]
 
     return ligand_list
@@ -184,37 +187,33 @@ def prep_qd(qd_list, path, arg):
         raise IndexError('No valid quantum dots found, aborting')
 
     # Open the quantum dot database and check if the specified quantum dot(s) is already present
-    if arg['use_database']:
+    if arg.use_database:
         qd_database = read_database(path, database_name='QD_database')
     else:
         qd_database = None
 
     # Optimize the qd with the core frozen
-    if arg['qd_opt']:
+    if arg.qd_opt:
         check_sys_var()
-        qd_list = list(qd_opt(qd, qd_database, arg) for qd in qd_list)
+        qd_list = list(init_qd_opt(qd, qd_database, arg.qd_opt) for qd in qd_list)
 
     # Calculate the interaction between ligands on the quantum dot surface
-    if arg['qd_int']:
+    if arg.qd_int:
         print(get_time() + 'calculating ligand distortion and inter-ligand interaction...')
         qd_list = list(init_asa(qd) for qd in qd_list)
 
     # Calculate the interaction between ligands on the quantum dot surface upon removal of CdX2
-    if arg['qd_dissociate']:
-        # Extract the job type and input settings
-        job1, s1, job2, s2 = get_job_settings(arg['qd_dissociate'], jobs=2)
-        s1, s2 = lower_dict_keys(s1), lower_dict_keys(s2)
-
+    if arg.qd_dissociate:
         # Start the BDE calculation
         print(get_time() + 'calculating ligand dissociation energy...')
         for qd in qd_list:
-            qd.properties.energy.BDE = init_bde(qd, job1=job1, job2=job2, s1=s1, s2=s2)
+            qd.properties.energy.BDE = init_bde(qd, arg.qd_dissociate)
             df = qd.properties.energy.BDE
             df.to_excel(join(path, qd.properties.name + '_BDE.xlsx'))
 
     # Write the new quantum dot results to the quantum dot database
-    if arg['use_database']:
-        if not arg['qd_opt']:
+    if arg.use_database:
+        if not arg.qd_opt:
             for qd in qd_list:
                 qd.properties.entry = True
         write_database(qd_list, qd_database, path, mol_type='qd')

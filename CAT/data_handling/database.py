@@ -81,17 +81,24 @@ def write_database(mol_list, database, path, mol_type='ligand'):
                      os.path.join(prop.path, prop.name.split('@')[0]) + '.pdb',
                      os.path.join(prop.path, prop.name.split('@')[0]) + '.opt.pdb',
                      prop.smiles,
-                     prop.surface,
-                     prop.volume,
-                     prop.energy.Acetone,
-                     prop.energy.Acetonitrile,
-                     prop.energy.DMF,
-                     prop.energy.DMSO,
-                     prop.energy.EtOAc,
-                     prop.energy.Ethanol,
-                     prop.energy.Hexane,
-                     prop.energy.Toluene,
-                     prop.energy.Water])
+                     prop.energy.E_solv.Acetone,
+                     prop.energy.E_solv.Acetonitrile,
+                     prop.energy.E_solv.DMF,
+                     prop.energy.E_solv.DMSO,
+                     prop.energy.E_solv.EtOAc,
+                     prop.energy.E_solv.Ethanol,
+                     prop.energy.E_solv.Hexane,
+                     prop.energy.E_solv.Toluene,
+                     prop.energy.E_solv.Water,
+                     prop.gamma_solv.Acetone,
+                     prop.gamma_solv.Acetonitrile,
+                     prop.gamma_solv.DMF,
+                     prop.gamma_solv.DMSO,
+                     prop.gamma_solv.EtOAc,
+                     prop.gamma_solv.Ethanol,
+                     prop.gamma_solv.Hexane,
+                     prop.gamma_solv.Toluene,
+                     prop.gamma_solv.Water])
             elif mol_type == 'qd':
                 database_entries.append(
                     [prop.name,
@@ -106,8 +113,11 @@ def write_database(mol_list, database, path, mol_type='ligand'):
         database_entries = list(zip(*database_entries))
         if mol_type == 'ligand':
             keys = ('Ligand_name', 'Ligand_group', 'Ligand_formula', 'Ligand_pdb', 'Ligand_opt_pdb',
-                    'Ligand_SMILES', 'Ligand_surface', 'Ligand_volume', 'Acetone', 'Acetonitrile',
-                    'DMF', 'DMSO', 'EtOAc', 'Ethanol', 'Hexane', 'Toluene', 'Water')
+                    'Ligand_SMILES', 'Gsolv_Acetone', 'Gsolv_Acetonitrile', 'Gsolv_DMF',
+                    'Gsolv_DMSO', 'Gsolv_EtOAc', 'Gsolv_Ethanol', 'Gsolv_Hexane', 'Gsolv_Toluene',
+                    'Gsolv_Water',
+                    'Gamma_Acetone', 'Gamma_Acetonitrile', 'Gamma_DMF', 'Gamma_DMSO',
+                    'Gamma_EtOAc', 'Gamma_Ethanol', 'Gamma_Hexane', 'Gamma_Toluene', 'Gamma_Water')
             name = 'Ligand_database'
             sheet_name = 'Ligand'
         if mol_type == 'qd':

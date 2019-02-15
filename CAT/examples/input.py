@@ -2,7 +2,7 @@
 
 import os
 import yaml
-import CAT.base as CAT
+import CAT.base
 
 
 # Mandatory arguments: input_cores, input ligands & path will have to be specified by the user
@@ -12,12 +12,7 @@ path = '/Users/basvanbeek/Documents/CdSe/Week_5'
 input_cores = yaml.load("""
 -   - Cd68Se55.xyz
     - guess_bonds: False
-    - core_indices: [130, 149, 137, 143]
 """)
-
-# Cd176Se147.xyz    - core_indices: [338, 375, 327, 372, 341, 355, 374, 356, 340]
-# Cd68Se55.xyz    - core_indices: [130, 149, 137, 143]
-
 
 # The input ligands from path/ligand/
 input_ligands = yaml.load("""
@@ -28,18 +23,14 @@ input_ligands = yaml.load("""
 argument_dict = {
     'dir_name_list': ('core', 'ligand', 'QD'),
     'dummy': 'Cl',
-    'use_database': False,
+    'use_database': True,
     'ligand_opt': True,
-    'ligand_crs': True,
-    'qd_opt': True,
-    'qd_int': True,
-    'qd_dissociate': {
-        'job1': None, 's1': None,
-        'job2': None, 's2': None
-    },
-    'maxiter': 1000,
+    'ligand_crs': False,
+    'qd_opt': False,
+    'qd_int': False,
+    'qd_dissociate': False,
     'split': True,
 }
 
 # Runs the script: the ligand, core and quantum dot lists are returned
-qd_list, core_list, ligand_list = CAT.prep(input_ligands, input_cores, path, argument_dict)
+qd_list, core_list, ligand_list = CAT.base.prep(input_ligands, input_cores, path, argument_dict)

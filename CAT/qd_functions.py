@@ -1,4 +1,4 @@
-""" A module with miscellaneous functions related to manipulating molecules and their geometries. """
+""" A module with misc functions related to manipulating molecules and their geometry. """
 
 __all__ = ['find_substructure', 'find_substructure_split', 'merge_mol',
            'adf_connectivity', 'fix_h', 'fix_carboxyl', 'from_mol_other', 'from_rdmol']

@@ -53,7 +53,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'qmflows'
+project = 'CAT'
 copyright = '2019, B. F. van Beek'
 author = 'B. F. van Beek'
 
@@ -171,7 +171,8 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'CAT', 'CAT Documentation',
-     author, 'CAT', 'One line description of project.',
+     author, 'CAT', 
+     'A collection of tools designed for the construction, and subsequent analysis, of various chemical compounds.',
      'Miscellaneous'),
 ]
 
@@ -180,8 +181,3 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/': None}
-
-rst_epilog = """
-.. |Package| replace:: :class:`~qmflows.packages.Package`
-.. |Settings| replace:: :class:`~qmwflows.Settings`
-"""

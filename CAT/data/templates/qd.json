@@ -21,6 +21,32 @@
          "compound": {"_h": null, "Frac1": 1.0}
         }
     },
+ "COSMO-ADF":
+    {"description": "The solvation block for COSMO(crs)-ADF calculations",
+     "pickle": false,
+     "input": 
+        {"fragments": "gas",
+         "solvation":
+            {"surf": "Delley",
+             "solv": "name=CRS cav0=0.0 cav1=0.0",
+             "charged": {"method": "Conj corr"},
+             "c-mat": "Exact",
+             "radii":
+                {"H": 1.35,
+                 "C": 2.00,
+                 "N": 1.83,
+                 "O": 1.72,
+                 "F": 1.72,
+                 "Si": 2.48,
+                 "S": 2.16,
+                 "P": 2.13,
+                 "Cl": 2.05,
+                 "Br": 2.16,
+                 "I": 2.32
+                }
+            }
+        }
+    },
  "COSMO-MOPAC":
     {"description": "COSMO(crs)-MOPAC with PM7 parameters",
      "pickle": false,

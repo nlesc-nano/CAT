@@ -15,8 +15,8 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit.Chem import AllChem
 
-from .qd_functions import (to_symbol, fix_carboxyl, get_bond_index, from_mol_other, from_rdmol)
 from .ligand_attach import (rot_mol_angle, sanitize_dim_2)
+from ..qd_functions import (to_symbol, fix_carboxyl, get_bond_index, from_mol_other, from_rdmol)
 from ..data_handling.database import compare_database
 from ..data_handling.mol_export import export_mol
 
@@ -166,7 +166,7 @@ def split_mol(plams_mol):
 
     # Remove even more undesired bonds
     for bond in reversed(bond_list):
-        n1, n2 = plams_mol.neighbors(bond.atom1), plams_mol.neighbors_mod(bond.atom2)
+        n1, n2 = plams_mol.neighbors_mod(bond.atom1), plams_mol.neighbors_mod(bond.atom2)
         if not (len(n1) >= 3 and len(n2) >= 2) and not (len(n1) >= 2 and len(n2) >= 3):
             bond_list.remove(bond)
 

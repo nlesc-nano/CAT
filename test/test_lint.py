@@ -7,10 +7,7 @@ import pycodestyle  # formerly known as pep8
 
 def test_pep8_conformance():
     """Test that we conform to PEP-8."""
-    check_paths = [
-        'CAT',
-        'tests',
-    ]
+    check_paths = ['CAT', 'test']
     exclude_paths = []
 
     print("PEP8 check of directories: {}\n".format(', '.join(check_paths)))
@@ -21,7 +18,7 @@ def test_pep8_conformance():
         for i, path in enumerate(paths):
             paths[i] = os.path.join(package_root, path)
 
-    style = pycodestyle.StyleGuide()
+    style = pycodestyle.StyleGuide(max_line_length=100)
     style.options.exclude.extend(exclude_paths)
 
     success = style.check_files(check_paths).total_errors == 0

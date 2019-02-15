@@ -1,9 +1,13 @@
 """ A module with miscellaneous functions. """
 
-__all__ = ['check_sys_var', 'dict_concatenate', 'create_dir', 'get_time']
+__all__ = ['check_sys_var', 'dict_concatenate', 'create_dir', 'get_time', 'get_template']
 
 import os
 import time
+import json
+import pkg_resources as pkg
+
+from scm.plams.core.settings import Settings
 
 
 def get_time():
@@ -51,3 +55,13 @@ def create_dir(dir_name, path=os.getcwd()):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
     return dir_path
+
+
+def get_template(template_name):
+    """
+    Grab a template and return it as Settings object.
+    """
+    path = os.path.join('data/templates', template_name)
+    xs = pkg.resource_string('CAT', path)
+    s = json.loads(xs.decode())
+    return Settings(s)
