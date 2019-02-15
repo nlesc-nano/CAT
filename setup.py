@@ -43,11 +43,8 @@ setup(
     install_requires=[
         'h5py', 'numpy', 'noodles==0.3.1', 'pymonad', 'schema',
         'pyparsing', 'filelock', 'openpyxl', 'pyyaml', 'xlrd', 'scipy',
-        'plams@git+https://github.com/SCM-NV/PLAMS@rdkit_update#egg=plams-1.2,
+        'plams@git+https://github.com/SCM-NV/PLAMS@rdkit_update#egg=plams-1.2',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master#egg=qmflows-0.3.0'
-    ],
-    dependency_links=[
-        'git+https://github.com/SCM-NV/PLAMS@master#egg=plams-1.2'
     ],
     setup_requires=[
         'pytest-runner',
