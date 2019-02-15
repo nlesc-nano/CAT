@@ -12,7 +12,7 @@ from .analysis import (
 )
 
 from .attachment import (
-    qd_opt, optimize_ligand, ligand_to_qd, bob, substitution
+    qd_opt, optimize_ligand, ligand_to_qd, bob, substitution, multi_substitution
 )
 
 from .data_handling import (
@@ -28,7 +28,7 @@ __all__ = [
     'init_asa', 'CRSJob', 'CRSResults', 'job_single_point', 'job_geometry_opt', 'job_freq',
     'init_bde', 'get_thermo', 'get_entropy', 'dissociate_ligand', 'init_solv',
 
-    'qd_opt', 'optimize_ligand', 'ligand_to_qd',
+    'qd_opt', 'optimize_ligand', 'ligand_to_qd', 'substitution', 'multi_substitution',
 
     'read_database', 'compare_database', 'write_database', 'export_mol', 'read_mol',
     'set_prop', 'sanitize_arg_dict',

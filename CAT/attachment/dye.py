@@ -1,6 +1,8 @@
 """ A modules for combining (organic) molecules. """
 
-__all__ = ['bob', 'monosubstitution']
+__all__ = ['bob', 'monosubstitution', 'multi_substitution']
+
+from itertools import chain
 
 import numpy as np
 
@@ -21,10 +23,17 @@ def connect_ligands_to_core(ligand_list, core):
     lig_h = [lig.properties.h[0] for lig in ligand_list]
     lig_other = [lig.properties.other[0] for lig in ligand_list]
     core_h = core.properties.h.pop(0)
+    core.delete_atom(core_h)
     core_other = core.properties.other.pop(0)
 
+    # Return if core.properties.h and core.properties.other have been exhausted
+    if not core_h or not core_other:
+        print('No more marked atoms available in core.properties.name')
+        return None
+
     # Define ligand and core vector
-    lig_vec = Molecule().as_array(atom_subset=lig_other) - Molecule().as_array(atom_subset=lig_h)
+    dummy = Molecule()
+    lig_vec = -1 * (dummy.as_array(atom_subset=lig_other) - dummy.as_array(atom_subset=lig_h))
     core_vec = np.array(core_h.vector_to(core_other))
 
     # Create an array with the indices of lig_other
@@ -42,6 +51,8 @@ def connect_ligands_to_core(ligand_list, core):
     lig_array, min_dist_array = rot_mol_axis(lig_array, core_vec, **kwarg2)
 
     ret = []
+    if len(lig_array.shape) == 2:
+        lig_array = lig_array[None, :, :]
     for lig, xyz, min_dist in zip(ligand_list, lig_array, min_dist_array):
         lig_cp = lig.copy()
         lig_cp.from_array(xyz)
@@ -71,7 +82,7 @@ def get_bond_lengths(at1, at2, length_dict, length=1.50):
         return length
 
 
-def bob(mol):
+def bob(mol, ligand=False):
     """
     Marks a PLAMS molecule with the .properties.h & .properties.other attributes.
     mol <plams.Molecule>: An input molecule with the plams_mol.properties.comment attribute.
@@ -80,30 +91,50 @@ def bob(mol):
     comment = comment.split()
 
     # Mark other
-    mol.properties.other = []
+    mol.properties.h = []
     for i in comment:
         try:
             at = mol[int(i)]
-            mol.properties.other.append(at)
+            mol.properties.h.append(at)
         except (IndexError, ValueError) as ex:
             print(ex)
             pass
 
     # Mark hydrogens attached to other
-    mol.properties.h = []
-    for at in mol.properties.other:
-        for bond in at.bonds:
-            mol.properties.h.append(bond.other_end(at))
+    mol.properties.other = []
+    for at in mol.properties.h:
+        at_other = at.bonds[0].other_end(at)
+        mol.properties.other.append(at_other)
+
+    # Delete hydrogens
+    if ligand:
+        for at in mol.properties.h:
+            mol.delete_atom(at)
 
 
 
-def substitution(input_ligands, input_cores):
+def substitution(input_ligands, input_cores, rep=False):
     """
     To every list of cores one type of ligand is added.
     Mono_subs contaions of key = name of molecule, value = (coordinates of new molecule,
         shortest distance between core and ligand after its connection).
     """
-    return [connect_ligands_to_core(input_ligands, core) for core in input_cores]
+    if not rep:
+        ret = (connect_ligands_to_core(input_ligands, core) for core in input_cores)
+    else:
+        ret = (connect_ligands_to_core(input_ligands, core)[i:] for i, core in enumerate(input_cores))
+    return list(chain.from_iterable(ret))
+
+
+def multi_substitution(input_ligands, input_cores, n=1):
+    """ Attach ligands to cores; repeat this process n times. """
+    ret = []
+    mol_list = input_cores
+    for _ in range(n):
+        mol_list = substitution(input_ligands, mol_list)
+        ret.append(mol_list)
+    return list(chain.from_iterable(ret))
+
 
 
 """
