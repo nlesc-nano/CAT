@@ -23,11 +23,70 @@ from scm.plams.core.basejob import Job
 from scm.plams.core.settings import Settings
 from scm.plams.tools.periodic_table import PeriodicTable
 
-from qmflows.templates.templates import get_template
+from .. import misc as CAT
 
 from ..analysis.crs import CRSJob
 from ..misc import get_time
 from ..qd_functions import to_atnum
+
+
+def get_default_mol_dict():
+    return Settings({'guess_bonds': False,
+                     'is_core': False,
+                     'column': 0,
+                     'row': 0,
+                     'indices': [],
+                     'sheet_name': 'Sheet1',
+                     'file_type': None,
+                     'name': None,
+                     'path': None
+                     })
+
+
+def sanitize_mol_list(mol_list):
+    """ Validate the input of *mol_list*; returns a <Settings> object with validated input. """
+    ret = Settings()
+    mol_dict = get_default_arg_dict()
+    for i, item in enumerate(mol_list):
+        i = str(i)
+        ret.i = mol_dict.copy()
+        if isinstance(item, dict):
+            ret.i.update(item)
+            ret.i.name = val_string(str(item.keys()))
+            ret.i.guess_bonds = val_bool(ret.i.guess_bonds)
+            ret.i.is_core = val_bool(ret.i.is_core)
+            ret.i.column = val_int(ret.i.column)
+            ret.i.row = val_int(ret.i.row)
+            ret.i.sheet_name = val_string(ret.i.sheet_name)
+            if 'core_indices' in item.keys():
+                ret.i.indices = ret.i.core_indices
+                ret.i.indices = val_indices(ret.i.indices)
+                del ret.i.core_indices
+            if 'ligand_indices' in item.keys():
+                ret.i.indices = ret.i.ligand_indices
+                ret.i.indices = val_indices(ret.i.indices)
+                del ret.i.core_indices
+        else:
+            ret.i.name = str(item)
+
+    return ret
+
+
+def val_int(integer):
+    """ Validate a positive integer; returns an <int>. """
+    schema = Schema(And([int], lambda n: n >= 1))
+    return schema.validate(integer)
+
+
+def val_string(string):
+    """ Validate a string; returns a <str>. """
+    return Schema(str).validate(string)
+
+
+def val_indices(indices):
+    """ Validate an iterable consisting if integers; returns a <tuple> consisting of 3 <str>. """
+    schema = Schema(And([int], Use(tuple)))
+    return schema.validate(list(indices))
 
 
 str_to_class = {'adf': ADFJob, 'adfjob': ADFJob,
@@ -44,12 +103,6 @@ str_to_class = {'adf': ADFJob, 'adfjob': ADFJob,
                'gamess': GamessJob, 'gamessjob': GamessJob,
                'dftbplus': DFTBPlusJob, 'dftbplusjob': DFTBPlusJob,
                'crs': CRSJob, 'cosmo-rs': CRSJob, 'crsjob': CRSJob}
-
-
-def init_mol(mol_list):
-    """ Validate the input of *mol_list*; returns a <Settings> object with validated input. """
-    ret = Settings()
-    return ret
 
 
 def get_default_arg_dict():
@@ -80,25 +133,25 @@ def sanitize_arg_dict(arg_dict):
     ret.qd_int = val_bool(argument_dict['qd_int'])
 
     # Validate arguments containing job recipes
-    s_crs = get_template('qd.json')['COSMO-RS activity coefficient']
-    s_crs.update(get_template('crs.json')['MOPAC PM6'])
+    s_crs = CAT.get_template('qd.json')['COSMO-RS activity coefficient']
+    s_crs.update(CAT.get_template('crs.json')['MOPAC PM6'])
     ret.ligand_crs = val_job(argument_dict['ligand_crs'],
                              job1=AMSJob,
                              job2=CRSJob,
-                             s1=get_template('qd.json')['COSMO-MOPAC'],
+                             s1=CAT.get_template('qd.json')['COSMO-MOPAC'],
                              s2=s_crs)
 
     ret.qd_opt = val_job(argument_dict['qd_opt'],
                          job1=AMSJob,
                          job2=AMSJob,
-                         s1=get_template('qd.json')['UFF'],
-                         s2=get_template('qd.json')['UFF'])
+                         s1=CAT.get_template('qd.json')['UFF'],
+                         s2=CAT.get_template('qd.json')['UFF'])
 
     ret.qd_dissociate = val_job(argument_dict['qd_dissociate'],
                                 job1=AMSJob,
                                 job2=AMSJob,
-                                s1=get_template('qd.json')['MOPAC'],
-                                s2=get_template('qd.json')['UFF'])
+                                s1=CAT.get_template('qd.json')['MOPAC'],
+                                s2=CAT.get_template('qd.json')['UFF'])
 
     return ret
 
