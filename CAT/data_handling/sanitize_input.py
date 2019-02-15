@@ -89,20 +89,21 @@ def val_indices(indices):
     return schema.validate(list(indices))
 
 
-str_to_class = {'adf': ADFJob, 'adfjob': ADFJob,
-               'ams': AMSJob, 'amsjob': AMSJob,
-               'uff': UFFJob, 'uffjob': UFFJob,
-               'band': BANDJob, 'bandjob': BANDJob,
-               'dftb': DFTBJob, 'dftbjob': DFTBJob,
-               'mopac': MOPACJob, 'mopacjob': MOPACJob,
-               'reaxff': ReaxFFJob, 'reaxffjob': ReaxFFJob,
-
-               'cp2k': Cp2kJob, 'cp2kjob': Cp2kJob,
-               'orca': ORCAJob, 'orca': ORCAJob,
-               'dirac': DiracJob, 'diracjob': DiracJob,
-               'gamess': GamessJob, 'gamessjob': GamessJob,
-               'dftbplus': DFTBPlusJob, 'dftbplusjob': DFTBPlusJob,
-               'crs': CRSJob, 'cosmo-rs': CRSJob, 'crsjob': CRSJob}
+str_to_class = {
+    'adf': ADFJob, 'adfjob': ADFJob,
+    'ams': AMSJob, 'amsjob': AMSJob,
+    'uff': UFFJob, 'uffjob': UFFJob,
+    'band': BANDJob, 'bandjob': BANDJob,
+    'dftb': DFTBJob, 'dftbjob': DFTBJob,
+    'mopac': MOPACJob, 'mopacjob': MOPACJob,
+    'reaxff': ReaxFFJob, 'reaxffjob': ReaxFFJob,
+    'cp2k': Cp2kJob, 'cp2kjob': Cp2kJob,
+    'orca': ORCAJob, 'orca': ORCAJob,
+    'dirac': DiracJob, 'diracjob': DiracJob,
+    'gamess': GamessJob, 'gamessjob': GamessJob,
+    'dftbplus': DFTBPlusJob, 'dftbplusjob': DFTBPlusJob,
+    'crs': CRSJob, 'cosmo-rs': CRSJob, 'crsjob': CRSJob
+}
 
 
 def get_default_arg_dict():

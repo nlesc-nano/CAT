@@ -16,7 +16,7 @@ from .attachment import (
 )
 
 from .data_handling import (
-    read_database, compare_database, write_database, export_mol, read_mol, 
+    read_database, compare_database, write_database, export_mol, read_mol,
     set_prop, sanitize_arg_dict
 )
 
@@ -27,12 +27,12 @@ from .misc import get_template
 __all__ = [
     'init_asa', 'CRSJob', 'CRSResults', 'job_single_point', 'job_geometry_opt', 'job_freq',
     'init_bde', 'get_thermo', 'get_entropy', 'dissociate_ligand', 'init_solv',
-  
+
     'qd_opt', 'optimize_ligand', 'ligand_to_qd',
-  
-    'read_database', 'compare_database', 'write_database', 'export_mol', 'read_mol', 
+
+    'read_database', 'compare_database', 'write_database', 'export_mol', 'read_mol',
     'set_prop', 'sanitize_arg_dict',
-    
+
     'prep',
 
     'get_template'

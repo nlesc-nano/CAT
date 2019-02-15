@@ -20,7 +20,6 @@ from ..qd_functions import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
 
 
-
 def init_bde(mol, job_recipe):
     """ Initialize the bond dissociation energy calculation; involves 4 distinct steps:
     1.  Take two ligands X and another atom from the core Y (e.g. Cd) and create YX2.
