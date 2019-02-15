@@ -7,7 +7,7 @@ from scm.plams.core.functions import read_molecules
 from .attachment.dye import bob, monosubstitution
 
 
-##############################          input             #################################
+##################################          input             #####################################
 
 
 # Time measuring
