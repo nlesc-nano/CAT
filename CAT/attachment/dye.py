@@ -9,7 +9,7 @@ from scm.plams import Molecule
 from .ligand_attach import rot_mol_angle, rot_mol_axis
 
 
-def prep_for_rot(ligand_list, core):
+def connect_ligands_to_core(ligand_list, core):
     """ Attaches multiple ligands to multiple copies of a single core.
     Returns a list of cores with attached ligands, each with the properties.min_distance attribute
     containing the smallest distance between ligand and core.
@@ -97,13 +97,13 @@ def bob(mol):
 
 
 
-def monosubstitution(input_ligands, input_cores):
+def substitution(input_ligands, input_cores):
     """
     To every list of cores one type of ligand is added.
     Mono_subs contaions of key = name of molecule, value = (coordinates of new molecule,
         shortest distance between core and ligand after its connection).
     """
-    return [prep_for_rot(input_ligands, core) for core in input_cores]
+    return [connect_ligands_to_core(input_ligands, core) for core in input_cores]
 
 
 """

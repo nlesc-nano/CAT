@@ -4,7 +4,7 @@ from os.path import (join, exists)
 
 from scm.plams.core.functions import read_molecules
 
-from .attachment.dye import bob, monosubstitution
+from .attachment.dye import bob, substitution
 
 
 ##################################          input             #####################################
@@ -43,7 +43,7 @@ if not exists(join(path, new_dir)):
 
 
 # Generate structures by combining ligands and cores
-monosub_molecules = monosubstitution(input_ligands, input_cores)
+monosub_molecules = substitution(input_ligands, input_cores)
 
 # Export molecules to if the minimum core/ligand distance is smaller than min_dist
 min_dist = 0.0
