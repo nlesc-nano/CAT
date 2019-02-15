@@ -13,12 +13,12 @@ from scm.plams.mol.atom import Atom
 from scm.plams.core.functions import (init, finish, config)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 
-from qmflows.templates.templates import get_template
-
+from .. import misc as CAT
 from .jobs import (job_single_point, job_geometry_opt, job_freq)
 from .ligand_dissociate import dissociate_ligand
 from ..qd_functions import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
+
 
 
 def init_bde(mol, job_recipe):
@@ -59,7 +59,7 @@ def get_bde_dE(tot, lig, core, job=None, s=None):
     # Switch to default settings if no job & s are <None>
     if job is None and s is None:
         job = AMSJob
-        s = get_template('qd.json')['MOPAC']
+        s = CAT.get_template('qd.json')['MOPAC']
     elif job is None or s is None:
         finish()
         raise TypeError('job & s should neither or both be None')
@@ -91,7 +91,7 @@ def get_bde_ddG(tot, lig, core, job=None, s=None):
     # Switch to default settings if no job & s are <None>
     if job is None and s is None:
         job = AMSJob
-        s = get_template('qd.json')['UFF']
+        s = CAT.get_template('qd.json')['UFF']
     elif job is None or s is None:
         finish()
         raise TypeError('job & s should neither or both be None')
