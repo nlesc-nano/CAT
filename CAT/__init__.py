@@ -20,9 +20,9 @@ from .data_handling import (
     set_prop, sanitize_arg_dict
 )
 
-from .base import (
-    prep
-)
+from .base import prep
+
+from .misc import get_template
 
 __all__ = [
     'init_asa', 'CRSJob', 'CRSResults', 'job_single_point', 'job_geometry_opt', 'job_freq',
@@ -33,5 +33,7 @@ __all__ = [
     'read_database', 'compare_database', 'write_database', 'export_mol', 'read_mol', 
     'set_prop', 'sanitize_arg_dict',
     
-    'prep'
+    'prep',
+
+    'get_template'
 ]
