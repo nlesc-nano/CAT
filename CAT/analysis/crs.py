@@ -22,9 +22,23 @@ class CRSResults(SCMResults):
     _rename_map = {'CRSKF': '$JN.crskf'}
 
     def get_energy(self, unit='kcal/mol'):
-        """ Returns the solvation energy from a Activity Coefficients calculation. """
+        """ Returns the solute solvation energy from an Activity Coefficients calculation. """
         E = self.readkf('ACTIVITYCOEF', 'deltag')[0]
         return Units.convert(E, 'kcal/mol', unit)
+
+    def get_activity_coefficient(self):
+        """ Returns the solute activity coefficient from an Activity Coefficients calculation. """
+        return self.readkf('ACTIVITYCOEF', 'gamma')[0]
+
+    def get_sigma_profile(self, unit='kcal/mol'):
+        """ Returns all sigma profiles, expressed in *unit*.
+        Returns a dictionary of numpy arrays or, if available, a pandas dataframe. """
+        return self.get_sigma('SIGMAPOTENTIAL', unit)
+
+    def get_sigma_potential(self):
+        """ Returns all sigma profiles, expressed in *unit*.
+        Returns a dictionary of numpy arrays or, if available, a pandas dataframe. """
+        return self.get_sigma('SIGMAPROFILE')
 
     def get_sigma(self, section, unit='kcal/mol'):
         """ Grab all values of sigma and the sigmapotential/profile;
@@ -38,18 +52,8 @@ class CRSResults(SCMResults):
         except AttributeError:
             return sigma
 
-    def get_sigma_profile(self, unit='kcal/mol'):
-        """ Returns all sigma profiles, expressed in *unit*.
-        Returns a dictionary of numpy arrays or, if available, a pandas dataframe. """
-        return self.get_sigma('SIGMAPOTENTIAL', unit)
-
-    def get_sigma_potential(self):
-        """ Returns all sigma profiles, expressed in *unit*.
-        Returns a dictionary of numpy arrays or, if available, a pandas dataframe. """
-        return self.get_sigma('SIGMAPROFILE')
-
     def _sigma_x(self, section):
-        """ Construct all values of sigma. """
+        """ Get all values of sigma. """
         min_max = self.readkf(section, 'sigmax')
         nitems = self.readkf(section, 'nitems')
         step = int((1 + 2 * min_max) / nitems)

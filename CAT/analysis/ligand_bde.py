@@ -13,15 +13,14 @@ from scm.plams.mol.atom import Atom
 from scm.plams.core.functions import (init, finish, config)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 
-from qmflows.templates.templates import get_template
-
+from .. import misc as CAT
 from .jobs import (job_single_point, job_geometry_opt, job_freq)
 from .ligand_dissociate import dissociate_ligand
 from ..qd_functions import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
 
 
-def init_bde(mol, job1=None, job2=None, s1=None, s2=None):
+def init_bde(mol, job_recipe):
     """ Initialize the bond dissociation energy calculation; involves 4 distinct steps:
     1.  Take two ligands X and another atom from the core Y (e.g. Cd) and create YX2.
     2.  Create all n*2*(n-1) possible molecules where YX2 is dissociated.
@@ -44,8 +43,8 @@ def init_bde(mol, job1=None, job2=None, s1=None, s2=None):
                        'Ligand Residue Num #2': res_list2})
 
     # Fill the dataframe with energies
-    df['dE kcal/mol'] = get_bde_dE(mol, lig, core, job=job1, s=s1)
-    df['ddG kcal/mol'] = get_bde_ddG(mol, lig, core, job=job2, s=s2)
+    df['dE kcal/mol'] = get_bde_dE(mol, lig, core, job=job_recipe.job1, s=job_recipe.s1)
+    df['ddG kcal/mol'] = get_bde_ddG(mol, lig, core, job=job_recipe.job2, s=job_recipe.s2)
     df['dG kcal/mol'] = df['dE kcal/mol'] + df['ddG kcal/mol']
     return df
 
@@ -59,7 +58,7 @@ def get_bde_dE(tot, lig, core, job=None, s=None):
     # Switch to default settings if no job & s are <None>
     if job is None and s is None:
         job = AMSJob
-        s = get_template('qd.json')['MOPAC']
+        s = CAT.get_template('qd.json')['MOPAC']
     elif job is None or s is None:
         finish()
         raise TypeError('job & s should neither or both be None')
@@ -91,7 +90,7 @@ def get_bde_ddG(tot, lig, core, job=None, s=None):
     # Switch to default settings if no job & s are <None>
     if job is None and s is None:
         job = AMSJob
-        s = get_template('qd.json')['UFF']
+        s = CAT.get_template('qd.json')['UFF']
     elif job is None or s is None:
         finish()
         raise TypeError('job & s should neither or both be None')

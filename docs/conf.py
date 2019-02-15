@@ -171,7 +171,8 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'CAT', 'CAT Documentation',
-     author, 'CAT', 'One line description of project.',
+     author, 'CAT', 
+     'A collection of tools designed for the construction, and subsequent analysis, of various chemical compounds.',
      'Miscellaneous'),
 ]
 
