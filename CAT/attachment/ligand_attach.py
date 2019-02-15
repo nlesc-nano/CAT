@@ -191,7 +191,7 @@ def rot_mol_axis(xyz_array, vec, dist_to_self=True, atoms_other=None, step=(1/16
             if dist_to_self:
                 atoms_other = np.concatenate((atoms_other, xyz[idx_min]))
             ret_array[i] = xyz[idx_min]
-            min_dist[i] = np.nanmin(dist_array[idx_min])
+            min_dist[i] = np.nanmin(np.partition(dist_array[idx_min].flatten(), 1)[1])
         xyz_array = ret_array
 
     if ret_min_dist:
