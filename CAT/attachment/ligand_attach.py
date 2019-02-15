@@ -118,7 +118,8 @@ def rot_mol_angle(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=Fa
     return xyz_array
 
 
-def rot_mol_axis(xyz_array, vec, dist_to_self=True, atoms_other=None, step=(1/16), idx=0):
+def rot_mol_axis(xyz_array, vec, dist_to_self=True, atoms_other=None, step=(1/16), idx=0,
+                 ret_min_dist=False):
     """
     Rotates a m*n*3 array representing the cartesian coordinates of m molecules, each containging
     n atoms. All m coordinates are rotated along an axis defined by vec, a m*3 array, yielding
@@ -181,21 +182,23 @@ def rot_mol_axis(xyz_array, vec, dist_to_self=True, atoms_other=None, step=(1/16
     if dist_to_self or atoms_other is not None:
         a, b, c, d = xyz_array.shape
         ret_array = np.empty((a, c, d), order='F')
+        min_dist = np.zeros(a)
+
         for i, xyz in enumerate(xyz_array):
             dist_array = cdist(xyz.reshape(b*c, d), atoms_other).reshape(b, c, len(atoms_other))
             idx_min = np.nansum(np.exp(-dist_array), axis=(1, 2)).argmin()
             if dist_to_self:
                 atoms_other = np.concatenate((atoms_other, xyz[idx_min]))
             ret_array[i] = xyz[idx_min]
+            min_dist[i] = dist_array[idx_min].min()
+        xyz_array = ret_array
 
-        # Return a n*3 or m*n*3 array
-        if ret_array.shape[0] == 1:
-            return ret_array[0]
-        return ret_array
-
-    # Return a n*3 or m*n*3 array
+    # Reshape a m*n*3 array to a n*3 array if m == 1
     if xyz_array.shape[0] == 1:
-        return xyz_array[0]
+        xyz_array = xyz_array[0]
+    
+    if ret_min_dist:
+        return xyz_array, min_dist
     return xyz_array
 
 

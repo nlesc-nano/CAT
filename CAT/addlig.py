@@ -1,50 +1,75 @@
-import os
 import time
+import os
+from os.path import (join, exists)
 
 from scm.plams.core.functions import read_molecules
 
-from .attachment.dye import bob, mono_di_substitution
+from .attachment.dye import bob, monosubstitution
+
+
+##############################          input             #################################
 
 
 # Time measuring
 start = time.time()
 
-##### Input #####
-
 # Path to the working folder where are prepared molecules and where folder with new coordinares
 # will be made with the specific name
-working_folder_path = os.getcwd()
+path = os.getcwd()
+input_ligands = read_molecules(join(path, 'LIGANDS'))
+input_cores = read_molecules(join(path, 'CORES'))
 
-input_ligands = read_molecules(os.path.join(working_folder_path, 'LIGANDS'))
-input_ligands = [bob(input_ligands[ligand]) for ligand in input_ligands]
-input_cores = read_molecules(os.path.join(working_folder_path, 'CORES'))
-input_cores = [bob(input_cores[core]) for core in input_cores]
+# Bob does what Bob has to do.
+for lig in input_ligands:
+    lig.guess_bonds()
+    bob(lig)
+
+# As it is written so shall it be.
+for core in input_cores:
+    core.guess_bonds()
+    bob(core)
 
 
-new_directory = 'new_molecules'
-distance_limit = 1.7 # if atoms are closer, geometry is rejected
+##############################          output folder             #################################
 
-
-##############################################          new folder               ############################################
 
 # Makes new folder
-if not os.path.exists(os.path.join(working_folder_path, new_directory)):
-    os.makedirs(os.path.join(working_folder_path, new_directory))
+new_dir = 'new_molecules'
+if not exists(join(path, new_dir)):
+    os.makedirs(join(path, new_dir))
 
-############################################ Monosubstitution and disubstitution ############################################
 
-new_molecules = mono_di_substitution(input_ligands, input_cores, distance_limit)
+############################ Monosubstitution and disubstitution ##################################
+
+
+# Generate structures by combining ligands and cores
+monosub_molecules = monosubstitution(input_ligands, input_cores)
+
+# Export molecules to if the minimum core/ligand distance is smaller than min_dist
+min_dist = 0.0
+for mol in monosub_molecules:
+    if mol.properties.min_distance > min_dist:
+        mol.write(join(path, new_dir, mol.properties.name + '.xyz'))
+    else:
+        mol.write(join(path, new_dir, 'err_' + mol.properties.name + '.xyz'))
+
+# The End
+end = time.time()
+print("Elapsed wall-clock time:  ", end - start)
+
+
+
+
+"""
 # mono_subs contains sublists with plams molecule ('molecule') and binary ('check')
 # depending on binary value, False or True, name of the coordinate file is with or without 'err'.
 for item in new_molecules:
     n = ['mono', 'di']
     for molecule, check in item:
         if check:
-            molecule.write(os.path.join(working_folder_path, new_directory, n[new_molecules.index(item)] + '_' + molecule.properties.name + '.xyz'))
+            molecule.write(join(path, new_dir, n[new_molecules.index(item)] + '_' + molecule.properties.name + '.xyz'))
         else:
-            molecule.write(os.path.join(working_folder_path, new_directory, 'err_' + n[new_molecules.index(item)] + molecule.properties.name + '.xyz'))
+            molecule.write(join(path, new_dir, 'err_' + n[new_molecules.index(item)] + molecule.properties.name + '.xyz'))
+"""
 
 
-# The End
-end = time.time()
-print("Elapsed wall-clock time:  ", end - start)

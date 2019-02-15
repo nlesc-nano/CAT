@@ -12,7 +12,7 @@ from .analysis import (
 )
 
 from .attachment import (
-    qd_opt, optimize_ligand, ligand_to_qd
+    qd_opt, optimize_ligand, ligand_to_qd, bob, monosubstitution
 )
 
 from .data_handling import (
@@ -35,5 +35,7 @@ __all__ = [
 
     'prep',
 
-    'get_template'
+    'get_template',
+
+    'bob', 'monosubstitution'
 ]
