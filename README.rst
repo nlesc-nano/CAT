@@ -47,11 +47,7 @@ Using the conda environment the following packages should be installed:
 
 Package installation
 --------------------
-Finally, update or install the following packages, including **CAT**, using pip:
-
-- PLAMS_: ``pip install git+https://github.com/SCM-NV/PLAMS@master#egg=plams-1.2 --upgrade``
-   
-- QMFlows_: ``pip install git+https://github.com/SCM-NV/qmflows@master#egg=qmflows-0.3.0``
+Finally, install **CAT** using pip:
    
 - **CAT**: ``pip install git+https://github.com/BvB93/CAT@master#egg=CAT-0.1.0``
 
