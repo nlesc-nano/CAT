@@ -22,9 +22,13 @@ class CRSResults(SCMResults):
     _rename_map = {'CRSKF': '$JN.crskf'}
 
     def get_energy(self, unit='kcal/mol'):
-        """ Returns the solvation energy from a Activity Coefficients calculation. """
+        """ Returns the solute solvation energy from an Activity Coefficients calculation. """
         E = self.readkf('ACTIVITYCOEF', 'deltag')[0]
         return Units.convert(E, 'kcal/mol', unit)
+
+    def get_activity_coefficient(self):
+        """ Returns the solute activity coefficient from an Activity Coefficients calculation. """
+        return self.readkf('ACTIVITYCOEF', 'gamma')[0]
 
     def get_sigma_profile(self, unit='kcal/mol'):
         """ Returns all sigma profiles, expressed in *unit*.
