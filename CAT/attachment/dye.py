@@ -6,14 +6,53 @@ from itertools import chain
 
 import numpy as np
 
-from scm.plams import Molecule
+from scm.plams import Molecule, Settings
 
 from .ligand_attach import rot_mol_angle, rot_mol_axis
 
 
-def get_args(ligand_list, core):
+def connect_ligands_to_core(lig_dict, core):
+    """ Attaches multiple ligands to multiple copies of a single core.
+    Returns a list of cores with attached ligands, each with the properties.min_distance attribute
+    containing the smallest distance between ligand and core.
+
+    ligand_list: An iterable container consisting of PLAMS molecules, each with the properties.lig_h & .lig_other attributes (PLAMS Atoms)
+    core: A PLAMS molecule with the properties.core_h & .core_other attributes (PLAMS Atoms)
+    """
+    # Unpack the ligand dictionary
+    lig_list = lig_dict['lig_list']
+    lig_idx = lig_dict['lig_idx']
+    lig_vec = lig_dict['lig_vec']
+
+    # Return if core.properties.vec has been exhausted
+    try:
+        core_vec = core.properties.vec[0]
+    except IndexError:
+        return
+
+    # Construct keyword arguments
+    kwarg1, kwarg2 = get_args(core, lig_idx)
+
+    # Allign the ligands with the core; perform the ration check
+    lig_array = rot_mol_angle(lig_list, lig_vec, core_vec, **kwarg1)
+    lig_array, min_dist_array = rot_mol_axis(lig_array, core_vec, **kwarg2)
+
+    # Combine the rotated ligands and core into new molecules
+    ret = []
+    for lig, xyz, min_dist in zip(lig_list, lig_array, min_dist_array):
+        lig_cp = lig.copy()
+        lig_cp.from_array(xyz)
+        lig_cp.properties = Settings()
+        lig_cp += core.copy()
+        lig_cp.properties.name = core.properties.name + "_" + lig.properties.name
+        lig_cp.properties.min_distance = min_dist
+        ret.append(lig_cp)
+
+    return ret
+
+
+def get_args(core, lig_idx):
     # Extract the various arguments from core and ligand_list
-    lig_idx = np.array([lig.properties.idx_h for lig in ligand_list]) - 1
     core_other = core.properties.coords_other[0]
     core_h = core.properties.coords_h[0]
 
@@ -28,39 +67,6 @@ def get_args(ligand_list, core):
     kwarg2 = {'atoms_other': core, 'dist_to_self': False, 'idx': lig_idx, 'ret_min_dist': True}
 
     return kwarg1, kwarg2
-
-
-def connect_ligands_to_core(ligand_list, core):
-    """ Attaches multiple ligands to multiple copies of a single core.
-    Returns a list of cores with attached ligands, each with the properties.min_distance attribute
-    containing the smallest distance between ligand and core.
-
-    ligand_list: An iterable container consisting of PLAMS molecules, each with the properties.lig_h & .lig_other attributes (PLAMS Atoms)
-    core: A PLAMS molecule with the properties.core_h & .core_other attributes (PLAMS Atoms)
-    """
-    # Construct ligand and core vectors
-    lig_vec = np.array([lig.properties.vec for lig in ligand_list])
-    core_vec = core.properties.vec[0]
-
-    # Construct all other arguments
-    kwarg1, kwarg2 = get_args(ligand_list, core)
-
-    # Allign the lig_vec & core_vec; perform the ration check
-    lig_array = rot_mol_angle(ligand_list, lig_vec, core_vec, **kwarg1)
-    lig_array, min_dist_array = rot_mol_axis(lig_array, core_vec, **kwarg2)
-
-    ret = []
-    for lig, xyz, min_dist in zip(ligand_list, lig_array, min_dist_array):
-        lig_cp = lig.copy()
-        lig_cp.from_array(xyz)
-        lig_cp += core.copy()
-
-        lig_cp.properties.name = core.properties.name + "_" + lig.properties.name
-        lig_cp.properties.min_distance = min_dist
-        ret.append(lig_cp)
-        import pdb; pdb.set_trace()
-
-    return ret
 
 
 def bob_core(mol):
@@ -91,14 +97,15 @@ def bob_ligand(mol):
     comment = mol.properties.comment
 
     # Set an attirbute with indices and vectors
-    mol.properties.idx_h = int(comment)
     mol.properties.vec = np.empty(3)
 
     # Fill the vector array, delete the marked atom in the ligand .xyz file
-    at = mol[mol.properties.idx_h]
+    at = mol[int(comment)]
     at_other = at.bonds[0].other_end(at)
     mol.properties.vec = np.array(at.coords) - np.array(at_other.coords)
+
     mol.delete_atom(at)
+    mol.properties.idx_other = mol.atoms.index(at_other)
 
 
 def substitution(input_ligands, input_cores, rep=False):
@@ -107,10 +114,14 @@ def substitution(input_ligands, input_cores, rep=False):
     Mono_subs contaions of key = name of molecule, value = (coordinates of new molecule,
         shortest distance between core and ligand after its connection).
     """
+    lig_idx = np.array([lig.properties.idx_other for lig in input_ligands])
+    lig_vec = np.array([lig.properties.vec for lig in input_ligands])
+    lig_dict = {'lig_list': input_ligands, 'lig_idx': lig_idx, 'lig_vec': lig_vec}
+
     if not rep:
-        ret = (connect_ligands_to_core(input_ligands, core) for core in input_cores)
+        ret = [connect_ligands_to_core(lig_dict, core) for core in input_cores]
     else:
-        ret = (connect_ligands_to_core(input_ligands, core)[i:] for i, core in enumerate(input_cores))
+        ret = (connect_ligands_to_core(lig_dict, core)[i:] for i, core in enumerate(input_cores))
     return list(chain.from_iterable(ret))
 
 
