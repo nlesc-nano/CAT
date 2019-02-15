@@ -99,6 +99,7 @@ def rot_mol_angle(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=Fa
     xyz_array = sanitize_dim_3(xyz_array)
     vec1 = sanitize_dim_2(vec1)
     vec2 = sanitize_dim_2(vec2)
+    idx = range(xyz_array.shape[0]), idx
 
     # Rotate and translate all n ligands; readjust bond lengths if bond_length is set
     rotmat = get_rotmat(vec1, vec2)
@@ -107,11 +108,7 @@ def rot_mol_angle(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=Fa
     # Translate the the molecules in xyz_array
     if atoms_other is not None:
         atoms_other = sanitize_dim_2(atoms_other)
-        if isinstance(idx, int):
-            xyz_array += (atoms_other - xyz_array[:, idx])[:, None, :]
-        else:
-            xyz_tmp = np.array([xyz[i] for xyz, i in zip(xyz_array, idx)])
-            xyz_array += (atoms_other - xyz_tmp)[:, None, :]
+        xyz_array += (atoms_other - xyz_array[idx])[:, None, :]
         if bond_length is not False:
             mult = (np.asarray(bond_length) / np.linalg.norm(vec2, axis=1))[:, None]
             xyz_array -= (vec2 * mult)[:, None, :]
@@ -168,6 +165,9 @@ def rot_mol_axis(xyz_array, vec, dist_to_self=True, atoms_other=None, step=(1/16
     # Turn all arguments into numpy arrays with appropiate dimensions
     xyz_array = sanitize_dim_3(xyz_array)
     vec = sanitize_dim_2(vec)
+    idx1 = range(xyz_array.shape[0]), 0, idx
+    idx2 = range(xyz_array.shape[0]), slice(int(2 / step)), idx
+
     if atoms_other is None:
         atoms_other = np.array([np.nan, np.nan, np.nan])[None, :]
     else:
@@ -176,12 +176,7 @@ def rot_mol_axis(xyz_array, vec, dist_to_self=True, atoms_other=None, step=(1/16
     # Create all k possible rotations of all m ligands
     rotmat = get_rotmat(vec, step=step)
     xyz_array = np.swapaxes(xyz_array@rotmat, 0, 1)
-    if isinstance(idx, int):
-        xyz_array += (xyz_array[:, 0, idx][:, None, :] - xyz_array[:, :, idx])[:, :, None, :]
-    else:
-        xyz_tmp1 = np.array([xyz[0, i] for xyz, i in zip(xyz_array, idx)])[:, None, :]
-        xyz_tmp2 = np.array([xyz[:, i] for xyz, i in zip(xyz_array, idx)])
-        xyz_array += (xyz_tmp1 - xyz_tmp2)[:, :, None, :]
+    xyz_array += (xyz_array[idx1][:, None, :] - xyz_array[idx2])[:, :, None, :]
 
     # Returns the conformation of each molecule that maximizes the inter-moleculair distance
     # Or return all conformations if dist_to_self = False and atoms_other = None
