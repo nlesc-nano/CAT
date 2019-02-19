@@ -48,7 +48,7 @@ setup(
         'scientific-workflows'
     ],
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Chemistry'
         'License :: OSI Approved :: GNU Lesser General Public License',
