@@ -26,12 +26,6 @@ data_handling
 
 Modules related to the importing, exporting and general handling of data.
 
-~~~~~~~~
-examples
-~~~~~~~~
-
-Input file examples.
-
 ~~~~~~~
 base.py
 ~~~~~~~
