@@ -1,17 +1,18 @@
-path: /Users/basvanbeek/Documents/CdSe/Week_5
+path: .
 
 input_cores:
     - Cd68Se55.xyz:
         guess_bonds: False
-        indices: [131, 134, 142, 125]
 
 input_ligands:
     - OC(C)=O
     - OC(CC)=O
+    - OC(CCC)=O
+    - OC(CCCC)=O
 
 optional:
     dir_names: [core, ligand, QD]
-    use_database: False
+    use_database: True
     core:
         dummy: Cl
     ligand:
@@ -19,6 +20,6 @@ optional:
         split: True
         crs: False
     qd:
-        optimize: True
+        optimize: False
         int: False
-        dissociate: True
+        dissociate: False

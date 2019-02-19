@@ -17,12 +17,12 @@ from .attachment import (
 
 from .data_handling import (
     read_database, compare_database, write_database, export_mol, read_mol,
-    set_prop, sanitize_arg_dict
+    set_prop, sanitize_optional, sanitize_input_mol, sanitize_path
 )
 
 from .base import prep
 
-from .misc import get_template
+from .utils import (get_template, create_dir)
 
 __all__ = [
     'init_asa', 'CRSJob', 'CRSResults', 'job_single_point', 'job_geometry_opt', 'job_freq',
@@ -31,9 +31,9 @@ __all__ = [
     'qd_opt', 'optimize_ligand', 'ligand_to_qd',
 
     'read_database', 'compare_database', 'write_database', 'export_mol', 'read_mol',
-    'set_prop', 'sanitize_arg_dict',
+    'set_prop', 'sanitize_optional', 'sanitize_input_mol', 'sanitize_path',
 
     'prep',
 
-    'get_template'
+    'get_template', 'create_dir'
 ]

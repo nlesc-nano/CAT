@@ -20,8 +20,14 @@ mol_import.py
 
 A module related to the importing of molecules.
 
-~~~~~~~~~~~~~~~~~
-sanitize_input.py
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
+input_sanitizer.py
+~~~~~~~~~~~~~~~~~~
 
 A module designed for sanitizing and interpreting the input file.
+
+~~~~~~~~~~~~~~~
+input_parser.py
+~~~~~~~~~~~~~~~
+
+A module designed for parsing the input .yaml file.
