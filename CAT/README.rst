@@ -38,14 +38,14 @@ base.py
 
 A module handling the interaction with all other modules, functioning as recipe.
 
-~~~~~~~
-misc.py
-~~~~~~~
+~~~~~~~~
+utils.py
+~~~~~~~~
 
 A module with miscellaneous functions.
 
-~~~~~~~~~~~~~~~
-qd_functions.py
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
+mol_utils.py
+~~~~~~~~~~~~
 
-A module with misc functions related to manipulating molecules and their geometry.
+A module with misc functions related to manipulating molecules, atoms and bonds.

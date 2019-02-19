@@ -13,10 +13,10 @@ from scm.plams.mol.atom import Atom
 from scm.plams.core.functions import (init, finish, config)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 
-from .. import misc as CAT
+from .. import utils as CAT
 from .jobs import (job_single_point, job_geometry_opt, job_freq)
 from .ligand_dissociate import dissociate_ligand
-from ..qd_functions import (to_atnum, merge_mol)
+from ..mol_utils import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
 
 

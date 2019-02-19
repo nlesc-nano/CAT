@@ -6,7 +6,7 @@ from scm.plams.core.functions import (init, finish)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 import scm.plams.interfaces.molecule.rdkit as molkit
 
-from ..qd_functions import (fix_carboxyl, fix_h)
+from ..mol_utils import (fix_carboxyl, fix_h)
 from ..analysis.jobs import job_geometry_opt
 from ..data_handling.mol_export import export_mol
 

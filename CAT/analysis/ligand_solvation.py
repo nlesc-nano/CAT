@@ -11,7 +11,7 @@ from scm.plams.core.functions import (init, finish)
 from scm.plams.interfaces.adfsuite.adf import ADFJob
 
 from .crs import CRSJob
-from .. import misc as CAT
+from .. import utils as CAT
 
 
 def init_solv(mol, job_recipe, solvent_list=None):

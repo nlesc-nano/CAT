@@ -16,7 +16,7 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 from rdkit.Chem import AllChem
 
 from .ligand_attach import (rot_mol_angle, sanitize_dim_2)
-from ..qd_functions import (to_symbol, fix_carboxyl, get_bond_index, from_mol_other, from_rdmol)
+from ..mol_utils import (to_symbol, fix_carboxyl, get_bond_index, from_mol_other, from_rdmol)
 from ..data_handling.database import compare_database
 from ..data_handling.mol_export import export_mol
 

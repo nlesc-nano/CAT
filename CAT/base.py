@@ -9,8 +9,8 @@ from os.path import join
 from scm.plams.mol.atom import Atom
 from scm.plams.core.errors import MoleculeError
 
-from .misc import (check_sys_var, get_time, create_dir)
-from .qd_functions import (find_substructure, find_substructure_split)
+from .utils import (check_sys_var, get_time, create_dir)
+from .mol_utils import (find_substructure, find_substructure_split)
 from .analysis.asa import init_asa
 from .analysis.ligand_bde import init_bde
 from .analysis.ligand_solvation import init_solv

@@ -13,7 +13,7 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit import Chem
 
-from ..misc import (get_time, dict_concatenate)
+from ..utils import (get_time, dict_concatenate)
 
 
 def read_mol(input_mol, path, is_core=False):

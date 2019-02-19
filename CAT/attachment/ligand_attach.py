@@ -8,7 +8,7 @@ from scipy.spatial.distance import cdist
 from scm.plams.mol.molecule import Molecule
 from scm.plams.core.settings import Settings
 
-from ..qd_functions import (merge_mol, get_atom_index)
+from ..mol_utils import (merge_mol, get_atom_index)
 from ..data_handling.mol_export import export_mol
 
 

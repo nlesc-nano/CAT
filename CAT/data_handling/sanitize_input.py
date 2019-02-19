@@ -23,11 +23,11 @@ from scm.plams.core.basejob import Job
 from scm.plams.core.settings import Settings
 from scm.plams.tools.periodic_table import PeriodicTable
 
-from .. import misc as CAT
+from .. import utils as CAT
 
 from ..analysis.crs import CRSJob
-from ..misc import get_time
-from ..qd_functions import to_atnum
+from ..utils import get_time
+from ..mol_utils import to_atnum
 
 
 def get_default_mol_dict():
