@@ -108,7 +108,7 @@ def rot_mol_angle(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=Fa
     # Translate the the molecules in xyz_array
     if atoms_other is not None:
         atoms_other = sanitize_dim_2(atoms_other)
-        xyz_array += (atoms_other - xyz_array[:, idx])[:, None, :]
+        xyz_array += (atoms_other - xyz_array[idx])[:, None, :]
         if bond_length:
             mult = (np.asarray(bond_length) / np.linalg.norm(vec2, axis=1))[:, None]
             xyz_array -= (vec2 * mult)[:, None, :]
@@ -136,7 +136,7 @@ def rot_mol_axis(xyz_array, vec, dist_to_self=True, atoms_other=None, step=(1/16
         the to be rotated PLAMS atoms.
     vec <np.ndarray>: An m*3 or 3 numpy array representing m vectors. All m molecules in xyz_array
         will be rotated along an axis defined by their respective vector.
-    dist_to_self <bool>: If true, consider the inter-moleculair distance(s) between a molecule in
+    dist_to_self <bool>: If true, consider the inter-moaleculair distance(s) between a molecule in
         xyz_array and all other (previously iterated) molecules in xyz_array when determining the
         conformation that maximizes the inter-moleculair distance.
     atoms_other <None> or <plams.Molecule>: None or a n*3 array, a 3 numpy array or a PLAMS atom
