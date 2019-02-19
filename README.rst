@@ -67,4 +67,4 @@ An example input file, input.py, is located in the example_ directory.
 .. _rdkit: http://www.rdkit.org
 .. _PLAMS: https://github.com/SCM-NV/PLAMS
 .. _QMFlows: https://github.com/SCM-NV/qmflows
-.. _example: https://github.com/BvB93/CAT/tree/master/CAT/examples
+.. _example: https://github.com/BvB93/CAT/tree/master/examples
