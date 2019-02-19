@@ -2,9 +2,9 @@
 examples
 ########
 
-~~~~~~~~
-input.py
-~~~~~~~~
+~~~~~~~~~~
+input.yaml
+~~~~~~~~~~
 
 Example input file settings.
 
