@@ -49,7 +49,7 @@ Package installation
 --------------------
 Finally, install **CAT** using pip:
    
-- **CAT**: ``pip install git+https://github.com/BvB93/CAT@master#egg=CAT-0.1.0``
+- **CAT**: ``pip install git+https://github.com/BvB93/CAT@master#egg=CAT-0.2.0``
 
 Now you are ready to use **CAT**. 
 
