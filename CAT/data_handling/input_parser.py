@@ -37,11 +37,7 @@ parser.add_argument(
         help='A YAML file with the settings for CAT'
 )
 
-# args = parser.parse_args()
-# args = extract_args(args)
-
-yml = '/Users/basvanbeek/Documents/GitHub/CAT/examples/input.yml'
-with open(yml, 'r') as file:
-    arg = Settings(yaml.load(file))
+arg = parser.parse_args()
+arg = extract_args(arg)
 
 qd_list, core_list, ligand_list = CAT.base.prep(arg)
