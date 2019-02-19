@@ -32,6 +32,9 @@ setup(
         'CAT.data_handling'
     ],
     package_dir={'CAT': 'CAT'},
+    package_data={
+        'CAT': ['data/templates/*json', 'data/coskf/*coskf']
+    },
     include_package_data=True,
     license='GNU Lesser General Public License v3 or later',
     zip_safe=False,
