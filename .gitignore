@@ -104,3 +104,4 @@ venv.bak/
 .mypy_cache/
 tests/timeit_test.py
 .DS_Store
+docs_out/
