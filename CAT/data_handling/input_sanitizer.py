@@ -169,18 +169,19 @@ def sanitize_optional(arg_dict):
     arg.optional.use_database = val_bool(arg.optional.use_database)
     arg.optional.ligand.optimize = val_bool(arg.optional.ligand.optimize)
     arg.optional.ligand.split = val_bool(arg.optional.ligand.split)
-    arg.optional.qd.int = val_bool(arg.optional.qd.int)
+    arg.optional.qd.activation_strain = val_bool(arg.optional.qd.activation_strain)
 
     # Prepares COSMO-RS default settings
     s_crs = CAT.get_template('qd.json')['COSMO-RS activity coefficient']
     s_crs.update(CAT.get_template('crs.json')['MOPAC PM6'])
 
     # Validate arguments containing job recipes
-    arg.optional.ligand.crs = val_job(arg.optional.ligand.crs,
+    arg.optional.ligand.crs = val_job(arg.optional.ligand['cosmo-rs'],
                                       job1=AMSJob,
                                       job2=CRSJob,
                                       s1=CAT.get_template('qd.json')['COSMO-MOPAC'],
                                       s2=s_crs)
+    del arg.optional.ligand['cosmo-rs']
 
     arg.optional.qd.optimize = val_job(arg.optional.qd.optimize,
                                        job1=AMSJob,
@@ -229,11 +230,11 @@ def get_default_optional():
                 dummy: Cl
             ligand:
                 optimize: True
-                crs: False
+                cosmo-rs: False
                 split: True
             qd:
                 optimize: False
-                int: False
+                activation_strain: False
                 dissociate: False
     """)
 

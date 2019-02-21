@@ -18,8 +18,8 @@ optional:
     ligand:
         optimize: True
         split: True
-        crs: False
+        cosmo-rs: False
     qd:
         optimize: False
-        int: False
+        activation_strain: False
         dissociate: False
