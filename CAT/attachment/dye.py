@@ -6,7 +6,7 @@ from itertools import chain
 
 import numpy as np
 
-from scm.plams import Molecule, Settings
+from scm.plams import Molecule, Settings, Atom
 
 from .ligand_attach import rot_mol_angle, rot_mol_axis
 
@@ -19,6 +19,7 @@ def connect_ligands_to_core(lig_dict, core):
     ligand_list: An iterable container consisting of PLAMS molecules, each with the properties.lig_h & .lig_other attributes (PLAMS Atoms)
     core: A PLAMS molecule with the properties.core_h & .core_other attributes (PLAMS Atoms)
     """
+    
     # Unpack the ligand dictionary
     lig_list = lig_dict['lig_list']
     lig_idx = lig_dict['lig_idx']
@@ -46,9 +47,10 @@ def connect_ligands_to_core(lig_dict, core):
         lig_cp.properties = Settings()
 
         # Copy and manipulate core
-        core_h = core.properties.coords_h[0]
+        core_h = core.properties.the_h
         core_cp = core.copy()
-        core_cp.delete_atom(core.closest_atom(core_h))
+        core_cp.delete_atom(core_cp.closest_atom(core_h))
+
 
         # Merge core and ligand
         lig_cp += core_cp
@@ -62,12 +64,15 @@ def connect_ligands_to_core(lig_dict, core):
 def get_args(core, lig_list, lig_idx):
     # Extract the various arguments from core and ligand_list
     core_other = core.properties.coords_other[0]
-    lig_other = [lig[lig.properties.idx_other] for lig in lig_list]
+    core_other_atom = core.properties.coords_other_atom[0]
+   
+    lig_other = [lig[lig.properties.idx_other+1] for lig in lig_list]
     # core_h = core.properties.coords_h[0]
 
-    bond_length = np.array([core_other.radius + lig.radius for lig in lig_other])
-
-    # Roll through the arguments of core; delete core_h
+    bond_length = np.array([core_other_atom.radius + lig.radius for lig in lig_other])
+    
+    # Roll through the arguments of core
+    core.properties.the_h = core.properties.coords_h[0]
     core.properties.vec = core.properties.vec[1:]
     core.properties.coords_other = core.properties.coords_other[1:]
     core.properties.coords_h = core.properties.coords_h[1:]
@@ -96,6 +101,9 @@ def bob_core(mol):
     mol.properties.coords_h = dummy.as_array(atom_subset=at_h)
     mol.properties.coords_other = dummy.as_array(atom_subset=at_other)
     mol.properties.vec = mol.properties.coords_other - mol.properties.coords_h
+
+    mol.properties.coords_h_atom = at_h
+    mol.properties.coords_other_atom = at_other
 
 
 def bob_ligand(mol):
@@ -127,7 +135,7 @@ def substitution(input_ligands, input_cores, rep=False):
     lig_idx = np.array([lig.properties.idx_other for lig in input_ligands])
     lig_vec = np.array([lig.properties.vec for lig in input_ligands])
     lig_dict = {'lig_list': input_ligands, 'lig_idx': lig_idx, 'lig_vec': lig_vec}
-
+    
     ret = (connect_ligands_to_core(lig_dict, core) for core in input_cores)
     return list(chain.from_iterable(ret))
 
