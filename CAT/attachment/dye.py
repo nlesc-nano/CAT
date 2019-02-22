@@ -54,7 +54,10 @@ def connect_ligands_to_core(lig_dict, core):
 def get_args(core, lig_list, lig_idx):
     # Extract the various arguments from core and ligand_list
     core_other = core.properties.coords_other[0]
+    lig_other = [lig[lig.properties.idx_other] for lig in lig_list]
     core_h = core.properties.coords_h[0]
+
+    bond_length = np.array([core_other.radius + lig.radius for lig in lig_other])
 
     # Roll through the arguments of core; delete core_h
     core.properties.vec = core.properties.vec[1:]
@@ -63,7 +66,7 @@ def get_args(core, lig_list, lig_idx):
     core.delete_atom(core.closest_atom(core_h))
 
     # Create a dictionary of arguments
-    kwarg1 = {'atoms_other': core_other, 'idx': lig_idx, 'bond_length': 1.5}
+    kwarg1 = {'atoms_other': core_other, 'idx': lig_idx, 'bond_length': bond_length}
     kwarg2 = {'atoms_other': core, 'dist_to_self': False, 'idx': lig_idx, 'ret_min_dist': True}
 
     return kwarg1, kwarg2
