@@ -40,10 +40,18 @@ def connect_ligands_to_core(lig_dict, core):
     # Combine the rotated ligands and core into new molecules
     ret = []
     for lig, xyz, min_dist in zip(lig_list, lig_array, min_dist_array):
+        # Copy and manipulate ligand
         lig_cp = lig.copy()
         lig_cp.from_array(xyz)
         lig_cp.properties = Settings()
-        lig_cp += core.copy()
+
+        # Copy and manipulate core
+        core_h = core.properties.coords_h[0]
+        core_cp = core.copy()
+        core_cp.delete_atom(core.closest_atom(core_h))
+
+        # Merge core and ligand
+        lig_cp += core_cp
         lig_cp.properties.name = core.properties.name + "_" + lig.properties.name
         lig_cp.properties.min_distance = min_dist
         ret.append(lig_cp)
@@ -55,7 +63,7 @@ def get_args(core, lig_list, lig_idx):
     # Extract the various arguments from core and ligand_list
     core_other = core.properties.coords_other[0]
     lig_other = [lig[lig.properties.idx_other] for lig in lig_list]
-    core_h = core.properties.coords_h[0]
+    # core_h = core.properties.coords_h[0]
 
     bond_length = np.array([core_other.radius + lig.radius for lig in lig_other])
 
@@ -63,7 +71,6 @@ def get_args(core, lig_list, lig_idx):
     core.properties.vec = core.properties.vec[1:]
     core.properties.coords_other = core.properties.coords_other[1:]
     core.properties.coords_h = core.properties.coords_h[1:]
-    core.delete_atom(core.closest_atom(core_h))
 
     # Create a dictionary of arguments
     kwarg1 = {'atoms_other': core_other, 'idx': lig_idx, 'bond_length': bond_length}
