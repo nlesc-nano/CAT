@@ -31,7 +31,7 @@ def connect_ligands_to_core(lig_dict, core):
         return []
 
     # Construct keyword arguments
-    kwarg1, kwarg2 = get_args(core, lig_idx)
+    kwarg1, kwarg2 = get_args(core, lig_list, lig_idx)
 
     # Allign the ligands with the core; perform the ration check
     lig_array = rot_mol_angle(lig_list, lig_vec, core_vec, **kwarg1)
@@ -51,7 +51,7 @@ def connect_ligands_to_core(lig_dict, core):
     return ret
 
 
-def get_args(core, lig_idx):
+def get_args(core, lig_list, lig_idx):
     # Extract the various arguments from core and ligand_list
     core_other = core.properties.coords_other[0]
     core_h = core.properties.coords_h[0]
