@@ -41,16 +41,18 @@ from ..mol_utils import to_atnum
 def sanitize_path(arg):
     """ Sanitize and return the settings of arg.path. """
     if arg.path is None:
-        return os.getcwd()
-    if isinstance(arg.path, str):
+        arg.path = os.getcwd()
+        return arg
+    elif isinstance(arg.path, str):
         if arg.path.lower() in ('none', '.', 'pwd', '$pwd', 'cwd'):
-            return os.getcwd()
+            arg.path = os.getcwd()
         else:
             if not os.path.exists(arg.path):
                 raise FileNotFoundError(get_time + 'path ' + arg.path + ' not found')
             elif os.path.isfile(arg.path):
                 raise TypeError(get_time + 'path ' + arg.path + ' is a file, not a directory')
-            return arg
+        return arg
+
     else:
         error = 'arg.path should be None or a string, ' + str(type(arg.path))
         error += ' is not a valid type'

@@ -43,17 +43,17 @@ def read_mol(input_mol):
         # Convert mol into either a list or PLAMS molecule
         if read_mol:
             mol = read_mol(mol_dict)
+            if mol:
+                # if mol is a list
+                if isinstance(mol, list):
+                    mol_list += mol
 
-            # if mol is a list
-            if isinstance(mol, list):
-                mol_list += mol
-
-            # if mol is a PLAMS molecule
-            else:
-                if mol_dict.guess_bonds:
-                    mol.guess_bonds()
-                set_prop(mol, mol_dict)
-                mol_list.append(mol)
+                # if mol is a PLAMS molecule
+                else:
+                    if mol_dict.guess_bonds:
+                        mol.guess_bonds()
+                    set_prop(mol, mol_dict)
+                    mol_list.append(mol)
 
     return mol_list
 
@@ -256,7 +256,6 @@ def print_exception(func, ex, name):
                       'read_mol_excel': '.xlsx file', 'read_mol_plams': 'PLAMS molecule',
                       'read_mol_rdkit': 'RDKit molecule'}
     print(get_time() + str(type(ex).__name__), str(ex))
-    print(get_time() + 'function:', str(func.co_name) + str(func.co_varnames[:func.co_argcount]))
     print(get_time() + 'Warning:', name, 'not recognized as a valid',
           extension_dict[func.co_name], '\n')
     return []
