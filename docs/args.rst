@@ -1,12 +1,31 @@
-Further Optional Arguments
-==========================
+optional
+========
 
 There are a number of arguments which can be used to modify the
 functionality and behaviour of the quantum dot builder. Herein an
 overview is provided.
 
-Optional Arguments
-~~~~~~~~~~~~~~~~~~
+Default Settings
+~~~~~~~~~~~~~~~~
+
+::
+
+    optional:
+        dir_names: [core, ligand, QD]
+        use_database: False
+        core:
+            dummy: Cl
+        ligand:
+            optimize: True
+            split: True
+            cosmo-rs: False
+        qd:
+            optimize: False
+            activation_strain: False
+            dissociate: False
+
+Arguments
+~~~~~~~~~
 
 **dir_names** |list|_ [|str|_] = [*core*, *ligand*, *QD*]
 
@@ -31,7 +50,7 @@ Optional Arguments
 
 **core.dummy** |str|_ or |int|_ = *Cl*
 
-    The atomic number or atomic symbol of the atoms in the core that is to be
+    The atomic number or atomic symbol of the atoms in the core which are to be
     replaced with ligands. Alternatively, dummy atoms can be manually specified
     with the core_indices variable.
 
@@ -52,44 +71,35 @@ Optional Arguments
 
     If *False*: The ligand in its entirety is to be attached to the core.
 
-        NR\ :sub:`4`\ :sup:`+` \                    -> NR\ :sub:`4`\ :sup:`+` \
+    -   N\ :sup:`+`\ R\ :sub:`4`\                   -> N\ :sup:`+`\ R\ :sub:`4`\
 
-        O\ :sub:`2`\CR                              -> O\ :sub:`2`\CR
+    -   O\ :sub:`2`\CR                              -> O\ :sub:`2`\CR
 
-        HO\ :sub:`2`\CR                             -> HO\ :sub:`2`\CR
+    -   HO\ :sub:`2`\CR                             -> HO\ :sub:`2`\CR
 
-        H\ :sub:`3`\CO\ :sub:`2`\CR                 -> H\ :sub:`3`\CO\ :sub:`2`\CR
+    -   H\ :sub:`3`\CO\ :sub:`2`\CR                 -> H\ :sub:`3`\CO\ :sub:`2`\CR
 
     If *True*: A proton, counterion or functional group is to be removed from
     the ligand before attachment to the core.
 
-        X\ :sup:`-`\.NR\ :sub:`4`\                  -> NR\ :sub:`4`\ :sup:`+` \
+    -   X\ :sup:`-`\.N\ :sup:`+`\ R\ :sub:`4`\      -> N\ :sup:`+`\ R\ :sub:`4`\
 
-        HO\ :sub:`2`\CR                             -> O\ :sup:`-`\ :sub:`2`\CR
+    -   HO\ :sub:`2`\CR                             -> O\ :sup:`-`\ :sub:`2`\CR
 
-        Na\ :sup:`+`\.O\ :sup:`-`\ :sub:`2`\CR	    -> O\ :sup:`-`\ :sub:`2`\CR
+    -   Na\ :sup:`+`\.O\ :sup:`-`\ :sub:`2`\CR	    -> O\ :sup:`-`\ :sub:`2`\CR
 
-        H\ :sub:`3`\CO\ :sub:`2`\CR                 -> O\ :sup:`-`\ :sub:`2`\CR
+    -   H\ :sub:`3`\CO\ :sub:`2`\CR                 -> O\ :sup:`-`\ :sub:`2`\CR
 
     |
 
-**ligand.crs** |bool|_ = *False*
+**ligand.cosmo-rs** |bool|_ = *False*
 
     Perform a property calculation with COSMO-RS [4_, 5_, 6_, 7_]; the COSMO
     surfaces are constructed using ADF MOPAC [8_, 9_, 10_].
 
-    The following properties are calculated:
-
-    1. The surface area of the ligand (A\ :sup:`2`\) as defined by its COSMO
-    surface.
-
-    2. The volume of the ligand (A\ :sup:`3`\) as defined by the volume
-    encompassed by its COSMO surface.
-
-    3. The solvation energy of the ligand (kcal mol\ :sup:`-1`\), at infinite
-    dilution, in the following solvents: acetone, acetonitrile, dimethyl
-    formamide (DMF), dimethyl sulfoxide (DMSO), ethyl acetate, ethanol,
-    *n*-hexane, toluene and water.
+    The solvation energy of the ligand and its activity coefficient are calculated
+    in the following solvents: acetone, acetonitrile, dimethyl formamide (DMF),
+    dimethyl sulfoxide (DMSO), ethyl acetate, ethanol, *n*-hexane, toluene and water.
 
     |
 
@@ -101,7 +111,7 @@ Optional Arguments
 
     |
 
-**qd.int** (|bool|_) = *False*
+**qd.activation_strain** |bool|_ = *False*
 
     Perform an activation strain analyses [12_, 13_, 14_] (kcal mol\ :sup:`-1`\)
     on the ligands attached to the quantum dot surface with RDKit UFF [1_, 2_, 3_].
@@ -127,6 +137,28 @@ Optional Arguments
     |
 
 **qd.bde** (|bool|_) = *False*
+
+    Calculate the bond dissociation energy (BDE) of ligands attached to the surface
+    of the core. The calculation consists of five distinct steps:
+
+    1.  Dissociate all *n*2*(n-1)* combinations of 1 ligand (X), 1 Cd atom and 1
+    other ligand (X).
+
+
+    2.  Optimize the geometry of the CdX\ :sub:`2`\ structure with ADF MOPAC
+    [8_, 9_, 10_].
+
+    3.  Calculate the "electronic" contribution to the BDE (d\ *E* ) with ADF MOPAC
+    [8_, 9_, 10_] for all partially dissociated compounds created in step 1.
+    This step consists of single point calculations.
+
+    4.  Calculate the thermal contribution to the BDE (dd\ *G* ) with ADF UFF [3_, 11_].
+    This step consists of geometry optimizations and frequency analyses.
+
+    5.  Combine d\ *E* and dd\ *G*, yielding all bond dissociation
+    energies.
+
+    |
 
 
 .. _1: http://www.rdkit.org
