@@ -13,3 +13,15 @@ templates
 ~~~~~~~~~
 
 Various template input scripts.
+
+~~~~~
+CORES
+~~~~~
+
+Various .xyz files of example cores.
+
+~~~~~~~
+LIGANDS
+~~~~~~~
+
+Various .xyz files of example ligands.
