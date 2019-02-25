@@ -12,7 +12,7 @@ import CAT
 
 def extract_args(args):
     """ Extract and return all arguments. """
-    input_file = args.settings[0]
+    input_file = args.YAML[0]
     if exists(input_file):
         pass
     elif exists(join(getcwd(), input_file)):

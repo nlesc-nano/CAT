@@ -1,4 +1,4 @@
-path: /Users/basvanbeek/Documents/CdSe/Week_5
+path: None
 
 input_cores:
     - Cd68Se55.xyz:
@@ -7,8 +7,6 @@ input_cores:
 input_ligands:
     - OC(C)=O
     - OC(CC)=O
-    - OC(CCC)=O
-    - OC(CCCC)=O
 
 optional:
     dir_names: [core, ligand, QD]
@@ -20,6 +18,6 @@ optional:
         split: True
         cosmo-rs: False
     qd:
-        optimize: True
+        optimize: False
         activation_strain: False
         dissociate: False
