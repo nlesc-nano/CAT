@@ -24,6 +24,7 @@ def extract_args(args):
     with open(input_file, 'r') as file:
         return Settings(yaml.load(file))
 
+
 def main(args=None):
     parser = argparse.ArgumentParser(
             prog='CAT',
