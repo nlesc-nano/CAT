@@ -6,6 +6,7 @@ import os
 import time
 import json
 import pkg_resources as pkg
+from os.path import (exists, join)
 
 from scm.plams.core.settings import Settings
 
@@ -48,11 +49,11 @@ def create_dir(dir_name, path=os.getcwd()):
     """
     Creates a new directory if this directory does not yet exist.
     """
-    if not os.path.exists(path):
+    if not exists(path):
         error = path + ' not found, aborting run'
         raise FileNotFoundError(error)
-    dir_path = os.path.join(path, str(dir_name))
-    if not os.path.exists(dir_path):
+    dir_path = join(path, str(dir_name))
+    if not exists(dir_path):
         os.makedirs(dir_path)
     return dir_path
 
@@ -61,7 +62,7 @@ def get_template(template_name):
     """
     Grab a template and return it as Settings object.
     """
-    path = os.path.join('data/templates', template_name)
+    path = join('data/templates', template_name)
     xs = pkg.resource_string('CAT', path)
     s = json.loads(xs.decode())
     return Settings(s)

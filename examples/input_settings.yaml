@@ -1,0 +1,25 @@
+path: None
+
+input_cores:
+    - Cd68Se55.xyz:
+        guess_bonds: False
+
+input_ligands:
+    - OC(C)=O
+    - OC(CC)=O
+    - OC(CCC)=O
+    - OC(CCCC)=O
+
+optional:
+    dir_names: [core, ligand, QD]
+    use_database: False
+    core:
+        dummy: Cl
+    ligand:
+        optimize: True
+        split: True
+        cosmo-rs: False
+    qd:
+        optimize: False
+        activation_strain: False
+        dissociate: False

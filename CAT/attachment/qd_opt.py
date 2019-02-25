@@ -6,7 +6,7 @@ from scm.plams.core.functions import (init, finish)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 import scm.plams.interfaces.molecule.rdkit as molkit
 
-from ..qd_functions import (fix_carboxyl, fix_h)
+from ..mol_utils import (fix_carboxyl, fix_h)
 from ..analysis.jobs import job_geometry_opt
 from ..data_handling.mol_export import export_mol
 
@@ -53,7 +53,7 @@ def init_qd_opt(mol, database, job_recipe):
     else:
         index = list(database['Quantum_dot_name']).index(name)
         try:
-            mol_new = molkit.readpdb(database['Quantum_dot_opt_pdb'][index])
+            mol_new = molkit.readpdb(database['Quantum_dot_opt_pdb'][index], proximityBonding=False)
             mol_new.properties = mol.properties
             mol = mol_new
         except FileNotFoundError:

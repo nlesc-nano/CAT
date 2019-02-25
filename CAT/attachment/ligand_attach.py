@@ -8,7 +8,7 @@ from scipy.spatial.distance import cdist
 from scm.plams.mol.molecule import Molecule
 from scm.plams.core.settings import Settings
 
-from ..qd_functions import (merge_mol, get_atom_index)
+from ..mol_utils import (merge_mol, get_atom_index)
 from ..data_handling.mol_export import export_mol
 
 
@@ -99,6 +99,7 @@ def rot_mol_angle(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=Fa
     xyz_array = sanitize_dim_3(xyz_array)
     vec1 = sanitize_dim_2(vec1)
     vec2 = sanitize_dim_2(vec2)
+    idx = np.arange(xyz_array.shape[0]), idx
 
     # Rotate and translate all n ligands; readjust bond lengths if bond_length is set
     rotmat = get_rotmat(vec1, vec2)
@@ -107,7 +108,7 @@ def rot_mol_angle(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=Fa
     # Translate the the molecules in xyz_array
     if atoms_other is not None:
         atoms_other = sanitize_dim_2(atoms_other)
-        xyz_array += (atoms_other - xyz_array[:, idx])[:, None, :]
+        xyz_array += (atoms_other - xyz_array[idx])[:, None, :]
         if bond_length:
             mult = (np.asarray(bond_length) / np.linalg.norm(vec2, axis=1))[:, None]
             xyz_array -= (vec2 * mult)[:, None, :]
@@ -135,7 +136,7 @@ def rot_mol_axis(xyz_array, vec, dist_to_self=True, atoms_other=None, step=(1/16
         the to be rotated PLAMS atoms.
     vec <np.ndarray>: An m*3 or 3 numpy array representing m vectors. All m molecules in xyz_array
         will be rotated along an axis defined by their respective vector.
-    dist_to_self <bool>: If true, consider the inter-moleculair distance(s) between a molecule in
+    dist_to_self <bool>: If true, consider the inter-moaleculair distance(s) between a molecule in
         xyz_array and all other (previously iterated) molecules in xyz_array when determining the
         conformation that maximizes the inter-moleculair distance.
     atoms_other <None> or <plams.Molecule>: None or a n*3 array, a 3 numpy array or a PLAMS atom
@@ -166,6 +167,9 @@ def rot_mol_axis(xyz_array, vec, dist_to_self=True, atoms_other=None, step=(1/16
     # Turn all arguments into numpy arrays with appropiate dimensions
     xyz_array = sanitize_dim_3(xyz_array)
     vec = sanitize_dim_2(vec)
+    idx1 = np.arange(xyz_array.shape[0]), 0, idx
+    idx2 = np.arange(xyz_array.shape[0]), slice(int(2 / step)), idx
+
     if atoms_other is None:
         atoms_other = np.array([np.nan, np.nan, np.nan])[None, :]
     else:
@@ -174,7 +178,7 @@ def rot_mol_axis(xyz_array, vec, dist_to_self=True, atoms_other=None, step=(1/16
     # Create all k possible rotations of all m ligands
     rotmat = get_rotmat(vec, step=step)
     xyz_array = np.swapaxes(xyz_array@rotmat, 0, 1)
-    xyz_array += (xyz_array[:, 0, idx][:, None, :] - xyz_array[:, :, idx])[:, :, None, :]
+    xyz_array += (xyz_array[idx1][:, None, :] - xyz_array[idx2])[:, :, None, :]
 
     # Returns the conformation of each molecule that maximizes the inter-moleculair distance
     # Or return all conformations if dist_to_self = False and atoms_other = None

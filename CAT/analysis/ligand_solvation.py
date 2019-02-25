@@ -11,7 +11,7 @@ from scm.plams.core.functions import (init, finish)
 from scm.plams.interfaces.adfsuite.adf import ADFJob
 
 from .crs import CRSJob
-from .. import misc as CAT
+from .. import utils as CAT
 
 
 def init_solv(mol, job_recipe, solvent_list=None):
@@ -37,7 +37,7 @@ def get_surface_charge(mol, job=None, s=None):
         s = get_surface_charge_adf(mol, job, s)
 
     results = mol.job_single_point(job, s, ret_results=True)
-
+    results.wait()
     return results[get_coskf(results)]
 
 

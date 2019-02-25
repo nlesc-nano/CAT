@@ -22,17 +22,39 @@ setup(
     author=['Bas van Beek'],
     author_email='b.f.van.beek@vu.nl',
     url='https://github.com/BvB93/CAT',
-    packages=['CAT'],
+    packages=[
+        'CAT',
+        'CAT.analysis',
+        'CAT.attachment',
+        'CAT.data',
+        'CAT.data.coskf',
+        'CAT.data.templates',
+        'CAT.data_handling'
+    ],
     package_dir={'CAT': 'CAT'},
+    package_data={
+        'CAT': [
+            'data/templates/*json',
+            'data/coskf/*coskf'
+        ]
+    },
+    entry_points={
+          'console_scripts': ['init_cat=CAT.data_handling.input_parser:main']
+    },
     include_package_data=True,
     license='GNU Lesser General Public License v3 or later',
     zip_safe=False,
     keywords=[
-        'quantum-mechanics', 'science', 'chemistry', 'python-3', 
-        'automation', 'scientific-workflows'
+        'quantum-mechanics',
+        'science',
+        'chemistry',
+        'python-3',
+        'python-3-6',
+        'automation',
+        'scientific-workflows'
     ],
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Chemistry'
         'License :: OSI Approved :: GNU Lesser General Public License',
@@ -41,8 +63,12 @@ setup(
     ],
     test_suite='tests',
     install_requires=[
-        'h5py', 'numpy', 'noodles==0.3.1', 'pymonad', 'schema',
-        'pyparsing', 'filelock', 'openpyxl', 'pyyaml', 'xlrd', 'scipy',
+        'numpy',
+        'scipy',
+        'pyyaml',
+        'schema',
+        'openpyxl',
+        'xlrd',
         'plams@git+https://github.com/SCM-NV/PLAMS@rdkit_update#egg=plams-1.2',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master#egg=qmflows-0.3.0'
     ],
@@ -58,7 +84,7 @@ setup(
         'pycodestyle',
     ],
     extras_require={
-        'test': ['pytest', 'pytest-cov', 'pytest-mock', 'nbsphinx', 'pygraphviz', 'pycodestyle'],
+        'test': ['pytest', 'pytest-cov', 'pytest-mock', 'nbsphinx', 'pycodestyle'],
         'doc': ['sphinx', 'sphinx_rtd_theme', 'nbsphinx']
     }
 )

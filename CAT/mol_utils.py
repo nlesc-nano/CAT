@@ -15,7 +15,7 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 from rdkit import Chem
 from rdkit.Chem import rdMolTransforms
 
-from .misc import get_time
+from .utils import get_time
 
 
 @add_to_class(Molecule)

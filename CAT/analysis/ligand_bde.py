@@ -13,10 +13,10 @@ from scm.plams.mol.atom import Atom
 from scm.plams.core.functions import (init, finish, config)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 
-from .. import misc as CAT
+from .. import utils as CAT
 from .jobs import (job_single_point, job_geometry_opt, job_freq)
 from .ligand_dissociate import dissociate_ligand
-from ..qd_functions import (to_atnum, merge_mol)
+from ..mol_utils import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
 
 
@@ -64,10 +64,10 @@ def get_bde_dE(tot, lig, core, job=None, s=None):
         raise TypeError('job & s should neither or both be None')
 
     # Perform single points
-    tot.job_single_point(job, s)
+    tot.job_single_point(job, s, name='BDE_single_point')
     for mol in core:
-        mol.job_single_point(job, s)
-    lig.job_geometry_opt(job, s)
+        mol.job_single_point(job, s, name='BDE_single_point')
+    lig.job_geometry_opt(job, s, name='BDE_single_point')
 
     # Extract total energies
     E_lig = lig.properties.energy.E
@@ -97,12 +97,12 @@ def get_bde_ddG(tot, lig, core, job=None, s=None):
 
     # Perform a constrained geometry optimizations + frequency analyses
     s.input.ams.Constraints.Atom = lig.properties.indices
-    lig.job_freq(job, s)
+    lig.job_freq(job, s, name='BDE_frequency_analysis')
     for mol in core:
         s.input.ams.Constraints.Atom = mol.properties.indices
-        mol.job_freq(job, s)
+        mol.job_freq(job, s, name='BDE_frequency_analysis')
     s.input.ams.Constraints.Atom = mol.properties.indices
-    tot.job_freq(job, s)
+    tot.job_freq(job, s, name='BDE_frequency_analysis')
 
     # Extract total Gibbs free energies
     G_lig = lig.properties.energy.G

@@ -16,8 +16,8 @@ from scm.plams.interfaces.thirdparty.gamess import GamessJob
 from qmflows.templates import templates as qmflows
 
 from .thermo_chem import get_thermo
-from ..misc import get_time
-from ..qd_functions import (adf_connectivity, from_mol_other)
+from ..utils import get_time
+from ..mol_utils import (adf_connectivity, from_mol_other)
 
 
 def type_to_string(job):

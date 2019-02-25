@@ -6,7 +6,7 @@ import os
 
 import scm.plams.interfaces.molecule.rdkit as molkit
 
-from ..misc import get_time
+from ..utils import get_time
 
 
 def export_mol(mol, message='Mol:\t\t\t\t'):
