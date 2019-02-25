@@ -84,7 +84,7 @@ setup(
         'pycodestyle',
     ],
     extras_require={
-        'test': ['pytest', 'pytest-cov', 'pytest-mock', 'nbsphinx', 'pygraphviz', 'pycodestyle'],
+        'test': ['pytest', 'pytest-cov', 'pytest-mock', 'nbsphinx', 'pycodestyle'],
         'doc': ['sphinx', 'sphinx_rtd_theme', 'nbsphinx']
     }
 )
