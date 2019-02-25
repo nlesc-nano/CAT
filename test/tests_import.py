@@ -89,8 +89,8 @@ def test_input():
     formula_set = set([qd.get_formula() for qd in qd_list])
 
     assert isinstance(qd_list, list)
-    assert len(qd_list) is 5
-    assert len(formula_set) is 1
+    assert len(qd_list) == 5
+    assert len(formula_set) == 1
     for qd in qd_list:
         assert isinstance(qd, Molecule)
 
