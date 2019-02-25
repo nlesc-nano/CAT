@@ -56,8 +56,14 @@ Now you are ready to use **CAT**.
 Input files
 ============
 
-Running CATF is easy and can be done with the following command:
-`` init_cat my_settings.yaml ``
+Running **CAT** and can be done with the following command: ``init_cat my_settings.yaml``
+
+The user merely has to provide an .yaml_ with the job settings, settings which can be tweaked and altered to suit ones purposes (see example1_).
+
+Alternatively, **CAT** can be run like a regular python script, bypassing the command-line interface (``python input.py``, see example2_).
+
+An extensive description of the various available settings is available in the documentation_.
+
 
 .. _yaml: https://yaml.org/
 .. _documentation: https://cat.readthedocs.io/en/latest/
@@ -69,4 +75,5 @@ Running CATF is easy and can be done with the following command:
 .. _rdkit: http://www.rdkit.org
 .. _PLAMS: https://github.com/SCM-NV/PLAMS
 .. _QMFlows: https://github.com/SCM-NV/qmflows
-.. _example: https://github.com/BvB93/CAT/tree/master/examples
+.. _example1: https://github.com/BvB93/CAT/blob/master/examples/input_settings.yaml
+.. _example2: https://github.com/BvB93/CAT/blob/master/examples/input.py
