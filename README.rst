@@ -18,51 +18,53 @@ Installation
 
 - Download miniconda for python3: miniconda_ (also you can install the complete anaconda_ version).
 
-- Install according to: installConda_. 
+- Install according to: installConda_.
 
 - Create a new virtual environment using the following commands:
 
-  - ``conda create -n CAT`` 
+  - ``conda create -n CAT``
 
 - The virtual environment can be enabled and disabled by, respectively, typing:
 
-  - Enable: ``conda activate CAT`` 
-  
+  - Enable: ``conda activate CAT``
+
   - Disable: ``conda deactivate``
-    
-    
+
+
 .. _dependecies:
 
 Dependencies installation
 -------------------------
 
-Using the conda environment the following packages should be installed:    
+Using the conda environment the following packages should be installed:
 
 - rdkit_: ``conda install -y --name CAT -c rdkit rdkit``
 
 - HDF5_: ``conda install -y --name CAT -c anaconda h5py``
-    
-    
+
+
 .. _installation:
 
 Package installation
 --------------------
 Finally, install **CAT** using pip:
-   
+
 - **CAT**: ``pip install git+https://github.com/BvB93/CAT@master#egg=CAT-0.2.0``
 
-Now you are ready to use **CAT**. 
+Now you are ready to use **CAT**.
 
 Input files
 ============
 
-An example input file, input.py, is located in the example_ directory.
+Running CATF is easy and can be done with the following command:
+`` init_cat my_settings.yaml ``
 
+.. _yaml: https://yaml.org/
 .. _documentation: https://cat.readthedocs.io/en/latest/
 .. _miniconda: http://conda.pydata.org/miniconda.html
 .. _anaconda: https://www.continuum.io/downloads
 .. _installConda: https://docs.anaconda.com/anaconda/install/
-.. _HDF5: http://www.h5py.org/ 
+.. _HDF5: http://www.h5py.org/
 .. _here: https://www.python.org/downloads/
 .. _rdkit: http://www.rdkit.org
 .. _PLAMS: https://github.com/SCM-NV/PLAMS
