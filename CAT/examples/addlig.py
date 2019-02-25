@@ -6,6 +6,7 @@ from os.path import (join, exists)
 from scm.plams.core.functions import read_molecules
 
 from CAT.attachment.dye import bob_ligand, bob_core, substitution
+from CAT.examples.example_xyz import get_data_dir
 
 
 ##################################          input             #####################################
@@ -16,7 +17,7 @@ start = time.time()
 
 # Path to the working folder where are prepared molecules and where folder with new coordinares
 # will be made with the specific name
-path = os.getcwd()
+path = get_data_dir()
 input_ligands = read_molecules(join(path, 'LIGANDS'))
 input_ligands = list(input_ligands.values())
 input_cores = read_molecules(join(path, 'CORES'))
