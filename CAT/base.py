@@ -40,6 +40,7 @@ def prep(arg):
     time_start = time.time()
     print('\n')
 
+    # Interpret arguments
     arg.update(sanitize_path(arg))
     arg.update(sanitize_input_mol(arg))
     arg.update(sanitize_optional(arg))

@@ -2,6 +2,7 @@
 
 from os import getcwd
 from os.path import (join, exists)
+
 import argparse
 import yaml
 
@@ -23,21 +24,22 @@ def extract_args(args):
     with open(input_file, 'r') as file:
         return Settings(yaml.load(file))
 
+def main(args=None):
+    parser = argparse.ArgumentParser(
+            prog='CAT',
+            usage='init_cat my_settings_file.yaml',
+            description='Description: This script initalizes \
+            the Compound Attachment/Analysis Tool.'
+    )
 
-parser = argparse.ArgumentParser(
-        prog='CAT',
-        usage='%(prog)s settings',
-        description='Start CAT: Compound Attachment/Analysis Tool.'
-)
+    parser.add_argument(
+            'YAML',
+            nargs='+',
+            type=str,
+            help='A .yaml file with the settings for CAT'
+    )
 
-parser.add_argument(
-        'settings',
-        nargs='+',
-        type=str,
-        help='A YAML file with the settings for CAT'
-)
+    args = parser.parse_args(args)
+    args = extract_args(args)
 
-arg = parser.parse_args()
-arg = extract_args(arg)
-
-qd_list, core_list, ligand_list = CAT.base.prep(arg)
+    CAT.base.prep(args)

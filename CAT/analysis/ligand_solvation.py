@@ -37,7 +37,7 @@ def get_surface_charge(mol, job=None, s=None):
         s = get_surface_charge_adf(mol, job, s)
 
     results = mol.job_single_point(job, s, ret_results=True)
-
+    results.wait()
     return results[get_coskf(results)]
 
 

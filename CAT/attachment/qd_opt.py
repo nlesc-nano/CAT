@@ -53,7 +53,7 @@ def init_qd_opt(mol, database, job_recipe):
     else:
         index = list(database['Quantum_dot_name']).index(name)
         try:
-            mol_new = molkit.readpdb(database['Quantum_dot_opt_pdb'][index])
+            mol_new = molkit.readpdb(database['Quantum_dot_opt_pdb'][index], proximityBonding=False)
             mol_new.properties = mol.properties
             mol = mol_new
         except FileNotFoundError:

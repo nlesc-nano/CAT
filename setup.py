@@ -33,7 +33,13 @@ setup(
     ],
     package_dir={'CAT': 'CAT'},
     package_data={
-        'CAT': ['data/templates/*json', 'data/coskf/*coskf']
+        'CAT': [
+            'data/templates/*json',
+            'data/coskf/*coskf'
+        ]
+    },
+    entry_points={
+          'console_scripts': ['init_cat=CAT.data_handling.input_parser:main']
     },
     include_package_data=True,
     license='GNU Lesser General Public License v3 or later',

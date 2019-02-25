@@ -172,15 +172,15 @@ def sanitize_optional(arg_dict):
     arg.optional.qd.activation_strain = val_bool(arg.optional.qd.activation_strain)
 
     # Prepares COSMO-RS default settings
-    s_crs = CAT.get_template('qd.json')['COSMO-RS activity coefficient']
-    s_crs.update(CAT.get_template('crs.json')['MOPAC PM6'])
+    crs = CAT.get_template('qd.json')['COSMO-RS activity coefficient']
+    crs.update(CAT.get_template('crs.json')['MOPAC PM6'])
 
     # Validate arguments containing job recipes
     arg.optional.ligand.crs = val_job(arg.optional.ligand['cosmo-rs'],
                                       job1=AMSJob,
                                       job2=CRSJob,
                                       s1=CAT.get_template('qd.json')['COSMO-MOPAC'],
-                                      s2=s_crs)
+                                      s2=crs)
     del arg.optional.ligand['cosmo-rs']
 
     arg.optional.qd.optimize = val_job(arg.optional.qd.optimize,

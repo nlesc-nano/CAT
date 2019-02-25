@@ -1,4 +1,4 @@
-path: .
+path: /Users/basvanbeek/Documents/CdSe/Week_5
 
 input_cores:
     - Cd68Se55.xyz:
@@ -12,7 +12,7 @@ input_ligands:
 
 optional:
     dir_names: [core, ligand, QD]
-    use_database: True
+    use_database: False
     core:
         dummy: Cl
     ligand:
@@ -20,6 +20,6 @@ optional:
         split: True
         cosmo-rs: False
     qd:
-        optimize: False
+        optimize: True
         activation_strain: False
         dissociate: False
