@@ -56,7 +56,7 @@ Now you are ready to use **CAT**.
 Input files
 ============
 
-Running **CAT** and can be done with the following command: ``init_cat my_settings.yaml``. The user merely has to provide a .yaml_ file with the job settings, settings which can be tweaked and altered to suit ones purposes (see example1_). Alternatively, **CAT** can be run like a regular python script, bypassing the command-line interface (``python input.py``, see example2_).
+Running **CAT** and can be done with the following command: ``init_cat my_settings.yaml``. The user merely has to provide a yaml_ file with the job settings, settings which can be tweaked and altered to suit ones purposes (see example1_). Alternatively, **CAT** can be run like a regular python script, bypassing the command-line interface (``python input.py``, see example2_).
 
 An extensive description of the various available settings is available in the documentation_.
 
