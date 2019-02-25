@@ -5,7 +5,7 @@ import CAT
 from scm.plams.core.settings import Settings
 
 
-yml = '/Users/basvanbeek/Documents/GitHub/CAT/examples/input_settings.yaml'
+yml = '/path/to/my/input_settings.yaml'
 with open(yml, 'r') as file:
     arg = Settings(yaml.load(file))
 
