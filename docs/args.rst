@@ -30,9 +30,9 @@ Arguments
 **dir_names** |list|_ [|str|_] = [*core*, *ligand*, *QD*]
 
     The names of the (to be created) folders.
-    By default, ligand structures will be stored and read from dir_names[0],
-    cores will be stored and read dir_names[1] and the combined core+ligands
-    will be stored and read from dir_names[2]. Structures can be read from
+    By default, ligand structures will be stored and read from |list|_ [``0``],
+    cores will be stored and read |list|_ [``1``] and the combined core+ligands
+    will be stored and read from |list|_ [``2``]. Structures can be read from
     different folders if their filename is prepended with its absolute path,
     thus effectively ignoring this argument.
 
