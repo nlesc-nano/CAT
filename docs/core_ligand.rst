@@ -69,7 +69,7 @@ Optional arguments
     For ligands:
     Manually specify the atomic index of the ligand atom that will be attached to core (implying argument_dict: ``optional.ligand.split = False``).
     If two atomic indices are provided, the bond between |tuple|_ [``0``] and |tuple|_ [``1``] will be broken and
-    the molecule containing tuple[0] is attached to the core, (implying argument_dict: ``optional.ligand.split = True``).
+    the molecule containing |tuple|_ [``0``] is attached to the core, (implying argument_dict: ``optional.ligand.split = True``).
     Serves as an alternative to the functional group based :func:`CAT.mol_utils.find_substructure` function,
     which identifies the to be attached atom based on connectivity patterns (*i.e.* functional groups).
 
