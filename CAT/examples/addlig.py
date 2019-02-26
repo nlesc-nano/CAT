@@ -7,7 +7,6 @@ from scm.plams.core.functions import read_molecules
 
 from CAT.attachment.dye import bob_ligand, bob_core, substitution
 
-### ovo je cat.01 !!!
 
 ##################################          input             #####################################
 
@@ -43,7 +42,7 @@ if not exists(join(path, new_dir)):
 
 min_dist = 1.3
 
-############################ Monosubstitution and disubstitution ##################################
+############################            Substitution              ##################################
 
 # Generate structures by combining ligands and cores
 mono = substitution(input_ligands, input_cores)
