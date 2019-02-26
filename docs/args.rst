@@ -12,13 +12,23 @@ Default Settings
 
     optional:
         dir_names: [core, ligand, QD]
-        use_database: False
+
+        database:
+            read: True
+            write: True
+            overwrite: False
+            mol_format: [pdb, xyz]
+            database_format: [xlsx, json]
+            mongodb: False
+
         core:
             dummy: Cl
+
         ligand:
             optimize: True
             split: True
             cosmo-rs: False
+
         qd:
             optimize: False
             activation_strain: False
@@ -30,23 +40,102 @@ Arguments
 **dir_names** |list|_ [|str|_] = [*core*, *ligand*, *QD*]
 
     The names of the (to be created) folders.
-    By default, ligand structures will be stored and read from dir_names[0],
-    cores will be stored and read dir_names[1] and the combined core+ligands
-    will be stored and read from dir_names[2]. Structures can be read from
+    By default, ligand structures will be stored and read from |list|_ [``0``],
+    cores will be stored and read |list|_ [``1``] and the combined core+ligands
+    will be stored and read from |list|_ [``2``]. Structures can be read from
     different folders if their filename is prepended with its absolute path,
     thus effectively ignoring this argument.
 
     |
 
-**use_database** |bool|_ = *True*
+Database
+--------
 
-    Enables or disables the storing and pulling of structures and properties
-    from a user-created database (stored in .json and .xlsx formats).
-    The script will attempt to pull a structure from the database if a match
-    is found between a current input ligand and/or core+ligands and a previously
-    optimized structure.
+::
+
+    optional:
+        database:
+            read: True
+            write: True
+            overwrite: False
+            mol_format: [pdb, xyz]
+            database_format: [xlsx, json]
+            mongodb: False
+
+**database.read** |bool|_, |str|_ or |list|_ [|str|_] = *True*
+
+    Before optimizing a structure, check if a geometry is available from previous
+    calculations. If a match is found, use that structure and avoid a geometry
+    reoptimizations. If one wants more control then the boolean can be substituted
+    for a list of strings (*i.e.* *core*, *ligand* and/or *QD*), meaning that structures
+    will be read only for a specific subset.
+
+    For example:
+
+        ::
+
+            optional:
+                database:
+                    read: [core, ligand, QD]
+
+        ::
+
+            optional:
+                database:
+                    read: ligand
 
     |
+
+**database.write** |bool|_, |str|_ or |list|_ [|str|_] = *True*
+
+    Export the optimized structures to the database of results. Previous results will
+    **not** be overwritten unless ``optional.database.overwrite = True``. If one wants more
+    control then the boolean can be substituted for a list of strings (*i.e.* *core*, *ligand*
+    and/or *QD*), meaning that structures written for for a specific subset.
+
+    See **database.read** for a similar relevant example.
+
+    |
+
+**database.overwrite** |bool|_, |str|_ or |list|_ [|str|_] = *False*
+
+    Allows previous results in the database to be overwritten. Only apllicable if
+    ``optional.database.write = True``. If one wants more control then the boolean can be
+    substituted for a list of strings (*i.e.* *core*, *ligand* and/or *QD*), meaning
+    that structures written for for a specific subset.
+
+    See **database.read** for a similar relevant example.
+
+    |
+
+**database.mol_format** |str|_ or |list|_ [|str|_] = [*pdb*, *xyz*]
+
+    The file format(s) for storing moleculair structures. Accepted values:
+    *pdb* and/or *xyz*.
+
+    |
+
+**database.database_format** |str|_ or |list|_ [|str|_] = [*json*, *xlsx*]
+
+    The file format(s) for storing database. Accepted values: *json* and/or *xlsx*.
+
+    |
+
+**database.mongodb** |bool|_ = *False*
+
+    Handles convertion of the database to the mongoDB format.
+    Not implemented as of yet, this keyword is a placeholder.
+
+    |
+
+Core
+----
+
+::
+
+    optional:
+        core:
+            dummy: Cl
 
 **core.dummy** |str|_ or |int|_ = *Cl*
 
@@ -55,6 +144,17 @@ Arguments
     with the core_indices variable.
 
     |
+
+Ligand
+------
+
+::
+
+    optional:
+        ligand:
+            optimize: True
+            split: True
+            cosmo-rs: False
 
 **ligand.optimize** |bool|_ = *True*
 
@@ -103,6 +203,17 @@ Arguments
 
     |
 
+QD
+--
+
+::
+
+    optional:
+        qd:
+            optimize: False
+            activation_strain: False
+            dissociate: False
+
 **qd.optimize** |bool|_ = *False*
 
     Optimize the quantum dot (i.e. core + all ligands) with ADF UFF [3_, 11_].
@@ -136,7 +247,7 @@ Arguments
 
     |
 
-**qd.bde** (|bool|_) = *False*
+**qd.bde** |bool|_ = *False*
 
     Calculate the bond dissociation energy (BDE) of ligands attached to the surface
     of the core. The calculation consists of five distinct steps:

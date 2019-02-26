@@ -61,16 +61,20 @@ Optional arguments
     |
 
 **indices** |tuple|_  [|int|_] = ()
+
     For cores:
-    Manually specify the atomic index of one ore more atom(s) in the core that will be replaced with ligands.
-    If left empty, all atoms of a user-specified element (see ``optional.cores.dummy = str or int``) will be replaced with ligands.
+    Manually specify the atomic index of one ore more atom(s) in the core that will be replaced
+    with ligands.If left empty, all atoms of a user-specified element
+    (see ``optional.cores.dummy = str or int``) will be replaced with ligands.
 
     For ligands:
-    Manually specify the atomic index of the ligand atom that will be attached to core (implying argument_dict: ``optional.ligand.split = False``).
-    If two atomic indices are provided, the bond between |tuple|_ [``0``] and |tuple|_ [``1``] will be broken and
-    the molecule containing tuple[0] is attached to the core, (implying argument_dict: ``optional.ligand.split = True``).
-    Serves as an alternative to the functional group based :func:`CAT.mol_utils.find_substructure` function,
-    which identifies the to be attached atom based on connectivity patterns (*i.e.* functional groups).
+    Manually specify the atomic index of the ligand atom that will be attached to core
+    (implying argument_dict: ``optional.ligand.split = False``).If two atomic indices are
+    rovided, the bond between |tuple|_ [``0``] and |tuple|_ [``1``] will be broken and the
+    molecule containing |tuple|_ [``0``] is attached to the core,
+    (implying argument_dict: ``optional.ligand.split = True``). Serves as an alternative to the
+    functional group based :func:`CAT.mol_utils.find_substructure` function, which identifies the
+    to be attached atom based on connectivity patterns (*i.e.* functional groups).
 
     In both cases the numbering of atoms starts from 1, following the PLAMS [1_, 2_] convention.
 

@@ -12,13 +12,23 @@ input_ligands:
 
 optional:
     dir_names: [core, ligand, QD]
-    use_database: False
+
+    database:
+        read: True
+        write: True
+        overwrite: False
+        export: [pdb, xyz]
+        mol_format: [xlsx, json]
+        mongodb: False
+
     core:
         dummy: Cl
+
     ligand:
         optimize: True
         split: True
         cosmo-rs: False
+
     qd:
         optimize: False
         activation_strain: False
