@@ -99,20 +99,28 @@ def find_substructure(ligand, split=True):
                                  'S(C)[H]', 'S(c)[H]',
                                  'N(C)[H]', 'N(c)[H]',
                                  'P(C)[H]', 'P(c)[H]',
+                                 'O(P)[H]', 'O(p)[H]',
+                                 'O(S)[H]', 'O(s)[H]',
                                  '[O-]C.[+]', '[O-]c.[+]',
                                  '[S-]C.[+]', '[S-]c.[+]',
                                  '[N-]C.[+]', '[N-]c.[+]',
-                                 '[P-]C.[+]', '[P-]c.[+]']
+                                 '[P-]C.[+]', '[P-]c.[+]',
+                                 '[O-]P.[+]', '[O-]p.[+]',
+                                 '[O-]S.[+]', '[O-]s.[+]']
     else:
         functional_group_list = ['[N+]C', '[n+]C', '[N+]c', '[n+]c',
                                  'OC', 'Oc', 'oC', 'oc',
                                  'SC', 'Sc', 'sC', 'sc',
                                  'NC', 'Nc', 'nC', 'nc',
                                  'PC', 'Pc', 'pC', 'pc',
+                                 'OP', 'Op', 'oP', 'op',
+                                 'OS', 'Os', 'oS', 'os',
                                  '[O-]C', '[O-]c',
                                  '[S-]C', '[S-]c',
                                  '[N-]C', '[N-]c', '[n-]C', '[n-]c',
-                                 '[P-]C', '[P-]c', '[p-]C', '[p-]c']
+                                 '[P-]C', '[P-]c', '[p-]C', '[p-]c',
+                                 '[O-]P', '[O-]p', '[o-]P', '[o-]p',
+                                 '[O-]S', '[O-]s', '[o-]S', '[o-]s']
 
     functional_group_list = [Chem.MolFromSmarts(smarts) for smarts in functional_group_list]
 
