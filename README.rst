@@ -20,9 +20,9 @@ Installation
 
 - Install according to: installConda_.
 
-- Create a new virtual environment using the following commands:
+- Create a new virtual environment, for python 3.6, using the following commands:
 
-  - ``conda create -n CAT``
+  - ``conda create -n CAT python=3.6``
 
 - The virtual environment can be enabled and disabled by, respectively, typing:
 
