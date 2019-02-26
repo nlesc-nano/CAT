@@ -69,7 +69,7 @@ setup(
         'schema',
         'openpyxl',
         'xlrd',
-        'plams@git+https://github.com/SCM-NV/PLAMS@rdkit_update#egg=plams-1.2',
+        'plams@git+https://github.com/SCM-NV/PLAMS@master#egg=plams-1.2',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master#egg=qmflows-0.3.0'
     ],
     setup_requires=[
