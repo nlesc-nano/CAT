@@ -6,7 +6,7 @@ from itertools import chain
 
 import numpy as np
 
-from scm.plams import Molecule, Settings, Atom
+from scm.plams import Molecule, Settings
 
 from .ligand_attach import rot_mol_angle, rot_mol_axis
 
@@ -51,7 +51,6 @@ def connect_ligands_to_core(lig_dict, core):
         core_cp = core.copy()
         core_cp.delete_atom(core_cp.closest_atom(core_h))
 
-
         # Merge core and ligand
         lig_cp += core_cp
         lig_cp.properties.name = core.properties.name + "_" + lig.properties.name
@@ -73,13 +72,19 @@ def get_args(core, lig_list, lig_idx):
     
     # Roll through the arguments of core
     core.properties.the_h = core.properties.coords_h[0]
+    at_h = core.closest_atom(core.properties.the_h)
     core.properties.vec = core.properties.vec[1:]
     core.properties.coords_other = core.properties.coords_other[1:]
     core.properties.coords_h = core.properties.coords_h[1:]
+    
+    # Convert core into an array and mask core_h with np.nan
+    core_array = core.as_array()
+    idx = core.atoms.index(at_h)
+    core_array[idx] = np.nan
 
     # Create a dictionary of arguments
     kwarg1 = {'atoms_other': core_other, 'idx': lig_idx, 'bond_length': bond_length}
-    kwarg2 = {'atoms_other': core, 'dist_to_self': False, 'idx': lig_idx, 'ret_min_dist': True}
+    kwarg2 = {'atoms_other': core_array, 'dist_to_self': False, 'idx': lig_idx, 'ret_min_dist': True}
 
     return kwarg1, kwarg2
 
@@ -137,7 +142,12 @@ def substitution(input_ligands, input_cores, rep=False):
     lig_dict = {'lig_list': input_ligands, 'lig_idx': lig_idx, 'lig_vec': lig_vec}
     
     ret = (connect_ligands_to_core(lig_dict, core) for core in input_cores)
+
     return list(chain.from_iterable(ret))
+
+
+
+
 
 
 def multi_substitution(input_ligands, input_cores, n=1):
