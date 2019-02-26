@@ -3,28 +3,48 @@
 __all__ = ['read_database', 'compare_database', 'write_database']
 
 import os
+from os.path import (join, isfile)
 
 import pandas as pd
 
 import scm.plams.interfaces.molecule.rdkit as molkit
 
+from ..utils import get_time
 
-def read_database(path, database_name='Ligand_database'):
+
+def read_database(ligand_list, arg):
     """
-    Open the database.
+    Open the database and check if a ligands is already present in the database based on its SMILES
+    string. Try to pull the strucure(s) if it is.
 
-    path <str>: The path to the database.
-    database_name <str>: The name (including extension) of the database.
+    ligand_list <list> [<plams.Molecule>]: A list of ligands.
+    arg <dict>: A dictionary containing all (optional) arguments.
 
-    return <pd.DataFrame>: A database of previous calculations.
+    return <list> [<plams.Molecule>]: A database of previous calculations.
     """
-    path = os.path.join(path, database_name)
-    if os.path.exists(path + '.json'):
-        database = pd.read_json(path + '.json')
-    else:
-        database = pd.DataFrame()
+    file = join(arg.optional.dir_names.database, 'Ligand_database.json')
+    if isfile(file):  # The database exists
+        df = pd.read_json(file)
+        for i, lig in enumerate(ligand_list):
+            smiles = lig.properties.smiles
+            if smiles in df:  # The ligand is present in the database
+                pdb = isfile(df[smiles])
+                if isfile(pdb):
+                    lig_new = molkit.readpdb(pdb, proximityBonding=False)
+                    lig_new.properties = lig.properties
+                    lig_new.properties.read = True
+                    ligand_list[i] = lig_new
+                else:  # The ligand is present in the database but its .pdb file is missing
+                    print(get_time() + lig.properties.name + ' was found in the database, ' \
+                          'yet its .pdb file is absent from ' + arg.optional.dir_names.ligand)
 
-    return database
+    else:  # The database does not yet exist
+        print(get_time() + 'ligand_database.json not found in ' \
+              + arg.optional.dir_names.database + ', creating ligand database')
+        df = pd.DataFrame()
+        df.to_json(file)
+
+    return ligand_list
 
 
 def compare_database(plams_mol, database):

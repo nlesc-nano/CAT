@@ -233,7 +233,7 @@ def array_to_qd(mol, xyz_array, mol_other=False):
     mol_other.merge_mol(mol_list)
 
 
-def ligand_to_qd(core, ligand, qd_folder):
+def ligand_to_qd(core, ligand, arg):
     """
     Function that handles quantum dot (qd, i.e. core + all ligands) operations.
     Combine the core and ligands and assign properties to the quantom dot.
@@ -265,7 +265,7 @@ def ligand_to_qd(core, ligand, qd_folder):
     qd.properties = Settings()
     qd.properties.indices = qd_indices
     qd.properties.name = qd_name
-    qd.properties.path = qd_folder
+    qd.properties.path = arg.optional.dir_names.QD
     export_mol(qd, message='core + ligands:\t\t')
 
     return qd

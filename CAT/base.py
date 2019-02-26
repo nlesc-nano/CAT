@@ -21,7 +21,7 @@ from .data_handling.mol_import import read_mol
 from .data_handling.input_sanitizer import (sanitize_path, sanitize_input_mol, sanitize_optional)
 
 from .attachment.qd_opt import init_qd_opt
-from .attachment.ligand_opt import optimize_ligand
+from .attachment.ligand_opt import init_ligand_opt
 from .attachment.ligand_attach import ligand_to_qd
 
 
@@ -45,8 +45,12 @@ def prep(arg):
     arg.update(sanitize_input_mol(arg))
     arg.update(sanitize_optional(arg))
 
-    # Create the result directories (if they do not exist) and ligand and core lists
-    cor_dir, lig_dir, qd_dir = [create_dir(name, path=arg.path) for name in arg.optional.dir_names]
+    # Create the result directories (if they do not exist)
+    keys = ('core', 'ligand', 'QD', 'database')
+    arg.optional.dir_names = {key: create_dir(name, path=arg.path) for
+                              name, key in zip(arg.optional.dir_names, keys)}
+
+    # Read the input ligands and cores
     ligand_list = read_mol(arg.input_ligands)
     core_list = read_mol(arg.input_cores)
 
@@ -64,8 +68,7 @@ def prep(arg):
     ligand_list = prep_ligand_1(ligand_list, arg)
 
     # Combine the core with the ligands, yielding qd, and format the resulting list
-    qd_list = list(ligand_to_qd(core, ligand, qd_dir) for core
-                   in core_list for ligand in ligand_list)
+    qd_list = list(ligand_to_qd(core, ligand, arg) for core in core_list for ligand in ligand_list)
 
     # Optimize the quantum dots, perform an activation strain analyses and read/write the results
     qd_list = prep_qd(qd_list, arg)
@@ -131,6 +134,9 @@ def prep_ligand_1(ligand_list, arg):
     if not ligand_list:
         raise IndexError('No valid ligand functional groups found, aborting run')
 
+    if arg.optional.ligand.optimize:
+        ligand_list = init_ligand_opt(ligand_list, arg)
+
     if arg.optional.ligand.crs:
         check_sys_var()
         for ligand in ligand_list:
@@ -170,10 +176,6 @@ def prep_ligand_2(ligand, database, arg):
             ligand.properties.dummies = [i - 1 for i in ligand.properties.dummies]
             split = True
         ligand_list = [find_substructure_split(ligand, ligand.properties.dummies, split)]
-
-    # Handles all interaction between the database, the ligand and the ligand optimization
-    ligand_list = [optimize_ligand(ligand, database, arg.optional.ligand.optimize) for
-                   ligand in ligand_list if ligand_list]
 
     return ligand_list
 

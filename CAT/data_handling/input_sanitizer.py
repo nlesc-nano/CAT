@@ -38,6 +38,8 @@ from ..utils import get_time
 from ..mol_utils import to_atnum
 
 
+""" ###################################  Sanitize path  ####################################### """
+
 def sanitize_path(arg):
     """ Sanitize and return the settings of arg.path. """
     if arg.path is None:
@@ -58,6 +60,7 @@ def sanitize_path(arg):
         error += ' is not a valid type'
         raise TypeError(error)
 
+""" ##########################  Sanitize input_ligands & input_cores  ######################## """
 
 def sanitize_input_mol(arg):
     """ Sanitize and return the settings of arg.input_cores & arg.input_ligands. """
@@ -146,6 +149,28 @@ def sanitize_mol_type(input_mol):
     return input_mol
 
 
+def get_default_input_mol():
+    """ Return the default settings of arg.input_cores & arg.input_ligands. """
+    ret = yaml.load("""
+        mol: None
+        name: None
+        path: None
+        guess_bonds: False
+        is_core: False
+        column: 0
+        row: 0
+        indices: None
+        sheet_name: Sheet1
+        type: None
+    """)
+
+    for key in ret:
+        if ret[key] == 'None':
+            ret[key] = None
+
+    return Settings(ret)
+
+
 def santize_smiles(string):
     """ Sanitize a SMILES string: turn it into a valid filename. """
     name = string.replace('(', '[').replace(')', ']')
@@ -159,16 +184,26 @@ def santize_smiles(string):
 
     return name
 
+""" ####################################  Sanitize optional  ################################## """
 
 def sanitize_optional(arg_dict):
     """ Sanitize and return the settings of arg.optional. """
     arg = get_default_optional()
     arg.update(arg_dict)
 
+    mol_format = ('xyz', 'pdb')
+    data_format = ('xlsx', 'json')
+
     # Validate arguments consisting of booleans, integers, strings and/or iterables
     arg.optional.dir_names = val_dir_names(arg.optional.dir_names)
     arg.optional.core.dummy = val_atnum(arg.optional.core.dummy)
-    arg.optional.use_database = val_bool(arg.optional.use_database)
+    arg.optional.database.read = val_data(arg.optional.database.read)
+    arg.optional.database.write = val_data(arg.optional.database.write)
+    arg.optional.database.overwrite = val_data(arg.optional.database.overwrite)
+    arg.optional.database.mol_format = val_format(arg.optional.database.mol_format, mol_format)
+    arg.optional.database.database_format = val_format(arg.optional.database.database_format,
+                                                       data_format)
+    arg.optional.database.mongodb = False
     arg.optional.ligand.optimize = val_bool(arg.optional.ligand.optimize)
     arg.optional.ligand.split = val_bool(arg.optional.ligand.split)
     arg.optional.qd.activation_strain = val_bool(arg.optional.qd.activation_strain)
@@ -200,40 +235,28 @@ def sanitize_optional(arg_dict):
     return arg
 
 
-def get_default_input_mol():
-    """ Return the default settings of arg.input_cores & arg.input_ligands. """
-    ret = yaml.load("""
-        mol: None
-        name: None
-        path: None
-        guess_bonds: False
-        is_core: False
-        column: 0
-        row: 0
-        indices: None
-        sheet_name: Sheet1
-        type: None
-    """)
-
-    for key in ret:
-        if ret[key] == 'None':
-            ret[key] = None
-
-    return Settings(ret)
-
-
 def get_default_optional():
     """ Return the default settings of arg.optional. """
     ret = yaml.load("""
         optional:
             dir_names: [core, ligand, QD]
-            use_database: True
+
+            database:
+                read: True
+                write: True
+                overwrite: False
+                mol_format: [pdb, xyz]
+                database_format: [xlsx, json]
+                mongodb: False
+
             core:
                 dummy: Cl
+
             ligand:
                 optimize: True
                 cosmo-rs: False
                 split: True
+
             qd:
                 optimize: False
                 activation_strain: False
@@ -258,6 +281,58 @@ str_to_class = {
     'dftbplus': DFTBPlusJob, 'dftbplusjob': DFTBPlusJob,
     'crs': CRSJob, 'cosmo-rs': CRSJob, 'crsjob': CRSJob
 }
+
+def val_format(arg, ref):
+    """ Validate database.mol_format & database_format. """
+    schema = Schema(Or(
+            And(None, Use(bool)),
+            And(bool, lambda n: n is False),
+            And(str, lambda n: not n, Use(bool)),
+            And(str, lambda n: n.lower().rsplit('.', 1)[-1] in ref, Use(list)),
+            And(Or(list[str], tuple[str]),
+                lambda n: [i.lower().rsplit('.', 1)[-1] in ref for i in n], Use(list))
+    ))
+
+    # Decapitalize and remove any periods.
+    ret = schema.validate(arg)
+    if isinstance(ret, list):
+        for i, item in enumerate(ret):
+            ret[i] = item.lower().rsplit('.', 1)[-1]
+        ret = tuple(ret)
+
+    return ret
+
+def val_data(arg):
+    """ Validate the input arguments for database.read, write and overwrite.
+    Returns *False* or tuple with *ligand*, *core* and/or *qd*.
+    """
+    ref = ('ligand', 'core', 'qd')
+
+    def get_arg(n):
+        if n:
+            return ref
+        else:
+            return False
+
+    def get_false(n):
+        return False
+
+    schema = Schema(Or(
+            And(bool, Use(get_arg)),
+            And(str, lambda n: not n, Use(bool)),
+            And(str, lambda n: n.lower() in ref, Use(list)),
+            And(Or(list[str], tuple[str]), lambda n: not any([bool(i) for i in n]), Use(get_false)),
+            And(Or(list[str], tuple[str]), lambda n: [i.lower() in ref for i in n], Use(list))
+    ))
+
+    # Decapitalize
+    ret = schema.validate(arg)
+    if isinstance(ret, list):
+        for i, item in enumerate(ret):
+            ret[i] = item.lower()
+        ret = tuple(ret)
+
+    return ret
 
 
 def val_type(file_type):

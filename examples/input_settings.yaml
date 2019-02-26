@@ -11,7 +11,7 @@ input_ligands:
     - OC(CCCC)=O
 
 optional:
-    dir_names: [core, ligand, QD]
+    dir_names: [core, ligand, QD, database]
 
     database:
         read: True

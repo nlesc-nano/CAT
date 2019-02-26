@@ -1,6 +1,6 @@
 """ A module designed for optimizing the geometry of ligands. """
 
-__all__ = ['optimize_ligand']
+__all__ = ['init_ligand_opt']
 
 import itertools
 import numpy as np
@@ -21,21 +21,22 @@ from ..data_handling.database import compare_database
 from ..data_handling.mol_export import export_mol
 
 
-def optimize_ligand(ligand, database, opt=True):
+def init_ligand_opt(ligand_list, arg):
     """
-    Pull the structure if a match has been found or alternatively optimize a new geometry.
+    initialize the ligand optimization procedure.
 
-    ligand <plams.Molecule>: The ligand molecule.
-    database <pd.DataFrame>: Database of previous calculations.
-    opt <bool>: If the geometry of the ligand (RDKit UFF) should be optimized (True) or not (False).
+    ligand_list <list> [<plams.Molecule>]: A list of valid ligands.
+    arg <dict>: A dictionary containing all (optional) arguments.
 
-    return <plams.Molecule>: The optimized ligand molecule.
+    return <plams.Molecule>: A list of optimized ligands.
     """
     # Searches for matches between the input ligand and the database; imports the structure
-    if database is not None:
-        ligand, match, pdb = compare_database(ligand, database)
-    else:
-        match, pdb = False, False
+    if 'ligand' in arg.optional.database.read:
+        ligand_list = compare_database(ligand_list, arg)
+
+    # Optimize all new ligands
+    for ligand in ligand_list:
+        if not ligand.properties.read:
 
     # Optimize the ligand if no match has been found with the database
     ligand.properties.entry = False
