@@ -28,13 +28,13 @@ def read_database(ligand_list, arg):
         for i, lig in enumerate(ligand_list):
             smiles = lig.properties.smiles
             if smiles in df:  # The ligand is present in the database
-                pdb = isfile(df[smiles])
-                if isfile(pdb):
+                pdb = df[smiles]
+                try:
                     lig_new = molkit.readpdb(pdb, proximityBonding=False)
                     lig_new.properties = lig.properties
                     lig_new.properties.read = True
                     ligand_list[i] = lig_new
-                else:  # The ligand is present in the database but its .pdb file is missing
+                except FileNotFoundError:
                     print(get_time() + lig.properties.name + ' was found in the database, ' \
                           'yet its .pdb file is absent from ' + arg.optional.dir_names.ligand)
 
