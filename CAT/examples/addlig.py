@@ -6,8 +6,8 @@ from os.path import (join, exists)
 from scm.plams.core.functions import read_molecules
 
 from CAT.attachment.dye import bob_ligand, bob_core, substitution
-from CAT.examples.example_xyz import get_data_dir
 
+### ovo je cat.01 !!!
 
 ##################################          input             #####################################
 
@@ -17,7 +17,7 @@ start = time.time()
 
 # Path to the working folder where are prepared molecules and where folder with new coordinares
 # will be made with the specific name
-path = get_data_dir()
+path = os.getcwd()
 input_ligands = read_molecules(join(path, 'LIGANDS'))
 input_ligands = list(input_ligands.values())
 input_cores = read_molecules(join(path, 'CORES'))
@@ -41,6 +41,7 @@ new_dir = 'new_molecules'
 if not exists(join(path, new_dir)):
     os.makedirs(join(path, new_dir))
 
+min_dist = 1.3
 
 ############################ Monosubstitution and disubstitution ##################################
 
@@ -55,12 +56,12 @@ new_molecules = chain.from_iterable([mono, di, tri, tetra])
 
 
 # Export molecules to if the minimum core/ligand distance is smaller than min_dist
-min_dist = 0.0
 for mol in new_molecules:
     if mol.properties.min_distance > min_dist:
         mol.write(join(path, new_dir, mol.properties.name + '.xyz'))
     else:
         mol.write(join(path, new_dir, 'err_' + mol.properties.name + '.xyz'))
+        print (mol.properties.name + ": \tDistance between ligand and core atoms is smaler than %f" % min_dist)
 
 # The End
 end = time.time()
