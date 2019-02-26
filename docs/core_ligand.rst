@@ -61,6 +61,7 @@ Optional arguments
     |
 
 **indices** |tuple|_  [|int|_] = ()
+
     For cores:
     Manually specify the atomic index of one ore more atom(s) in the core that will be replaced with ligands.
     If left empty, all atoms of a user-specified element (see ``optional.cores.dummy = str or int``) will be replaced with ligands.
