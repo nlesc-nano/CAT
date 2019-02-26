@@ -17,8 +17,8 @@ optional:
         read: True
         write: True
         overwrite: False
-        export: [pdb, xyz]
-        mol_format: [xlsx, json]
+        mol_format: [pdb, xyz]
+        database_format: [xlsx, json]
         mongodb: False
 
     core:
