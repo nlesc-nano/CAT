@@ -16,8 +16,10 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 from rdkit.Chem import AllChem
 
 from .ligand_attach import (rot_mol_angle, sanitize_dim_2)
-from ..mol_utils import (to_symbol, fix_carboxyl, get_bond_index, from_mol_other, from_rdmol)
-from ..data_handling.database import compare_database
+from ..utils import get_time
+from ..mol_utils import (to_symbol, fix_carboxyl, get_bond_index,
+                         from_mol_other, from_rdmol, separate_mod)
+from ..data_handling.database import ligand_from_database, ligand_to_database
 from ..data_handling.mol_export import export_mol
 
 
@@ -32,79 +34,28 @@ def init_ligand_opt(ligand_list, arg):
     """
     # Searches for matches between the input ligand and the database; imports the structure
     if 'ligand' in arg.optional.database.read:
-        ligand_list = compare_database(ligand_list, arg)
+        ligand_list = ligand_from_database(ligand_list, arg)
 
     # Optimize all new ligands
-    for ligand in ligand_list:
-        if not ligand.properties.read:
+    if arg.optional.ligand.optimize:
+        for ligand in ligand_list:
+            if not ligand.properties.read:
+                # Optimize the ligand and export .xyz & .pdb files
+                mol_list = split_mol(ligand)
+                for mol in mol_list:
+                    mol.set_dihed(180.0)
+                ligand = recombine_mol(mol_list)
+                ligand = fix_carboxyl(ligand)
+                export_mol(ligand, message='Optimized ligand:\t\t')
+            else:
+                del ligand.properties.read
+                print(get_time() + ligand.properties.name + ' pulled from Ligand_database.csv')
 
-    # Optimize the ligand if no match has been found with the database
-    ligand.properties.entry = False
-    if not match or not pdb:
-        # Export the unoptimized ligand to a .pdb and .xyz file
-        export_mol(ligand, message='Ligand:\t\t\t')
+    # Write newly optimized structures to the database
+    if 'ligand' in arg.optional.database.write and arg.optional.ligand.optimize:
+        ligand_to_database(ligand_list, arg)
 
-        # If ligand optimization is enabled: Optimize the ligand,
-        # set pdb_info and export the result
-        if opt:
-            mol_list = split_mol(ligand)
-            for mol in mol_list:
-                mol.set_dihed(180.0)
-            ligand = recombine_mol(mol_list)
-            ligand = fix_carboxyl(ligand)
-            ligand.properties.name = ligand.properties.name + '.opt'
-            export_mol(ligand, message='Optimized ligand:\t\t')
-            ligand.properties.name = ligand.properties.name.split('.opt')[0]
-
-        # Create an entry for in the database if no previous entries are present
-        # or prints a warning if a structure is present in the database but
-        # the .pdb file is missing
-        if not match and not pdb:
-            ligand.properties.entry = True
-        else:
-            print(get_time() + 'database entry exists for ' + ligand.properties.name +
-                  ' yet the corresponding .pdb file is absent. The geometry has been reoptimized.')
-
-    return ligand
-
-
-@add_to_class(Molecule)
-def separate_mod(self):
-    """
-    Modified PLAMS function: seperates a molecule instead of a copy of a molecule.
-    Separate the molecule into connected components.
-    Returned is a list of new |Molecule| objects (all atoms and bonds are disjoint with
-        the original molecule).
-    Each element of this list is identical to one connected component of the base molecule.
-    A connected component is a subset of atoms such that there exists a path
-        (along one or more bonds) between any two atoms.
-    """
-    frags = []
-    for at in self:
-        at._visited = False
-
-    def dfs(v, mol):
-        v._visited = True
-        v.mol = mol
-        for e in v.bonds:
-            e.mol = mol
-            u = e.other_end(v)
-            if not u._visited:
-                dfs(u, mol)
-
-    for src in self.atoms:
-        if not src._visited:
-            m = Molecule()
-            dfs(src, m)
-            frags.append(m)
-
-    for at in self.atoms:
-        del at._visited
-        at.mol.atoms.append(at)
-    for b in self.bonds:
-        b.mol.bonds.append(b)
-
-    return frags
+    return ligand_list
 
 
 @add_to_class(Molecule)

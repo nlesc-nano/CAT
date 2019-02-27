@@ -3,35 +3,30 @@
 __all__ = ['prep']
 
 import time
-from itertools import chain
 from os.path import join
 
 from scm.plams.mol.atom import Atom
 from scm.plams.core.errors import MoleculeError
 
-from .utils import (create_dir, check_sys_var, get_time)
-from .mol_utils import (find_substructure, find_substructure_split)
+from .utils import (check_sys_var, get_time)
 
 from .analysis.asa import init_asa
 from .analysis.ligand_bde import init_bde
 from .analysis.ligand_solvation import init_solv
 
-from .data_handling.database import (read_database, write_database)
 from .data_handling.mol_import import read_mol
 from .data_handling.input_sanitizer import (sanitize_path, sanitize_input_mol, sanitize_optional)
 
 from .attachment.qd_opt import init_qd_opt
 from .attachment.ligand_opt import init_ligand_opt
-from .attachment.ligand_attach import ligand_to_qd
+from .attachment.ligand_attach import init_create_qd
+from .attachment.ligand_anchoring import find_ligand_anchors
 
 
-def prep(arg):
+def prep(arg, return_mol=True):
     """
     function that handles all tasks related to prep_core, prep_ligand and prep_qd.
 
-    input_ligands <list>[<plams.Molecule>]: A list of all input ligands.
-    input_cores <list>[<plams.Molecule>]: A list of all input cores.
-    path <str>: The path where all results will be stored.
     arg <dict>: A dictionary containing all (optional) arguments.
 
     return <list>[<plams.Molecule>]: A list of all quantum dots (core + n*ligands).
@@ -42,17 +37,15 @@ def prep(arg):
 
     # Interpret arguments
     arg.update(sanitize_path(arg))
-    arg.update(sanitize_input_mol(arg))
     arg.update(sanitize_optional(arg))
-
-    # Create the result directories (if they do not exist)
-    keys = ('core', 'ligand', 'QD', 'database')
-    arg.optional.dir_names = {key: create_dir(name, path=arg.path) for
-                              name, key in zip(arg.optional.dir_names, keys)}
+    arg.update(sanitize_input_mol(arg))
+    del arg.path
 
     # Read the input ligands and cores
     ligand_list = read_mol(arg.input_ligands)
     core_list = read_mol(arg.input_cores)
+    del arg.input_ligands
+    del arg.input_cores
 
     # Raises an error if mol_list is empty
     if not ligand_list:
@@ -65,13 +58,10 @@ def prep(arg):
         prep_core(core, arg)
 
     # Optimize the ligands, find functional groups, calculate properties and read/write the results
-    ligand_list = prep_ligand_1(ligand_list, arg)
+    ligand_list = prep_ligand(ligand_list, arg)
 
-    # Combine the core with the ligands, yielding qd, and format the resulting list
-    qd_list = list(ligand_to_qd(core, ligand, arg) for core in core_list for ligand in ligand_list)
-
-    # Optimize the quantum dots, perform an activation strain analyses and read/write the results
-    qd_list = prep_qd(qd_list, arg)
+    # Combine the cores and ligands; analyze the resulting quantum dots
+    qd_list = prep_qd(ligand_list, core_list, arg)
 
     # The End
     time_end = time.time()
@@ -79,7 +69,8 @@ def prep(arg):
     message += 'Total elapsed time:\t\t' + '%.4f' % (time_end - time_start) + ' sec'
     print(message)
 
-    return qd_list, core_list, ligand_list
+    if return_mol:
+        return qd_list, core_list, ligand_list
 
 
 def prep_core(core, arg):
@@ -108,7 +99,7 @@ def prep_core(core, arg):
                             ' was specified as dummy atom, yet no dummy atoms were found')
 
 
-def prep_ligand_1(ligand_list, arg):
+def prep_ligand(ligand_list, arg):
     """
     Function that handles ligand operations.
     Read/write the results from/to a ligand database, launch prep_ligand_2() and
@@ -120,93 +111,47 @@ def prep_ligand_1(ligand_list, arg):
 
     return <list>[<plams.Molecule>]: A copy of all ligands for each identified functional group.
     """
-    path = arg.path
+    # Identify functional groups within the ligand and add a dummy atom to the center of mass.
+    ligand_list = find_ligand_anchors(ligand_list, arg)
 
-    # Open the ligand database and check if the specified ligand(s) is already present
-    if arg.optional.use_database:
-        ligand_database = read_database(path, database_name='Ligand_database')
-    else:
-        ligand_database = None
-
-    # Optimize all ligands and find their functional groups
-    ligand_list = list(chain.from_iterable(prep_ligand_2(ligand, ligand_database, arg) for
-                                           ligand in ligand_list))
+    # Check if any valid functional groups were found
     if not ligand_list:
-        raise IndexError('No valid ligand functional groups found, aborting run')
+        raise IndexError('No valid functional groups found in any of the ligands, aborting run')
 
+    # Optimize the ligands
     if arg.optional.ligand.optimize:
         ligand_list = init_ligand_opt(ligand_list, arg)
 
+    # Perform a COSMO-RS calculation on the ligands
     if arg.optional.ligand.crs:
         check_sys_var()
-        for ligand in ligand_list:
-            init_solv(ligand, arg.optional.ligand.crs)
-
-    # Write new entries to the ligand database
-    if arg.optional.use_database:
-        if not arg.optional.ligand.optimize:
-            for ligand in ligand_list:
-                ligand.properties.entry = True
-        write_database(ligand_list, ligand_database, path, mol_type='ligand')
+        for lig in ligand_list:
+            init_solv(lig, arg.optional.ligand.crs)
 
     return ligand_list
 
 
-def prep_ligand_2(ligand, database, arg):
-    """
-    Function that handles ligand operations.
-    Optimize the ligand and search for viable user-defined functional groups.
-
-    ligand <plams.Molecule>: The ligand molecule.
-    database <pd.DataFrame>: Database of previous calculations.
-    arg <dict>: A dictionary containing all (optional) arguments.
-
-    return <list>[<plams.Molecule>]: A copy of the ligand for each identified functional group.
-    """
-    split = arg.optional.ligand.split
-
-    # Identify functional groups within the ligand and add a dummy atom to the center of mass.
-    if not ligand.properties.dummies:
-        ligand_list = find_substructure(ligand, split)
-    else:
-        if len(ligand.properties.dummies) == 1:
-            ligand.properties.dummies = ligand.properties.dummies[0] - 1
-            split = False
-        elif len(ligand.properties.dummies) == 2:
-            ligand.properties.dummies = [i - 1 for i in ligand.properties.dummies]
-            split = True
-        ligand_list = [find_substructure_split(ligand, ligand.properties.dummies, split)]
-
-    return ligand_list
-
-
-def prep_qd(qd_list, arg):
+def prep_qd(ligand_list, core_list, arg):
     """
     Function that handles quantum dot (qd, i.e. core + all ligands) operations.
     Optimize the quantum dot, perform and activation strain analyses on the ligands and read/write
         the results from/to a quantom dot database.
 
-    ligand_list <list>[<plams.Molecule>]: A list of all quantom dots.
-    database <pd.DataFrame>: Database of previous calculations.
+    ligand_list <list>[<plams.Molecule>]: A list of all ligands.
+    core_list <list>[<plams.Molecule>]: A list of all cores.
     arg <dict>: A dictionary containing all (optional) arguments.
 
     return <list>[<plams.Molecule>]: A list of all optimized quantom dots.
     """
-    path = arg.path
-
+    # Construct the quantum dots
+    qd_list = init_create_qd(ligand_list, core_list, arg)
     if not qd_list:
         raise IndexError('No valid quantum dots found, aborting')
-
-    # Open the quantum dot database and check if the specified quantum dot(s) is already present
-    if arg.optional.use_database:
-        qd_database = read_database(path, database_name='QD_database')
-    else:
-        qd_database = None
 
     # Optimize the qd with the core frozen
     if arg.optional.qd.optimize:
         check_sys_var()
-        qd_list = list(init_qd_opt(qd, qd_database, arg.optional.qd.optimize) for qd in qd_list)
+        init_qd_opt(qd_list, arg)
 
     # Calculate the interaction between ligands on the quantum dot surface
     if arg.optional.qd.int:
@@ -220,13 +165,6 @@ def prep_qd(qd_list, arg):
         for qd in qd_list:
             qd.properties.energy.BDE = init_bde(qd, arg.optional.qd.dissociate)
             df = qd.properties.energy.BDE
-            df.to_excel(join(path, qd.properties.name + '_BDE.xlsx'))
-
-    # Write the new quantum dot results to the quantum dot database
-    if arg.optional.use_database:
-        if not arg.optiona.qd.optimize:
-            for qd in qd_list:
-                qd.properties.entry = True
-        write_database(qd_list, qd_database, path, mol_type='qd')
+            df.to_csv(join(arg.optional.database.dirname, qd.properties.name + '_BDE.xlsx'))
 
     return qd_list

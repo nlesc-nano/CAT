@@ -1,12 +1,13 @@
 """ An example input file. """
 
+from os.path import (dirname, join)
 import yaml
 import CAT
 from scm.plams.core.settings import Settings
 
 
-yml = '/path/to/my/input_settings.yaml'
-with open(yml, 'r') as file:
+yaml_path = join(dirname(__file__), 'input_settings.yaml')
+with open(yaml_path, 'r') as file:
     arg = Settings(yaml.load(file))
 
 qd_list, core_list, ligand_list = CAT.base.prep(arg)

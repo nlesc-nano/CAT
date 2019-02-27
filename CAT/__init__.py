@@ -12,28 +12,28 @@ from .analysis import (
 )
 
 from .attachment import (
-    qd_opt, init_ligand_opt, ligand_to_qd
+    qd_opt, init_ligand_opt, ligand_to_qd, find_ligand_anchors
 )
 
 from .data_handling import (
-    read_database, compare_database, write_database, export_mol, read_mol,
-    set_prop, sanitize_optional, sanitize_input_mol, sanitize_path
+    ligand_from_database, ligand_to_database, qd_from_database, qd_to_database,
+    export_mol, read_mol, set_prop, sanitize_optional, sanitize_input_mol, sanitize_path
 )
 
 from .base import prep
 
-from .utils import (get_template, create_dir)
+from .utils import get_template
 
 __all__ = [
     'init_asa', 'CRSJob', 'CRSResults', 'job_single_point', 'job_geometry_opt', 'job_freq',
     'init_bde', 'get_thermo', 'get_entropy', 'dissociate_ligand', 'init_solv',
 
-    'qd_opt', 'init_ligand_opt', 'ligand_to_qd',
+    'qd_opt', 'init_ligand_opt', 'ligand_to_qd', 'find_ligand_anchors',
 
-    'read_database', 'compare_database', 'write_database', 'export_mol', 'read_mol',
-    'set_prop', 'sanitize_optional', 'sanitize_input_mol', 'sanitize_path',
+    'ligand_from_database', 'ligand_to_database', 'qd_from_database', 'qd_to_database',
+    'export_mol', 'read_mol', 'set_prop', 'sanitize_optional', 'sanitize_input_mol', 'sanitize_path',
 
     'prep',
 
-    'get_template', 'create_dir'
+    'create_dir'
 ]

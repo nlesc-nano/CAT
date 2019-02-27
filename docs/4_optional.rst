@@ -11,43 +11,32 @@ Default Settings
 ::
 
     optional:
-        dir_names: [core, ligand, QD, database]
-
         database:
+            dirname: database
             read: True
             write: True
             overwrite: False
             mol_format: [pdb, xyz]
-            database_format: [xlsx, json]
             mongodb: False
 
         core:
+            dirname: core
             dummy: Cl
 
         ligand:
+            dirname: ligand
             optimize: True
             split: True
             cosmo-rs: False
 
         qd:
+            dirname: QD
             optimize: False
             activation_strain: False
             dissociate: False
 
 Arguments
 ~~~~~~~~~
-
-**dir_names** |list|_ [|str|_] = [*core*, *ligand*, *QD*, *database*]
-
-    The names of the (to be created) folders.
-    By default, ligand structures will be stored and read from |list|_ [``0``],
-    cores will be stored and read |list|_ [``1``], the combined core+ligands
-    will be stored and read from |list|_ [``2``] and finally the (optional)
-    database will be stored in |list|_ [``3``]. Structures can be read from
-    different folders if their filename is prepended with its absolute path,
-    thus effectively ignoring this argument.
-
-    |
 
 Database
 --------
@@ -56,20 +45,29 @@ Database
 
     optional:
         database:
+            dirname: database
             read: True
             write: True
             overwrite: False
             mol_format: [pdb, xyz]
-            database_format: [xlsx, json]
             mongodb: False
+
+**database.dirname** |str|_ = *database*
+
+    The name of the directory where the database will be stored.
+    The database directory will be created (if it does not yet exist)
+    at the path specified in :ref:`path`.
+
+    |
 
 **database.read** |bool|_, |str|_ or |list|_ [|str|_] = *True*
 
-    Before optimizing a structure, check if a geometry is available from previous
-    calculations. If a match is found, use that structure and avoid a geometry
-    reoptimizations. If one wants more control then the boolean can be substituted
-    for a list of strings (*i.e.* *core*, *ligand* and/or *QD*), meaning that structures
-    will be read only for a specific subset.
+    Before optimizing a structure, check if a geometry is available from
+    previous calculations. If a match is found, use that structure and
+    avoid a geometry reoptimizations. If one wants more control then the
+    boolean can be substituted for a list of strings (*i.e.* *core*,
+    *ligand* and/or *QD*), meaning that structures will be read only for a
+    specific subset.
 
     For example:
 
@@ -89,10 +87,12 @@ Database
 
 **database.write** |bool|_, |str|_ or |list|_ [|str|_] = *True*
 
-    Export the optimized structures to the database of results. Previous results will
-    **not** be overwritten unless ``optional.database.overwrite = True``. If one wants more
-    control then the boolean can be substituted for a list of strings (*i.e.* *core*, *ligand*
-    and/or *QD*), meaning that structures written for for a specific subset.
+    Export the optimized structures to the database of results.
+    Previous results will **not** be overwritten unless
+    ``optional.database.overwrite = True``. If one wants more control then
+    the boolean can be substituted for a list of strings (*i.e.* *core*,
+    *ligand* and/or *QD*), meaning that structures written for for a specific
+    subset.
 
     See **database.read** for a similar relevant example.
 
@@ -100,9 +100,10 @@ Database
 
 **database.overwrite** |bool|_, |str|_ or |list|_ [|str|_] = *False*
 
-    Allows previous results in the database to be overwritten. Only apllicable if
-    ``optional.database.write = True``. If one wants more control then the boolean can be
-    substituted for a list of strings (*i.e.* *core*, *ligand* and/or *QD*), meaning
+    Allows previous results in the database to be overwritten.
+    Only apllicable if ``optional.database.write = True``.
+    If one wants more control then the boolean can be substituted for
+    a list of strings (*i.e.* *core*, *ligand* and/or *QD*), meaning
     that structures written for for a specific subset.
 
     See **database.read** for a similar relevant example.
@@ -111,14 +112,10 @@ Database
 
 **database.mol_format** |str|_ or |list|_ [|str|_] = [*pdb*, *xyz*]
 
-    The file format(s) for storing moleculair structures. Accepted values:
-    *pdb* and/or *xyz*.
-
-    |
-
-**database.database_format** |str|_ or |list|_ [|str|_] = [*json*, *xlsx*]
-
-    The file format(s) for storing database. Accepted values: *json* and/or *xlsx*.
+    The file format(s) for storing moleculair structures.
+    While the default format, .pdb, can and should not be disabled, it can be
+    supplemented with additional formats.
+    Accepted values: *pdb* and/or *xyz*.
 
     |
 
@@ -136,7 +133,16 @@ Core
 
     optional:
         core:
+            dirname: core
             dummy: Cl
+
+**core.dirname** |str|_ = *core*
+
+    The name of the directory where all cores will be stored.
+    The core directory will be created (if it does not yet exist)
+    at the path specified in :ref:`path`.
+
+    |
 
 **core.dummy** |str|_ or |int|_ = *Cl*
 
@@ -153,18 +159,27 @@ Ligand
 
     optional:
         ligand:
+            dirname: ligand
             optimize: True
             split: True
             cosmo-rs: False
 
+**ligand.dirname** |str|_ = *ligand*
+
+    The name of the directory where all ligands will be stored.
+    The ligand directory will be created (if it does not yet exist)
+    at the path specified in :ref:`path`.
+
+    |
+
 **ligand.optimize** |bool|_ = *True*
 
     Optimize the geometry of the to be attached ligands.
-    The ligand is split into one or multiple (more or less) linear fragments, which
-    are subsequently optimized (RDKit UFF [1_, 2_, 3_]) and reassembled while
-    checking for the optimal dihedral angle. The ligand fragments are biased
-    towards more linear conformations to minimize inter-ligand repulsion once the
-    ligands are attached to the core.
+    The ligand is split into one or multiple (more or less) linear fragments,
+    which are subsequently optimized (RDKit UFF [1_, 2_, 3_]) and reassembled
+    while checking for the optimal dihedral angle. The ligand fragments are
+    biased towards more linear conformations to minimize inter-ligand
+    repulsion once the ligands are attached to the core.
 
     |
 
@@ -172,24 +187,24 @@ Ligand
 
     If *False*: The ligand in its entirety is to be attached to the core.
 
-    -   N\ :sup:`+`\ R\ :sub:`4`\                   -> N\ :sup:`+`\ R\ :sub:`4`\
+    -   N\ :sup:`+`\ R\ :sub:`4`\                -> N\ :sup:`+`\ R\ :sub:`4`\
 
-    -   O\ :sub:`2`\CR                              -> O\ :sub:`2`\CR
+    -   O\ :sub:`2`\CR                           -> O\ :sub:`2`\CR
 
-    -   HO\ :sub:`2`\CR                             -> HO\ :sub:`2`\CR
+    -   HO\ :sub:`2`\CR                          -> HO\ :sub:`2`\CR
 
-    -   H\ :sub:`3`\CO\ :sub:`2`\CR                 -> H\ :sub:`3`\CO\ :sub:`2`\CR
+    -   H\ :sub:`3`\CO\ :sub:`2`\CR              -> H\ :sub:`3`\CO\ :sub:`2`\CR
 
     If *True*: A proton, counterion or functional group is to be removed from
     the ligand before attachment to the core.
 
-    -   X\ :sup:`-`\.N\ :sup:`+`\ R\ :sub:`4`\      -> N\ :sup:`+`\ R\ :sub:`4`\
+    -   X\ :sup:`-`\.N\ :sup:`+`\ R\ :sub:`4`\   -> N\ :sup:`+`\ R\ :sub:`4`\
 
-    -   HO\ :sub:`2`\CR                             -> O\ :sup:`-`\ :sub:`2`\CR
+    -   HO\ :sub:`2`\CR                          -> O\ :sup:`-`\ :sub:`2`\CR
 
-    -   Na\ :sup:`+`\.O\ :sup:`-`\ :sub:`2`\CR	    -> O\ :sup:`-`\ :sub:`2`\CR
+    -   Na\ :sup:`+`\.O\ :sup:`-`\ :sub:`2`\CR	 -> O\ :sup:`-`\ :sub:`2`\CR
 
-    -   H\ :sub:`3`\CO\ :sub:`2`\CR                 -> O\ :sup:`-`\ :sub:`2`\CR
+    -   H\ :sub:`3`\CO\ :sub:`2`\CR              -> O\ :sup:`-`\ :sub:`2`\CR
 
     |
 
@@ -198,9 +213,10 @@ Ligand
     Perform a property calculation with COSMO-RS [4_, 5_, 6_, 7_]; the COSMO
     surfaces are constructed using ADF MOPAC [8_, 9_, 10_].
 
-    The solvation energy of the ligand and its activity coefficient are calculated
-    in the following solvents: acetone, acetonitrile, dimethyl formamide (DMF),
-    dimethyl sulfoxide (DMSO), ethyl acetate, ethanol, *n*-hexane, toluene and water.
+    The solvation energy of the ligand and its activity coefficient are
+    calculated in the following solvents: acetone, acetonitrile,
+    dimethyl formamide (DMF), dimethyl sulfoxide (DMSO), ethyl acetate,
+    ethanol, *n*-hexane, toluene and water.
 
     |
 
@@ -211,9 +227,18 @@ QD
 
     optional:
         qd:
+            dirname: QD
             optimize: False
             activation_strain: False
             dissociate: False
+
+**qd.dirname** |str|_ = *QD*
+
+    The name of the directory where all quantum dots will be stored.
+    The quantum dot directory will be created (if it does not yet exist)
+    at the path specified in :ref:`path`.
+
+    |
 
 **qd.optimize** |bool|_ = *False*
 
@@ -225,8 +250,9 @@ QD
 
 **qd.activation_strain** |bool|_ = *False*
 
-    Perform an activation strain analyses [12_, 13_, 14_] (kcal mol\ :sup:`-1`\)
-    on the ligands attached to the quantum dot surface with RDKit UFF [1_, 2_, 3_].
+    Perform an activation strain analyses [12_, 13_, 14_]
+    (kcal mol\ :sup:`-1`\) on the ligands attached to the quantum dot surface
+    with RDKit UFF [1_, 2_, 3_].
 
     The core is removed during this process; the analyses is thus exclusively
     focused on ligand deformation and inter-ligand interaction.
@@ -243,29 +269,30 @@ QD
     distances, can be either stabilizing or destabilizing.
 
     3.  d\ *E* :	The sum of d\ *E*\ :sub:`strain`\  and d\ *E*\ :sub:`int`\ .
-    Accounts for both the destabilizing ligand deformation and
-    (de-)stabilizing interaction between all ligands in the absence of the core.
+    Accounts for both the destabilizing ligand deformation and (de-)stabilizing
+    interaction between all ligands in the absence of the core.
 
     |
 
 **qd.bde** |bool|_ = *False*
 
-    Calculate the bond dissociation energy (BDE) of ligands attached to the surface
-    of the core. The calculation consists of five distinct steps:
+    Calculate the bond dissociation energy (BDE) of ligands attached to the
+    surface of the core. The calculation consists of five distinct steps:
 
-    1.  Dissociate all *n*2*(n-1)* combinations of 1 ligand (X), 1 Cd atom and 1
-    other ligand (X).
+    1.  Dissociate all *n*2*(n-1)* combinations of 1 ligand (X), 1 Cd atom and
+    1 other ligand (X).
 
 
     2.  Optimize the geometry of the CdX\ :sub:`2`\ structure with ADF MOPAC
     [8_, 9_, 10_].
 
-    3.  Calculate the "electronic" contribution to the BDE (d\ *E* ) with ADF MOPAC
-    [8_, 9_, 10_] for all partially dissociated compounds created in step 1.
-    This step consists of single point calculations.
+    3.  Calculate the "electronic" contribution to the BDE (d\ *E* ) with
+    ADF MOPAC [8_, 9_, 10_] for all partially dissociated compounds
+    created in step 1. This step consists of single point calculations.
 
-    4.  Calculate the thermal contribution to the BDE (dd\ *G* ) with ADF UFF [3_, 11_].
-    This step consists of geometry optimizations and frequency analyses.
+    4.  Calculate the thermal contribution to the BDE (dd\ *G* ) with
+    ADF UFF [3_, 11_]. This step consists of geometry optimizations and
+    frequency analyses.
 
     5.  Combine d\ *E* and dd\ *G*, yielding all bond dissociation
     energies.

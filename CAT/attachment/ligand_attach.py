@@ -8,48 +8,76 @@ from scipy.spatial.distance import cdist
 from scm.plams.mol.molecule import Molecule
 from scm.plams.core.settings import Settings
 
+from ..utils import get_time
 from ..mol_utils import (merge_mol, get_atom_index)
+from ..data_handling.database import (qd_from_database, qd_to_database)
 from ..data_handling.mol_export import export_mol
 
 
-def sanitize_dim_2(arg):
-    """
-    Convert a PLAMS atom or iterable consisting of n PLAMS atoms into a n*3 array.
-    In addition, 3 arrays are converted into n*3 arrays.
-    """
-    if not isinstance(arg, np.ndarray):
-        try:
-            return np.array(arg.coords)[None, :]
-        except AttributeError:
-            dummy = Molecule()
-            return dummy.as_array(atom_subset=arg)
+def init_create_qd(ligand_list, core_list, arg):
+    """ Initialize the quantum dot construction. """
+    # Attempt to pull structures from the database
+    if 'qd' in arg.optional.database.read:
+        qd_list = qd_from_database(ligand_list, core_list, arg)
     else:
-        if len(arg.shape) == 1:
-            return arg[None, :]
-        return arg
+        qd_list = [(core, ligand) for core in core_list for ligand in ligand_list]
+
+    # Combine core and ligands into quantum dots
+    for i, qd in enumerate(qd_list):
+        if not isinstance(qd, Molecule):
+            qd_list[i] = ligand_to_qd(qd[0], qd[1], arg)
+        else:
+            print(get_time() + qd.properties.name + ' pulled from QD_database.csv')
+
+    # Export the resulting geometries back to the database
+    if 'qd' in arg.optional.database.write and not arg.optional.qd.optimize:
+        qd_to_database(qd_list, arg)
+
+    return qd_list
 
 
-def sanitize_dim_3(arg, padding=np.nan):
+def ligand_to_qd(core, ligand, arg):
     """
-    Convert an iterable consisting of n PLAMS atoms or a nested iterable consisting of m*(≤n)
-    PLAMS atoms into a m*n*3 array, padding the array n is not constant. In addition, n*3 arrays
-    are converted into m*n*3 arrays.
+    Function that handles quantum dot (qd, i.e. core + all ligands) operations.
+    Combine the core and ligands and assign properties to the quantom dot.
+
+    core <plams.Molecule>: The core molecule.
+    ligand <plams.Molecule>: The ligand molecule.
+    arg <dict>: A dictionary containing all (optional) arguments.
+
+    return <plams.Molecule>: The quantum dot (core + n*ligands).
     """
-    if not isinstance(arg, np.ndarray):
-        dummy = Molecule()
-        try:
-            return dummy.as_array(atom_subset=arg)[None, :, :]
-        except AttributeError:
-            max_at = max(len(mol) for mol in arg)
-            ret = np.empty((len(arg), max_at, 3), order='F')
-            ret[:] = padding
-            for i, mol in enumerate(arg):
-                ret[i, 0:len(mol)] = dummy.as_array(atom_subset=mol)
-            return ret
-    else:
-        if len(arg.shape) == 2:
-            return arg[None, :, :]
-        return arg
+    # Define vectors and indices used for rotation and translation the ligands
+    vec1 = sanitize_dim_2(ligand.properties.dummies) - np.array(ligand.get_center_of_mass())
+    vec2 = np.array(core.get_center_of_mass()) - sanitize_dim_2(core.properties.dummies)
+    idx = ligand.properties.dummies.get_atom_index() - 1
+    ligand.properties.dummies.properties.anchor = True
+
+    # Attach the rotated ligands to the core, returning the resulting strucutre (PLAMS Molecule).
+    lig_array = rot_mol_angle(ligand, vec1, vec2, atoms_other=core.properties.dummies, idx=idx)
+    lig_array = rot_mol_axis(lig_array, vec2, atoms_other=core.properties.dummies, idx=idx)
+    qd = core.copy()
+    array_to_qd(ligand, lig_array, mol_other=qd)
+
+    # indices of all the atoms in the core and the ligand heteroatom anchor.
+    qd_indices = [i for i, at in enumerate(qd, 1) if at.properties.pdb_info.ResidueName == 'COR' or
+                  at.properties.anchor]
+
+    # Prepare the QD properties
+    qd.properties = Settings()
+    qd.properties.indices = qd_indices
+    qd.properties.path = arg.optional.qd.dirname
+    qd.properties.core = core.properties.name
+    qd.properties.ligand = ligand.properties.smiles
+    qd.properties.ligand_anchor = ligand.properties.anchor
+    qd.properties.ligand_count = qd[-1].properties.pdb_info.ResidueNumber - 1
+    qd.properties.name = core.properties.name + '__' + str(qd.properties.ligand_count)
+    qd.properties.name += '_' + ligand.properties.name
+
+    # Export the molecule
+    export_mol(qd, message='core + ligands:\t\t')
+
+    return qd
 
 
 def rot_mol_angle(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=False):
@@ -191,15 +219,7 @@ def rot_mol_axis(xyz_array, vec, dist_to_self=True, atoms_other=None, step=(1/16
             if dist_to_self:
                 atoms_other = np.concatenate((atoms_other, xyz[idx_min]))
             ret_array[i] = xyz[idx_min]
-
-        # Return a n*3 or m*n*3 array
-        if ret_array.shape[0] == 1:
-            return ret_array[0]
         return ret_array
-
-    # Return a n*3 or m*n*3 array
-    if xyz_array.shape[0] == 1:
-        return xyz_array[0]
     return xyz_array
 
 
@@ -233,39 +253,41 @@ def array_to_qd(mol, xyz_array, mol_other=False):
     mol_other.merge_mol(mol_list)
 
 
-def ligand_to_qd(core, ligand, arg):
+def sanitize_dim_2(arg):
     """
-    Function that handles quantum dot (qd, i.e. core + all ligands) operations.
-    Combine the core and ligands and assign properties to the quantom dot.
-
-    core <plams.Molecule>: The core molecule.
-    ligand <plams.Molecule>: The ligand molecule.
-    qd_folder <str>: The quantum dot export folder.
-
-    return <plams.Molecule>: The quantum dot (core + n*ligands).
+    Convert a PLAMS atom or iterable consisting of n PLAMS atoms into a n*3 array.
+    In addition, 3 arrays are converted into n*3 arrays.
     """
-    # Define vectors and indices used for rotation and translation the ligands
-    vec1 = sanitize_dim_2(ligand.properties.dummies) - np.array(ligand.get_center_of_mass())
-    vec2 = np.array(core.get_center_of_mass()) - sanitize_dim_2(core.properties.dummies)
-    idx = ligand.properties.dummies.get_atom_index() - 1
-    ligand.properties.dummies.properties.anchor = True
+    if not isinstance(arg, np.ndarray):
+        try:
+            return np.array(arg.coords)[None, :]
+        except AttributeError:
+            dummy = Molecule()
+            return dummy.as_array(atom_subset=arg)
+    else:
+        if len(arg.shape) == 1:
+            return arg[None, :]
+        return arg
 
-    # Attach the rotated ligands to the core, returning the resulting strucutre (PLAMS Molecule).
-    lig_array = rot_mol_angle(ligand, vec1, vec2, atoms_other=core.properties.dummies, idx=idx)
-    lig_array = rot_mol_axis(lig_array, vec2, atoms_other=core.properties.dummies, idx=idx)
-    qd = core.copy()
-    array_to_qd(ligand, lig_array, mol_other=qd)
 
-    # indices of all the atoms in the core and the ligand heteroatom anchor.
-    qd_indices = [i for i, at in enumerate(qd, 1) if at.properties.pdb_info.ResidueName == 'COR' or
-                  at.properties.anchor]
-
-    qd_name = core.properties.name + '__' + str(qd[-1].properties.pdb_info.ResidueNumber - 1)
-    qd_name += '_' + ligand.properties.name + '@' + ligand.properties.group
-    qd.properties = Settings()
-    qd.properties.indices = qd_indices
-    qd.properties.name = qd_name
-    qd.properties.path = arg.optional.dir_names.QD
-    export_mol(qd, message='core + ligands:\t\t')
-
-    return qd
+def sanitize_dim_3(arg, padding=np.nan):
+    """
+    Convert an iterable consisting of n PLAMS atoms or a nested iterable consisting of m*(≤n)
+    PLAMS atoms into a m*n*3 array, padding the array n is not constant. In addition, n*3 arrays
+    are converted into m*n*3 arrays.
+    """
+    if not isinstance(arg, np.ndarray):
+        dummy = Molecule()
+        try:
+            return dummy.as_array(atom_subset=arg)[None, :, :]
+        except AttributeError:
+            max_at = max(len(mol) for mol in arg)
+            ret = np.empty((len(arg), max_at, 3), order='F')
+            ret[:] = padding
+            for i, mol in enumerate(arg):
+                ret[i, 0:len(mol)] = dummy.as_array(atom_subset=mol)
+            return ret
+    else:
+        if len(arg.shape) == 2:
+            return arg[None, :, :]
+        return arg

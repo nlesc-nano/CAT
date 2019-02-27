@@ -3,7 +3,7 @@
 __all__ = ['sanitize_optional', 'sanitize_input_mol', 'sanitize_path']
 
 import os
-from os.path import (join, isdir, isfile)
+from os.path import (join, isdir, isfile, exists)
 from itertools import chain
 
 import yaml
@@ -33,12 +33,13 @@ from rdkit import Chem
 
 from .. import utils as CAT
 
-from ..analysis.crs import CRSJob
 from ..utils import get_time
 from ..mol_utils import to_atnum
+from ..analysis.crs import CRSJob
 
 
 """ ###################################  Sanitize path  ####################################### """
+
 
 def sanitize_path(arg):
     """ Sanitize and return the settings of arg.path. """
@@ -60,19 +61,22 @@ def sanitize_path(arg):
         error += ' is not a valid type'
         raise TypeError(error)
 
+
 """ ##########################  Sanitize input_ligands & input_cores  ######################## """
+
 
 def sanitize_input_mol(arg):
     """ Sanitize and return the settings of arg.input_cores & arg.input_ligands. """
     def get_defaults(mol_list, core=False):
+        """ Prepare the default input settings for a molecule. """
         ret = []
         for mol in mol_list:
             tmp = get_default_input_mol()
             tmp.mol = mol
             if core:
-                tmp.path = join(arg.path, arg.optional.dir_names[0])
+                tmp.path = arg.optional.core.dirname
             else:
-                tmp.path = join(arg.path, arg.optional.dir_names[1])
+                tmp.path = arg.optional.ligand.dirname
             tmp.is_core = core
 
             if isinstance(mol, dict):
@@ -184,7 +188,9 @@ def santize_smiles(string):
 
     return name
 
+
 """ ####################################  Sanitize optional  ################################## """
+
 
 def sanitize_optional(arg_dict):
     """ Sanitize and return the settings of arg.optional. """
@@ -192,11 +198,12 @@ def sanitize_optional(arg_dict):
     arg.update(arg_dict)
 
     mol_format = ('xyz', 'pdb')
-    data_format = ('xlsx', 'json')
+    data_format = ('csv', 'xlsx', 'json')
 
     # Validate arguments consisting of booleans, integers, strings and/or iterables
-    arg.optional.dir_names = val_dir_names(arg.optional.dir_names)
+    arg.optional.core.dirname = val_dir_names(arg.optional.core.dirname, arg.path)
     arg.optional.core.dummy = val_atnum(arg.optional.core.dummy)
+    arg.optional.database.dirname = val_dir_names(arg.optional.database.dirname, arg.path)
     arg.optional.database.read = val_data(arg.optional.database.read)
     arg.optional.database.write = val_data(arg.optional.database.write)
     arg.optional.database.overwrite = val_data(arg.optional.database.overwrite)
@@ -204,8 +211,10 @@ def sanitize_optional(arg_dict):
     arg.optional.database.database_format = val_format(arg.optional.database.database_format,
                                                        data_format)
     arg.optional.database.mongodb = False
+    arg.optional.ligand.dirname = val_dir_names(arg.optional.ligand.dirname, arg.path)
     arg.optional.ligand.optimize = val_bool(arg.optional.ligand.optimize)
     arg.optional.ligand.split = val_bool(arg.optional.ligand.split)
+    arg.optional.qd.dirname = val_dir_names(arg.optional.qd.dirname, arg.path)
     arg.optional.qd.activation_strain = val_bool(arg.optional.qd.activation_strain)
 
     # Prepares COSMO-RS default settings
@@ -239,9 +248,8 @@ def get_default_optional():
     """ Return the default settings of arg.optional. """
     ret = yaml.load("""
         optional:
-            dir_names: [core, ligand, QD]
-
             database:
+                dirname: database
                 read: True
                 write: True
                 overwrite: False
@@ -250,14 +258,17 @@ def get_default_optional():
                 mongodb: False
 
             core:
+                dirname: core
                 dummy: Cl
 
             ligand:
+                dirname: ligand
                 optimize: True
                 cosmo-rs: False
                 split: True
 
             qd:
+                dirname: QD
                 optimize: False
                 activation_strain: False
                 dissociate: False
@@ -282,15 +293,15 @@ str_to_class = {
     'crs': CRSJob, 'cosmo-rs': CRSJob, 'crsjob': CRSJob
 }
 
+
 def val_format(arg, ref):
     """ Validate database.mol_format & database_format. """
     schema = Schema(Or(
             And(None, Use(bool)),
             And(bool, lambda n: n is False),
             And(str, lambda n: not n, Use(bool)),
-            And(str, lambda n: n.lower().rsplit('.', 1)[-1] in ref, Use(list)),
-            And(Or(list[str], tuple[str]),
-                lambda n: [i.lower().rsplit('.', 1)[-1] in ref for i in n], Use(list))
+            And(str, lambda n: n.lower().rsplit('.', 1)[-1] in ref),
+            And([str], lambda n: [i.lower().rsplit('.', 1)[-1] in ref for i in n], Use(list))
     ))
 
     # Decapitalize and remove any periods.
@@ -299,8 +310,13 @@ def val_format(arg, ref):
         for i, item in enumerate(ret):
             ret[i] = item.lower().rsplit('.', 1)[-1]
         ret = tuple(ret)
+    elif isinstance(ret, str):
+        ret = (ret.lower().rsplit('.', 1)[-1])
+    elif not ret:
+        ret = ()
 
     return ret
+
 
 def val_data(arg):
     """ Validate the input arguments for database.read, write and overwrite.
@@ -321,8 +337,8 @@ def val_data(arg):
             And(bool, Use(get_arg)),
             And(str, lambda n: not n, Use(bool)),
             And(str, lambda n: n.lower() in ref, Use(list)),
-            And(Or(list[str], tuple[str]), lambda n: not any([bool(i) for i in n]), Use(get_false)),
-            And(Or(list[str], tuple[str]), lambda n: [i.lower() in ref for i in n], Use(list))
+            And([str], lambda n: not any([bool(i) for i in n]), Use(get_false)),
+            And([str], lambda n: [i.lower() in ref for i in n], Use(list))
     ))
 
     # Decapitalize
@@ -331,6 +347,8 @@ def val_data(arg):
         for i, item in enumerate(ret):
             ret[i] = item.lower()
         ret = tuple(ret)
+    elif not ret:
+        ret = ()
 
     return ret
 
@@ -359,10 +377,15 @@ def val_indices(indices):
     return schema.validate(list(indices))
 
 
-def val_dir_names(dir_names):
-    """ Validate an iterable of length 3; returns a <tuple> consisting of 3 <str>. """
-    schema = Schema(And([str, str, str], Use(tuple)))
-    return schema.validate(list(dir_names))
+def val_dir_names(dirname, path):
+    """ Validate a str; returns a str.
+    Creates a directory at path/dirname if it does not yet exist. """
+    ret = join(path, Schema(str).validate(dirname))
+    if not exists(ret):
+        os.makedirs(ret)
+    else:
+        assert isdir(ret)
+    return ret
 
 
 def val_atnum(atnum):

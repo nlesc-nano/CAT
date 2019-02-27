@@ -1,12 +1,13 @@
 """ A module with miscellaneous functions. """
 
-__all__ = ['check_sys_var', 'dict_concatenate', 'create_dir', 'get_time', 'get_template']
+__all__ = ['check_sys_var', 'dict_concatenate', 'get_time', 'get_template']
 
 import os
 import time
 import json
+import yaml
 import pkg_resources as pkg
-from os.path import (exists, join)
+from os.path import join
 
 from scm.plams.core.settings import Settings
 
@@ -45,24 +46,14 @@ def dict_concatenate(dic):
     return concact_dic
 
 
-def create_dir(dir_name, path=os.getcwd()):
-    """
-    Creates a new directory if this directory does not yet exist.
-    """
-    if not exists(path):
-        error = path + ' not found, aborting run'
-        raise FileNotFoundError(error)
-    dir_path = join(path, str(dir_name))
-    if not exists(dir_path):
-        os.makedirs(dir_path)
-    return dir_path
-
-
 def get_template(template_name):
     """
     Grab a template and return it as Settings object.
     """
     path = join('data/templates', template_name)
     xs = pkg.resource_string('CAT', path)
-    s = json.loads(xs.decode())
+    if 'json' in template_name:
+        s = json.loads(xs.decode())
+    elif 'yaml' in template_name or 'yml' in template_name:
+        s = yaml.load(xs.decode())
     return Settings(s)

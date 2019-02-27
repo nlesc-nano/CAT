@@ -4,11 +4,28 @@ __all__ = ['init_qd_opt']
 
 from scm.plams.core.functions import (init, finish)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
-import scm.plams.interfaces.molecule.rdkit as molkit
 
 from ..mol_utils import (fix_carboxyl, fix_h)
 from ..analysis.jobs import job_geometry_opt
+from ..data_handling.database import qd_to_database
 from ..data_handling.mol_export import export_mol
+
+
+def init_qd_opt(mol_list, arg):
+    """
+    Check if the to be optimized quantom dot has previously been optimized.
+    Pull if the structure from the database if it has, otherwise perform a geometry optimization.
+    mol_list <list> [<plams.Molecule>]: The list of input quantom dots with the 'name' property.
+    arg <dict>: A dictionary containing all (optional) arguments.
+    """
+    # Optimize all geometries
+    job_recipe = arg.optional.qd.optimize
+    for mol in mol_list:
+        qd_opt(mol, job_recipe)
+
+    # Export the geometries to the database
+    if 'qd' in arg.optional.database.write:
+        qd_to_database(mol_list, arg)
 
 
 def qd_opt(mol, job_recipe):
@@ -31,33 +48,5 @@ def qd_opt(mol, job_recipe):
     export_mol(mol, message='Optimized core + ligands:\t\t')
     mol.properties.name = mol.properties.name.split('.opt')[0]
     finish()
-
-    return mol
-
-
-def init_qd_opt(mol, database, job_recipe):
-    """
-    Check if the to be optimized quantom dot has previously been optimized.
-    Pull if the structure from the database if it has, otherwise perform a geometry optimization.
-    mol <plams.Molecule> The input quantom dot with the 'name' property.
-    database <pd.DataFrame>: A database of previous calculations.
-    return <plams.Molecule>: An optimized quantom dot.
-    """
-    name = mol.properties.name.rsplit('.', 1)[0]
-    if database is None:
-        mol = qd_opt(mol, job_recipe)
-        mol.properties.entry = False
-    elif database.empty or name not in list(database['Quantum_dot_name']):
-        mol = qd_opt(mol, job_recipe)
-        mol.properties.entry = True
-    else:
-        index = list(database['Quantum_dot_name']).index(name)
-        try:
-            mol_new = molkit.readpdb(database['Quantum_dot_opt_pdb'][index], proximityBonding=False)
-            mol_new.properties = mol.properties
-            mol = mol_new
-        except FileNotFoundError:
-            mol = qd_opt(mol, job_recipe)
-            mol.properties.entry = True
 
     return mol
