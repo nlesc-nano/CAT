@@ -130,6 +130,37 @@ def bob_ligand(mol):
     mol.delete_atom(at)
     mol.properties.idx_other = mol.atoms.index(at_other)
 
+    
+def find_equivalent_atoms(mol, idx=None, idx_substract=0):
+    """ Take a molecule, **mol**, and return the indices of all symmetry equivalent atoms.
+    The implemented function is based on finding duplicates in the (sorted) distance matrix,
+    as symmetry equivalent atoms have identical inter-atomic distances.
+
+    mol <Molecule> or <np.ndarray>: A PLAMS Molecule or a numpy array.
+    idx <None>, <int> or <list> [<int>]: An iterable consisting of atomic indices. ALl atoms in
+        **mol** will be examined if *None*.
+    idx_substract <int>: Substract a constant from all values in **idx**; usefull for
+        interconverting between 1-based and 0-based indices.
+    return <list>[<tuple>[<int>]]: A list with tuples of symmetry equivalent atomic indices.
+    """
+    # Convert a PLAMS molecule to an array
+    if isinstance(mol, Molecule):
+        mol = mol.as_array()
+
+    # If **idx** is *None*, investigate all atoms in **mol**
+    if idx is None:
+        idx = slice(0, len(mol))
+    else:
+        idx = np.array(idx, dtype=int) - idx_substract
+
+    # Create a distance matrix, round it to 2 decimals and isolate all unique rows
+    dist = np.around(cdist(mol, mol), decimals=2)
+    dist.sort(axis=1)
+    unique_at = np.unique(dist[idx], axis=0)
+
+    # Find and return the indices of all duplicate rows in the distance matrix
+    return [tuple(j for j, ar2 in enumerate(dist) if (ar1 == ar2).all()) for ar1 in unique_at]
+    
 
 def substitution(input_ligands, input_cores, rep=False):
     """
@@ -144,10 +175,6 @@ def substitution(input_ligands, input_cores, rep=False):
     ret = (connect_ligands_to_core(lig_dict, core) for core in input_cores)
 
     return list(chain.from_iterable(ret))
-
-
-
-
 
 
 def multi_substitution(input_ligands, input_cores, n=1):
