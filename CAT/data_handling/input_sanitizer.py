@@ -198,7 +198,6 @@ def sanitize_optional(arg_dict):
     arg.update(arg_dict)
 
     mol_format = ('xyz', 'pdb')
-    data_format = ('csv', 'xlsx', 'json')
 
     # Validate arguments consisting of booleans, integers, strings and/or iterables
     arg.optional.core.dirname = val_dir_names(arg.optional.core.dirname, arg.path)
@@ -208,8 +207,6 @@ def sanitize_optional(arg_dict):
     arg.optional.database.write = val_data(arg.optional.database.write)
     arg.optional.database.overwrite = val_data(arg.optional.database.overwrite)
     arg.optional.database.mol_format = val_format(arg.optional.database.mol_format, mol_format)
-    arg.optional.database.database_format = val_format(arg.optional.database.database_format,
-                                                       data_format)
     arg.optional.database.mongodb = False
     arg.optional.ligand.dirname = val_dir_names(arg.optional.ligand.dirname, arg.path)
     arg.optional.ligand.optimize = val_bool(arg.optional.ligand.optimize)
@@ -241,6 +238,7 @@ def sanitize_optional(arg_dict):
                                          s1=CAT.get_template('qd.json')['MOPAC'],
                                          s2=CAT.get_template('qd.json')['UFF'])
 
+    del arg.path
     return arg
 
 
@@ -254,7 +252,6 @@ def get_default_optional():
                 write: True
                 overwrite: False
                 mol_format: [pdb, xyz]
-                database_format: [xlsx, json]
                 mongodb: False
 
             core:

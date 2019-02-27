@@ -39,7 +39,6 @@ def prep(arg, return_mol=True):
     arg.update(sanitize_path(arg))
     arg.update(sanitize_optional(arg))
     arg.update(sanitize_input_mol(arg))
-    del arg.path
 
     # Read the input ligands and cores
     ligand_list = read_mol(arg.input_ligands)
@@ -54,8 +53,7 @@ def prep(arg, return_mol=True):
         raise IndexError('No valid input cores were found, aborting run')
 
     # Adds the indices of the core dummy atoms to core.properties.core
-    for core in core_list:
-        prep_core(core, arg)
+    prep_core(core_list, arg)
 
     # Optimize the ligands, find functional groups, calculate properties and read/write the results
     ligand_list = prep_ligand(ligand_list, arg)
@@ -64,39 +62,39 @@ def prep(arg, return_mol=True):
     qd_list = prep_qd(ligand_list, core_list, arg)
 
     # The End
-    time_end = time.time()
     message = '\n' + get_time()
-    message += 'Total elapsed time:\t\t' + '%.4f' % (time_end - time_start) + ' sec'
+    message += 'Total elapsed time:\t\t' + '%.4f' % (time.time() - time_start) + ' sec'
     print(message)
 
     if return_mol:
         return qd_list, core_list, ligand_list
 
 
-def prep_core(core, arg):
+def prep_core(core_list, arg):
     """
     Function that handles the identification and marking of all core dummy atoms.
 
-    core <plams.Molecule>: The core molecule.
+    core_list <core>[<plams.Molecule>]: A list of core molecules.
     arg <dict>: A dictionary containing all (optional) arguments.
     """
-    # Checks the if the dummy is a string (atomic symbol) or integer (atomic number)
-    dummy = arg.optional.core.dummy
+    for core in core_list:
+        # Checks the if the dummy is a string (atomic symbol) or integer (atomic number)
+        dummy = arg.optional.core.dummy
 
-    # Returns the indices (integer) of all dummy atom ligand placeholders in the core
-    if core.properties.dummies is None:
-        core.properties.dummies = [atom for atom in core.atoms if atom.atnum == dummy]
-    else:
-        core.properties.dummies = [core[index] for index in core.properties.dummies]
+        # Returns the indices (integer) of all dummy atom ligand placeholders in the core
+        if core.properties.dummies is None:
+            core.properties.dummies = [atom for atom in core.atoms if atom.atnum == dummy]
+        else:
+            core.properties.dummies = [core[index] for index in core.properties.dummies]
 
-    # Delete all core dummy atoms
-    for at in reversed(core.properties.dummies):
-        core.delete_atom(at)
+        # Delete all core dummy atoms
+        for at in reversed(core.properties.dummies):
+            core.delete_atom(at)
 
-    # Returns an error if no dummy atoms were found
-    if not core.properties.dummies:
-        raise MoleculeError(Atom(atnum=dummy).symbol +
-                            ' was specified as dummy atom, yet no dummy atoms were found')
+        # Returns an error if no dummy atoms were found
+        if not core.properties.dummies:
+            raise MoleculeError(Atom(atnum=dummy).symbol +
+                                ' was specified as dummy atom, yet no dummy atoms were found')
 
 
 def prep_ligand(ligand_list, arg):

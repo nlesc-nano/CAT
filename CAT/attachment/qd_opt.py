@@ -20,8 +20,10 @@ def init_qd_opt(mol_list, arg):
     """
     # Optimize all geometries
     job_recipe = arg.optional.qd.optimize
+    overwrite = 'qd' in arg.optional.database.overwrite
     for mol in mol_list:
-        qd_opt(mol, job_recipe)
+        if overwrite or not mol.properties.read:
+            qd_opt(mol, job_recipe)
 
     # Export the geometries to the database
     if 'qd' in arg.optional.database.write:
@@ -44,9 +46,7 @@ def qd_opt(mol, job_recipe):
     mol.job_geometry_opt(job_recipe.job2, job_recipe.s2, name='QD_opt_part2')
 
     # Write the reuslts to an .xyz and .pdb file
-    mol.properties.name += '.opt'
     export_mol(mol, message='Optimized core + ligands:\t\t')
-    mol.properties.name = mol.properties.name.split('.opt')[0]
     finish()
 
     return mol

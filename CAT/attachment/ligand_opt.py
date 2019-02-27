@@ -38,15 +38,15 @@ def init_ligand_opt(ligand_list, arg):
 
     # Optimize all new ligands
     if arg.optional.ligand.optimize:
+        overwrite = 'ligand' in arg.optional.database.overwrite
         for ligand in ligand_list:
-            if not ligand.properties.read:
+            if overwrite or not ligand.properties.read:
                 # Optimize the ligand and export .xyz & .pdb files
                 mol_list = split_mol(ligand)
                 for mol in mol_list:
                     mol.set_dihed(180.0)
                 ligand = recombine_mol(mol_list)
                 ligand = fix_carboxyl(ligand)
-                export_mol(ligand, message='Optimized ligand:\t\t')
             else:
                 del ligand.properties.read
                 print(get_time() + ligand.properties.name + ' pulled from Ligand_database.csv')

@@ -4,7 +4,11 @@ __all__ = ['export_mol']
 
 from os.path import join
 
+import h5py
+
 import scm.plams.interfaces.molecule.rdkit as molkit
+
+from rdkit import Chem
 
 from ..utils import get_time
 
@@ -15,6 +19,6 @@ def export_mol(mol, message='Mol:\t\t\t\t'):
     """
     name = mol.properties.name
     mol_path = join(mol.properties.path, name)
-    molkit.writepdb(mol, mol_path + '.pdb')
+    pdb = Chem.MolToPDBBlock(molkit.to_rdmol(mol))
     mol.write(mol_path + '.xyz')
     print(get_time() + str(message) + str(name) + '.pdb')

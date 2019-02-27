@@ -75,7 +75,8 @@ def ligand_to_qd(core, ligand, arg):
     qd.properties.name += '_' + ligand.properties.name
 
     # Export the molecule
-    export_mol(qd, message='core + ligands:\t\t')
+    if not arg.optional.qd.optimize:
+        export_mol(qd, message='core + ligands:\t\t')
 
     return qd
 
