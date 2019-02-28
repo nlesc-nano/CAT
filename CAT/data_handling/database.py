@@ -9,6 +9,8 @@ import h5py
 import numpy as np
 import pandas as pd
 
+from scm.plams import Molecule
+from scm.plams.core.functions import add_to_class
 import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit import Chem
@@ -16,14 +18,42 @@ from rdkit import Chem
 from ..utils import get_time
 
 
+@add_to_class(Molecule)
+def as_pdb_array(self):
+    """ Converts a PLAMS molecule into an array of strings, the array consisting of a
+    (partially) de-serialized .pdb file.
+
+    return <np.ndarray>: An array of strings (dtype: S80).
+    """
+    pdb_list = Chem.MolToPDBBlock(molkit.to_rdmol(self)).splitlines()
+    return np.array(pdb_list, dtype='S80')
+
+
+def from_pdb_array(array):
+    """ Converts a an array with a (partially) de-serialized .pdb file into a PLAMS molecule.
+
+    array <np.ndarray>: An with a (partially) de-serialized .pdb file.
+    return <Molecule>: A PLAMS molecule.
+    """
+    pdb_str = ''
+    for item in array:
+        pdb_str += item.decode() + '\n'
+    return molkit.from_rdmol(Chem.MolFromPDBBlock(pdb_str, removeHs=False, proximityBonding=False))
+
+
 def get_ligand_database(arg):
     """ get the database and return it as dataframe.
-    Create a new database if no previous database exists. """
-    file = join(arg.optional.database.dirname, 'Ligand_database.csv')
+    Create a new database if no previous database exists.
+
+    arg <dict>: A dictionary containing all (optional) arguments.
+    return <pd.DataFrame>: The ligand database as dataframe.
+    """
+    df_file = join(arg.optional.database.dirname, 'Ligand_database.csv')
     df_index = sorted(['anchor', 'hdf5 index', 'formula', 'settings'])
 
-    if isfile(file):  # The database exists
-        df = pd.read_csv(file, index_col=0)
+    # Check if the database exists and has the proper keys; create it if it does not
+    if isfile(df_file):
+        df = pd.read_csv(df_file, index_col=0)
         assert df_index == sorted(list(df.index))
     else:
         print(get_time() + 'ligand_database.csv not found in ' +
@@ -31,10 +61,11 @@ def get_ligand_database(arg):
         df = pd.DataFrame(None, index=df_index)
 
     # Check if the ligand dataset is already available in Structures.hdf5
-    hdf5 = h5py.File(join(arg.optional.database.dirname, 'structures.hdf5'), 'a')
+    hdf5_file = join(arg.optional.database.dirname, 'structures.hdf5')
+    hdf5 = h5py.File(hdf5_file, 'a')
     if 'ligand' not in hdf5:
-        hdf5.create_dataset(name='ligand', data=np.empty(1, dtype='S'),
-                            chunks=True, maxshape=(None,), compression='gzip')
+        hdf5.create_dataset(name='ligand', data=np.empty((0, 1), dtype='S80'),
+                            chunks=True, maxshape=(None, None), compression='gzip')
 
     return df
 
@@ -58,9 +89,7 @@ def ligand_from_database(ligand_list, arg):
         smiles = lig.properties.smiles
         if smiles in df:  # The ligand is present in the database
             idx = df[smiles]['hdf5 index']
-            lig_new = molkit.from_rdmol(Chem.MolFromPDBBlock(hdf5['ligand'][idx],
-                                                             removeHs=False,
-                                                             proximityBonding=False))
+            lig_new = from_pdb_array(hdf5['ligand'][idx])
             lig_new.properties = lig.properties
             lig_new.properties.read = True
             ligand_list[i] = lig_new
@@ -69,7 +98,12 @@ def ligand_from_database(ligand_list, arg):
 
 
 def ligand_to_database(ligand_list, arg):
-    """ Write ligands to the ligand database. """
+    """ Write ligands to the ligand database.
+
+    ligand_list <list> [<plams.Molecule>]: A list of ligands which are (potentially) to be written
+        to the database..
+    arg <dict>: A dictionary containing all (optional) arguments.
+    """
     # Check if previous entries can be overwritten
     overwrite = 'ligand' in arg.optional.database.overwrite
     df = get_ligand_database(arg)
@@ -82,9 +116,11 @@ def ligand_to_database(ligand_list, arg):
             if smiles not in df:
                 # Export geometries
                 idx = len(hdf5['ligand'])
-                pdb = np.array((Chem.MolToPDBBlock(molkit.to_rdmol(lig)),), dtype='S')
-                hdf5['ligand'].shape = (hdf5['ligand'].shape[0] + 1,)
-                hdf5['ligand'][idx] = pdb
+                pdb_array = lig.as_pdb_array()
+                shape = (hdf5['ligand'].shape[0] + 1,
+                         max(hdf5['ligand'].shape[1], pdb_array.shape[0]))
+                hdf5['ligand'].shape = shape
+                hdf5['ligand'][idx] = pdb_array
 
                 # Update the database
                 df[smiles] = None
@@ -98,15 +134,16 @@ def ligand_to_database(ligand_list, arg):
         for lig in ligand_list:
             # Export geometries
             smiles = lig.properties.smiles
-            pdb2 = np.array((Chem.MolToPDBBlock(molkit.to_rdmol(lig)),), dtype='S')
+            pdb_array = lig.as_pdb_array()
             if smiles not in df:
                 df[smiles] = None
                 idx = len(hdf5['ligand'])
-                hdf5['ligand'].shape = (hdf5['ligand'].shape[0] + 1,)
+                shape = (hdf5['ligand'].shape[0] + 1,
+                         max(hdf5['ligand'].shape[1], pdb_array.shape[0]))
+                hdf5['ligand'].shape = shape
             else:
-                idx = hdf5['ligand'].index(pdb2)
-            import pdb; pdb.set_trace()
-            hdf5['ligand'][idx] = pdb2
+                idx = hdf5['ligand'].index(pdb_array)
+            hdf5['ligand'][idx] = pdb_array
 
             # Update the database
             df[smiles]['anchor'] = lig.properties.anchor
@@ -121,13 +158,18 @@ def ligand_to_database(ligand_list, arg):
 
 def get_qd_database(arg):
     """ get the database and return it as dataframe.
-    Create a new database if no previous database exists. """
-    file = join(arg.optional.database.dirname, 'QD_database.csv')
+    Create a new database if no previous database exists.
+
+    arg <dict>: A dictionary containing all (optional) arguments.
+    return <pd.DataFrame>: The quantum dot database as dataframe.
+    """
+    df_file = join(arg.optional.database.dirname, 'QD_database.csv')
     df_index = sorted(['ligand count', 'ligand anchor', 'ligand',
                        'core', 'hdf5 index', 'formula', 'settings'])
 
-    if isfile(file):  # The database exists
-        df = pd.read_csv(file, index_col=0)
+    # Check if the database exists and has the proper keys; create it if it does not
+    if isfile(df_file):  # The database exists
+        df = pd.read_csv(df_file, index_col=0)
         assert df_index == sorted(list(df.index))
     else:
         print(get_time() + 'QD_database.csv not found in ' +
@@ -135,10 +177,11 @@ def get_qd_database(arg):
         df = pd.DataFrame(None, index=df_index)
 
     # Check if the quantum dot dataset is already available in structures.hdf5
-    hdf5 = h5py.File(join(arg.optional.database.dirname, 'structures.hdf5'), 'a')
+    hdf5_file = join(arg.optional.database.dirname, 'structures.hdf5')
+    hdf5 = h5py.File(hdf5_file, 'a')
     if 'QD' not in hdf5:
-        hdf5.create_dataset(name='QD', data=np.empty(1, dtype='S'),
-                            chunks=True, maxshape=(None,), compression='gzip')
+        hdf5.create_dataset(name='QD', data=np.empty((0, 1), dtype='S80'),
+                            chunks=True, maxshape=(None, None), compression='gzip')
 
     return df
 
@@ -149,9 +192,12 @@ def qd_from_database(ligand_list, core_list, arg):
     name string. Try to pull the strucure(s) if it is.
 
     ligand_list <list> [<plams.Molecule>]: A list of ligands.
+    core_list <list> [<plams.Molecule>]: A list of cores.
     arg <dict>: A dictionary containing all (optional) arguments.
 
-    return <list> [<plams.Molecule>]: A database of previous calculations.
+    return <list> [<tuple> [<plams.Molecule>]]: A list of 2 tuples representing unique core+ligand
+        combinations. A tuple is subsituted for a fully fledged quantum dot if a match is found
+        in the database.
     """
     hdf5 = h5py.File(join(arg.optional.database.dirname, 'structures.hdf5'))
     df = get_qd_database(arg)
@@ -163,9 +209,7 @@ def qd_from_database(ligand_list, core_list, arg):
             name = core.properties.name + '__' + i + '_' + ligand.properties.name
             if name in df:
                 idx = df[name]['hdf5 index']
-                qd = molkit.from_rdmol(Chem.MolFromPDBBlock(hdf5['QD'][idx],
-                                                            removeHs=False,
-                                                            proximityBonding=False))
+                qd = from_pdb_array(hdf5['QD'][idx])
 
                 # Set a property
                 qd.properties.indices = []
@@ -192,7 +236,12 @@ def qd_from_database(ligand_list, core_list, arg):
 
 
 def qd_to_database(qd_list, arg):
-    """ Write quantum dots to the quantum dot database. """
+    """ Write quantum dots to the quantum dot database.
+
+    qd_list <list> [<plams.Molecule>]: A list of quantum dots which are (potentially) to be written
+        to the database.
+    arg <dict>: A dictionary containing all (optional) arguments.
+    """
     # Check if previous entries can be overwritten
     overwrite = 'qd' in arg.optional.database.overwrite
     df = get_qd_database(arg)
@@ -205,9 +254,11 @@ def qd_to_database(qd_list, arg):
             if name not in df:
                 # Export geometries
                 idx = len(hdf5['QD'])
-                pdb = np.array((Chem.MolToPDBBlock(molkit.to_rdmol(qd)),), dtype='S')
-                hdf5['QD'].shape = (hdf5['QD'].shape[0] + 1,)
-                hdf5['QD'][idx] = pdb
+                pdb_array = qd.as_pdb_array()
+                shape = (hdf5['QD'].shape[0] + 1,
+                         max(hdf5['QD'].shape[1], pdb_array.shape[0]))
+                hdf5['QD'].shape = shape
+                hdf5['QD'][idx] = pdb_array
 
                 # Update the database
                 df[name] = None
@@ -224,14 +275,16 @@ def qd_to_database(qd_list, arg):
         for qd in qd_list:
             # Export geometries
             name = qd.properties.name
-            pdb = np.array((Chem.MolToPDBBlock(molkit.to_rdmol(qd)),), dtype='S')
+            pdb_array = qd.as_pdb_array()
             if name not in df:
                 df[name] = None
                 idx = len(hdf5['QD'])
-                hdf5['QD'].shape = (hdf5['QD'].shape[0] + 1,)
+                shape = (hdf5['QD'].shape[0] + 1,
+                         max(hdf5['QD'].shape[1], pdb_array.shape[0]))
+                hdf5['QD'].shape = shape
             else:
-                idx = hdf5['QD'].index(pdb)
-            hdf5['QD'][idx] = pdb
+                idx = hdf5['QD'].index(pdb_array)
+            hdf5['QD'][idx] = pdb_array
 
             # Update the database
             df[name]['ligand anchor'] = qd.properties.ligand_anchor
