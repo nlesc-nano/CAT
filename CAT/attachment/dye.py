@@ -5,9 +5,11 @@ __all__ = ['bob_ligand', 'bob_core', 'substitution', 'multi_substitution']
 from itertools import chain
 
 import numpy as np
+import pandas as pd
 from scipy.spatial.distance import cdist
 
 from scm.plams import Molecule, Settings
+from scm.plams.tools.geometry import rotation_matrix
 
 from .ligand_attach import rot_mol_angle, rot_mol_axis
 
@@ -186,3 +188,99 @@ def multi_substitution(input_ligands, input_cores, n=1):
         mol_list = substitution(input_ligands, mol_list)
         ret.append(mol_list)
     return list(chain.from_iterable(ret))
+
+
+def get_rotmat_axis(rot_range, axis='x'):
+    """ Calculate the rotation matrix for rotating a vector along an axis.
+    A rotation matrix is constructed for each angle in **rot_range**.
+
+    rot_range <np.ndarray>: An array of rotations in radian. """
+    ret = np.zeros((len(rot_range), 3, 3))
+    ret[:, 0, 0] = ret[:, 1, 1] = ret[:, 2, 2] = np.ones(len(rot_range))
+
+    if axis.lower() == 'x':  # Rotation around x axis
+        ret[:, 1, 1] = ret[:, 2, 2] = np.cos(rot_range)
+        ret[:, 2, 1] = ret[:, 1, 2] = np.sin(rot_range)
+        ret[:, 2, 1] *= -1
+    elif axis.lower() == 'y':  # Rotation around y axis
+        ret[:, 0, 0] = ret[:, 2, 2] = np.cos(rot_range)
+        ret[:, 2, 0] = ret[:, 0, 2] = np.sin(rot_range)
+        ret[:, 2, 0] *= -1
+    elif axis.lower() == 'z':  # Rotation around z axis
+        ret[:, 0, 0] = ret[:, 1, 1] = np.cos(rot_range)
+        ret[:, 0, 1] = ret[:, 1, 0] = np.sin(rot_range)
+        ret[:, 0, 1] *= -1
+
+    return ret
+
+def reset_origin(mol, at1):
+    """ Reset the origin of a molecule by means of translations and rotations.
+
+    mol <plams.Molecule> or <np.ndarray>: A PLAMS molecule or array of xyz coordinates.
+    idx <idx>: The atomic index of the atom that will be alligned to the x-axis.
+    return <plams.Molecule>: The rotated and translated PLAMS molecule.
+    """
+    if isinstance(mol, Molecule):
+        mol = mol.as_array()
+
+    # Translate
+    mol -= mol.mean(axis=0)
+
+    # Rotate
+    vec1 = mol[at1] - np.zeros(3)
+    vec2 = np.array([1, 0, 0])
+    rotmat = rotation_matrix(vec1, vec2)
+    mol = mol@rotmat
+
+    return mol
+
+
+def get_symmetry(mol, decimals=2):
+    """ Return the number of equivalent atoms under a number of symmetry operations.
+
+    mol <plams.Molecule> or <np.ndarray>: A PLAMS molecule or array of xyz coordinates.
+    decimals <int>: The error marigin (number of decimals) in determining equivalent atoms.
+    return <pd.DataFrame>: A Pandas dataframe with the number of equivalent atoms per axis
+    per operation.
+    """
+    if isinstance(mol, Molecule):
+        mol = mol.as_array()
+
+    # Prepare the dataframe
+    columns = ['x', 'y', 'z']
+    index = ['2pi / ' + str(i) for i in range(1,9)] + ['reflection', 'inversion']
+    data = np.empty((len(index), 3))
+    df = pd.DataFrame(data=data, index=index, columns=columns)
+    df.index.name = 'Rotations, reflections and inversions'
+    df.columns.name = 'Identical atoms'
+
+    # Fill the dataframe
+    rot_range = (2 * np.pi) / np.arange(1, 9)
+    for i, j in enumerate(columns):
+        # Rotate
+        rotmat = get_rotmat_axis(rot_range, axis=j)
+        mol_new = np.empty((10, mol.shape[0], 3))
+        mol_new[0:8] = mol@rotmat
+
+        # Mirror
+        mol_new[8] = mol.copy()
+        mol_new[8][i] *= -1
+
+        # Invert
+        mol_new[9] = -1 * mol.copy()
+
+        # Calculate the number of equivalent atoms
+        dist_mat = np.array([cdist(i, mol) for i in mol_new]).round(decimals)
+        df[j] = np.bincount(np.where(dist_mat == 0)[0])
+
+    return df
+
+
+"""
+mol = None
+idx = find_equivalent_atoms(mol)
+if idx:
+    at1, at2 = idx[0][0], idx[0][1]
+    mol = reset_origin(mol, at1)
+    df = get_symmetry(mol)
+"""
