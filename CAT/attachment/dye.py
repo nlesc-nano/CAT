@@ -5,6 +5,7 @@ __all__ = ['bob_ligand', 'bob_core', 'substitution', 'multi_substitution']
 from itertools import chain
 
 import numpy as np
+from scipy.spatial.distance import cdist
 
 from scm.plams import Molecule, Settings
 
@@ -19,7 +20,7 @@ def connect_ligands_to_core(lig_dict, core):
     ligand_list: An iterable container consisting of PLAMS molecules, each with the properties.lig_h & .lig_other attributes (PLAMS Atoms)
     core: A PLAMS molecule with the properties.core_h & .core_other attributes (PLAMS Atoms)
     """
-    
+
     # Unpack the ligand dictionary
     lig_list = lig_dict['lig_list']
     lig_idx = lig_dict['lig_idx']
@@ -64,19 +65,19 @@ def get_args(core, lig_list, lig_idx):
     # Extract the various arguments from core and ligand_list
     core_other = core.properties.coords_other[0]
     core_other_atom = core.properties.coords_other_atom[0]
-   
+
     lig_other = [lig[lig.properties.idx_other+1] for lig in lig_list]
     # core_h = core.properties.coords_h[0]
 
     bond_length = np.array([core_other_atom.radius + lig.radius for lig in lig_other])
-    
+
     # Roll through the arguments of core
     core.properties.the_h = core.properties.coords_h[0]
     at_h = core.closest_atom(core.properties.the_h)
     core.properties.vec = core.properties.vec[1:]
     core.properties.coords_other = core.properties.coords_other[1:]
     core.properties.coords_h = core.properties.coords_h[1:]
-    
+
     # Convert core into an array and mask core_h with np.nan
     core_array = core.as_array()
     idx = core.atoms.index(at_h)
@@ -130,7 +131,7 @@ def bob_ligand(mol):
     mol.delete_atom(at)
     mol.properties.idx_other = mol.atoms.index(at_other)
 
-    
+
 def find_equivalent_atoms(mol, idx=None, idx_substract=0):
     """ Take a molecule, **mol**, and return the indices of all symmetry equivalent atoms.
     The implemented function is based on finding duplicates in the (sorted) distance matrix,
@@ -160,7 +161,7 @@ def find_equivalent_atoms(mol, idx=None, idx_substract=0):
 
     # Find and return the indices of all duplicate rows in the distance matrix
     return [tuple(j for j, ar2 in enumerate(dist) if (ar1 == ar2).all()) for ar1 in unique_at]
-    
+
 
 def substitution(input_ligands, input_cores, rep=False):
     """
@@ -171,7 +172,7 @@ def substitution(input_ligands, input_cores, rep=False):
     lig_idx = np.array([lig.properties.idx_other for lig in input_ligands])
     lig_vec = np.array([lig.properties.vec for lig in input_ligands])
     lig_dict = {'lig_list': input_ligands, 'lig_idx': lig_idx, 'lig_vec': lig_vec}
-    
+
     ret = (connect_ligands_to_core(lig_dict, core) for core in input_cores)
 
     return list(chain.from_iterable(ret))
