@@ -110,11 +110,12 @@ Database
 
     |
 
-**database.mol_format** |str|_ or |list|_ [|str|_] = [*pdb*, *xyz*]
+**database.mol_format** |bool|_, |str|_ or |list|_ [|str|_] = [*pdb*, *xyz*]
 
     The file format(s) for storing moleculair structures.
-    While the default format, .pdb, can and should not be disabled, it can be
-    supplemented with additional formats.
+    By default all structures are stored in the .hdf5 format as
+    (partially) de-serialized .pdb files. Additional formats can be
+    requisted with this keyword.
     Accepted values: *pdb* and/or *xyz*.
 
     |
