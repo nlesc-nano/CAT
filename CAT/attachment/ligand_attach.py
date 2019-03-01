@@ -99,12 +99,12 @@ def rot_mol_angle(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=Fa
     xyz_array = sanitize_dim_3(xyz_array)
     vec1 = sanitize_dim_2(vec1)
     vec2 = sanitize_dim_2(vec2)
-    idx = range(xyz_array.shape[0]), idx
 
     # Rotate and translate all n ligands; readjust bond lengths if bond_length is set
     rotmat = get_rotmat(vec1, vec2)
     xyz_array = xyz_array@rotmat
-
+    idx = range(xyz_array.shape[0]), idx
+    
     # Translate the the molecules in xyz_array
     if atoms_other is not None:
         atoms_other = sanitize_dim_2(atoms_other)
@@ -157,7 +157,7 @@ def rot_mol_axis(xyz_array, vec, dist_to_self=True, atoms_other=None, step=(1/16
                       [v3, zero, -v1],
                       [-v2, v1, zero]]).T
 
-        step_range = np.arange(0.0, 2.0, step)
+        step_range = np.pi * np.arange(0.0, 2.0, step)
         a1 = np.sin(step_range)[:, None, None, None]
         a2 = (np.sin(0.5 * step_range)**2)[:, None, None, None]
         return np.identity(3) + a1 * W + a2 * W@W
