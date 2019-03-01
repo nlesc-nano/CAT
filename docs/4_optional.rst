@@ -5,6 +5,9 @@ There are a number of arguments which can be used to modify the
 functionality and behaviour of the quantum dot builder. Herein an
 overview is provided.
 
+Note: Inclusion of this section in the input file is not required,
+assuming one is content with the default settings.
+
 Default Settings
 ~~~~~~~~~~~~~~~~
 
