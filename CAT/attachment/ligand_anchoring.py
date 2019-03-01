@@ -26,7 +26,7 @@ def find_ligand_anchors(ligand_list, arg):
             elif len(lig.properties.dummies) == 2:
                 lig.properties.dummies = [i - 1 for i in lig.properties.dummies]
                 split = True
-            ret += [find_substructure_split(lig, lig.properties.dummies, split=split)]
+            ret += [substructure_split(lig, lig.properties.dummies, split=split)]
     return ret
 
 

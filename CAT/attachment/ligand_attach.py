@@ -11,7 +11,6 @@ from scm.plams.core.settings import Settings
 from ..utils import get_time
 from ..mol_utils import (merge_mol, get_atom_index)
 from ..data_handling.database import (qd_from_database, qd_to_database)
-from ..data_handling.mol_export import export_mol
 
 
 def init_create_qd(ligand_list, core_list, arg):
@@ -26,8 +25,10 @@ def init_create_qd(ligand_list, core_list, arg):
     for i, qd in enumerate(qd_list):
         if not isinstance(qd, Molecule):
             qd_list[i] = ligand_to_qd(qd[0], qd[1], arg)
+            print(get_time() + qd_list[i].properties.name + '\t has been constructed')
         else:
-            print(get_time() + qd.properties.name + ' pulled from QD_database.csv')
+            print(get_time() + qd.properties.name + '\t pulled from QD_database.csv')
+    print('')
 
     # Export the resulting geometries back to the database
     if 'qd' in arg.optional.database.write and not arg.optional.qd.optimize:
@@ -73,10 +74,6 @@ def ligand_to_qd(core, ligand, arg):
     qd.properties.ligand_count = qd[-1].properties.pdb_info.ResidueNumber - 1
     qd.properties.name = core.properties.name + '__' + str(qd.properties.ligand_count)
     qd.properties.name += '_' + ligand.properties.name
-
-    # Export the molecule
-    if not arg.optional.qd.optimize:
-        export_mol(qd, message='core + ligands:\t\t')
 
     return qd
 
@@ -128,11 +125,11 @@ def rot_mol_angle(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=Fa
     xyz_array = sanitize_dim_3(xyz_array)
     vec1 = sanitize_dim_2(vec1)
     vec2 = sanitize_dim_2(vec2)
-    idx = np.arange(xyz_array.shape[0]), idx
 
     # Rotate and translate all n ligands; readjust bond lengths if bond_length is set
     rotmat = get_rotmat(vec1, vec2)
     xyz_array = xyz_array@rotmat
+    idx = np.arange(xyz_array.shape[0]), idx
 
     # Translate the the molecules in xyz_array
     if atoms_other is not None:
@@ -188,7 +185,7 @@ def rot_mol_axis(xyz_array, vec, dist_to_self=True, atoms_other=None, step=(1/16
                       [v3, zero, -v1],
                       [-v2, v1, zero]]).T
 
-        step_range = np.arange(0.0, 2.0, step)
+        step_range = np.pi * np.arange(0.0, 2.0, step)
         a1 = np.sin(step_range)[:, None, None, None]
         a2 = (np.sin(0.5 * step_range)**2)[:, None, None, None]
         return np.identity(3) + a1 * W + a2 * W@W

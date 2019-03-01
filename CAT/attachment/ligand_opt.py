@@ -20,7 +20,6 @@ from ..utils import get_time
 from ..mol_utils import (to_symbol, fix_carboxyl, get_bond_index,
                          from_mol_other, from_rdmol, separate_mod)
 from ..data_handling.database import ligand_from_database, ligand_to_database
-from ..data_handling.mol_export import export_mol
 
 
 def init_ligand_opt(ligand_list, arg):
@@ -47,9 +46,14 @@ def init_ligand_opt(ligand_list, arg):
                     mol.set_dihed(180.0)
                 ligand = recombine_mol(mol_list)
                 ligand = fix_carboxyl(ligand)
+                if ligand.properties.read:
+                    print(get_time() + ligand.properties.name + '\t has been reoptimized')
+                else:
+                    print(get_time() + ligand.properties.name + '\t has been optimized')
             else:
                 del ligand.properties.read
-                print(get_time() + ligand.properties.name + ' pulled from Ligand_database.csv')
+                print(get_time() + ligand.properties.name + '\t pulled from Ligand_database.csv')
+    print('')
 
     # Write newly optimized structures to the database
     if 'ligand' in arg.optional.database.write and arg.optional.ligand.optimize:

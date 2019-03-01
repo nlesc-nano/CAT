@@ -62,8 +62,7 @@ def prep(arg, return_mol=True):
     qd_list = prep_qd(ligand_list, core_list, arg)
 
     # The End
-    message = '\n' + get_time()
-    message += 'Total elapsed time:\t\t' + '%.4f' % (time.time() - time_start) + ' sec'
+    message = get_time() + 'Total elapsed time:\t\t' + '%.4f' % (time.time() - time_start) + ' sec'
     print(message)
 
     if return_mol:
