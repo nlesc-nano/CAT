@@ -38,14 +38,14 @@ def init_ligand_opt(ligand_list, arg):
     # Optimize all new ligands
     if arg.optional.ligand.optimize:
         overwrite = 'ligand' in arg.optional.database.overwrite
-        for ligand in ligand_list:
+        for i, ligand in enumerate(ligand_list):
             if overwrite or not ligand.properties.read:
                 # Optimize the ligand and export .xyz & .pdb files
                 mol_list = split_mol(ligand)
                 for mol in mol_list:
                     mol.set_dihed(180.0)
                 ligand = recombine_mol(mol_list)
-                ligand = fix_carboxyl(ligand)
+                ligand_list[i] = fix_carboxyl(ligand)
                 if ligand.properties.read:
                     print(get_time() + ligand.properties.name + '\t has been reoptimized')
                 else:
@@ -228,7 +228,7 @@ def recombine_mol(mol_list):
         mol1.delete_atom(tup[3])
         mol1.add_bond(tup[0], tup[2])
         bond_tup = mol1.bonds[-1].get_bond_index()
-        mol1.from_plams_mol(global_minimum_scan_rdkit(mol1, bond_tup))
+        mol1.from_mol_other(global_minimum_scan_rdkit(mol1, bond_tup))
 
     del mol1.properties.mark
     return mol1

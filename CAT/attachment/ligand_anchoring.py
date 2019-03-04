@@ -1,6 +1,6 @@
 """ A module designed for finding ligand functional groups. """
 
-__all__ = ['find_ligand_anchors']
+__all__ = ['init_ligand_anchoring']
 
 from itertools import chain
 
@@ -13,7 +13,7 @@ from ..mol_utils import separate_mod
 from ..data_handling.input_sanitizer import santize_smiles
 
 
-def find_ligand_anchors(ligand_list, arg):
+def init_ligand_anchoring(ligand_list, arg):
     """ """
     ret = []
     for lig in ligand_list:
@@ -65,7 +65,8 @@ def find_substructure(ligand, split=True):
     if ligand_indices:
         ligand_list = [substructure_split(ligand, tup, split) for tup in ligand_indices]
     else:
-        print(get_time() + 'No functional groups were found for ' + str(ligand.get_formula()))
+        print(get_time() + 'No functional groups were found (optional.ligand.split = ' + str(split)
+        + ') for ligand: ' + ligand.properties.smiles)
         ligand_list = []
 
     return ligand_list
@@ -87,7 +88,7 @@ def substructure_split(ligand, idx, split=True):
     at2 = lig[idx[-1] + 1]
 
     if split:
-        if len(ligand.separate()) == 1:
+        if len(lig.separate()) == 1:
             lig.delete_atom(at2)
         else:
             mol1, mol2 = lig.separate_mod()

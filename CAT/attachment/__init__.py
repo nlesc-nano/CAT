@@ -1,13 +1,13 @@
 """ Modules designed for attaching ligands to cores. """
 
-from .qd_opt import qd_opt
+from .qd_opt import init_qd_opt
 from .ligand_opt import init_ligand_opt
-from .ligand_attach import ligand_to_qd
-from .ligand_anchoring import find_ligand_anchors
+from .ligand_attach import init_qd_construction
+from .ligand_anchoring import init_ligand_anchoring
 
 __all__ = [
-    'qd_opt',
+    'init_qd_opt',
     'init_ligand_opt',
-    'ligand_to_qd',
-    'find_ligand_anchors'
+    'init_qd_construction',
+    'init_ligand_anchoring'
 ]

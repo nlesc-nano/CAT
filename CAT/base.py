@@ -19,8 +19,8 @@ from .data_handling.input_sanitizer import (sanitize_path, sanitize_input_mol, s
 
 from .attachment.qd_opt import init_qd_opt
 from .attachment.ligand_opt import init_ligand_opt
-from .attachment.ligand_attach import init_create_qd
-from .attachment.ligand_anchoring import find_ligand_anchors
+from .attachment.ligand_attach import init_qd_construction
+from .attachment.ligand_anchoring import init_ligand_anchoring
 
 
 def prep(arg, return_mol=True):
@@ -28,8 +28,8 @@ def prep(arg, return_mol=True):
     function that handles all tasks related to prep_core, prep_ligand and prep_qd.
 
     arg <dict>: A dictionary containing all (optional) arguments.
-
-    return <list>[<plams.Molecule>]: A list of all quantum dots (core + n*ligands).
+    return_mol <bool>: If qd_list, core_list & ligand_list should be returned or not.
+    return <list>[<plams.Molecule>]: If return_mol=True, return qd_list, core_list & ligand_list.
     """
     # The start
     time_start = time.time()
@@ -48,9 +48,9 @@ def prep(arg, return_mol=True):
 
     # Raises an error if mol_list is empty
     if not ligand_list:
-        raise IndexError('No valid input ligands were found, aborting run')
+        raise MoleculeError('No valid input ligands were found, aborting run')
     elif not core_list:
-        raise IndexError('No valid input cores were found, aborting run')
+        raise MoleculeError('No valid input cores were found, aborting run')
 
     # Adds the indices of the core dummy atoms to core.properties.core
     prep_core(core_list, arg)
@@ -98,22 +98,18 @@ def prep_core(core_list, arg):
 
 def prep_ligand(ligand_list, arg):
     """
-    Function that handles ligand operations.
-    Read/write the results from/to a ligand database, launch prep_ligand_2() and
-        calculate properties with MOPAC + COSMO-RS.
+    Function that handles all ligand operations.
 
     ligand_list <list>[<plams.Molecule>]: A list of all ligand molecules.
-    database <pd.DataFrame>: Database of previous calculations.
     arg <dict>: A dictionary containing all (optional) arguments.
-
     return <list>[<plams.Molecule>]: A copy of all ligands for each identified functional group.
     """
     # Identify functional groups within the ligand and add a dummy atom to the center of mass.
-    ligand_list = find_ligand_anchors(ligand_list, arg)
+    ligand_list = init_ligand_anchoring(ligand_list, arg)
 
     # Check if any valid functional groups were found
     if not ligand_list:
-        raise IndexError('No valid functional groups found in any of the ligands, aborting run')
+        raise MoleculeError('No valid functional groups found in any of the ligands, aborting run')
 
     # Optimize the ligands
     if arg.optional.ligand.optimize:
@@ -130,20 +126,17 @@ def prep_ligand(ligand_list, arg):
 
 def prep_qd(ligand_list, core_list, arg):
     """
-    Function that handles quantum dot (qd, i.e. core + all ligands) operations.
-    Optimize the quantum dot, perform and activation strain analyses on the ligands and read/write
-        the results from/to a quantom dot database.
+    Function that handles all quantum dot (qd, i.e. core + all ligands) operations.
 
     ligand_list <list>[<plams.Molecule>]: A list of all ligands.
     core_list <list>[<plams.Molecule>]: A list of all cores.
     arg <dict>: A dictionary containing all (optional) arguments.
-
     return <list>[<plams.Molecule>]: A list of all optimized quantom dots.
     """
     # Construct the quantum dots
-    qd_list = init_create_qd(ligand_list, core_list, arg)
+    qd_list = init_qd_construction(ligand_list, core_list, arg)
     if not qd_list:
-        raise IndexError('No valid quantum dots found, aborting')
+        raise MoleculeError('No valid quantum dots found, aborting')
 
     # Optimize the qd with the core frozen
     if arg.optional.qd.optimize:

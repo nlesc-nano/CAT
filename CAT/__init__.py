@@ -12,7 +12,7 @@ from .analysis import (
 )
 
 from .attachment import (
-    qd_opt, init_ligand_opt, ligand_to_qd, find_ligand_anchors
+    init_qd_opt, init_ligand_opt, init_qd_construction, init_ligand_anchoring
 )
 
 from .data_handling import (
@@ -28,12 +28,12 @@ __all__ = [
     'init_asa', 'CRSJob', 'CRSResults', 'job_single_point', 'job_geometry_opt', 'job_freq',
     'init_bde', 'get_thermo', 'get_entropy', 'dissociate_ligand', 'init_solv',
 
-    'qd_opt', 'init_ligand_opt', 'ligand_to_qd', 'find_ligand_anchors',
+    'init_qd_opt', 'init_ligand_opt', 'init_qd_construction', 'init_ligand_anchoring',
 
     'ligand_from_database', 'ligand_to_database', 'qd_from_database', 'qd_to_database',
     'export_mol', 'read_mol', 'set_prop', 'sanitize_optional', 'sanitize_input_mol', 'sanitize_path',
 
     'prep',
 
-    'create_dir'
+    'get_template'
 ]

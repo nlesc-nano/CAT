@@ -57,7 +57,7 @@ def get_ligand_database(arg):
         df = pd.read_csv(df_file, index_col=0)
         assert df_index == sorted(list(df.index))
     else:
-        print(get_time() + 'ligand_database.csv not found in ' +
+        print(get_time() + 'Ligand_database.csv not found in ' +
               arg.optional.database.dirname + ', creating ligand database')
         df = pd.DataFrame(None, index=df_index)
 
@@ -70,6 +70,14 @@ def get_ligand_database(arg):
 
     hdf5.close()
     return df
+
+
+def _anchor_to_idx(string):
+    for i, _ in enumerate(string, 1):
+        try:
+            return int(string[i:])
+        except ValueError:
+            pass
 
 
 def ligand_from_database(ligand_list, arg):
@@ -94,6 +102,7 @@ def ligand_from_database(ligand_list, arg):
             lig_new = from_pdb_array(hdf5['ligand'][idx])
             lig_new.properties = lig.properties
             lig_new.properties.read = True
+            lig_new.properties.dummies = lig_new[_anchor_to_idx(df[smiles]['anchor'])]
             ligand_list[i] = lig_new
 
     hdf5.close()
@@ -107,6 +116,8 @@ def ligand_to_database(ligand_list, arg):
         to the database..
     arg <dict>: A dictionary containing all (optional) arguments.
     """
+    print(get_time() + 'Updating Ligand_database.csv')
+
     # Check if previous entries can be overwritten
     overwrite = 'ligand' in arg.optional.database.overwrite
 
@@ -126,6 +137,8 @@ def ligand_to_database(ligand_list, arg):
                 molkit.writepdb(lig, path + '.pdb')
             if 'xyz' in arg.optional.database.mol_format:
                 lig.write(path + '.xyz')
+
+    print(get_time() + 'Ligand_database.csv has been updated\n')
 
 
 def _ligand_to_data_overwrite(ligand_list, arg):
@@ -262,14 +275,14 @@ def qd_from_database(ligand_list, core_list, arg):
                         qd.properties.indices.append(i)
 
                 # Set more properties
+                qd.properties.read = True
                 qd.properties.path = arg.optional.qd.dirname
                 qd.properties.core = core.properties.name
                 qd.properties.ligand = ligand.properties.smiles
                 qd.properties.ligand_anchor = ligand.properties.anchor
                 qd.properties.ligand_count = qd[-1].properties.pdb_info.ResidueNumber - 1
                 qd.properties.name = core.properties.name + '__'
-                qd.properties.name += str(qd.properties.ligand_count)
-                qd.properties.name += '_' + ligand.properties.name
+                qd.properties.name += str(qd.properties.ligand_count) + '_' + ligand.properties.name
                 qd_list.append(qd)
             else:
                 qd_list.append((core, ligand))
@@ -285,11 +298,13 @@ def qd_to_database(qd_list, arg):
         to the database.
     arg <dict>: A dictionary containing all (optional) arguments.
     """
+    print(get_time() + 'Updating QD_database.csv')
+
     # Check if previous entries can be overwritten
     overwrite = 'qd' in arg.optional.database.overwrite
 
     # A loop which **does not** allow previous entries in the database to be overwritten
-    if not overwrite:
+    if overwrite:
         _qd_to_data_overwrite(qd_list, arg)
 
     # A loop which **does** allow previous entries in the database to be overwritten
@@ -305,6 +320,9 @@ def qd_to_database(qd_list, arg):
             if 'xyz' in arg.optional.database.mol_format:
                 qd.write(path + '.xyz')
 
+    print(get_time() + 'QD_database.csv has been updated\n')
+
+
 def _qd_to_data_overwrite(qd_list, arg):
     """ Export quantum dots to the database; overwriting previous entries if necessary. """
     df = get_qd_database(arg)
@@ -317,11 +335,10 @@ def _qd_to_data_overwrite(qd_list, arg):
         if name not in df:
             df[name] = None
             idx = len(hdf5['QD'])
-            shape = (hdf5['QD'].shape[0] + 1,
-                     max(hdf5['QD'].shape[1], pdb_array.shape[0]))
+            shape = (hdf5['QD'].shape[0] + 1, max(hdf5['QD'].shape[1], pdb_array.shape[0]))
             hdf5['QD'].shape = shape
         else:
-            idx = hdf5['QD'].index(pdb_array)
+            idx = int(df[name]['hdf5 index'])
 
         # Pad the pdb_array and export to the hdf5 dataset
         if pdb_array.shape != hdf5['QD'][idx].shape:

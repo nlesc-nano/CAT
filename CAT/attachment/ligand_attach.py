@@ -1,6 +1,6 @@
 """ A module designed for attaching ligands to cores. """
 
-__all__ = ['ligand_to_qd']
+__all__ = ['init_qd_construction']
 
 import numpy as np
 from scipy.spatial.distance import cdist
@@ -13,7 +13,7 @@ from ..mol_utils import (merge_mol, get_atom_index)
 from ..data_handling.database import (qd_from_database, qd_to_database)
 
 
-def init_create_qd(ligand_list, core_list, arg):
+def init_qd_construction(ligand_list, core_list, arg):
     """ Initialize the quantum dot construction. """
     # Attempt to pull structures from the database
     if 'qd' in arg.optional.database.read:

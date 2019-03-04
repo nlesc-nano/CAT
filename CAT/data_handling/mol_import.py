@@ -14,7 +14,7 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 from rdkit import Chem
 
 from ..utils import get_time
-from ..data_handling.input_sanitizer import sanitize_input_mol
+from ..data_handling.input_sanitizer import (sanitize_mol_type, get_mol_defaults)
 
 
 def read_mol(input_mol):
@@ -110,7 +110,8 @@ def read_mol_folder(mol):
     """ Read all files (.xyz, .pdb, .mol, .txt or further subfolders) within a folder """
     try:
         file_list = [file for file in os.listdir(mol.mol)]
-        input_mol = sanitize_input_mol(file_list)
+        input_mol = get_mol_defaults(file_list, path=mol.path, core=mol.is_core)
+        input_mol = sanitize_mol_type(input_mol)
         return read_mol(input_mol)
     except (Exception, PlamsError) as ex:
         print_exception(read_mol_folder.__code__, ex, mol.mol)
@@ -122,7 +123,8 @@ def read_mol_txt(mol):
         with open(mol.mol, 'r') as file:
             file_list = file.read().splitlines()
         file_list = [file.split()[mol.column] for file in file_list[mol.row:] if file]
-        input_mol = sanitize_input_mol(file_list)
+        input_mol = get_mol_defaults(file_list, path=mol.path, core=mol.is_core)
+        input_mol = sanitize_mol_type(input_mol)
         return read_mol(input_mol)
     except (Exception, PlamsError) as ex:
         print_exception(read_mol_txt.__code__, ex, mol.mol)
@@ -133,7 +135,8 @@ def read_mol_excel(mol):
     try:
         df = list(pd.read_excel(mol.mol, sheet_name=mol.sheet_name))
         file_list = [file for file in df[mol.column][mol.row:]]
-        input_mol = sanitize_input_mol(file_list)
+        input_mol = get_mol_defaults(file_list, path=mol.path, core=mol.is_core)
+        input_mol = sanitize_mol_type(input_mol)
         return read_mol(input_mol)
     except (Exception, PlamsError) as ex:
         print_exception(read_mol_excel.__code__, ex, mol.mol)

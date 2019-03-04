@@ -67,32 +67,19 @@ def sanitize_path(arg):
 
 def sanitize_input_mol(arg):
     """ Sanitize and return the settings of arg.input_cores & arg.input_ligands. """
-    def get_defaults(mol_list, core=False):
-        """ Prepare the default input settings for a molecule. """
-        ret = []
-        for mol in mol_list:
-            tmp = get_default_input_mol()
-            tmp.mol = mol
-            if core:
-                tmp.path = arg.optional.core.dirname
-            else:
-                tmp.path = arg.optional.ligand.dirname
-            tmp.is_core = core
+    core_path = arg.optional.core.dirname
+    arg.input_cores = get_mol_defaults(arg.input_cores, path=core_path, core=True)
+    arg.input_cores = sanitize_mol_type(arg.input_cores)
 
-            if isinstance(mol, dict):
-                for key1 in mol:
-                    tmp.mol = key1
-                    for key2 in mol[key1]:
-                        try:
-                            tmp[key2] = key_dict[key2](mol[key1][key2])
-                        except KeyError:
-                            raise KeyError(str(key2) + ' is not a valid argument for ' + str(key1))
-                        if key2 == 'guess_bonds':
-                            tmp.tmp_guess = True
+    ligand_path = arg.optional.ligand.dirname
+    arg.input_ligands = get_mol_defaults(arg.input_ligands, path=ligand_path, core=False)
+    arg.input_ligands = sanitize_mol_type(arg.input_ligands)
 
-            ret.append(tmp)
-        return ret
+    return arg
 
+
+def get_mol_defaults(mol_list, path=None, core=False):
+    """ Prepare the default input settings for a molecule. """
     key_dict = {
         'guess_bonds': val_bool,
         'is_core': val_bool,
@@ -105,13 +92,26 @@ def sanitize_input_mol(arg):
         'path': val_string,
     }
 
-    arg.input_cores = get_defaults(arg.input_cores, core=True)
-    arg.input_cores = sanitize_mol_type(arg.input_cores)
+    ret = []
+    for mol in mol_list:
+        tmp = get_default_input_mol()
+        tmp.mol = mol
+        tmp.path = path
+        tmp.is_core = core
 
-    arg.input_ligands = get_defaults(arg.input_ligands, core=False)
-    arg.input_ligands = sanitize_mol_type(arg.input_ligands)
+        if isinstance(mol, dict):
+            for key1 in mol:
+                tmp.mol = key1
+                for key2 in mol[key1]:
+                    try:
+                        tmp[key2] = key_dict[key2](mol[key1][key2])
+                    except KeyError:
+                        raise KeyError(str(key2) + ' is not a valid argument for ' + str(key1))
+                    if key2 == 'guess_bonds':
+                        tmp.tmp_guess = True
 
-    return arg
+        ret.append(tmp)
+    return ret
 
 
 def sanitize_mol_type(input_mol):
