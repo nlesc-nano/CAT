@@ -305,6 +305,7 @@ def qd_to_database(qd_list, arg):
             if 'xyz' in arg.optional.database.mol_format:
                 qd.write(path + '.xyz')
 
+
 def _qd_to_data_overwrite(qd_list, arg):
     """ Export quantum dots to the database; overwriting previous entries if necessary. """
     df = get_qd_database(arg)
@@ -321,7 +322,7 @@ def _qd_to_data_overwrite(qd_list, arg):
                      max(hdf5['QD'].shape[1], pdb_array.shape[0]))
             hdf5['QD'].shape = shape
         else:
-            idx = hdf5['QD'].index(pdb_array)
+            idx = int(df[name]['hdf5 index'])
 
         # Pad the pdb_array and export to the hdf5 dataset
         if pdb_array.shape != hdf5['QD'][idx].shape:
@@ -379,7 +380,6 @@ def _qd_to_data(qd_list, arg):
     file = join(arg.optional.database.dirname, 'QD_database.csv')
     df.to_csv(file)
     hdf5.close()
-
 
 
 def write_database(mol_list, database, path, mol_type='ligand'):
