@@ -46,6 +46,8 @@ def init_ligand_opt(ligand_list, arg):
                     mol.set_dihed(180.0)
                 ligand = recombine_mol(mol_list)
                 ligand = fix_carboxyl(ligand)
+
+                # Print messages
                 if ligand.properties.read:
                     print(get_time() + ligand.properties.name + '\t has been reoptimized')
                 else:
