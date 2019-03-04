@@ -320,8 +320,6 @@ def qd_to_database(qd_list, arg):
             if 'xyz' in arg.optional.database.mol_format:
                 qd.write(path + '.xyz')
 
-    print(get_time() + 'QD_database.csv has been updated\n')
-
 
 def _qd_to_data_overwrite(qd_list, arg):
     """ Export quantum dots to the database; overwriting previous entries if necessary. """
@@ -396,7 +394,6 @@ def _qd_to_data(qd_list, arg):
     file = join(arg.optional.database.dirname, 'QD_database.csv')
     df.to_csv(file)
     hdf5.close()
-
 
 
 def write_database(mol_list, database, path, mol_type='ligand'):

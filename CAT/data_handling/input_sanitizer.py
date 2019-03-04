@@ -51,9 +51,9 @@ def sanitize_path(arg):
             arg.path = os.getcwd()
         else:
             if not os.path.exists(arg.path):
-                raise FileNotFoundError(get_time + 'path ' + arg.path + ' not found')
+                raise FileNotFoundError(get_time() + 'path ' + arg.path + ' not found')
             elif os.path.isfile(arg.path):
-                raise TypeError(get_time + 'path ' + arg.path + ' is a file, not a directory')
+                raise TypeError(get_time() + 'path ' + arg.path + ' is a file, not a directory')
         return arg
 
     else:

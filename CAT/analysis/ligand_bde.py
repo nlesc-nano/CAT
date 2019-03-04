@@ -13,40 +13,42 @@ from scm.plams.mol.atom import Atom
 from scm.plams.core.functions import (init, finish, config)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 
-from .. import utils as CAT
 from .jobs import (job_single_point, job_geometry_opt, job_freq)
 from .ligand_dissociate import dissociate_ligand
+from .. import utils as CAT
 from ..mol_utils import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
 
 
-def init_bde(mol, job_recipe):
+def init_bde(mol_list, job_recipe):
     """ Initialize the bond dissociation energy calculation; involves 4 distinct steps:
     1.  Take two ligands X and another atom from the core Y (e.g. Cd) and create YX2.
     2.  Create all n*2*(n-1) possible molecules where YX2 is dissociated.
     3.  Calculate dE: the "electronic" component of the bond dissociation energy (BDE).
     4.  Calculate ddG: the thermal and entropic component of the BDE.
 
-    mol <plams.Molecule>: A PLAMS molecule.
+    mol_list <list> [<plams.Molecule>]: A list of PLAMS molecule.
     job1 <type> & s1 <Settings>: A type object of a job and its settings; used in step 3.
     job2 <type> & s2 <Settings>: A type object of a job and its settings; used in step 4.
     return <pd.DataFrame>: A pandas dataframe with ligand residue numbers, Cd topology and BDEs.
     """
-    # Ready YX2 and the YX2 dissociated quantum dots
-    lig = get_cdx2(mol)
-    core = dissociate_ligand(mol)
+    for mol in mol_list:
+        # Ready YX2 and the YX2 dissociated quantum dots
+        lig = get_cdx2(mol)
+        core = dissociate_ligand(mol)
 
-    # Prepare the dataframe
-    res_list1, idx_list, res_list2 = zip(*[mol.properties.mark for mol in core])
-    df = pd.DataFrame({'Ligand Residue Num #1': res_list1,
-                       'Cd Topology': get_topology(mol, idx_list),
-                       'Ligand Residue Num #2': res_list2})
+        # Prepare the dataframe
+        res_list1, idx_list, res_list2 = zip(*[mol.properties.mark for mol in core])
+        df = pd.DataFrame({'Ligand Residue Num #1': res_list1,
+                           'Cd Topology': get_topology(mol, idx_list),
+                           'Ligand Residue Num #2': res_list2})
 
-    # Fill the dataframe with energies
-    df['dE kcal/mol'] = get_bde_dE(mol, lig, core, job=job_recipe.job1, s=job_recipe.s1)
-    df['ddG kcal/mol'] = get_bde_ddG(mol, lig, core, job=job_recipe.job2, s=job_recipe.s2)
-    df['dG kcal/mol'] = df['dE kcal/mol'] + df['ddG kcal/mol']
-    return df
+        # Fill the dataframe with energies
+        df['dE kcal/mol'] = get_bde_dE(mol, lig, core, job=job_recipe.job1, s=job_recipe.s1)
+        df['ddG kcal/mol'] = get_bde_ddG(mol, lig, core, job=job_recipe.job2, s=job_recipe.s2)
+        df['dG kcal/mol'] = df['dE kcal/mol'] + df['ddG kcal/mol']
+
+        df.to_csv(join(arg.optional.database.dirname, qd.properties.name + '_BDE.xlsx'))
 
 
 def get_bde_dE(tot, lig, core, job=None, s=None):
