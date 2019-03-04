@@ -159,9 +159,6 @@ def prep_qd(ligand_list, core_list, arg):
     if arg.optional.qd.dissociate:
         # Start the BDE calculation
         print(get_time() + 'calculating ligand dissociation energy...')
-        for qd in qd_list:
-            qd.properties.energy.BDE = init_bde(qd, arg.optional.qd.dissociate)
-            df = qd.properties.energy.BDE
-            df.to_csv(join(arg.optional.database.dirname, qd.properties.name + '_BDE.xlsx'))
+        init_bde(qd_list)
 
     return qd_list
