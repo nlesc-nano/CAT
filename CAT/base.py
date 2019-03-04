@@ -118,8 +118,7 @@ def prep_ligand(ligand_list, arg):
     # Perform a COSMO-RS calculation on the ligands
     if arg.optional.ligand.crs:
         check_sys_var()
-        for lig in ligand_list:
-            init_solv(lig, arg.optional.ligand.crs)
+        init_solv(ligand_list, arg)
 
     return ligand_list
 
@@ -145,13 +144,13 @@ def prep_qd(ligand_list, core_list, arg):
 
     # Calculate the interaction between ligands on the quantum dot surface
     if arg.optional.qd.int:
-        print(get_time() + 'calculating ligand distortion and inter-ligand interaction...')
+        print(get_time() + 'calculating ligand distortion and inter-ligand interaction')
         qd_list = list(init_asa(qd) for qd in qd_list)
 
     # Calculate the interaction between ligands on the quantum dot surface upon removal of CdX2
     if arg.optional.qd.dissociate:
         # Start the BDE calculation
-        print(get_time() + 'calculating ligand dissociation energy...')
+        print(get_time() + 'calculating ligand dissociation energy')
         init_bde(qd_list)
 
     return qd_list
