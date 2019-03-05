@@ -3,14 +3,12 @@
 from .database import (
     ligand_from_database, ligand_to_database, qd_from_database, qd_to_database
 )
-from .mol_export import export_mol
 from .mol_import import (read_mol, set_prop)
 from .input_sanitizer import (sanitize_optional, sanitize_input_mol, sanitize_path)
 
 
 __all__ = [
     'ligand_from_database', 'ligand_to_database', 'qd_from_database', 'qd_to_database',
-    'export_mol',
     'read_mol', 'set_prop',
     'sanitize_optional', 'sanitize_input_mol', 'sanitize_path'
 ]

@@ -17,7 +17,7 @@ from .attachment import (
 
 from .data_handling import (
     ligand_from_database, ligand_to_database, qd_from_database, qd_to_database,
-    export_mol, read_mol, set_prop, sanitize_optional, sanitize_input_mol, sanitize_path
+    read_mol, set_prop, sanitize_optional, sanitize_input_mol, sanitize_path
 )
 
 from .base import prep
@@ -31,7 +31,7 @@ __all__ = [
     'init_qd_opt', 'init_ligand_opt', 'init_qd_construction', 'init_ligand_anchoring',
 
     'ligand_from_database', 'ligand_to_database', 'qd_from_database', 'qd_to_database',
-    'export_mol', 'read_mol', 'set_prop', 'sanitize_optional', 'sanitize_input_mol', 'sanitize_path',
+    'read_mol', 'set_prop', 'sanitize_optional', 'sanitize_input_mol', 'sanitize_path',
 
     'prep',
 
