@@ -2,7 +2,6 @@
 
 __all__ = ['ligand_from_database', 'ligand_to_database', 'qd_from_database', 'qd_to_database']
 
-import os
 from os.path import (join, isfile)
 
 import h5py
@@ -59,16 +58,17 @@ def get_ligand_database(arg):
     return <pd.DataFrame>: The ligand database as dataframe.
     """
     df_file = join(arg.optional.database.dirname, 'Ligand_database.csv')
-    df_index = sorted(['anchor', 'hdf5 index', 'formula', 'settings', 'smiles'])
 
     # Check if the database exists and has the proper keys; create it if it does not
     if isfile(df_file):
         df = pd.read_csv(df_file, index_col=0).T
-        assert df_index == sorted(list(df.index))
     else:
         print(get_time() + 'Ligand_database.csv not found in ' +
               arg.optional.database.dirname + ', creating ligand database')
-        df = pd.DataFrame(None, index=df_index)
+        idx = sorted(['anchor', 'hdf5 index', 'formula', 'settings', 'smiles'])
+        idx = pd.MultiIndex.from_tuples([(i, None) for i in idx], names=['index', 'sub index'])
+        columns = pd.MultiIndex.from_tuples([(None, None)], names=['smiles', 'anchor'])
+        df = pd.DataFrame(None, index=idx, columns=columns)
         df.T.to_csv(df_file)
 
     # Check if the ligand dataset is already available in Structures.hdf5
@@ -106,13 +106,13 @@ def ligand_from_database(ligand_list, arg):
 
     # Pull structures from the database
     for i, lig in enumerate(ligand_list):
-        name = lig.properties.name
-        if name in df:  # The ligand is present in the database
-            idx = int(df[name]['hdf5 index'])
+        key = lig.properties.smiles, lig.properties.anchor
+        if key in df:  # The ligand is present in the database
+            idx = int(df[key]['hdf5 index'])
             lig_new = from_pdb_array(hdf5['ligand'][idx])
             lig_new.properties = lig.properties
             lig_new.properties.read = True
-            lig_new.properties.dummies = lig_new[_anchor_to_idx(df[name]['anchor'])]
+            lig_new.properties.dummies = lig_new[_anchor_to_idx(key[1])]
             ligand_list[i] = lig_new
 
     hdf5.close()
@@ -128,16 +128,13 @@ def ligand_to_database(ligand_list, arg):
     """
     print(get_time() + 'Updating Ligand_database.csv')
 
-    # Check if previous entries can be overwritten
-    overwrite = 'ligand' in arg.optional.database.overwrite
+    # A loop which **does** allow previous entries in the database to be overwritten
+    if 'ligand' in arg.optional.database.overwrite:
+        _ligand_to_data_overwrite(ligand_list, arg)
 
     # A loop which **does not** allow previous entries in the database to be overwritten
-    if not overwrite:
-        _ligand_to_data(ligand_list, arg)
-
-    # A loop which **does** allow previous entries in the database to be overwritten
     else:
-        _ligand_to_data_overwrite(ligand_list, arg)
+        _ligand_to_data(ligand_list, arg)
 
     # Optional: export molecules to filetypes other than .hdf5
     if arg.optional.database.mol_format:
@@ -175,20 +172,19 @@ def _ligand_to_data_overwrite(ligand_list, arg):
         hdf5['ligand'].shape = j + len(lig_new), pdb_new.shape[1]
         hdf5['ligand'][j:j+len(lig_new)] = pdb_new
         for i, lig in enumerate(lig_new, j):
-            name = lig.properties.name
-            df[name] = None
-            df[name]['smiles'] = lig.properties.smiles
-            df[name]['anchor'] = lig.properties.anchor
-            df[name]['hdf5 index'] = i
-            df[name]['formula'] = lig.get_formula()
-            df[name]['settings'] = None
+            key = lig.properties.smiles, lig.properties.anchor
+            df[key] = None
+            df[key]['hdf5 index'] = i
+            df[key]['formula'] = lig.get_formula()
+            df[key]['settings'] = None
 
     # Update the database with old ligands
     if lig_old:
         pdb_old = as_pdb_array(lig_old, min_size=hdf5['ligand'].shape[1])
         hdf5['ligand'][idx_old] = pdb_old
         for lig in lig_old:
-            df[lig.properties.name]['settings'] = None
+            key = lig.properties.smiles, lig.properties.anchor
+            df[key]['settings'] = None
 
     # Export the database
     file = join(arg.optional.database.dirname, 'ligand_database.csv')
@@ -213,13 +209,11 @@ def _ligand_to_data(ligand_list, arg):
 
     # Update the database
     for i, lig in enumerate(ligand_list, j):
-        name = lig.properties.name
-        df[name] = None
-        df[name]['smiles'] = lig.properties.smiles
-        df[name]['anchor'] = lig.properties.anchor
-        df[name]['hdf5 index'] = i
-        df[name]['formula'] = lig.get_formula()
-        df[name]['settings'] = None
+        key = lig.properties.smiles, lig.properties.anchor
+        df[key] = None
+        df[key]['hdf5 index'] = i
+        df[key]['formula'] = lig.get_formula()
+        df[key]['settings'] = None
 
     # Export the database
     file = join(arg.optional.database.dirname, 'ligand_database.csv')
@@ -229,12 +223,16 @@ def _ligand_to_data(ligand_list, arg):
 
 def ligand_solv_to_database(solv_df, arg):
     """ Export ligand solvation energies and activity voefficients to the database. """
-    # Open the database
+    # Open and update database
     df = get_ligand_database(arg)
-    if (solv_df.index not in df.index).all():
-        index = np.append(df.index.values, solv_df.index.values)
-        index = np.unique(index)
-        df = df.reindex(index)
+    if arg.optional.database.overwrite:
+        df = pd.concat(solv_df, df, sort=False)
+    else:
+        df = pd.concat(df, solv_df, sort=False)
+
+    # Close the database
+    file = join(arg.optional.database.dirname, 'ligand_database.csv')
+    df.T.to_csv(file)
 
 
 def get_qd_database(arg):
@@ -245,17 +243,18 @@ def get_qd_database(arg):
     return <pd.DataFrame>: The quantum dot database as dataframe.
     """
     df_file = join(arg.optional.database.dirname, 'QD_database.csv')
-    df_index = sorted(['ligand count', 'ligand anchor', 'ligand',
-                       'core', 'hdf5 index', 'formula', 'settings'])
 
     # Check if the database exists and has the proper keys; create it if it does not
     if isfile(df_file):  # The database exists
         df = pd.read_csv(df_file, index_col=0).T
-        assert df_index == sorted(list(df.index))
     else:
         print(get_time() + 'QD_database.csv not found in ' +
               arg.optional.database.dirname + ', creating quantum dot database')
-        df = pd.DataFrame(None, index=df_index)
+        idx = sorted(['ligand count', 'hdf5 index', 'formula', 'settings'])
+        idx = pd.MultiIndex.from_tuples([(i, None) for i in idx], names=['index', 'sub index'])
+        columns = pd.MultiIndex.from_tuples([(None, None, None)],
+                                            names=['core', 'ligand smiles', 'ligand anchor'])
+        df = pd.DataFrame(None, index=idx, columns=columns)
         df.T.to_csv(df_file)
 
     # Check if the quantum dot dataset is already available in structures.hdf5
@@ -286,33 +285,37 @@ def qd_from_database(ligand_list, core_list, arg):
     qd_list = []
 
     for core in core_list:
-        for ligand in ligand_list:
-            i = str(len(core.properties.dummies))
-            name = core.properties.name + '__' + i + '_' + ligand.properties.name
-            if name in df:
-                idx = int(df[name]['hdf5 index'])
+        for lig in ligand_list:
+            key = core.properties.name, lig.properties.smiles, lig.properties.anchor
+            if key in df:
+                idx = int(df[key]['hdf5 index'])
                 qd = from_pdb_array(hdf5['QD'][idx])
 
-                # Set a property
+                # Collect all core indices
                 qd.properties.indices = []
                 for i, at in enumerate(qd, 1):
                     if at.properties.pdb_info.ResidueName == 'COR':
                         qd.properties.indices.append(i)
-                    elif at.properties.charge != 0:
-                        qd.properties.indices.append(i)
+                    else:
+                        break
+
+                # Collect all ligand anchor indices
+                k = _anchor_to_idx(key[2])
+                for j, _ in enumerate(qd[i+k::k]):
+                    qd.properties.indices.append(j)
 
                 # Set more properties
                 qd.properties.read = True
                 qd.properties.path = arg.optional.qd.dirname
-                qd.properties.core = core.properties.name
-                qd.properties.ligand = ligand.properties.name
-                qd.properties.ligand_anchor = ligand.properties.anchor
+                qd.properties.core = key[0]
+                qd.properties.ligand = key[1]
+                qd.properties.ligand_anchor = key[2]
                 qd.properties.ligand_count = qd[-1].properties.pdb_info.ResidueNumber - 1
                 qd.properties.name = core.properties.name + '__'
-                qd.properties.name += str(qd.properties.ligand_count) + '_' + ligand.properties.name
+                qd.properties.name += str(qd.properties.ligand_count) + '_' + lig.properties.name
                 qd_list.append(qd)
             else:
-                qd_list.append((core, ligand))
+                qd_list.append((core, lig))
 
     hdf5.close()
     return qd_list
@@ -327,14 +330,11 @@ def qd_to_database(qd_list, arg):
     """
     print(get_time() + 'Updating QD_database.csv')
 
-    # Check if previous entries can be overwritten
-    overwrite = 'qd' in arg.optional.database.overwrite
-
-    # A loop which **does not** allow previous entries in the database to be overwritten
-    if overwrite:
+    # A loop which **does** allow previous entries in the database to be overwritten
+    if 'qd' in arg.optional.database.overwrite:
         _qd_to_data_overwrite(qd_list, arg)
 
-    # A loop which **does** allow previous entries in the database to be overwritten
+    # A loop which **does not** allow previous entries in the database to be overwritten
     else:
         _qd_to_data(qd_list, arg)
 
@@ -374,15 +374,12 @@ def _qd_to_data_overwrite(qd_list, arg):
         hdf5['QD'].shape = j + len(qd_new), pdb_new.shape[1]
         hdf5['QD'][j:j+len(qd_new)] = pdb_new
         for i, qd in enumerate(qd_new, j):
-            name = qd.properties.name
-            df[name] = None
-            df[name]['ligand anchor'] = qd.properties.ligand_anchor
-            df[name]['ligand count'] = qd.properties.ligand_count
-            df[name]['ligand'] = qd.properties.ligand
-            df[name]['core'] = qd.properties.core
-            df[name]['hdf5 index'] = i
-            df[name]['formula'] = qd.get_formula()
-            df[name]['settings'] = None
+            key = qd.properties.core, qd.properties.ligand, qd.properties.ligand_anchor
+            df[key] = None
+            df[key]['ligand count'] = qd.properties.ligand_count
+            df[key]['hdf5 index'] = i
+            df[key]['formula'] = qd.get_formula()
+            df[key]['settings'] = None
 
     # Update the database with old quantum dots
     if qd_old:
@@ -414,15 +411,12 @@ def _qd_to_data(qd_list, arg):
 
     # Update the database
     for i, qd in enumerate(qd_list, j):
-        name = qd.properties.name
-        df[name] = None
-        df[name]['ligand anchor'] = qd.properties.ligand_anchor
-        df[name]['ligand count'] = qd.properties.ligand_count
-        df[name]['ligand'] = qd.properties.ligand
-        df[name]['core'] = qd.properties.core
-        df[name]['hdf5 index'] = i
-        df[name]['formula'] = qd.get_formula()
-        df[name]['settings'] = None
+        key = qd.properties.core, qd.properties.ligand, qd.properties.ligand_anchor
+        df[key] = None
+        df[key]['ligand count'] = qd.properties.ligand_count
+        df[key]['hdf5 index'] = i
+        df[key]['formula'] = qd.get_formula()
+        df[key]['settings'] = None
 
     # Export the database
     file = join(arg.optional.database.dirname, 'QD_database.csv')
