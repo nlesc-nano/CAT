@@ -104,7 +104,7 @@ def prep_ligand(ligand_list, arg):
     arg <dict>: A dictionary containing all (optional) arguments.
     return <list>[<plams.Molecule>]: A copy of all ligands for each identified functional group.
     """
-    # Identify functional groups within the ligand and add a dummy atom to the center of mass.
+    # Identify functional groups within the ligand.
     ligand_list = init_ligand_anchoring(ligand_list, arg)
 
     # Check if any valid functional groups were found
@@ -151,6 +151,6 @@ def prep_qd(ligand_list, core_list, arg):
     if arg.optional.qd.dissociate:
         # Start the BDE calculation
         print(get_time() + 'calculating ligand dissociation energy')
-        init_bde(qd_list)
+        init_bde(qd_list, arg)
 
     return qd_list
