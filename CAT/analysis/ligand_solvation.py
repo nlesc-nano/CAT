@@ -14,12 +14,14 @@ from scm.plams.interfaces.adfsuite.adf import ADFJob
 
 from .crs import CRSJob
 from .. import utils as CAT
+from ..data_handling.database import (ligand_solv_to_database, check_index)
 
 
 def init_solv(mol_list, arg, solvent_list=None):
     """ Initialize the solvation energy calculation. """
     # Prepare the job settings and solvent list
     job_recipe = arg.optional.ligand.crs
+    job_recipe.s1.input.mopac.Mozyme = 'Yes'
     if solvent_list is None:
         path = join(join(dirname(dirname(__file__)), 'data'), 'coskf')
         solvent_list = [join(path, solv) for solv in os.listdir(path) if
@@ -27,21 +29,35 @@ def init_solv(mol_list, arg, solvent_list=None):
     solvent_list.sort()
 
     # Prepare the dataframe
-    index = ['E_solv ' + i.rsplit('.', 1)[0].rsplit('/', 1)[-1] for i in solvent_list]
-    index += ['Gamma ' + i.rsplit('.', 1)[0].rsplit('/', 1)[-1] for i in solvent_list]
-    df = pd.DataFrame(index=index)
+    solv = ['E_solv', 'gamma'], [i.rsplit('.', 1)[0].rsplit('/', 1)[-1] for i in solvent_list]
+    idx = pd.MultiIndex.from_product(solv, names=['index', 'sub index'])
+    columns = pd.MultiIndex.from_tuples([(None, None)], names=['smiles', 'anchor'])
+    df = pd.DataFrame(index=idx, columns=columns)
+
+    # Check if the calculation has been donealready
+    if 'ligand' not in arg.optional.database.overwrite:
+        previous_entries = check_index(arg, 'E_solv', database='ligand')
+        mol_list = [mol for mol in mol_list if
+                    (mol.properties.smiles, mol.properties.anchor) not in previous_entries]
+        if not mol_list:
+            return
 
     # Run COSMO-RS
     init(path=mol_list[0].properties.path, folder='ligand_solvation')
     for mol in mol_list:
         coskf = get_surface_charge(mol, job=job_recipe.job1, s=job_recipe.s1)
-        E_solv = get_solv(mol, solvent_list, coskf, job=job_recipe.job2, s=job_recipe.s2)
-        df[mol.properties.name] = E_solv
+        E_solv, gamma = get_solv(mol, solvent_list, coskf, job=job_recipe.job2, s=job_recipe.s2)
+
+        key = mol.properties.smiles, mol.properties.anchor
+        df[key] = None
+        df[key]['E_solv'] = E_solv
+        df[key]['gamma'] = gamma
     finish()
 
     # Update the database
-    if arg.properties.database.write:
-        pass
+    if 'ligand' in arg.optional.database.write:
+        del df[(np.nan, np.nan)]
+        ligand_solv_to_database(df, arg)
 
 
 def get_surface_charge(mol, job=None, s=None):
@@ -53,11 +69,15 @@ def get_surface_charge(mol, job=None, s=None):
 
     results = mol.job_single_point(job, s, ret_results=True)
     results.wait()
-    return results[get_coskf(results)]
+    return get_coskf(results)
 
 
 def get_solv(mol, solvent_list, coskf, job=None, s=None):
     """ Calculate the solvation energy of *mol* in various *solvents*. """
+    # Return 2x None if no coskf is None
+    if coskf is None:
+        return None, None
+
     # Prepare the job settings
     s.input.Compound._h = coskf
     s_list = []
@@ -80,7 +100,7 @@ def get_solv(mol, solvent_list, coskf, job=None, s=None):
         Gamma.append(result.get_activity_coefficient())
 
     # Return the solvation energies and activity coefficients as dict
-    return np.array(E_solv + Gamma)
+    return E_solv, Gamma
 
 
 def get_surface_charge_adf(mol, job, s):
@@ -106,4 +126,5 @@ def get_coskf(results, extensions=['.coskf', '.t21']):
     for file in results.files:
         for ext in extensions:
             if ext in file:
-                return file
+                return results[file]
+    return None

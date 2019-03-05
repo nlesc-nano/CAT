@@ -222,18 +222,37 @@ def _ligand_to_data(ligand_list, arg):
     hdf5.close()
 
 
+def check_index(arg, index, database='ligand'):
+    """ Return all columns in **database** where **index** is not completely empty. """
+    data_dict = {'ligand': get_ligand_database, 'qd': get_qd_database}
+    df = data_dict[database.lower()](arg)
+    df.replace('', np.nan, inplace=True)
+    return df.columns[-df.loc[index].isna().all()].tolist()
+
+
 def ligand_solv_to_database(solv_df, arg):
     """ Export ligand solvation energies and activity voefficients to the database. """
-    # Open and update database
+    print('\n' + get_time() + 'Updating Ligand_database.csv')
+
+    # Open database
     df = get_ligand_database(arg)
-    if arg.optional.database.overwrite:
-        df = pd.concat(solv_df, df, sort=False)
+
+    # Update the database indices
+    if 'E_solv' not in df.index:
+        for i in solv_df.index:
+            if i not in df.index:
+                df.loc[i, :] = None
+
+    # Update the database values
+    if 'ligand' in arg.optional.database.overwrite:
+        df.update(solv_df, overwrite=True)
     else:
-        df = pd.concat(df, solv_df, sort=False)
+        df.update(solv_df, overwrite=False)
 
     # Close the database
     file = join(arg.optional.database.dirname, 'ligand_database.csv')
     df.to_csv(file)
+    print(get_time() + 'Ligand_database.csv has been updated\n')
 
 
 def get_qd_database(arg):
@@ -304,7 +323,9 @@ def qd_from_database(ligand_list, core_list, arg):
                 i += _anchor_to_idx(key[2]) - 1
                 k = len(lig)
                 for j, _ in enumerate(qd.atoms[i::k]):
-                    qd.properties.indices.append(i + j*k)
+                    idx = i + j*k
+                    qd[idx].properties.anchor = True
+                    qd.properties.indices.append(idx)
 
                 # Set more properties
                 qd.properties.read = True
