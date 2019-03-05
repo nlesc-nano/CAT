@@ -34,6 +34,21 @@ Default Settings
         - OC(C)=O
         - OC(CC)=O
 
+More verbose default Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+::
+
+    path: None
+
+    input_cores:
+        - Cd68Se55.xyz:
+            guess_bonds: False
+
+    input_ligands:
+        - OC(C)=O
+        - OC(CC)=O
+
     optional:
         database:
             dirname: database

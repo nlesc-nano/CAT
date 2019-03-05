@@ -78,7 +78,7 @@ Database
 
             optional:
                 database:
-                    read: [core, ligand, QD]
+                    read: [core, ligand, QD]  # is equivalent to read: True
 
         ::
 
@@ -278,7 +278,7 @@ QD
 
     |
 
-**qd.bde** |bool|_ = *False*
+**qd.dissociate** |bool|_ = *False*
 
     Calculate the bond dissociation energy (BDE) of ligands attached to the
     surface of the core. The calculation consists of five distinct steps:
