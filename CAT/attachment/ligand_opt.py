@@ -1,6 +1,6 @@
 """ A module designed for optimizing the geometry of ligands. """
 
-__all__ = ['optimize_ligand']
+__all__ = ['init_ligand_opt']
 
 import itertools
 import numpy as np
@@ -16,94 +16,52 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 from rdkit.Chem import AllChem
 
 from .ligand_attach import (rot_mol_angle, sanitize_dim_2)
-from ..mol_utils import (to_symbol, fix_carboxyl, get_bond_index, from_mol_other, from_rdmol)
-from ..data_handling.database import compare_database
-from ..data_handling.mol_export import export_mol
+from ..utils import get_time
+from ..mol_utils import (to_symbol, fix_carboxyl, get_bond_index,
+                         from_mol_other, from_rdmol, separate_mod)
+from ..data_handling.database import ligand_from_database, ligand_to_database
 
 
-def optimize_ligand(ligand, database, opt=True):
+def init_ligand_opt(ligand_list, arg):
     """
-    Pull the structure if a match has been found or alternatively optimize a new geometry.
+    initialize the ligand optimization procedure.
 
-    ligand <plams.Molecule>: The ligand molecule.
-    database <pd.DataFrame>: Database of previous calculations.
-    opt <bool>: If the geometry of the ligand (RDKit UFF) should be optimized (True) or not (False).
+    ligand_list <list> [<plams.Molecule>]: A list of valid ligands.
+    arg <dict>: A dictionary containing all (optional) arguments.
 
-    return <plams.Molecule>: The optimized ligand molecule.
+    return <plams.Molecule>: A list of optimized ligands.
     """
     # Searches for matches between the input ligand and the database; imports the structure
-    if database is not None:
-        ligand, match, pdb = compare_database(ligand, database)
-    else:
-        match, pdb = False, False
+    if 'ligand' in arg.optional.database.read:
+        ligand_list = ligand_from_database(ligand_list, arg)
 
-    # Optimize the ligand if no match has been found with the database
-    ligand.properties.entry = False
-    if not match or not pdb:
-        # Export the unoptimized ligand to a .pdb and .xyz file
-        export_mol(ligand, message='Ligand:\t\t\t')
+    # Optimize all new ligands
+    if arg.optional.ligand.optimize:
+        overwrite = 'ligand' in arg.optional.database.overwrite
+        for i, ligand in enumerate(ligand_list):
+            if overwrite or not ligand.properties.read:
+                # Optimize the ligand and export .xyz & .pdb files
+                mol_list = split_mol(ligand)
+                for mol in mol_list:
+                    mol.set_dihed(180.0)
+                ligand = recombine_mol(mol_list)
+                ligand_list[i] = fix_carboxyl(ligand)
 
-        # If ligand optimization is enabled: Optimize the ligand,
-        # set pdb_info and export the result
-        if opt:
-            mol_list = split_mol(ligand)
-            for mol in mol_list:
-                mol.set_dihed(180.0)
-            ligand = recombine_mol(mol_list)
-            ligand = fix_carboxyl(ligand)
-            ligand.properties.name = ligand.properties.name + '.opt'
-            export_mol(ligand, message='Optimized ligand:\t\t')
-            ligand.properties.name = ligand.properties.name.split('.opt')[0]
+                # Print messages
+                if ligand.properties.read:
+                    print(get_time() + ligand.properties.name + '\t has been reoptimized')
+                else:
+                    print(get_time() + ligand.properties.name + '\t has been optimized')
+            else:
+                del ligand.properties.read
+                print(get_time() + ligand.properties.name + '\t pulled from Ligand_database.csv')
+    print('')
 
-        # Create an entry for in the database if no previous entries are present
-        # or prints a warning if a structure is present in the database but
-        # the .pdb file is missing
-        if not match and not pdb:
-            ligand.properties.entry = True
-        else:
-            print(get_time() + 'database entry exists for ' + ligand.properties.name +
-                  ' yet the corresponding .pdb file is absent. The geometry has been reoptimized.')
+    # Write newly optimized structures to the database
+    if 'ligand' in arg.optional.database.write and arg.optional.ligand.optimize:
+        ligand_to_database(ligand_list, arg)
 
-    return ligand
-
-
-@add_to_class(Molecule)
-def separate_mod(self):
-    """
-    Modified PLAMS function: seperates a molecule instead of a copy of a molecule.
-    Separate the molecule into connected components.
-    Returned is a list of new |Molecule| objects (all atoms and bonds are disjoint with
-        the original molecule).
-    Each element of this list is identical to one connected component of the base molecule.
-    A connected component is a subset of atoms such that there exists a path
-        (along one or more bonds) between any two atoms.
-    """
-    frags = []
-    for at in self:
-        at._visited = False
-
-    def dfs(v, mol):
-        v._visited = True
-        v.mol = mol
-        for e in v.bonds:
-            e.mol = mol
-            u = e.other_end(v)
-            if not u._visited:
-                dfs(u, mol)
-
-    for src in self.atoms:
-        if not src._visited:
-            m = Molecule()
-            dfs(src, m)
-            frags.append(m)
-
-    for at in self.atoms:
-        del at._visited
-        at.mol.atoms.append(at)
-    for b in self.bonds:
-        b.mol.bonds.append(b)
-
-    return frags
+    return ligand_list
 
 
 @add_to_class(Molecule)
@@ -272,7 +230,7 @@ def recombine_mol(mol_list):
         mol1.delete_atom(tup[3])
         mol1.add_bond(tup[0], tup[2])
         bond_tup = mol1.bonds[-1].get_bond_index()
-        mol1.from_plams_mol(global_minimum_scan_rdkit(mol1, bond_tup))
+        mol1.from_mol_other(global_minimum_scan_rdkit(mol1, bond_tup))
 
     del mol1.properties.mark
     return mol1

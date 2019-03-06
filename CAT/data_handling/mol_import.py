@@ -14,7 +14,7 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 from rdkit import Chem
 
 from ..utils import get_time
-from ..data_handling.input_sanitizer import sanitize_input_mol
+from ..data_handling.input_sanitizer import (sanitize_mol_type, get_mol_defaults)
 
 
 def read_mol(input_mol):
@@ -59,9 +59,7 @@ def read_mol(input_mol):
 
 
 def read_mol_xyz(mol):
-    """
-    Read an .xyz file
-    """
+    """ Read an .xyz file """
     try:
         return Molecule(mol.mol, inputformat='xyz')
     except (Exception, PlamsError) as ex:
@@ -69,9 +67,7 @@ def read_mol_xyz(mol):
 
 
 def read_mol_pdb(mol):
-    """
-    Read a .pdb file
-    """
+    """ Read a .pdb file """
     try:
         return molkit.readpdb(mol.mol)
     except (Exception, PlamsError) as ex:
@@ -79,9 +75,7 @@ def read_mol_pdb(mol):
 
 
 def read_mol_mol(mol, mol_dict):
-    """
-    Read a .mol file
-    """
+    """ Read a .mol file """
     try:
         return molkit.from_rdmol(Chem.MolFromMolFile(mol.mol, removeHs=False))
     except (Exception, PlamsError) as ex:
@@ -89,9 +83,7 @@ def read_mol_mol(mol, mol_dict):
 
 
 def read_mol_smiles(mol):
-    """
-    Read a SMILES string
-    """
+    """ Read a SMILES string """
     try:
         return molkit.from_smiles(mol.mol)
     except (Exception, PlamsError) as ex:
@@ -99,9 +91,7 @@ def read_mol_smiles(mol):
 
 
 def read_mol_plams(mol):
-    """
-    Read a PLAMS molecule
-    """
+    """ Read a PLAMS molecule """
     try:
         return mol.mol
     except (Exception, PlamsError) as ex:
@@ -109,9 +99,7 @@ def read_mol_plams(mol):
 
 
 def read_mol_rdkit(mol):
-    """
-    Read a RDKit molecule
-    """
+    """ Read a RDKit molecule """
     try:
         return molkit.from_rdmol(mol.mol)
     except (Exception, PlamsError) as ex:
@@ -119,39 +107,36 @@ def read_mol_rdkit(mol):
 
 
 def read_mol_folder(mol):
-    """
-    Read all files (.xyz, .pdb, .mol, .txt or further subfolders) within a folder
-    """
+    """ Read all files (.xyz, .pdb, .mol, .txt or further subfolders) within a folder """
     try:
         file_list = [file for file in os.listdir(mol.mol)]
-        input_mol = sanitize_input_mol(file_list)
+        input_mol = get_mol_defaults(file_list, path=mol.path, core=mol.is_core)
+        input_mol = sanitize_mol_type(input_mol)
         return read_mol(input_mol)
     except (Exception, PlamsError) as ex:
         print_exception(read_mol_folder.__code__, ex, mol.mol)
 
 
 def read_mol_txt(mol):
-    """
-    Read a plain text file containing one or more SMILES strings
-    """
+    """ Read a plain text file containing one or more SMILES strings """
     try:
         with open(mol.mol, 'r') as file:
             file_list = file.read().splitlines()
         file_list = [file.split()[mol.column] for file in file_list[mol.row:] if file]
-        input_mol = sanitize_input_mol(file_list)
+        input_mol = get_mol_defaults(file_list, path=mol.path, core=mol.is_core)
+        input_mol = sanitize_mol_type(input_mol)
         return read_mol(input_mol)
     except (Exception, PlamsError) as ex:
         print_exception(read_mol_txt.__code__, ex, mol.mol)
 
 
 def read_mol_excel(mol):
-    """
-    Read a plain text file containing one or more SMILES strings
-    """
+    """ Read a plain text file containing one or more SMILES strings """
     try:
         df = list(pd.read_excel(mol.mol, sheet_name=mol.sheet_name))
         file_list = [file for file in df[mol.column][mol.row:]]
-        input_mol = sanitize_input_mol(file_list)
+        input_mol = get_mol_defaults(file_list, path=mol.path, core=mol.is_core)
+        input_mol = sanitize_mol_type(input_mol)
         return read_mol(input_mol)
     except (Exception, PlamsError) as ex:
         print_exception(read_mol_excel.__code__, ex, mol.mol)
@@ -163,10 +148,10 @@ def set_prop(mol, mol_dict):
     """
     if mol_dict.is_core:
         residue_name = 'COR'
-        mol.properties.name = 'Core_' + mol_dict.name
+        mol.properties.name = mol.get_formula()
     else:
         residue_name = 'LIG'
-        mol.properties.name = 'Ligand_' + mol_dict.name
+        mol.properties.name = mol_dict.name
 
     mol.properties.dummies = mol_dict.indices
     mol.properties.path = mol_dict.path
@@ -202,8 +187,10 @@ def set_prop_atom(atom, alphabet, residue_name, elements_dict):
     atom.properties.pdb_info.ChainId = 'A'
 
     # Changes hydrogen and carbon from heteroatom to atom
-    if atom.symbol == 'H' or atom.symbol == 'C':
+    if atom.symbol in ('H', 'C'):
         atom.properties.pdb_info.IsHeteroAtom = False
+    else:
+        atom.properties.pdb_info.IsHeteroAtom = True
 
     # Sets the formal atomic charge
     if not atom.properties.charge:

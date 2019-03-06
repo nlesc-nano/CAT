@@ -13,47 +13,78 @@ from scm.plams.mol.atom import Atom
 from scm.plams.core.functions import (init, finish, config)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 
-from .. import utils as CAT
 from .jobs import (job_single_point, job_geometry_opt, job_freq)
 from .ligand_dissociate import dissociate_ligand
+from .. import utils as CAT
 from ..mol_utils import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
+from ..data_handling.database import qd_bde_to_database
 
 
-def init_bde(mol, job_recipe):
+def init_bde(mol_list, arg):
     """ Initialize the bond dissociation energy calculation; involves 4 distinct steps:
     1.  Take two ligands X and another atom from the core Y (e.g. Cd) and create YX2.
     2.  Create all n*2*(n-1) possible molecules where YX2 is dissociated.
     3.  Calculate dE: the "electronic" component of the bond dissociation energy (BDE).
     4.  Calculate ddG: the thermal and entropic component of the BDE.
 
-    mol <plams.Molecule>: A PLAMS molecule.
+    mol_list <list> [<plams.Molecule>]: A list of PLAMS molecule.
     job1 <type> & s1 <Settings>: A type object of a job and its settings; used in step 3.
     job2 <type> & s2 <Settings>: A type object of a job and its settings; used in step 4.
     return <pd.DataFrame>: A pandas dataframe with ligand residue numbers, Cd topology and BDEs.
     """
-    # Ready YX2 and the YX2 dissociated quantum dots
-    lig = get_cdx2(mol)
-    core = dissociate_ligand(mol)
+    # Prepare the job settings
+    job_recipe = arg.optional.qd.dissociate
 
     # Prepare the dataframe
-    res_list1, idx_list, res_list2 = zip(*[mol.properties.mark for mol in core])
-    df = pd.DataFrame({'Ligand Residue Num #1': res_list1,
-                       'Cd Topology': get_topology(mol, idx_list),
-                       'Ligand Residue Num #2': res_list2})
+    idx_names = ['index', 'sub index']
+    idx = pd.MultiIndex(levels=[[], []], codes=[[], []], names=idx_names)
+    column_names = ['core', 'core_anchor', 'ligand smiles', 'ligand anchor']
+    columns = pd.MultiIndex.from_tuples([(None, None, None, None)], names=column_names)
+    df = pd.DataFrame(index=idx, columns=columns)
 
-    # Fill the dataframe with energies
-    df['dE kcal/mol'] = get_bde_dE(mol, lig, core, job=job_recipe.job1, s=job_recipe.s1)
-    df['ddG kcal/mol'] = get_bde_ddG(mol, lig, core, job=job_recipe.job2, s=job_recipe.s2)
-    df['dG kcal/mol'] = df['dE kcal/mol'] + df['ddG kcal/mol']
-    return df
+    for mol in mol_list:
+        # Ready YX2 and the YX2 dissociated quantum dots
+        lig = get_cdx2(mol)
+        core = dissociate_ligand(mol)
+
+        # Prepare the dataframe
+        index = list(zip(*[cor.properties.mark for cor in core]))
+        index[1] = get_topology(mol, index[1])
+        index = [str(i) + ' ' + j + ' ' + str(k) for i, j, k in zip(*index)]
+
+        # Construct a series
+        name = (mol.properties.core, mol.properties.core_anchor,
+                mol.properties.ligand, mol.properties.ligand_anchor)
+        idx = pd.MultiIndex.from_product([['BDE dE', 'BDE ddG', 'BDE dG'], index], names=idx_names)
+        series = pd.Series(None, index=idx, name=name)
+
+        # Fill the series with energies
+        init(path=mol.properties.path, folder='BDE')
+        config.default_jobmanager.settings.hashing = None
+        series['BDE dE'] = get_bde_dE(mol, lig, core, job=job_recipe.job1, s=job_recipe.s1)
+        series['BDE ddG'] = get_bde_ddG(mol, lig, core, job=job_recipe.job2, s=job_recipe.s2)
+        series['BDE dG'] = series['BDE dE'] + series['BDE ddG']
+        finish()
+
+        # Update the indices of df
+        for i in series.index:
+            if i not in df.index:
+                df.loc[i, :] = None
+
+        # Update the values of df
+        df[name] = None
+        df.update(series)
+
+    # Export the BDE results to the database
+    del df[(None, None, None, None)]
+    if 'qd' in arg.optional.database.write:
+        qd_bde_to_database(df, arg)
 
 
 def get_bde_dE(tot, lig, core, job=None, s=None):
     """ Calculate the bond dissociation energy: dE = dE(mopac) + (dG(uff) - dE(uff))
     """
-    init(path=tot.properties.path, folder='BDE_dE')
-    config.default_jobmanager.settings.hashing = None
 
     # Switch to default settings if no job & s are <None>
     if job is None and s is None:
@@ -76,7 +107,6 @@ def get_bde_dE(tot, lig, core, job=None, s=None):
 
     # Calculate and return dE
     dE = (E_lig + E_core) - E_tot
-    finish()
 
     return dE
 
@@ -84,9 +114,6 @@ def get_bde_dE(tot, lig, core, job=None, s=None):
 def get_bde_ddG(tot, lig, core, job=None, s=None):
     """ Calculate the bond dissociation energy: dE = dE(mopac) + (dG(uff) - dE(uff))
     """
-    init(path=tot.properties.path, folder='BDE_ddG')
-    config.default_jobmanager.settings.hashing = None
-
     # Switch to default settings if no job & s are <None>
     if job is None and s is None:
         job = AMSJob
@@ -118,7 +145,6 @@ def get_bde_ddG(tot, lig, core, job=None, s=None):
     dG = (G_lig + G_core) - G_tot
     dE = (E_lig + E_core) - E_tot
     ddG = dG - dE
-    finish()
 
     return ddG
 
@@ -201,4 +227,4 @@ def get_topology(mol, idx_list, max_dist=5.0):
     dist = cdist(array, array_other)
     dist_count = np.bincount(np.where(dist <= max_dist)[0])
 
-    return [neighbour_dict[i] for i in dist_count]
+    return [neighbour_dict[i] + '_' + str(j) for i, j in zip(dist_count, idx_list)]

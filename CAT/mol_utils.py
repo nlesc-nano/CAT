@@ -1,9 +1,9 @@
 """ A module with misc functions related to manipulating molecules and their geometry. """
 
-__all__ = ['find_substructure', 'find_substructure_split', 'merge_mol',
-           'adf_connectivity', 'fix_h', 'fix_carboxyl', 'from_mol_other', 'from_rdmol']
-
-import itertools
+__all__ = [
+        'merge_mol', 'adf_connectivity', 'fix_h', 'fix_carboxyl',
+        'from_mol_other', 'from_rdmol', 'separate_mod'
+]
 
 from scm.plams.mol.atom import Atom
 from scm.plams.mol.bond import Bond
@@ -14,8 +14,6 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit import Chem
 from rdkit.Chem import rdMolTransforms
-
-from .utils import get_time
 
 
 @add_to_class(Molecule)
@@ -80,111 +78,6 @@ def get_bond_index(self):
     return self.atom1.get_atom_index(), self.atom2.get_atom_index()
 
 
-def find_substructure(ligand, split=True):
-    """
-    Identify the ligand functional groups.
-
-    ligand <plams.Molecule>: The ligand molecule.
-    split <bool>: If a functional group should be split from the ligand (True) or not (False).
-
-    return <list>[<plams.Molecule>]: A copy of the ligand for each identified functional group.
-    """
-    ligand_rdkit = molkit.to_rdmol(ligand)
-
-    # Creates a list containing predefined functional groups, each saved as an rdkit molecule
-    # IMPORTANT: The first atom should ALWAYS be the atom that should attach to the core
-    if split:
-        functional_group_list = ['[N+]C.[-]', '[n+]C.[-]', '[N+]c.[-]', '[n+]c.[-]',
-                                 'O(C)[H]', 'O(c)[H]',
-                                 'S(C)[H]', 'S(c)[H]',
-                                 'N(C)[H]', 'N(c)[H]',
-                                 'P(C)[H]', 'P(c)[H]',
-                                 'O(P)[H]', 'O(p)[H]',
-                                 'O(S)[H]', 'O(s)[H]',
-                                 '[O-]C.[+]', '[O-]c.[+]',
-                                 '[S-]C.[+]', '[S-]c.[+]',
-                                 '[N-]C.[+]', '[N-]c.[+]',
-                                 '[P-]C.[+]', '[P-]c.[+]',
-                                 '[O-]P.[+]', '[O-]p.[+]',
-                                 '[O-]S.[+]', '[O-]s.[+]']
-    else:
-        functional_group_list = ['[N+]C', '[n+]C', '[N+]c', '[n+]c',
-                                 'OC', 'Oc', 'oC', 'oc',
-                                 'SC', 'Sc', 'sC', 'sc',
-                                 'NC', 'Nc', 'nC', 'nc',
-                                 'PC', 'Pc', 'pC', 'pc',
-                                 'OP', 'Op', 'oP', 'op',
-                                 'OS', 'Os', 'oS', 'os',
-                                 '[O-]C', '[O-]c',
-                                 '[S-]C', '[S-]c',
-                                 '[N-]C', '[N-]c', '[n-]C', '[n-]c',
-                                 '[P-]C', '[P-]c', '[p-]C', '[p-]c',
-                                 '[O-]P', '[O-]p', '[o-]P', '[o-]p',
-                                 '[O-]S', '[O-]s', '[o-]S', '[o-]s']
-
-    functional_group_list = [Chem.MolFromSmarts(smarts) for smarts in functional_group_list]
-
-    # Searches for functional groups (defined by functional_group_list) within the ligand
-    # Duplicates are removed
-    get_match = ligand_rdkit.GetSubstructMatches
-    matches = itertools.chain(*[get_match(mol) for mol in functional_group_list])
-
-    # Remove all duplicate matches, each heteroatom (match[0]) should have <= 1 entry
-    ligand_indices = []
-    ref = []
-    for match in matches:
-        if match[0] not in ref:
-            ligand_indices.append(match)
-            ref.append(match[0])
-
-    if ligand_indices:
-        ligand_list = [find_substructure_split(ligand.copy(), idx, split) for idx in ligand_indices]
-    else:
-        print(get_time() + 'No functional groups were found for ' + str(ligand.get_formula()))
-        ligand_list = []
-
-    return ligand_list
-
-
-def find_substructure_split(ligand, ligand_index, split=True):
-    """
-    Delete the hydrogen or mono-/polyatomic counterion attached to the functional group.
-    Sets the charge of the remaining heteroatom to -1 if split=True.
-
-    ligand <plams.Molecule>: The ligand molecule.
-    ligand_index <list>[<int>, <int>]: A list of atomic indices associated with a functional group.
-    split <bool>: If a functional group should be split from the ligand (True) or not (False).
-
-    return <plams.Molecule>: The ligand molecule.
-    """
-    at1 = ligand[ligand_index[0] + 1]
-    at2 = ligand[ligand_index[-1] + 1]
-    ligand.properties.group = at1.symbol + str(ligand_index[0] + 1)
-
-    if split:
-        if len(ligand.separate()) == 1:
-            ligand.delete_atom(at2)
-        else:
-            mol1, mol2 = ligand.separate_mod()
-            if at1 in mol1:
-                ligand = mol1
-            else:
-                ligand = mol2
-
-        # Check if the ligand heteroatom has a charge assigned, assigns a charge if not
-        if not at1.properties.charge or at1.properties.charge == 0:
-            at1.properties.charge = -1
-
-    # Update the index of the ligand heteroatom
-    ligand.properties.dummies = at1
-
-    # Set the molecular charge
-    ligand.properties.charge = sum(atom.properties.charge for atom in ligand
-                                   if atom.properties.charge)
-
-    return ligand
-
-
 @add_to_class(Molecule)
 def merge_mol(self, mol_list):
     """
@@ -206,6 +99,45 @@ def merge_mol(self, mol_list):
         self.properties.soft_update(mol.properties)
         self.atoms += mol.atoms
         self.bonds += mol.bonds
+
+
+@add_to_class(Molecule)
+def separate_mod(self):
+    """
+    Modified PLAMS function: seperates a molecule instead of a copy of a molecule.
+    Separate the molecule into connected components.
+    Returned is a list of new |Molecule| objects (all atoms and bonds are disjoint with
+        the original molecule).
+    Each element of this list is identical to one connected component of the base molecule.
+    A connected component is a subset of atoms such that there exists a path
+        (along one or more bonds) between any two atoms.
+    """
+    frags = []
+    for at in self:
+        at._visited = False
+
+    def dfs(v, mol):
+        v._visited = True
+        v.mol = mol
+        for e in v.bonds:
+            e.mol = mol
+            u = e.other_end(v)
+            if not u._visited:
+                dfs(u, mol)
+
+    for src in self.atoms:
+        if not src._visited:
+            m = Molecule()
+            dfs(src, m)
+            frags.append(m)
+
+    for at in self.atoms:
+        del at._visited
+        at.mol.atoms.append(at)
+    for b in self.bonds:
+        b.mol.bonds.append(b)
+
+    return frags
 
 
 def adf_connectivity(plams_mol):

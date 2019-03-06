@@ -35,6 +35,7 @@ setup(
     package_data={
         'CAT': [
             'data/templates/*json',
+            'data/templates/*yaml',
             'data/coskf/*coskf'
         ]
     },
@@ -65,12 +66,11 @@ setup(
     install_requires=[
         'numpy',
         'scipy',
+        'pandas',
         'pyyaml',
         'schema',
-        'openpyxl',
-        'xlrd',
         'plams@git+https://github.com/SCM-NV/PLAMS@master#egg=plams-1.2',
-        'qmflows@git+https://github.com/SCM-NV/qmflows@master#egg=qmflows-0.3.0'
+        'qmflows@git+https://github.com/SCM-NV/qmflows@master'
     ],
     setup_requires=[
         'pytest-runner',

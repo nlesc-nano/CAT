@@ -78,7 +78,10 @@ def job_geometry_opt(self, job, settings, name='Geometry_optimization', ret_resu
     results = my_job.run()
     results.wait()
     self.properties.energy.E = results.get_energy(unit='kcal/mol')
-    self.from_mol_other(results.get_main_molecule())
+    try:
+        self.from_mol_other(results.get_main_molecule())
+    except TypeError:
+        pass
 
     # Return results
     if ret_results:

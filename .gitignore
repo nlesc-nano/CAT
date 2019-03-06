@@ -105,3 +105,4 @@ venv.bak/
 tests/timeit_test.py
 .DS_Store
 docs_out/
+.vscode/

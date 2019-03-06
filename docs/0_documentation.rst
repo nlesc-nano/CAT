@@ -7,7 +7,7 @@ further details about the input cores & ligands and finally a more detailed
 look into the customization of the various jobs.
 
 .. toctree::
-    get_started
-    path
-    core_ligand
-    args
+    1_get_started
+    2_path
+    3_input_core_ligand
+    4_optional

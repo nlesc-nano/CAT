@@ -20,9 +20,9 @@ Installation
 
 - Install according to: installConda_.
 
-- Create a new virtual environment using the following commands:
+- Create a new virtual environment, for python 3.6, using the following commands:
 
-  - ``conda create -n CAT``
+  - ``conda create -n CAT python=3.6``
 
 - The virtual environment can be enabled and disabled by, respectively, typing:
 
@@ -38,9 +38,9 @@ Dependencies installation
 
 Using the conda environment the following packages should be installed:
 
-- rdkit_: ``conda install -y --name CAT -c rdkit rdkit``
+- rdkit_: ``conda install -y --name CAT --channel conda-forge rdkit``
 
-- HDF5_: ``conda install -y --name CAT -c anaconda h5py``
+- HDF5_: ``conda install -y --name CAT --channel conda-forge h5py``
 
 
 .. _installation:

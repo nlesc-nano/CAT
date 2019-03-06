@@ -3,7 +3,7 @@
 __all__ = ['sanitize_optional', 'sanitize_input_mol', 'sanitize_path']
 
 import os
-from os.path import (join, isdir, isfile)
+from os.path import (join, isdir, isfile, exists)
 from itertools import chain
 
 import yaml
@@ -33,9 +33,12 @@ from rdkit import Chem
 
 from .. import utils as CAT
 
-from ..analysis.crs import CRSJob
 from ..utils import get_time
 from ..mol_utils import to_atnum
+from ..analysis.crs import CRSJob
+
+
+""" ###################################  Sanitize path  ####################################### """
 
 
 def sanitize_path(arg):
@@ -48,9 +51,9 @@ def sanitize_path(arg):
             arg.path = os.getcwd()
         else:
             if not os.path.exists(arg.path):
-                raise FileNotFoundError(get_time + 'path ' + arg.path + ' not found')
+                raise FileNotFoundError(get_time() + 'path ' + arg.path + ' not found')
             elif os.path.isfile(arg.path):
-                raise TypeError(get_time + 'path ' + arg.path + ' is a file, not a directory')
+                raise TypeError(get_time() + 'path ' + arg.path + ' is a file, not a directory')
         return arg
 
     else:
@@ -59,33 +62,24 @@ def sanitize_path(arg):
         raise TypeError(error)
 
 
+""" ##########################  Sanitize input_ligands & input_cores  ######################## """
+
+
 def sanitize_input_mol(arg):
     """ Sanitize and return the settings of arg.input_cores & arg.input_ligands. """
-    def get_defaults(mol_list, core=False):
-        ret = []
-        for mol in mol_list:
-            tmp = get_default_input_mol()
-            tmp.mol = mol
-            if core:
-                tmp.path = join(arg.path, arg.optional.dir_names[0])
-            else:
-                tmp.path = join(arg.path, arg.optional.dir_names[1])
-            tmp.is_core = core
+    core_path = arg.optional.core.dirname
+    arg.input_cores = get_mol_defaults(arg.input_cores, path=core_path, core=True)
+    arg.input_cores = sanitize_mol_type(arg.input_cores)
 
-            if isinstance(mol, dict):
-                for key1 in mol:
-                    tmp.mol = key1
-                    for key2 in mol[key1]:
-                        try:
-                            tmp[key2] = key_dict[key2](mol[key1][key2])
-                        except KeyError:
-                            raise KeyError(str(key2) + ' is not a valid argument for ' + str(key1))
-                        if key2 == 'guess_bonds':
-                            tmp.tmp_guess = True
+    ligand_path = arg.optional.ligand.dirname
+    arg.input_ligands = get_mol_defaults(arg.input_ligands, path=ligand_path, core=False)
+    arg.input_ligands = sanitize_mol_type(arg.input_ligands)
 
-            ret.append(tmp)
-        return ret
+    return arg
 
+
+def get_mol_defaults(mol_list, path=None, core=False):
+    """ Prepare the default input settings for a molecule. """
     key_dict = {
         'guess_bonds': val_bool,
         'is_core': val_bool,
@@ -98,13 +92,26 @@ def sanitize_input_mol(arg):
         'path': val_string,
     }
 
-    arg.input_cores = get_defaults(arg.input_cores, core=True)
-    arg.input_cores = sanitize_mol_type(arg.input_cores)
+    ret = []
+    for mol in mol_list:
+        tmp = get_default_input_mol()
+        tmp.mol = mol
+        tmp.path = path
+        tmp.is_core = core
 
-    arg.input_ligands = get_defaults(arg.input_ligands, core=False)
-    arg.input_ligands = sanitize_mol_type(arg.input_ligands)
+        if isinstance(mol, dict):
+            for key1 in mol:
+                tmp.mol = key1
+                for key2 in mol[key1]:
+                    try:
+                        tmp[key2] = key_dict[key2](mol[key1][key2])
+                    except KeyError:
+                        raise KeyError(str(key2) + ' is not a valid argument for ' + str(key1))
+                    if key2 == 'guess_bonds':
+                        tmp.tmp_guess = True
 
-    return arg
+        ret.append(tmp)
+    return ret
 
 
 def sanitize_mol_type(input_mol):
@@ -146,6 +153,28 @@ def sanitize_mol_type(input_mol):
     return input_mol
 
 
+def get_default_input_mol():
+    """ Return the default settings of arg.input_cores & arg.input_ligands. """
+    ret = yaml.load("""
+        mol: None
+        name: None
+        path: None
+        guess_bonds: False
+        is_core: False
+        column: 0
+        row: 0
+        indices: None
+        sheet_name: Sheet1
+        type: None
+    """)
+
+    for key in ret:
+        if ret[key] == 'None':
+            ret[key] = None
+
+    return Settings(ret)
+
+
 def santize_smiles(string):
     """ Sanitize a SMILES string: turn it into a valid filename. """
     name = string.replace('(', '[').replace(')', ']')
@@ -160,17 +189,29 @@ def santize_smiles(string):
     return name
 
 
+""" ####################################  Sanitize optional  ################################## """
+
+
 def sanitize_optional(arg_dict):
     """ Sanitize and return the settings of arg.optional. """
     arg = get_default_optional()
     arg.update(arg_dict)
 
+    mol_format = ('xyz', 'pdb')
+
     # Validate arguments consisting of booleans, integers, strings and/or iterables
-    arg.optional.dir_names = val_dir_names(arg.optional.dir_names)
+    arg.optional.core.dirname = val_dir_names(arg.optional.core.dirname, arg.path)
     arg.optional.core.dummy = val_atnum(arg.optional.core.dummy)
-    arg.optional.use_database = val_bool(arg.optional.use_database)
+    arg.optional.database.dirname = val_dir_names(arg.optional.database.dirname, arg.path)
+    arg.optional.database.read = val_data(arg.optional.database.read)
+    arg.optional.database.write = val_data(arg.optional.database.write)
+    arg.optional.database.overwrite = val_data(arg.optional.database.overwrite)
+    arg.optional.database.mol_format = val_format(arg.optional.database.mol_format, mol_format)
+    arg.optional.database.mongodb = False
+    arg.optional.ligand.dirname = val_dir_names(arg.optional.ligand.dirname, arg.path)
     arg.optional.ligand.optimize = val_bool(arg.optional.ligand.optimize)
     arg.optional.ligand.split = val_bool(arg.optional.ligand.split)
+    arg.optional.qd.dirname = val_dir_names(arg.optional.qd.dirname, arg.path)
     arg.optional.qd.activation_strain = val_bool(arg.optional.qd.activation_strain)
 
     # Prepares COSMO-RS default settings
@@ -197,44 +238,34 @@ def sanitize_optional(arg_dict):
                                          s1=CAT.get_template('qd.json')['MOPAC'],
                                          s2=CAT.get_template('qd.json')['UFF'])
 
+    del arg.path
     return arg
-
-
-def get_default_input_mol():
-    """ Return the default settings of arg.input_cores & arg.input_ligands. """
-    ret = yaml.load("""
-        mol: None
-        name: None
-        path: None
-        guess_bonds: False
-        is_core: False
-        column: 0
-        row: 0
-        indices: None
-        sheet_name: Sheet1
-        type: None
-    """)
-
-    for key in ret:
-        if ret[key] == 'None':
-            ret[key] = None
-
-    return Settings(ret)
 
 
 def get_default_optional():
     """ Return the default settings of arg.optional. """
     ret = yaml.load("""
         optional:
-            dir_names: [core, ligand, QD]
-            use_database: True
+            database:
+                dirname: database
+                read: True
+                write: True
+                overwrite: False
+                mol_format: [pdb, xyz]
+                mongodb: False
+
             core:
+                dirname: core
                 dummy: Cl
+
             ligand:
+                dirname: ligand
                 optimize: True
                 cosmo-rs: False
                 split: True
+
             qd:
+                dirname: QD
                 optimize: False
                 activation_strain: False
                 dissociate: False
@@ -258,6 +289,65 @@ str_to_class = {
     'dftbplus': DFTBPlusJob, 'dftbplusjob': DFTBPlusJob,
     'crs': CRSJob, 'cosmo-rs': CRSJob, 'crsjob': CRSJob
 }
+
+
+def val_format(arg, ref):
+    """ Validate database.mol_format & database_format. """
+    schema = Schema(Or(
+            And(None, Use(bool)),
+            And(bool, lambda n: n is False),
+            And(str, lambda n: not n, Use(bool)),
+            And(str, lambda n: n.lower().rsplit('.', 1)[-1] in ref),
+            And([str], lambda n: [i.lower().rsplit('.', 1)[-1] in ref for i in n], Use(list))
+    ))
+
+    # Decapitalize and remove any periods.
+    ret = schema.validate(arg)
+    if isinstance(ret, list):
+        for i, item in enumerate(ret):
+            ret[i] = item.lower().rsplit('.', 1)[-1]
+        ret = tuple(ret)
+    elif isinstance(ret, str):
+        ret = (ret.lower().rsplit('.', 1)[-1])
+    elif not ret:
+        ret = ()
+
+    return ret
+
+
+def val_data(arg):
+    """ Validate the input arguments for database.read, write and overwrite.
+    Returns *False* or tuple with *ligand*, *core* and/or *qd*.
+    """
+    ref = ('ligand', 'core', 'qd')
+
+    def get_arg(n):
+        if n:
+            return ref
+        else:
+            return False
+
+    def get_false(n):
+        return False
+
+    schema = Schema(Or(
+            And(bool, Use(get_arg)),
+            And(str, lambda n: not n, Use(bool)),
+            And(str, lambda n: n.lower() in ref, Use(list)),
+            And([str], lambda n: not any([bool(i) for i in n]), Use(get_false)),
+            And([str], lambda n: [i.lower() in ref for i in n], Use(list))
+    ))
+
+    # Decapitalize
+    ret = schema.validate(arg)
+    if isinstance(ret, list):
+        for i, item in enumerate(ret):
+            ret[i] = item.lower()
+        ret = tuple(ret)
+    elif not ret:
+        ret = ()
+
+    return ret
 
 
 def val_type(file_type):
@@ -284,10 +374,15 @@ def val_indices(indices):
     return schema.validate(list(indices))
 
 
-def val_dir_names(dir_names):
-    """ Validate an iterable of length 3; returns a <tuple> consisting of 3 <str>. """
-    schema = Schema(And([str, str, str], Use(tuple)))
-    return schema.validate(list(dir_names))
+def val_dir_names(dirname, path):
+    """ Validate a str; returns a str.
+    Creates a directory at path/dirname if it does not yet exist. """
+    ret = join(path, Schema(str).validate(dirname))
+    if not exists(ret):
+        os.makedirs(ret)
+    else:
+        assert isdir(ret)
+    return ret
 
 
 def val_atnum(atnum):
