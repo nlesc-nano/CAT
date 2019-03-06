@@ -4,7 +4,7 @@
      "input":
         {"uff": {"library": "UFF"},
          "ams":
-            {"system": 
+            {"system":
                 {"bondorders": {"_1": null},
                  "charge": 0
                 }
@@ -15,7 +15,7 @@
     {"description": "COSMO-RS activity coefficient calculation; parameters not included!",
      "ignore_molecule": true,
      "pickle": false,
-     "input": 
+     "input":
         {"property": {"_h": "Activitycoef"},
          "Compound": {"_h": null},
          "compound": {"_h": null, "Frac1": 1.0}
@@ -24,7 +24,7 @@
  "COSMO-ADF":
     {"description": "The solvation block for COSMO(crs)-ADF calculations",
      "pickle": false,
-     "input": 
+     "input":
         {"fragments": "gas",
          "solvation":
             {"surf": "Delley",
@@ -50,12 +50,12 @@
  "COSMO-MOPAC":
     {"description": "COSMO(crs)-MOPAC with PM7 parameters",
      "pickle": false,
-     "input": 
-        {"mopac": 
+     "input":
+        {"mopac":
             {"model": "PM7",
              "solvation": "COSMO-CRS"
             },
-         "ams": 
+         "ams":
             {"system": {"charge": 0}
             }
         }
@@ -63,9 +63,9 @@
  "MOPAC":
     {"description": "MOPAC (PM7) with PM7 parameters",
      "pickle": false,
-     "input": 
+     "input":
         {"mopac": {"model": "PM7"},
-         "ams": 
+         "ams":
             {"system": {"charge": 0}
             }
         }
