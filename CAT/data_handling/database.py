@@ -231,62 +231,48 @@ def _ligand_to_data(ligand_list, arg):
     hdf5.close()
 
 
-def check_index(arg, index, database='ligand'):
-    """ Return all columns in **database** where **index** is not completely empty. """
+def check_index(index, arg, database='ligand'):
+    """ Return all columns in **database** where **index** is not completely empty.
+
+    index <str>: An indice in the database
+    arg <dict>: arg <dict>: A dictionary containing all (optional) arguments.
+    return <list>: A list with the column names.
+    """
     data_dict = {'ligand': get_ligand_database, 'qd': get_qd_database}
     df = data_dict[database.lower()](arg)
     df.replace('', np.nan, inplace=True)
     return df.columns[-df.loc[index].isna().all()].tolist()
 
 
-def ligand_solv_to_database(solv_df, arg):
-    """ Export ligand solvation energies and activity voefficients to the database. """
-    print('\n' + get_time() + 'Updating Ligand_database.csv')
+def property_to_database(df_new, arg, database='ligand'):
+    """ Export a property to the ligand or qd database.
+
+    df_new <pd.DataFrame>: A Pandas dataframe with new results.
+    arg <dict>: arg <dict>: A dictionary containing all (optional) arguments.
+    database <str>: The type of database, accepted values are 'ligand' and 'qd'.
+    """
+    data_name = database.capitalize() + '_database.csv'
+    print('\n' + get_time() + 'Updating ' + data_name)
 
     # Open database
-    df = get_ligand_database(arg)
+    data_dict = {'ligand': get_ligand_database, 'qd': get_qd_database}
+    df = data_dict[database.lower()](arg)
 
     # Update the database indices
-    if 'E_solv' not in df.index:
-        for i in solv_df.index:
-            if i not in df.index:
-                df.loc[i, :] = None
+    for i in df_new.index:
+        if i not in df.index:
+            df.loc[i, :] = None
 
     # Update the database values
-    if 'ligand' in arg.optional.database.overwrite:
-        df.update(solv_df, overwrite=True)
+    if database in arg.optional.database.overwrite:
+        df.update(df_new, overwrite=True)
     else:
-        df.update(solv_df, overwrite=False)
+        df.update(df_new, overwrite=False)
 
     # Close the database
-    file = join(arg.optional.database.dirname, 'ligand_database.csv')
+    file = join(arg.optional.database.dirname, data_name)
     df.to_csv(file)
-    print(get_time() + 'Ligand_database.csv has been updated\n')
-
-
-def qd_bde_to_database(bde_df, arg):
-    """ Export QD bond dissociation energies to the database. """
-    print('\n' + get_time() + 'Updating QD_database.csv')
-
-    # Open database
-    df = get_qd_database(arg)
-
-    # Update the database indices
-    if 'BDE dE' not in df.index:
-        for i in bde_df.index:
-            if i not in df.index:
-                df.loc[i, :] = None
-
-    # Update the database values
-    if 'qd' in arg.optional.database.overwrite:
-        df.update(bde_df, overwrite=True)
-    else:
-        df.update(bde_df, overwrite=False)
-
-    # Close the database
-    file = join(arg.optional.database.dirname, 'QD_database.csv')
-    df.to_csv(file)
-    print(get_time() + 'QD_database.csv has been updated\n')
+    print(get_time() + data_name + ' has been updated\n')
 
 
 def get_qd_database(arg):
