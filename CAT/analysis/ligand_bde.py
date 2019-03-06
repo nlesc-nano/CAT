@@ -18,7 +18,7 @@ from .ligand_dissociate import dissociate_ligand
 from .. import utils as CAT
 from ..mol_utils import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
-from ..data_handling.database import qd_bde_to_database
+from ..data_handling.database import (property_to_database, check_index)
 
 
 def init_bde(mol_list, arg):
@@ -35,6 +35,15 @@ def init_bde(mol_list, arg):
     """
     # Prepare the job settings
     job_recipe = arg.optional.qd.dissociate
+
+    # Check if the calculation has been done already
+    if 'qd' not in arg.optional.database.overwrite:
+        previous_entries = check_index('BDE dG', arg, database='qd')
+        mol_list = [mol for mol in mol_list if
+                    (mol.properties.core, mol.properties.core_anchor,
+                     mol.properties.ligand, mol.properties.ligand_anchor) not in previous_entries]
+        if not mol_list:
+            return
 
     # Prepare the dataframe
     idx_names = ['index', 'sub index']
@@ -79,7 +88,7 @@ def init_bde(mol_list, arg):
     # Export the BDE results to the database
     del df[(None, None, None, None)]
     if 'qd' in arg.optional.database.write:
-        qd_bde_to_database(df, arg)
+        property_to_database(df, arg, database='qd')
 
 
 def get_bde_dE(tot, lig, core, job=None, s=None):

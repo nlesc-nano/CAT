@@ -2,6 +2,8 @@
 
 __all__ = ['job_single_point', 'job_geometry_opt', 'job_freq']
 
+import numpy as np
+
 from scm.plams.mol.molecule import Molecule
 from scm.plams.core.settings import Settings
 from scm.plams.core.functions import add_to_class
@@ -27,7 +29,7 @@ def type_to_string(job):
     try:
         return job_dict[job]
     except KeyError:
-        print(get_time() + 'No default settings available for ' + str(job))
+        print(get_time() + 'WARNING: No default settings available for ' + str(job))
 
 
 @add_to_class(Molecule)
@@ -50,7 +52,12 @@ def job_single_point(self, job, settings, name='Single_point', ret_results=False
     my_job = job(molecule=self, settings=s, name=name)
     results = my_job.run()
     results.wait()
-    self.properties.energy.E = results.get_energy(unit='kcal/mol')
+
+    try:
+        self.properties.energy.E = results.get_energy(unit='kcal/mol')
+    except TypeError:
+        self.properties.energy.E = np.nan
+        print(get_time() + 'WARNING: Failed to retrieve results of ' + results.job.name)
 
     # Return results
     if ret_results:
@@ -77,11 +84,14 @@ def job_geometry_opt(self, job, settings, name='Geometry_optimization', ret_resu
     my_job = job(molecule=self, settings=s, name=name)
     results = my_job.run()
     results.wait()
-    self.properties.energy.E = results.get_energy(unit='kcal/mol')
+    import pdb; pdb.set_trace()
+
     try:
         self.from_mol_other(results.get_main_molecule())
+        self.properties.energy.E = results.get_energy(unit='kcal/mol')
     except TypeError:
-        pass
+        self.properties.energy.E = np.nan
+        print(get_time() + 'WARNING: Failed to retrieve results of ' + results.job.name)
 
     # Return results
     if ret_results:
@@ -114,10 +124,16 @@ def job_freq(self, job, settings, name='Frequency_analysis', opt=True, ret_resul
     my_job = job(molecule=self, settings=s, name=name)
     results = my_job.run()
     results.wait()
-    self.properties.frequencies = results.get_frequencies()
-    self.properties.energy = get_thermo(self,
-                                        self.properties.frequencies,
-                                        results.get_energy(unit='kcal/mol'))
+
+    try:
+        self.properties.frequencies = results.get_frequencies()
+        self.properties.energy = get_thermo(self,
+                                            self.properties.frequencies,
+                                            results.get_energy(unit='kcal/mol'))
+    except TypeError:
+        self.properties.frequencies = np.nan
+        self.properties.energy = np.nan
+        print(get_time() + 'WARNING: Failed to retrieve results of ' + results.job.name)
 
     # Return results
     if ret_results:
