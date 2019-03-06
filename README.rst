@@ -3,7 +3,7 @@
    :target: https://travis-ci.org/BvB93/CAT
 .. image:: https://readthedocs.org/projects/cat/badge/?version=latest
    :target: https://cat.readthedocs.io/en/latest
-.. image:: https://img.shields.io/badge/python-3.6-blue.svg
+.. image:: https://img.shields.io/badge/python-3.7-blue.svg
    :target: https://www.python.org
 
 #######################################
@@ -20,9 +20,9 @@ Installation
 
 - Install according to: installConda_.
 
-- Create a new virtual environment, for python 3.6, using the following commands:
+- Create a new virtual environment, for python 3.7, using the following commands:
 
-  - ``conda create --name CAT python=3.6``
+  - ``conda create --name CAT python``
 
 - The virtual environment can be enabled and disabled by, respectively, typing:
 
