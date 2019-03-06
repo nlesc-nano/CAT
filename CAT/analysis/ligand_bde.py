@@ -18,6 +18,7 @@ from .ligand_dissociate import dissociate_ligand
 from .. import utils as CAT
 from ..mol_utils import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
+from ..data_handling.database import qd_bde_to_database
 
 
 def init_bde(mol_list, arg):
@@ -33,13 +34,13 @@ def init_bde(mol_list, arg):
     return <pd.DataFrame>: A pandas dataframe with ligand residue numbers, Cd topology and BDEs.
     """
     # Prepare the job settings
-    job_recipe = arg.optional.qd.bde
+    job_recipe = arg.optional.qd.dissociate
 
     # Prepare the dataframe
     idx_names = ['index', 'sub index']
     idx = pd.MultiIndex(levels=[[], []], codes=[[], []], names=idx_names)
-    column_names = ['core', 'ligand smiles', 'ligand anchor']
-    columns = pd.MultiIndex.from_tuples([(None, None, None)], names=column_names)
+    column_names = ['core', 'core_anchor', 'ligand smiles', 'ligand anchor']
+    columns = pd.MultiIndex.from_tuples([(None, None, None, None)], names=column_names)
     df = pd.DataFrame(index=idx, columns=columns)
 
     for mol in mol_list:
@@ -49,34 +50,41 @@ def init_bde(mol_list, arg):
 
         # Prepare the dataframe
         index = list(zip(*[cor.properties.mark for cor in core]))
-        topology = get_topology(mol, index.pop(1))
-        index = [str(i) + ' ' + j + ' ' + str(k) for i, j, k in zip(index[0], topology, index[2])]
+        index[1] = get_topology(mol, index[1])
+        index = [str(i) + ' ' + j + ' ' + str(k) for i, j, k in zip(*index)]
 
-        # Construct a second dataframe
-        name = mol.properties.core, mol.properties.ligand, mol.properties.ligand_anchor
+        # Construct a series
+        name = (mol.properties.core, mol.properties.core_anchor,
+                mol.properties.ligand, mol.properties.ligand_anchor)
         idx = pd.MultiIndex.from_product([['BDE dE', 'BDE ddG', 'BDE dG'], index], names=idx_names)
         series = pd.Series(None, index=idx, name=name)
 
-        # Fill df2 with energies
+        # Fill the series with energies
+        init(path=mol.properties.path, folder='BDE')
+        config.default_jobmanager.settings.hashing = None
         series['BDE dE'] = get_bde_dE(mol, lig, core, job=job_recipe.job1, s=job_recipe.s1)
         series['BDE ddG'] = get_bde_ddG(mol, lig, core, job=job_recipe.job2, s=job_recipe.s2)
-        series['BDE dG'] = df['BDE dE'] + df['BDE dG']
+        series['BDE dG'] = series['BDE dE'] + series['BDE ddG']
+        finish()
 
         # Update the indices of df
         for i in series.index:
             if i not in df.index:
                 df.loc[i, :] = None
 
-        # Update df with df2
+        # Update the values of df
         df[name] = None
         df.update(series)
+
+    # Export the BDE results to the database
+    del df[(None, None, None, None)]
+    if 'qd' in arg.optional.database.write:
+        qd_bde_to_database(df, arg)
 
 
 def get_bde_dE(tot, lig, core, job=None, s=None):
     """ Calculate the bond dissociation energy: dE = dE(mopac) + (dG(uff) - dE(uff))
     """
-    init(path=tot.properties.path, folder='BDE_dE')
-    config.default_jobmanager.settings.hashing = None
 
     # Switch to default settings if no job & s are <None>
     if job is None and s is None:
@@ -99,7 +107,7 @@ def get_bde_dE(tot, lig, core, job=None, s=None):
 
     # Calculate and return dE
     dE = (E_lig + E_core) - E_tot
-    finish()
+
 
     return dE
 
@@ -107,9 +115,6 @@ def get_bde_dE(tot, lig, core, job=None, s=None):
 def get_bde_ddG(tot, lig, core, job=None, s=None):
     """ Calculate the bond dissociation energy: dE = dE(mopac) + (dG(uff) - dE(uff))
     """
-    init(path=tot.properties.path, folder='BDE_ddG')
-    config.default_jobmanager.settings.hashing = None
-
     # Switch to default settings if no job & s are <None>
     if job is None and s is None:
         job = AMSJob
@@ -141,7 +146,6 @@ def get_bde_ddG(tot, lig, core, job=None, s=None):
     dG = (G_lig + G_core) - G_tot
     dE = (E_lig + E_core) - E_tot
     ddG = dG - dE
-    finish()
 
     return ddG
 
