@@ -70,7 +70,7 @@ setup(
         'pyyaml',
         'schema',
         'plams@git+https://github.com/SCM-NV/PLAMS@master#egg=plams-1.2',
-        'qmflows@git+https://github.com/SCM-NV/qmflows@master#egg=qmflows-0.3.0'
+        'qmflows@git+https://github.com/SCM-NV/qmflows@master'
     ],
     setup_requires=[
         'pytest-runner',
