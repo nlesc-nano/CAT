@@ -6,7 +6,6 @@ import copy
 import itertools
 
 import numpy as np
-import pandas as pd
 
 
 def dissociate_ligand(mol):
@@ -48,6 +47,7 @@ def dissociate_ligand(mol):
 
 
 def delete_ligand(plams_mol, atom_list, get_point=False):
+    """ """
     mol = plams_mol.copy()
     mol.properties = copy.deepcopy(plams_mol.properties)
     for atom in reversed(atom_list):
@@ -135,51 +135,3 @@ def closest_atoms(xyz_array, point, n=2):
     """
     dist_array = np.linalg.norm(np.array(point) - xyz_array, axis=1)
     return [int(np.argpartition(dist_array, i)[i] + 1) for i in range(n)]
-
-
-def diss_list_to_pd(diss_list, residue_list, top_dict):
-    """
-    Converts specific entries from diss_list and residue_list to a pandas dataframe.
-    """
-    # Make all sublists of equal length
-    max_depth = len(residue_list[-1])
-    for res in residue_list:
-        len_res = len(res)
-        if len_res < max_depth:
-            res.extend([None for i in range(max_depth - len_res)])
-
-    # Create a dictionary containg E, Eint and Estrain
-    gen1 = ((qd.properties.E, qd.properties.Eint, qd.properties.Estrain) for qd in diss_list)
-    dict1 = dict(zip(('E', 'Eint', 'Estrain'), zip(*gen1)))
-
-    # Create a dictionary containing residue numbers and toplogy
-    gen2 = ((itertools.chain(*(res, [top_dict[i] for i in res]))) for res in residue_list)
-    keys = ('Residue numbers', 'Topology')
-    keys = [key + '_' + str(i + 1) for key in keys for i in range(max_depth)]
-    dict2 = dict(zip(keys, zip(*gen2)))
-
-    dict1.update(dict2)
-    return pd.DataFrame(dict1)
-
-
-def average_energy(df):
-    """
-    Calculate the average of E, Eint & Estrain for the removal of each ligand with a given topology.
-    """
-    topology = [item for item in df.keys() if 'Topology' in item]
-    topology = np.array(df[topology])
-
-    vertice = np.array([(i, j, k) for i, j, k, top in
-                        zip(df['E'], df['Eint'], df['Estrain'], topology) if 'vertice' in top])
-    edge = np.array([(i, j, k) for i, j, k, top in
-                     zip(df['E'], df['Eint'], df['Estrain'], topology) if 'edge' in top])
-    face = np.array([(i, j, k) for i, j, k, top in
-                     zip(df['E'], df['Eint'], df['Estrain'], topology) if 'face' in top])
-
-    ret = pd.DataFrame({'vertice': np.mean(vertice, axis=0),
-                        'edge': np.mean(edge, axis=0),
-                        'face': np.mean(face, axis=0),
-                        'Energy': ('E', 'Eint', 'Estrain')})
-    ret.set_index('Energy')
-
-    return ret

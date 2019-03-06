@@ -37,7 +37,7 @@ def init_bde(mol_list, arg):
 
     # Prepare the dataframe
     idx_names = ['index', 'sub index']
-    idx = pd.MultiIndex(levels=[[],[]], codes=[[],[]], names=idx_names)
+    idx = pd.MultiIndex(levels=[[], []], codes=[[], []], names=idx_names)
     column_names = ['core', 'ligand smiles', 'ligand anchor']
     columns = pd.MultiIndex.from_tuples([(None, None, None)], names=column_names)
     df = pd.DataFrame(index=idx, columns=columns)
@@ -48,26 +48,28 @@ def init_bde(mol_list, arg):
         core = dissociate_ligand(mol)
 
         # Prepare the dataframe
-        index = [''.join([str(i) for i in mol.properties.mark]) for mol in core]
+        index = list(zip(*[cor.properties.mark for cor in core]))
+        topology = get_topology(mol, index.pop(1))
+        index = [str(i) + ' ' + j + ' ' + str(k) for i, j, k in zip(index[0], topology, index[2])]
 
         # Construct a second dataframe
-        key = mol.properties.core, mol.properties.ligand, mol.properties.ligand_anchor
+        name = mol.properties.core, mol.properties.ligand, mol.properties.ligand_anchor
         idx = pd.MultiIndex.from_product([['BDE dE', 'BDE ddG', 'BDE dG'], index], names=idx_names)
-        columns = pd.MultiIndex.from_tuples([key], names=column_names)
-        df2 = pd.DataFrame(None, index=idx, columns=columns)
+        series = pd.Series(None, index=idx, name=name)
 
         # Fill df2 with energies
-        df2[key]['BDE dE'] = get_bde_dE(mol, lig, core, job=job_recipe.job1, s=job_recipe.s1)
-        df2[key]['BDE ddG'] = get_bde_ddG(mol, lig, core, job=job_recipe.job2, s=job_recipe.s2)
-        df2[key]['BDE dG'] = df['BDE dE'] + df['BDE dG']
+        series['BDE dE'] = get_bde_dE(mol, lig, core, job=job_recipe.job1, s=job_recipe.s1)
+        series['BDE ddG'] = get_bde_ddG(mol, lig, core, job=job_recipe.job2, s=job_recipe.s2)
+        series['BDE dG'] = df['BDE dE'] + df['BDE dG']
 
         # Update the indices of df
-        for i in df2:
-            if i not in df:
+        for i in series.index:
+            if i not in df.index:
                 df.loc[i, :] = None
 
         # Update df with df2
-        df.update(df2)
+        df[name] = None
+        df.update(series)
 
 
 def get_bde_dE(tot, lig, core, job=None, s=None):
@@ -222,4 +224,4 @@ def get_topology(mol, idx_list, max_dist=5.0):
     dist = cdist(array, array_other)
     dist_count = np.bincount(np.where(dist <= max_dist)[0])
 
-    return [neighbour_dict[i] for i in dist_count]
+    return [neighbour_dict[i] + '_' + str(j) for i, j in zip(dist_count, idx_list)]
