@@ -32,6 +32,6 @@ optional:
 
     qd:
         dirname: QD
-        optimize: True
+        optimize: False
         activation_strain: False
         dissociate: False
