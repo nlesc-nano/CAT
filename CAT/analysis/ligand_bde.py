@@ -108,7 +108,6 @@ def get_bde_dE(tot, lig, core, job=None, s=None):
     # Calculate and return dE
     dE = (E_lig + E_core) - E_tot
 
-
     return dE
 
 

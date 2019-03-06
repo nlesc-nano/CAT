@@ -66,7 +66,7 @@ def find_substructure(ligand, split=True):
         ligand_list = [substructure_split(ligand, tup, split) for tup in ligand_indices]
     else:
         print(get_time() + 'No functional groups were found (optional.ligand.split = ' + str(split)
-        + ') for ligand: ' + ligand.properties.smiles)
+              + ') for ligand: ' + ligand.properties.smiles)
         ligand_list = []
 
     return ligand_list
