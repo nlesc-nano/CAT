@@ -3,7 +3,6 @@
 __all__ = ['prep']
 
 import time
-from os.path import join
 
 from scm.plams.mol.atom import Atom
 from scm.plams.core.errors import MoleculeError
@@ -24,8 +23,7 @@ from .attachment.ligand_anchoring import init_ligand_anchoring
 
 
 def prep(arg, return_mol=True):
-    """
-    function that handles all tasks related to prep_core, prep_ligand and prep_qd.
+    """ function that handles all tasks related to prep_core, prep_ligand and prep_qd.
 
     arg <dict>: A dictionary containing all (optional) arguments.
     return_mol <bool>: If qd_list, core_list & ligand_list should be returned or not.
@@ -35,22 +33,8 @@ def prep(arg, return_mol=True):
     time_start = time.time()
     print('\n')
 
-    # Interpret arguments
-    arg.update(sanitize_path(arg))
-    arg.update(sanitize_optional(arg))
-    arg.update(sanitize_input_mol(arg))
-
-    # Read the input ligands and cores
-    ligand_list = read_mol(arg.input_ligands)
-    core_list = read_mol(arg.input_cores)
-    del arg.input_ligands
-    del arg.input_cores
-
-    # Raises an error if mol_list is empty
-    if not ligand_list:
-        raise MoleculeError('No valid input ligands were found, aborting run')
-    elif not core_list:
-        raise MoleculeError('No valid input cores were found, aborting run')
+    # Interpret and extract the input settings
+    ligand_list, core_list = prep_input(arg)
 
     # Adds the indices of the core dummy atoms to core.properties.core
     prep_core(core_list, arg)
@@ -69,9 +53,34 @@ def prep(arg, return_mol=True):
         return qd_list, core_list, ligand_list
 
 
-def prep_core(core_list, arg):
+def prep_input(arg):
+    """ Interpret and extract the input settings. Returns a list of ligands and a list of cores.
+
+    arg <dict>: A dictionary containing all (optional) arguments.
+    return: A list of ligands and a list of cores.
     """
-    Function that handles the identification and marking of all core dummy atoms.
+    # Interpret arguments
+    arg.update(sanitize_path(arg))
+    arg.update(sanitize_optional(arg))
+    arg.update(sanitize_input_mol(arg))
+
+    # Read the input ligands and cores
+    ligand_list = read_mol(arg.input_ligands)
+    core_list = read_mol(arg.input_cores)
+    del arg.input_ligands
+    del arg.input_cores
+
+    # Raises an error if mol_list is empty
+    if not ligand_list:
+        raise MoleculeError('No valid input ligands were found, aborting run')
+    elif not core_list:
+        raise MoleculeError('No valid input cores were found, aborting run')
+
+    return ligand_list, core_list
+
+
+def prep_core(core_list, arg):
+    """ Function that handles the identification and marking of all core dummy atoms.
 
     core_list <core>[<plams.Molecule>]: A list of core molecules.
     arg <dict>: A dictionary containing all (optional) arguments.
@@ -79,12 +88,50 @@ def prep_core(core_list, arg):
     for core in core_list:
         # Checks the if the dummy is a string (atomic symbol) or integer (atomic number)
         dummy = arg.optional.core.dummy
+        core.properties.formula = core.get_formula()
+        del core.properties.smiles
+        try:
+            del core.properties.source
+            del core.properties.comment
+        except KeyError:
+            pass
 
         # Returns the indices (integer) of all dummy atom ligand placeholders in the core
         if core.properties.dummies is None:
-            core.properties.dummies = [atom for atom in core.atoms if atom.atnum == dummy]
+            idx, dummies = zip(*[(i, atom) for i, atom in enumerate(core.atoms, 1) if
+                                 atom.atnum == dummy])
         else:
-            core.properties.dummies = [core[index] for index in core.properties.dummies]
+            idx, dummies = zip(*[(i, core[i]) for i in core.properties.dummies])
+        core.properties.dummies = dummies
+
+        # Prepare anchor_dict
+        anchor_dict = {}
+        idx = sorted(list(idx))
+        for i, at in zip(idx, dummies):
+            try:
+                anchor_dict[at.symbol].append(i)
+            except KeyError:
+                anchor_dict[at.symbol] = [i]
+
+        # Sort anchor_dict
+        for at in anchor_dict:
+            anchor_dict[at] = sorted(anchor_dict[at])
+
+        # Prepare anchor_dict for serialization
+        anchor = []
+        for at in anchor_dict:
+            anchor += [', ', at, '(']
+            for j in anchor_dict[at]:
+                if anchor[-2:] == [':', j - 1]:
+                    anchor[-1] = j
+                elif anchor[-1] == j - 1:
+                    anchor += [':', j]
+                elif anchor[-1] == '(':
+                    anchor.append(j)
+                else:
+                    anchor += [', ', j]
+            anchor.append(')')
+        core.properties.anchor = ''.join([str(i) for i in anchor[1:]])
 
         # Delete all core dummy atoms
         for at in reversed(core.properties.dummies):
@@ -97,8 +144,7 @@ def prep_core(core_list, arg):
 
 
 def prep_ligand(ligand_list, arg):
-    """
-    Function that handles all ligand operations.
+    """ Function that handles all ligand operations.
 
     ligand_list <list>[<plams.Molecule>]: A list of all ligand molecules.
     arg <dict>: A dictionary containing all (optional) arguments.
@@ -124,8 +170,7 @@ def prep_ligand(ligand_list, arg):
 
 
 def prep_qd(ligand_list, core_list, arg):
-    """
-    Function that handles all quantum dot (qd, i.e. core + all ligands) operations.
+    """ Function that handles all quantum dot (qd, i.e. core + all ligands) operations.
 
     ligand_list <list>[<plams.Molecule>]: A list of all ligands.
     core_list <list>[<plams.Molecule>]: A list of all cores.

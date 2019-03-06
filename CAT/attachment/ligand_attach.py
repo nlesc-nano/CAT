@@ -68,7 +68,8 @@ def ligand_to_qd(core, ligand, arg):
     qd.properties = Settings()
     qd.properties.indices = qd_indices
     qd.properties.path = arg.optional.qd.dirname
-    qd.properties.core = core.properties.name
+    qd.properties.core = core.properties.formula
+    qd.properties.core_anchor = core.properties.anchor
     qd.properties.ligand = ligand.properties.smiles
     qd.properties.ligand_anchor = ligand.properties.anchor
     qd.properties.ligand_count = qd[-1].properties.pdb_info.ResidueNumber - 1
