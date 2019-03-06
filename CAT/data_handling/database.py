@@ -138,12 +138,20 @@ def ligand_to_database(ligand_list, arg):
 
     # Optional: export molecules to filetypes other than .hdf5
     if arg.optional.database.mol_format:
-        for lig in ligand_list:
-            path = join(arg.optional.ligand.dirname, lig.properties.name)
-            if 'pdb' in arg.optional.database.mol_format:
-                molkit.writepdb(lig, path + '.pdb')
-            if 'xyz' in arg.optional.database.mol_format:
-                lig.write(path + '.xyz')
+        if 'ligand' in arg.optional.database.overwrite:
+            for lig in ligand_list:
+                path = join(arg.optional.ligand.dirname, lig.properties.name)
+                if 'pdb' in arg.optional.database.mol_format:
+                    molkit.writepdb(lig, path + '.pdb')
+                if 'xyz' in arg.optional.database.mol_format:
+                    lig.write(path + '.xyz')
+        else:
+            for lig in ligand_list:
+                path = join(arg.optional.ligand.dirname, lig.properties.name)
+                if 'pdb' in arg.optional.database.mol_format and not isfile(path + '.pdb'):
+                    molkit.writepdb(lig, path + '.pdb')
+                if 'xyz' in arg.optional.database.mol_format and not isfile(path + '.xyz'):
+                    lig.write(path + '.xyz')
 
     print(get_time() + 'Ligand_database.csv has been updated\n')
 
@@ -160,9 +168,10 @@ def _ligand_to_data_overwrite(ligand_list, arg):
     lig_old = []
     idx_old = []
     for lig in ligand_list:
-        if lig.properties.name in df:
+        key = lig.properties.smiles, lig.properties.anchor
+        if key in df:
             lig_old.append(lig)
-            idx_old.append(int(df[lig.properties.name]['hdf5 index']))
+            idx_old.append(int(df[key]['hdf5 index']))
         else:
             lig_new.append(lig)
 
@@ -392,12 +401,20 @@ def qd_to_database(qd_list, arg):
 
     # Optional: export molecules to filetypes other than .hdf5
     if arg.optional.database.mol_format:
-        for qd in qd_list:
-            path = join(arg.optional.qd.dirname, qd.properties.name)
-            if 'pdb' in arg.optional.database.mol_format:
-                molkit.writepdb(qd, path + '.pdb')
-            if 'xyz' in arg.optional.database.mol_format:
-                qd.write(path + '.xyz')
+        if 'qd' in arg.optional.database.overwrite:
+            for qd in qd_list:
+                path = join(arg.optional.qd.dirname, qd.properties.name)
+                if 'pdb' in arg.optional.database.mol_format:
+                    molkit.writepdb(qd, path + '.pdb')
+                if 'xyz' in arg.optional.database.mol_format:
+                    qd.write(path + '.xyz')
+        else:
+            for qd in qd_list:
+                path = join(arg.optional.qd.dirname, qd.properties.name)
+                if 'pdb' in arg.optional.database.mol_format and not isfile(path + '.pdb'):
+                    molkit.writepdb(qd, path + '.pdb')
+                if 'xyz' in arg.optional.database.mol_format and not isfile(path + '.xyz'):
+                    qd.write(path + '.xyz')
 
     print(get_time() + 'QD_database.csv has been updated\n')
 
@@ -414,9 +431,11 @@ def _qd_to_data_overwrite(qd_list, arg):
     qd_old = []
     idx_old = []
     for qd in qd_list:
-        if qd.properties.name in df:
+        key = (qd.properties.core, qd.properties.core_anchor,
+               qd.properties.ligand, qd.properties.ligand_anchor)
+        if key in df:
             qd_old.append(qd)
-            idx_old.append(int(df[qd.properties.name]['hdf5 index']))
+            idx_old.append(int(df[key]['hdf5 index']))
         else:
             qd_new.append(qd)
 
@@ -438,7 +457,8 @@ def _qd_to_data_overwrite(qd_list, arg):
         pdb_old = as_pdb_array(qd_old, min_size=hdf5['QD'].shape[1])
         hdf5['QD'][idx_old] = pdb_old
         for qd in qd_old:
-            key = qd.properties.core, qd.properties.ligand, qd.properties.ligand_anchor
+            key = (qd.properties.core, qd.properties.core_anchor,
+                   qd.properties.ligand, qd.properties.ligand_anchor)
             df[key]['settings'] = None
 
     # Export the database

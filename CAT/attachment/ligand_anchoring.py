@@ -110,7 +110,6 @@ def substructure_split(ligand, idx, split=True):
     rdmol = molkit.to_rdmol(lig)
     smiles = Chem.MolToSmiles(rdmol)
     lig.properties.smiles = Chem.CanonSmiles(smiles)
-    lig.properties.name = 'Ligand_' + santize_smiles(lig.properties.smiles)
-    lig.properties.name += '@' + lig.properties.anchor
+    lig.properties.name = santize_smiles(lig.properties.smiles) + '@' + lig.properties.anchor
 
     return lig

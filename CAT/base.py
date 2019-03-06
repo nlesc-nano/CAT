@@ -88,7 +88,7 @@ def prep_core(core_list, arg):
     for core in core_list:
         # Checks the if the dummy is a string (atomic symbol) or integer (atomic number)
         dummy = arg.optional.core.dummy
-        core.properties.formula = core.get_formula()
+        core.properties.formula = core.properties.name
         del core.properties.smiles
         try:
             del core.properties.source
@@ -121,17 +121,26 @@ def prep_core(core_list, arg):
         anchor = []
         for at in anchor_dict:
             anchor += [', ', at, '(']
-            for j in anchor_dict[at]:
-                if anchor[-2:] == [':', j - 1]:
-                    anchor[-1] = j
-                elif anchor[-1] == j - 1:
-                    anchor += [':', j]
-                elif anchor[-1] == '(':
-                    anchor.append(j)
-                else:
-                    anchor += [', ', j]
-            anchor.append(')')
+            if len(anchor_dict[at]) == 1:
+                del anchor[-1]
+                anchor.append(anchor_dict[at][0])
+            else:
+                for j in anchor_dict[at]:
+                    if anchor[-2:] == [':', j - 1]:
+                        anchor[-1] = j
+                    elif anchor[-1] == j - 1:
+                        anchor += [':', j]
+                    elif anchor[-1] == '(':
+                        anchor.append(j)
+                    else:
+                        anchor += [', ', j]
+                anchor.append(')')
+
+        # Update the cre anchor and name
         core.properties.anchor = ''.join([str(i) for i in anchor[1:]])
+        name_suffix = core.properties.anchor.replace(' ', '').replace('(', '[')
+        name_suffix = name_suffix.replace(')', ']').replace(',', '_').replace(':', '-')
+        core.properties.name += '@' + name_suffix
 
         # Delete all core dummy atoms
         for at in reversed(core.properties.dummies):
@@ -195,6 +204,7 @@ def prep_qd(ligand_list, core_list, arg):
     # Calculate the interaction between ligands on the quantum dot surface upon removal of CdX2
     if arg.optional.qd.dissociate:
         # Start the BDE calculation
+        check_sys_var()
         print(get_time() + 'calculating ligand dissociation energy')
         init_bde(qd_list, arg)
 

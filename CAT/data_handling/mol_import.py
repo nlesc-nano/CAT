@@ -148,10 +148,10 @@ def set_prop(mol, mol_dict):
     """
     if mol_dict.is_core:
         residue_name = 'COR'
-        mol.properties.name = 'Core_' + mol_dict.name
+        mol.properties.name = mol.get_formula()
     else:
         residue_name = 'LIG'
-        mol.properties.name = 'Ligand_' + mol_dict.name
+        mol.properties.name = mol_dict.name
 
     mol.properties.dummies = mol_dict.indices
     mol.properties.path = mol_dict.path
