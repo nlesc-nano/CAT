@@ -17,7 +17,7 @@ with open('README.rst') as readme_file:
 setup(
     name='CAT',
     version=version['__version__'],
-    description="A collection of tools designed for the automatic construction, and subsequent analysis, of chemical compounds.",
+    description='A collection of tools designed for the automatic construction, and subsequent analysis, of chemical compounds.',
     long_description=readme + '\n\n',
     author=['Bas van Beek'],
     author_email='b.f.van.beek@vu.nl',
