@@ -78,7 +78,7 @@ def init_bde(mol_list, arg):
     # Export the BDE results to the database
     del df[(None, None, None, None)]
     if 'qd' in arg.optional.database.write:
-        property_to_database(df, arg, database='qd')
+        property_to_database(df, arg, database='qd', prop='bde')
 
 
 def _get_bde_df():
@@ -94,8 +94,10 @@ def _get_bde_series(index, mol):
     """ Return an empty series for the for loop in init_bde(). """
     name = (mol.properties.core, mol.properties.core_anchor,
             mol.properties.ligand, mol.properties.ligand_anchor)
-    idx_names = ['index', 'sub index']
-    idx = pd.MultiIndex.from_product([['BDE dE', 'BDE ddG', 'BDE dG'], index], names=idx_names)
+    super_index = ['BDE dE', 'BDE ddG', 'BDE dG']
+    index = [(i, j) for j in index for i in super_index]
+    index += [('BDE settings1', ''), ('BDE settings2', '')]
+    idx = pd.MultiIndex.from_tuples(index, names=['index', 'sub index'])
     return pd.Series(None, index=idx, name=name)
 
 

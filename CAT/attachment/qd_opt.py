@@ -31,7 +31,6 @@ def init_qd_opt(mol_list, arg):
             else:
                 print(get_time() + mol.properties.name + '\t has been optimized')
     finish()
-    print('')
 
     # Export the geometries to the database
     if 'qd' in arg.optional.database.write:
