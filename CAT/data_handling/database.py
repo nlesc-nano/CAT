@@ -435,6 +435,8 @@ def get_empty_columns(index, arg, database='ligand'):
     return <list>: A list with the column names.
     """
     df = get_database(arg, database)
+    if index not in df.index:
+        return df.keys().to_list()
     df.replace('', np.nan, inplace=True)
     return df.columns[-df.loc[index].isna().all()].tolist()
 
