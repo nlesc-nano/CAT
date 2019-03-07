@@ -416,7 +416,7 @@ def val_job(job, job1=None, job2=None, s1=None, s2=None):
     # Assign proper default settings
     str_to_def = {'job1': job1, 'job2': job2, 's1': s1, 's2': s2}
     for key in job:
-        if job[key] is None:
+        if job[key] is None or 'None':
             job[key] = str_to_def[key]
         elif isinstance(job[key], str):
             try:
