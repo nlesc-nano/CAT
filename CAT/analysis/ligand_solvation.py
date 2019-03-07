@@ -15,7 +15,7 @@ from scm.plams.interfaces.adfsuite.adf import ADFJob
 from .crs import CRSJob
 from .. import utils as CAT
 from ..utils import get_time
-from ..data_handling.database import (property_to_database, check_index)
+from ..data_handling.database import (property_to_database, get_empty_columns)
 
 
 def init_solv(mol_list, arg, solvent_list=None):
@@ -30,14 +30,11 @@ def init_solv(mol_list, arg, solvent_list=None):
     solvent_list.sort()
 
     # Prepare the dataframe
-    solv = ['E_solv', 'gamma'], [i.rsplit('.', 1)[0].rsplit('/', 1)[-1] for i in solvent_list]
-    idx = pd.MultiIndex.from_product(solv, names=['index', 'sub index'])
-    columns = pd.MultiIndex.from_tuples([(None, None)], names=['smiles', 'anchor'])
-    df = pd.DataFrame(index=idx, columns=columns)
+    df = _get_solv_df(solvent_list)
 
     # Check if the calculation has been donealready
     if 'ligand' not in arg.optional.database.overwrite:
-        previous_entries = check_index('E_solv', arg, database='ligand')
+        previous_entries = get_empty_columns('E_solv', arg, database='ligand')
         mol_list = [mol for mol in mol_list if
                     (mol.properties.smiles, mol.properties.anchor) not in previous_entries]
         if not mol_list:
@@ -57,8 +54,16 @@ def init_solv(mol_list, arg, solvent_list=None):
 
     # Update the database
     if 'ligand' in arg.optional.database.write:
-        del df[(np.nan, np.nan)]
+        del df[(None, None)]
         property_to_database(df, arg, database='ligand')
+
+
+def _get_solv_df(solvent_list):
+    """ Return an empty dataframe for init_solv(). """
+    solv = ['E_solv', 'gamma'], [i.rsplit('.', 1)[0].rsplit('/', 1)[-1] for i in solvent_list]
+    idx = pd.MultiIndex.from_product(solv, names=['index', 'sub index'])
+    columns = pd.MultiIndex.from_tuples([(None, None)], names=['smiles', 'anchor'])
+    return pd.DataFrame(index=idx, columns=columns)
 
 
 def get_surface_charge(mol, job=None, s=None):

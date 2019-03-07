@@ -1,6 +1,6 @@
 """ A module which manages all interactions with the database. """
 
-__all__ = ['ligand_from_database', 'ligand_to_database', 'qd_from_database', 'qd_to_database']
+__all__ = ['mol_from_database', 'mol_to_database', 'property_to_database', 'get_empty_columns']
 
 from os.path import (join, isfile)
 
@@ -13,6 +13,9 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 from rdkit import Chem
 
 from ..utils import get_time
+
+
+""" ############################  Functions for .pdb conversion  ############################## """
 
 
 def as_pdb_array(mol_list, min_size=0):
@@ -35,7 +38,7 @@ def as_pdb_array(mol_list, min_size=0):
     shape = len(mol_list), shape
     ret = np.zeros(shape, dtype='S80')
     for i, item in enumerate(pdb_list):
-        ret[i][0:len(item)] = item
+        ret[i][:len(item)] = item
 
     return ret
 
@@ -50,61 +53,102 @@ def from_pdb_array(array):
     return molkit.from_rdmol(Chem.MolFromPDBBlock(pdb_str, removeHs=False, proximityBonding=False))
 
 
-def get_ligand_database(arg):
+""" ####################  Functions for database creation and retrieval  ###################### """
+
+
+def get_database(arg, database='ligand'):
     """ get the database and return it as dataframe.
     Create a new database if no previous database exists.
 
     arg <dict>: A dictionary containing all (optional) arguments.
-    return <pd.DataFrame>: The ligand database as dataframe.
+    database <str>: The type of database, accepted values are 'ligand' and 'qd'.
+    return <pd.DataFrame>: The ligand or QD database as dataframe.
     """
-    df_file = join(arg.optional.database.dirname, 'Ligand_database.csv')
+    database = _sanitize_database_name(database)
+    df_file = join(arg.optional.database.dirname, database + '_database.csv')
 
     # Check if the database exists and has the proper keys; create it if it does not
     if isfile(df_file):
-        df = pd.read_csv(df_file, index_col=[0, 1], header=[0, 1], keep_default_na=False)
+        header_dict = {'ligand': [0, 1], 'QD': [0, 1, 2, 3]}
+        header = header_dict[database]
+        df = pd.read_csv(df_file, index_col=[0, 1], header=header, keep_default_na=False)
     else:
-        print(get_time() + 'Ligand_database.csv not found in ' +
-              arg.optional.database.dirname + ', creating ligand database')
-        idx = sorted(['hdf5 index', 'formula', 'settings'])
-        idx = pd.MultiIndex.from_tuples([(i, '') for i in idx], names=['index', 'sub index'])
-        columns = pd.MultiIndex.from_tuples([(None, None)], names=['smiles', 'anchor'])
-        df = pd.DataFrame(None, index=idx, columns=columns)
-        df.to_csv(df_file)
+        print(get_time() + database + '_database.csv not found in ' +
+              arg.optional.database.dirname + ', creating ' + database + ' database')
+        data_dict = {'ligand': _export_ligand_df, 'QD': _export_qd_df}
+        df = data_dict[database](df_file)
 
-    # Check if the ligand dataset is already available in Structures.hdf5
+    # Check if the dataset is already available in structures.hdf5
     hdf5_file = join(arg.optional.database.dirname, 'structures.hdf5')
     hdf5 = h5py.File(hdf5_file, 'a')
-    if 'ligand' not in hdf5:
-        hdf5.create_dataset(name='ligand', data=np.empty((0, 1), dtype='S80'),
+    if database not in hdf5:
+        hdf5.create_dataset(name=database, data=np.empty((0, 1), dtype='S80'),
                             chunks=True, maxshape=(None, None), compression='gzip')
-
     hdf5.close()
     return df
 
 
-def _anchor_to_idx(string):
-    for i, _ in enumerate(string, 1):
-        try:
-            return int(string[i:])
-        except ValueError:
-            pass
+def _sanitize_database_name(database):
+    """ """
+    if len(database) == 2:
+        ret = database.upper()
+    else:
+        ret = database.lower()
+    assert ret in ('QD', 'ligand')
+    return ret
 
 
-def ligand_from_database(ligand_list, arg):
-    """
-    Open the database and check if a ligands is already present in the database based on its SMILES
-    string. Try to pull the strucure(s) if it is.
+def _export_ligand_df(df_file):
+    """ """
+    idx = sorted(['hdf5 index', 'settings', 'formula'])
+    idx = pd.MultiIndex.from_tuples([(i, '') for i in idx], names=['index', 'sub index'])
+    columns = pd.MultiIndex.from_tuples([(None, None)], names=['smiles', 'anchor'])
+    df = pd.DataFrame(None, index=idx, columns=columns)
+    df.to_csv(df_file)
+    return df
 
-    ligand_list <list> [<plams.Molecule>]: A list of ligands.
+
+def _export_qd_df(df_file):
+    """ """
+    idx = sorted(['hdf5 index', 'settings', 'ligand count'])
+    idx = pd.MultiIndex.from_tuples([(i, '') for i in idx], names=['index', 'sub index'])
+    columns = pd.MultiIndex.from_tuples(
+            [(None, None, None, None)],
+            names=['core', 'core anchor', 'ligand smiles', 'ligand anchor']
+    )
+    df = pd.DataFrame(None, index=idx, columns=columns)
+    df.to_csv(df_file)
+    return df
+
+
+""" ########################  Functions for pulling from the database  ######################## """
+
+
+def mol_from_database(mol_list, arg, database='ligand', mol_list2=None):
+    """ Open the database and check if a mol is already in it
+
+    mol_list <list> [<plams.Molecule>]: A list of molecules.
     arg <dict>: A dictionary containing all (optional) arguments.
+    database <str>: The type of database, accepted values are 'ligand' and 'qd'.
 
     return <list> [<plams.Molecule>]: A database of previous calculations.
     """
     # Open the database the grab the .hdf5 file with all structures
-    df = get_ligand_database(arg)
+    database = _sanitize_database_name(database)
+    df = get_database(arg, database)
     hdf5 = h5py.File(join(arg.optional.database.dirname, 'structures.hdf5'), 'a')
 
     # Pull structures from the database
+    data_dict = {'ligand': _get_ligand_list, 'QD': _get_qd_list}
+    mol_list = data_dict[database](hdf5, df, arg, mol_list, mol_list2)
+
+    # Close the .hdf5 file and return
+    hdf5.close()
+    return mol_list
+
+
+def _get_ligand_list(hdf5, df, arg, ligand_list, mol_list2=None):
+    """ Grab ligands from the ligand database. """
     for i, lig in enumerate(ligand_list):
         key = lig.properties.smiles, lig.properties.anchor
         if key in df:  # The ligand is present in the database
@@ -113,53 +157,122 @@ def ligand_from_database(ligand_list, arg):
             lig_new.properties = lig.properties
             lig_new.properties.read = True
             lig_new.properties.dummies = lig_new[_anchor_to_idx(key[1])]
-            ligand_list[i] = lig_new
+            ligand_list[i] = lig
 
-    hdf5.close()
     return ligand_list
 
 
-def ligand_to_database(ligand_list, arg):
+def _get_qd_list(hdf5, df, arg, ligand_list, core_list):
+    """ Grab quantum dots from the QD database. """
+    qd_list = []
+    for core in core_list:
+        for lig in ligand_list:
+            key = (core.properties.formula, core.properties.anchor,
+                   lig.properties.smiles, lig.properties.anchor)
+            if key in df:
+                idx = int(df[key]['hdf5 index'])
+                qd = from_pdb_array(hdf5['QD'][idx])
+
+                # Set more properties
+                qd.properties.indices = _get_qd_indices(qd, lig, key)
+                qd.properties.read = True
+                qd.properties.path = arg.optional.qd.dirname
+                qd.properties.core = key[0]
+                qd.properties.core_anchor = key[1]
+                qd.properties.ligand = key[2]
+                qd.properties.ligand_anchor = key[3]
+                qd.properties.ligand_count = qd[-1].properties.pdb_info.ResidueNumber - 1
+                qd.properties.name = core.properties.name + '__'
+                qd.properties.name += str(qd.properties.ligand_count) + '_' + lig.properties.name
+                qd_list.append(qd)
+            else:
+                qd_list.append((core, lig))
+
+    return qd_list
+
+
+def _get_qd_indices(qd, ligand, key):
+    """ """
+    # Collect the indices of all atoms in the core
+    ret = []
+    for i, at in enumerate(qd, 1):
+        if at.properties.pdb_info.ResidueName == 'COR':
+            ret.append(i)
+        else:
+            break
+
+    # Collect the indices of all ligand anchors
+    i += _anchor_to_idx(key[3]) - 1
+    k = len(ligand)
+    for j, _ in enumerate(qd.atoms[i::k]):
+        idx = i + j*k
+        qd[idx].properties.anchor = True
+        ret.append(idx)
+
+    return ret
+
+
+def _anchor_to_idx(string):
+    """ """
+    for i, _ in enumerate(string, 1):
+        try:
+            return int(string[i:])
+        except ValueError:
+            pass
+
+
+""" ################  Functions for exporting molecules to the database  ###################### """
+
+
+def mol_to_database(mol_list, arg, database='ligand'):
     """ Write ligands to the ligand database.
 
     ligand_list <list> [<plams.Molecule>]: A list of ligands which are (potentially) to be written
         to the database..
     arg <dict>: A dictionary containing all (optional) arguments.
     """
-    print(get_time() + 'Updating Ligand_database.csv')
+    database = _sanitize_database_name(database)
+    print(get_time() + 'Updating ' + database + '_database.csv')
 
     # A loop which **does** allow previous entries in the database to be overwritten
-    if 'ligand' in arg.optional.database.overwrite:
-        _ligand_to_data_overwrite(ligand_list, arg)
-
-    # A loop which **does not** allow previous entries in the database to be overwritten
-    else:
-        _ligand_to_data(ligand_list, arg)
+    if database == 'ligand' and database in arg.optional.database.overwrite:
+        _ligand_to_data_overwrite(mol_list, arg)
+    elif database == 'ligand' and database not in arg.optional.database.overwrite:
+        _ligand_to_data(mol_list, arg)
+    elif database == 'QD' and database in arg.optional.database.overwrite:
+        _qd_to_data_overwrite(mol_list, arg)
+    elif database == 'QD' and database not in arg.optional.database.overwrite:
+        _qd_to_data(mol_list, arg)
 
     # Optional: export molecules to filetypes other than .hdf5
     if arg.optional.database.mol_format:
-        if 'ligand' in arg.optional.database.overwrite:
-            for lig in ligand_list:
-                path = join(arg.optional.ligand.dirname, lig.properties.name)
-                if 'pdb' in arg.optional.database.mol_format:
-                    molkit.writepdb(lig, path + '.pdb')
-                if 'xyz' in arg.optional.database.mol_format:
-                    lig.write(path + '.xyz')
-        else:
-            for lig in ligand_list:
-                path = join(arg.optional.ligand.dirname, lig.properties.name)
-                if 'pdb' in arg.optional.database.mol_format and not isfile(path + '.pdb'):
-                    molkit.writepdb(lig, path + '.pdb')
-                if 'xyz' in arg.optional.database.mol_format and not isfile(path + '.xyz'):
-                    lig.write(path + '.xyz')
+        export_mol(mol_list, arg, database='ligand')
 
-    print(get_time() + 'Ligand_database.csv has been updated\n')
+    print(get_time() + database + '_database.csv has been updated\n')
+
+
+def export_mol(mol_list, arg, database='ligand'):
+    """ """
+    if database in arg.optional.database.overwrite:
+        for mol in mol_list:
+            path = join(arg.optional.ligand.dirname, mol.properties.name)
+            if 'pdb' in arg.optional.database.mol_format:
+                molkit.writepdb(mol, path + '.pdb')
+            if 'xyz' in arg.optional.database.mol_format:
+                mol.write(path + '.xyz')
+    else:
+        for mol in mol_list:
+            path = join(arg.optional.ligand.dirname, mol.properties.name)
+            if 'pdb' in arg.optional.database.mol_format and not isfile(path + '.pdb'):
+                molkit.writepdb(mol, path + '.pdb')
+            if 'xyz' in arg.optional.database.mol_format and not isfile(path + '.xyz'):
+                mol.write(path + '.xyz')
 
 
 def _ligand_to_data_overwrite(ligand_list, arg):
     """ Export ligands to the database; overwriting previous entries if necessary. """
     # Open the database
-    df = get_ligand_database(arg)
+    df = get_database(arg, 'ligand')
     hdf5 = h5py.File(join(arg.optional.database.dirname, 'structures.hdf5'), 'a')
     j = hdf5['ligand'].shape[0]
 
@@ -204,7 +317,7 @@ def _ligand_to_data_overwrite(ligand_list, arg):
 def _ligand_to_data(ligand_list, arg):
     """ Export ligands to the database without overwriting previous entries. """
     # Open the database
-    df = get_ligand_database(arg)
+    df = get_database(arg, 'ligand')
     hdf5 = h5py.File(join(arg.optional.database.dirname, 'structures.hdf5'), 'a')
 
     # Remove ligand entries from ligand_list if they are already present in the database
@@ -231,184 +344,10 @@ def _ligand_to_data(ligand_list, arg):
     hdf5.close()
 
 
-def check_index(index, arg, database='ligand'):
-    """ Return all columns in **database** where **index** is not completely empty.
-
-    index <str>: An indice in the database
-    arg <dict>: arg <dict>: A dictionary containing all (optional) arguments.
-    return <list>: A list with the column names.
-    """
-    data_dict = {'ligand': get_ligand_database, 'qd': get_qd_database}
-    df = data_dict[database.lower()](arg)
-    df.replace('', np.nan, inplace=True)
-    return df.columns[-df.loc[index].isna().all()].tolist()
-
-
-def property_to_database(df_new, arg, database='ligand'):
-    """ Export a property to the ligand or qd database.
-
-    df_new <pd.DataFrame>: A Pandas dataframe with new results.
-    arg <dict>: arg <dict>: A dictionary containing all (optional) arguments.
-    database <str>: The type of database, accepted values are 'ligand' and 'qd'.
-    """
-    data_name = database.capitalize() + '_database.csv'
-    print('\n' + get_time() + 'Updating ' + data_name)
-
-    # Open database
-    data_dict = {'ligand': get_ligand_database, 'qd': get_qd_database}
-    df = data_dict[database.lower()](arg)
-
-    # Update the database indices
-    for i in df_new.index:
-        if i not in df.index:
-            df.loc[i, :] = None
-
-    # Update the database values
-    if database in arg.optional.database.overwrite:
-        df.update(df_new, overwrite=True)
-    else:
-        df.update(df_new, overwrite=False)
-
-    # Close the database
-    file = join(arg.optional.database.dirname, data_name)
-    df.to_csv(file)
-    print(get_time() + data_name + ' has been updated\n')
-
-
-def get_qd_database(arg):
-    """ get the database and return it as dataframe.
-    Create a new database if no previous database exists.
-
-    arg <dict>: A dictionary containing all (optional) arguments.
-    return <pd.DataFrame>: The quantum dot database as dataframe.
-    """
-    df_file = join(arg.optional.database.dirname, 'QD_database.csv')
-
-    # Check if the database exists and has the proper keys; create it if it does not
-    if isfile(df_file):  # The database exists
-        df = pd.read_csv(df_file, index_col=[0, 1], header=[0, 1, 2, 3], keep_default_na=False)
-    else:
-        print(get_time() + 'QD_database.csv not found in ' +
-              arg.optional.database.dirname + ', creating quantum dot database')
-        idx = sorted(['ligand count', 'hdf5 index', 'settings'])
-        idx = pd.MultiIndex.from_tuples([(i, '') for i in idx], names=['index', 'sub index'])
-        columns = pd.MultiIndex.from_tuples(
-                [(None, None, None, None)],
-                names=['core', 'core anchor', 'ligand smiles', 'ligand anchor']
-        )
-        df = pd.DataFrame(None, index=idx, columns=columns)
-        df.to_csv(df_file)
-
-    # Check if the quantum dot dataset is already available in structures.hdf5
-    hdf5_file = join(arg.optional.database.dirname, 'structures.hdf5')
-    hdf5 = h5py.File(hdf5_file, 'a')
-    if 'QD' not in hdf5:
-        hdf5.create_dataset(name='QD', data=np.empty((0, 1), dtype='S80'),
-                            chunks=True, maxshape=(None, None), compression='gzip')
-    hdf5.close()
-    return df
-
-
-def qd_from_database(ligand_list, core_list, arg):
-    """
-    Open the database and check if a quantum dot is already present in the database based on its
-    name string. Try to pull the strucure(s) if it is.
-
-    ligand_list <list> [<plams.Molecule>]: A list of ligands.
-    core_list <list> [<plams.Molecule>]: A list of cores.
-    arg <dict>: A dictionary containing all (optional) arguments.
-
-    return <list> [<tuple> [<plams.Molecule>]]: A list of 2 tuples representing unique core+ligand
-        combinations. A tuple is subsituted for a fully fledged quantum dot if a match is found
-        in the database.
-    """
-    hdf5 = h5py.File(join(arg.optional.database.dirname, 'structures.hdf5'))
-    df = get_qd_database(arg)
-    qd_list = []
-
-    for core in core_list:
-        for lig in ligand_list:
-            key = (core.properties.formula, core.properties.anchor,
-                   lig.properties.smiles, lig.properties.anchor)
-            if key in df:
-                idx = int(df[key]['hdf5 index'])
-                qd = from_pdb_array(hdf5['QD'][idx])
-
-                # Collect the indices of all atoms in the core
-                qd.properties.indices = []
-                for i, at in enumerate(qd, 1):
-                    if at.properties.pdb_info.ResidueName == 'COR':
-                        qd.properties.indices.append(i)
-                    else:
-                        break
-
-                # Collect the indices of all ligand anchors
-                i += _anchor_to_idx(key[3]) - 1
-                k = len(lig)
-                for j, _ in enumerate(qd.atoms[i::k]):
-                    idx = i + j*k
-                    qd[idx].properties.anchor = True
-                    qd.properties.indices.append(idx)
-
-                # Set more properties
-                qd.properties.read = True
-                qd.properties.path = arg.optional.qd.dirname
-                qd.properties.core = key[0]
-                qd.properties.core_anchor = key[1]
-                qd.properties.ligand = key[2]
-                qd.properties.ligand_anchor = key[3]
-                qd.properties.ligand_count = qd[-1].properties.pdb_info.ResidueNumber - 1
-                qd.properties.name = core.properties.name + '__'
-                qd.properties.name += str(qd.properties.ligand_count) + '_' + lig.properties.name
-                qd_list.append(qd)
-            else:
-                qd_list.append((core, lig))
-
-    hdf5.close()
-    return qd_list
-
-
-def qd_to_database(qd_list, arg):
-    """ Write quantum dots to the quantum dot database.
-
-    qd_list <list> [<plams.Molecule>]: A list of quantum dots which are (potentially) to be written
-        to the database.
-    arg <dict>: A dictionary containing all (optional) arguments.
-    """
-    print(get_time() + 'Updating QD_database.csv')
-
-    # A loop which **does** allow previous entries in the database to be overwritten
-    if 'qd' in arg.optional.database.overwrite:
-        _qd_to_data_overwrite(qd_list, arg)
-
-    # A loop which **does not** allow previous entries in the database to be overwritten
-    else:
-        _qd_to_data(qd_list, arg)
-
-    # Optional: export molecules to filetypes other than .hdf5
-    if arg.optional.database.mol_format:
-        if 'qd' in arg.optional.database.overwrite:
-            for qd in qd_list:
-                path = join(arg.optional.qd.dirname, qd.properties.name)
-                if 'pdb' in arg.optional.database.mol_format:
-                    molkit.writepdb(qd, path + '.pdb')
-                if 'xyz' in arg.optional.database.mol_format:
-                    qd.write(path + '.xyz')
-        else:
-            for qd in qd_list:
-                path = join(arg.optional.qd.dirname, qd.properties.name)
-                if 'pdb' in arg.optional.database.mol_format and not isfile(path + '.pdb'):
-                    molkit.writepdb(qd, path + '.pdb')
-                if 'xyz' in arg.optional.database.mol_format and not isfile(path + '.xyz'):
-                    qd.write(path + '.xyz')
-
-    print(get_time() + 'QD_database.csv has been updated\n')
-
-
 def _qd_to_data_overwrite(qd_list, arg):
     """ Export quantum dots to the database; overwriting previous entries if necessary. """
     # Open the database
-    df = get_qd_database(arg)
+    df = get_database(arg, 'QD')
     hdf5 = h5py.File(join(arg.optional.database.dirname, 'structures.hdf5'), 'a')
     j = hdf5['QD'].shape[0]
 
@@ -448,7 +387,7 @@ def _qd_to_data_overwrite(qd_list, arg):
             df[key]['settings'] = None
 
     # Export the database
-    file = join(arg.optional.database.dirname, 'QD_database.csv')
+    file = join(arg.optional.database.dirname, 'Qd_database.csv')
     df.to_csv(file)
     hdf5.close()
 
@@ -456,7 +395,7 @@ def _qd_to_data_overwrite(qd_list, arg):
 def _qd_to_data(qd_list, arg):
     """ Export quantum dots to the database without overwriting previous entries if necessary. """
     # Open the database
-    df = get_qd_database(arg)
+    df = get_database(arg, 'QD')
     hdf5 = h5py.File(join(arg.optional.database.dirname, 'structures.hdf5'))
 
     # Remove ligand entries from ligand_list if they are already present in the database
@@ -478,6 +417,50 @@ def _qd_to_data(qd_list, arg):
         df[key]['settings'] = None
 
     # Export the database
-    file = join(arg.optional.database.dirname, 'QD_database.csv')
+    file = join(arg.optional.database.dirname, 'Qd_database.csv')
     df.to_csv(file)
     hdf5.close()
+
+
+""" ##################  Functions for exporting non-molecules to the database  ################ """
+
+
+def get_empty_columns(index, arg, database='ligand'):
+    """ Return all columns in **database** where **index** is completely empty.
+
+    index <str>: An indice in the database
+    arg <dict>: arg <dict>: A dictionary containing all (optional) arguments.
+    return <list>: A list with the column names.
+    """
+    df = get_database(arg, database)
+    df.replace('', np.nan, inplace=True)
+    return df.columns[-df.loc[index].isna().all()].tolist()
+
+
+def property_to_database(df_new, arg, database='ligand'):
+    """ Export a property to the ligand or qd database.
+
+    df_new <pd.DataFrame>: A Pandas dataframe with new results.
+    arg <dict>: arg <dict>: A dictionary containing all (optional) arguments.
+    database <str>: The type of database, accepted values are 'ligand' and 'qd'.
+    """
+    # Open the database
+    database = _sanitize_database_name(database)
+    print('\n' + get_time() + 'Updating ' + database + '_database.csv')
+    df = get_database(arg, database)
+
+    # Update the database indices
+    for i in df_new.index:
+        if i not in df.index:
+            df.loc[i, :] = None
+
+    # Update the database values
+    if database.lower() in arg.optional.database.overwrite:
+        df.update(df_new, overwrite=True)
+    else:
+        df.update(df_new, overwrite=False)
+
+    # Export the database
+    file = join(arg.optional.database.dirname, database + '_database.csv')
+    df.to_csv(file)
+    print(get_time() + database + '_database.csv has been updated\n')

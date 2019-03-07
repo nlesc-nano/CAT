@@ -8,7 +8,7 @@ from scm.plams.interfaces.adfsuite.ams import AMSJob
 from ..utils import get_time
 from ..mol_utils import (fix_carboxyl, fix_h)
 from ..analysis.jobs import job_geometry_opt
-from ..data_handling.database import qd_to_database
+from ..data_handling.database import mol_to_database
 
 
 def init_qd_opt(mol_list, arg):
@@ -35,7 +35,7 @@ def init_qd_opt(mol_list, arg):
 
     # Export the geometries to the database
     if 'qd' in arg.optional.database.write:
-        qd_to_database(mol_list, arg)
+        mol_to_database(mol_list, arg, 'qd')
 
 
 def qd_opt(mol, job_recipe):

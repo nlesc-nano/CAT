@@ -1,18 +1,16 @@
 UFF:
     description: UFF with the default forcefield
-    pickle: False
     input:
         uff:
             library: uff
         ams:
+            task: null
             system:
                 bondorders:
                     _1: null
                 charge: 0
 COSMO-RS activity coefficient:
     description: COSMO-RS activity coefficient calculation; parameters not included!
-    ignore_molecule: True
-    pickle: False
     input:
         property:
             _h: Activitycoef
@@ -23,7 +21,6 @@ COSMO-RS activity coefficient:
                 Frac1: 1.0
 COSMO-ADF:
     description: The solvation block for COSMO(crs)-ADF calculations
-    pickle: False
     input:
         fragments: gas
         solvation:
@@ -45,21 +42,21 @@ COSMO-ADF:
                 Br: 2.16
                 I: 2.32
 COSMO-MOPAC:
-    description: COSMO(crs)-MOPAC with PM7 parameters
-    pickle: False
+    description: COSMO(crs)-MOPAC single point with PM7 parameters
     input:
         mopac:
             model: PM7
             solvation: COSMO-CRS
         ams:
+            task: SinglePoint
             system:
                 charge: 0
 MOPAC:
-    description: MOPAC (PM7) with PM7 parameters
-    pickle: False
+    description: MOPAC with PM7 parameters
     input:
         mopac:
             model: PM7
         ams:
+            task: null
             system:
                 charge: 0

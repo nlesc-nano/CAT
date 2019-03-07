@@ -10,14 +10,14 @@ from scm.plams.core.settings import Settings
 
 from ..utils import get_time
 from ..mol_utils import (merge_mol, get_atom_index)
-from ..data_handling.database import (qd_from_database, qd_to_database)
+from ..data_handling.database import (mol_from_database, mol_to_database)
 
 
 def init_qd_construction(ligand_list, core_list, arg):
     """ Initialize the quantum dot construction. """
     # Attempt to pull structures from the database
     if 'qd' in arg.optional.database.read:
-        qd_list = qd_from_database(ligand_list, core_list, arg)
+        qd_list = mol_from_database(core_list, arg, 'qd', ligand_list)
     else:
         qd_list = [(core, ligand) for core in core_list for ligand in ligand_list]
 
@@ -32,7 +32,7 @@ def init_qd_construction(ligand_list, core_list, arg):
 
     # Export the resulting geometries back to the database
     if 'qd' in arg.optional.database.write and not arg.optional.qd.optimize:
-        qd_to_database(qd_list, arg)
+        mol_to_database(qd_list, arg, 'qd')
 
     return qd_list
 
