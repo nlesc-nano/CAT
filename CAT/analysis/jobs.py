@@ -140,7 +140,6 @@ def job_freq(self, job, settings, name='Frequency_analysis', opt=True, ret_resul
     if not self.properties.energy or self.properties.energy is None:
         self.properties.energy = np.nan
 
-
     # Return results
     if ret_results:
         return results
