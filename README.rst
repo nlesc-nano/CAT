@@ -7,7 +7,7 @@
    :target: https://www.python.org
 
 #######################################
-Compound Attachment/Analysis Tool 0.3.0
+Compound Attachment/Analysis Tool 0.3.1
 #######################################
 
 **CAT** is a collection of tools designed for the construction, and subsequent analysis, of various chemical compounds.
