@@ -4,7 +4,6 @@ UFF:
         uff:
             library: uff
         ams:
-            task: null
             system:
                 bondorders:
                     _1: null
@@ -14,11 +13,11 @@ COSMO-RS activity coefficient:
     input:
         property:
             _h: Activitycoef
-            Compound:
-                _h: null
-            compound:
-                _h: null
-                Frac1: 1.0
+        Compound:
+            _h: null
+        compound:
+            _h: null
+            Frac1: 1.0
 COSMO-ADF:
     description: The solvation block for COSMO(crs)-ADF calculations
     input:
@@ -48,7 +47,7 @@ COSMO-MOPAC:
             model: PM7
             solvation: COSMO-CRS
         ams:
-            task: SinglePoint
+            Task: SinglePoint
             system:
                 charge: 0
 MOPAC:
@@ -57,6 +56,5 @@ MOPAC:
         mopac:
             model: PM7
         ams:
-            task: null
             system:
                 charge: 0

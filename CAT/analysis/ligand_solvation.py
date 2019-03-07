@@ -86,6 +86,7 @@ def get_solv(mol, solvent_list, coskf, job=None, s=None):
 
     # Prepare the job settings
     s.input.Compound._h = coskf
+    s.ignore_molecule = True
     s_list = []
     for solv in solvent_list:
         s_tmp = s.copy()

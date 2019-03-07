@@ -146,6 +146,7 @@ def mol_from_database(mol_list, arg, database='ligand', mol_list2=None):
     hdf5.close()
     return mol_list
 
+
 def _get_ligand_list(hdf5, df, arg, ligand_list, mol_list2=None):
     """ Grab ligands from the ligand database. """
     for i, lig in enumerate(ligand_list):
@@ -449,6 +450,7 @@ def property_to_database(df_new, arg, database='ligand'):
     database = _sanitize_database_name(database)
     print('\n' + get_time() + 'Updating ' + database + '_database.csv')
     df = get_database(arg, database)
+    df.replace('', np.nan, inplace=True)
 
     # Update the database indices
     for i in df_new.index:
