@@ -84,7 +84,6 @@ def job_geometry_opt(self, job, settings, name='Geometry_optimization', ret_resu
     my_job = job(molecule=self, settings=s, name=name)
     results = my_job.run()
     results.wait()
-    import pdb; pdb.set_trace()
 
     try:
         self.from_mol_other(results.get_main_molecule())
