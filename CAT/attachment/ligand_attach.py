@@ -17,7 +17,7 @@ def init_qd_construction(ligand_list, core_list, arg):
     """ Initialize the quantum dot construction. """
     # Attempt to pull structures from the database
     if 'qd' in arg.optional.database.read:
-        qd_list = mol_from_database(core_list, arg, 'qd', ligand_list)
+        qd_list = mol_from_database(ligand_list, arg, 'qd', mol_list2=core_list)
     else:
         qd_list = [(core, ligand) for core in core_list for ligand in ligand_list]
 

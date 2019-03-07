@@ -146,7 +146,6 @@ def mol_from_database(mol_list, arg, database='ligand', mol_list2=None):
     hdf5.close()
     return mol_list
 
-
 def _get_ligand_list(hdf5, df, arg, ligand_list, mol_list2=None):
     """ Grab ligands from the ligand database. """
     for i, lig in enumerate(ligand_list):
@@ -157,7 +156,7 @@ def _get_ligand_list(hdf5, df, arg, ligand_list, mol_list2=None):
             lig_new.properties = lig.properties
             lig_new.properties.read = True
             lig_new.properties.dummies = lig_new[_anchor_to_idx(key[1])]
-            ligand_list[i] = lig
+            ligand_list[i] = lig_new
 
     return ligand_list
 
@@ -302,6 +301,7 @@ def _ligand_to_data_overwrite(ligand_list, arg):
 
     # Update the database with old ligands
     if lig_old:
+        idx_old, lig_old = zip(*[(i, item) for i, item in sorted(zip(idx_old, lig_old))])
         pdb_old = as_pdb_array(lig_old, min_size=hdf5['ligand'].shape[1])
         hdf5['ligand'][idx_old] = pdb_old
         for lig in lig_old:
@@ -379,6 +379,7 @@ def _qd_to_data_overwrite(qd_list, arg):
 
     # Update the database with old quantum dots
     if qd_old:
+        idx_old, qd_old = zip(*[(i, item) for i, item in sorted(zip(idx_old, qd_old))])
         pdb_old = as_pdb_array(qd_old, min_size=hdf5['QD'].shape[1])
         hdf5['QD'][idx_old] = pdb_old
         for qd in qd_old:
