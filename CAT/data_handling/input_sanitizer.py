@@ -86,7 +86,6 @@ def get_mol_defaults(mol_list, path=None, core=False):
         'column': val_int,
         'row': val_int,
         'indices': val_indices,
-        'sheet_name': val_string,
         'type': val_type,
         'name': val_string,
         'path': val_string,
@@ -164,7 +163,6 @@ def get_default_input_mol():
         column: 0
         row: 0
         indices: None
-        sheet_name: Sheet1
         type: None
     """)
 
