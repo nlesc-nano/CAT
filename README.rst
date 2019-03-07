@@ -7,7 +7,7 @@
    :target: https://www.python.org
 
 #######################################
-Compound Attachment/Analysis Tool 0.3.0
+Compound Attachment/Analysis Tool 0.3.1
 #######################################
 
 **CAT** is a collection of tools designed for the construction, and subsequent analysis, of various chemical compounds.
@@ -38,10 +38,7 @@ Dependencies installation
 
 Using the conda environment the following packages should be installed:
 
-- rdkit_: ``conda install -y --name CAT --channel conda-forge rdkit``
-
-- HDF5_: ``conda install -y --name CAT --channel conda-forge h5py``
-
+- rdkit_ & HDF5_: ``conda install -y --name CAT --channel conda-forge rdkit h5py``
 
 .. _installation:
 

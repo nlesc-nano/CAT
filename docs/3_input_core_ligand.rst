@@ -56,13 +56,6 @@ Optional arguments
 
     |
 
-**sheet_name** |str|_ = *Sheet1*
-
-    The name of the sheet containing the to be imported molecules.
-    Relevant for .xlsx files with multiple sheets or sheets with custom names.
-
-    |
-
 **indices** |tuple|_  [|int|_] = ()
 
     For cores:

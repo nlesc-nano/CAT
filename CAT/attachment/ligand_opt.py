@@ -19,7 +19,7 @@ from .ligand_attach import (rot_mol_angle, sanitize_dim_2)
 from ..utils import get_time
 from ..mol_utils import (to_symbol, fix_carboxyl, get_bond_index,
                          from_mol_other, from_rdmol, separate_mod)
-from ..data_handling.database import ligand_from_database, ligand_to_database
+from ..data_handling.database import (mol_from_database, mol_to_database)
 
 
 def init_ligand_opt(ligand_list, arg):
@@ -33,7 +33,7 @@ def init_ligand_opt(ligand_list, arg):
     """
     # Searches for matches between the input ligand and the database; imports the structure
     if 'ligand' in arg.optional.database.read:
-        ligand_list = ligand_from_database(ligand_list, arg)
+        ligand_list = mol_from_database(ligand_list, arg, 'ligand')
 
     # Optimize all new ligands
     if arg.optional.ligand.optimize:
@@ -59,7 +59,7 @@ def init_ligand_opt(ligand_list, arg):
 
     # Write newly optimized structures to the database
     if 'ligand' in arg.optional.database.write and arg.optional.ligand.optimize:
-        ligand_to_database(ligand_list, arg)
+        mol_to_database(ligand_list, arg, 'ligand')
 
     return ligand_list
 

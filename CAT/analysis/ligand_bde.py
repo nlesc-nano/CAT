@@ -18,7 +18,7 @@ from .ligand_dissociate import dissociate_ligand
 from .. import utils as CAT
 from ..mol_utils import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
-from ..data_handling.database import qd_bde_to_database
+from ..data_handling.database import (property_to_database, get_empty_columns)
 
 
 def init_bde(mol_list, arg):
@@ -36,28 +36,28 @@ def init_bde(mol_list, arg):
     # Prepare the job settings
     job_recipe = arg.optional.qd.dissociate
 
+    # Check if the calculation has been done already
+    if 'qd' not in arg.optional.database.overwrite:
+        previous_entries = get_empty_columns('BDE dG', arg, database='qd')
+        mol_list = [mol for mol in mol_list if
+                    (mol.properties.core, mol.properties.core_anchor,
+                     mol.properties.ligand, mol.properties.ligand_anchor) not in previous_entries]
+        if not mol_list:
+            return
+
     # Prepare the dataframe
-    idx_names = ['index', 'sub index']
-    idx = pd.MultiIndex(levels=[[], []], codes=[[], []], names=idx_names)
-    column_names = ['core', 'core_anchor', 'ligand smiles', 'ligand anchor']
-    columns = pd.MultiIndex.from_tuples([(None, None, None, None)], names=column_names)
-    df = pd.DataFrame(index=idx, columns=columns)
+    df = _get_bde_df()
 
     for mol in mol_list:
         # Ready YX2 and the YX2 dissociated quantum dots
         lig = get_cdx2(mol)
         core = dissociate_ligand(mol)
 
-        # Prepare the dataframe
+        # Construct a series
         index = list(zip(*[cor.properties.mark for cor in core]))
         index[1] = get_topology(mol, index[1])
         index = [str(i) + ' ' + j + ' ' + str(k) for i, j, k in zip(*index)]
-
-        # Construct a series
-        name = (mol.properties.core, mol.properties.core_anchor,
-                mol.properties.ligand, mol.properties.ligand_anchor)
-        idx = pd.MultiIndex.from_product([['BDE dE', 'BDE ddG', 'BDE dG'], index], names=idx_names)
-        series = pd.Series(None, index=idx, name=name)
+        series = _get_bde_series(index, mol)
 
         # Fill the series with energies
         init(path=mol.properties.path, folder='BDE')
@@ -73,23 +73,39 @@ def init_bde(mol_list, arg):
                 df.loc[i, :] = None
 
         # Update the values of df
-        df[name] = None
-        df.update(series)
+        df[series.name] = series
 
     # Export the BDE results to the database
     del df[(None, None, None, None)]
     if 'qd' in arg.optional.database.write:
-        qd_bde_to_database(df, arg)
+        property_to_database(df, arg, database='qd')
+
+
+def _get_bde_df():
+    """ Return an empty dataframe for init_bde(). """
+    idx_names = ['index', 'sub index']
+    idx = pd.MultiIndex(levels=[[], []], codes=[[], []], names=idx_names)
+    column_names = ['core', 'core_anchor', 'ligand smiles', 'ligand anchor']
+    columns = pd.MultiIndex.from_tuples([(None, None, None, None)], names=column_names)
+    return pd.DataFrame(index=idx, columns=columns)
+
+
+def _get_bde_series(index, mol):
+    """ Return an empty series for the for loop in init_bde(). """
+    name = (mol.properties.core, mol.properties.core_anchor,
+            mol.properties.ligand, mol.properties.ligand_anchor)
+    idx_names = ['index', 'sub index']
+    idx = pd.MultiIndex.from_product([['BDE dE', 'BDE ddG', 'BDE dG'], index], names=idx_names)
+    return pd.Series(None, index=idx, name=name)
 
 
 def get_bde_dE(tot, lig, core, job=None, s=None):
     """ Calculate the bond dissociation energy: dE = dE(mopac) + (dG(uff) - dE(uff))
     """
-
     # Switch to default settings if no job & s are <None>
     if job is None and s is None:
         job = AMSJob
-        s = CAT.get_template('qd.json')['MOPAC']
+        s = CAT.get_template('qd.yaml')['MOPAC']
     elif job is None or s is None:
         finish()
         raise TypeError('job & s should neither or both be None')
@@ -117,7 +133,7 @@ def get_bde_ddG(tot, lig, core, job=None, s=None):
     # Switch to default settings if no job & s are <None>
     if job is None and s is None:
         job = AMSJob
-        s = CAT.get_template('qd.json')['UFF']
+        s = CAT.get_template('qd.yaml')['UFF']
     elif job is None or s is None:
         finish()
         raise TypeError('job & s should neither or both be None')

@@ -86,7 +86,6 @@ def get_mol_defaults(mol_list, path=None, core=False):
         'column': val_int,
         'row': val_int,
         'indices': val_indices,
-        'sheet_name': val_string,
         'type': val_type,
         'name': val_string,
         'path': val_string,
@@ -164,7 +163,6 @@ def get_default_input_mol():
         column: 0
         row: 0
         indices: None
-        sheet_name: Sheet1
         type: None
     """)
 
@@ -215,28 +213,28 @@ def sanitize_optional(arg_dict):
     arg.optional.qd.activation_strain = val_bool(arg.optional.qd.activation_strain)
 
     # Prepares COSMO-RS default settings
-    crs = CAT.get_template('qd.json')['COSMO-RS activity coefficient']
-    crs.update(CAT.get_template('crs.json')['MOPAC PM6'])
+    crs = CAT.get_template('qd.yaml')['COSMO-RS activity coefficient']
+    crs.update(CAT.get_template('crs.yaml')['MOPAC PM6'])
 
     # Validate arguments containing job recipes
     arg.optional.ligand.crs = val_job(arg.optional.ligand['cosmo-rs'],
                                       job1=AMSJob,
                                       job2=CRSJob,
-                                      s1=CAT.get_template('qd.json')['COSMO-MOPAC'],
+                                      s1=CAT.get_template('qd.yaml')['COSMO-MOPAC'],
                                       s2=crs)
     del arg.optional.ligand['cosmo-rs']
 
     arg.optional.qd.optimize = val_job(arg.optional.qd.optimize,
                                        job1=AMSJob,
                                        job2=AMSJob,
-                                       s1=CAT.get_template('qd.json')['UFF'],
-                                       s2=CAT.get_template('qd.json')['UFF'])
+                                       s1=CAT.get_template('qd.yaml')['UFF'],
+                                       s2=CAT.get_template('qd.yaml')['UFF'])
 
     arg.optional.qd.dissociate = val_job(arg.optional.qd.dissociate,
                                          job1=AMSJob,
                                          job2=AMSJob,
-                                         s1=CAT.get_template('qd.json')['MOPAC'],
-                                         s2=CAT.get_template('qd.json')['UFF'])
+                                         s1=CAT.get_template('qd.yaml')['MOPAC'],
+                                         s2=CAT.get_template('qd.yaml')['UFF'])
 
     del arg.path
     return arg
@@ -251,7 +249,7 @@ def get_default_optional():
                 read: True
                 write: True
                 overwrite: False
-                mol_format: [pdb, xyz]
+                mol_format: pdb
                 mongodb: False
 
             core:

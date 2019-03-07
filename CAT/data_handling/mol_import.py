@@ -5,8 +5,6 @@ __all__ = ['read_mol', 'set_prop']
 import os
 import itertools
 
-import pandas as pd
-
 from scm.plams.mol.molecule import Molecule
 from scm.plams.core.errors import PlamsError
 import scm.plams.interfaces.molecule.rdkit as molkit
@@ -128,18 +126,6 @@ def read_mol_txt(mol):
         return read_mol(input_mol)
     except (Exception, PlamsError) as ex:
         print_exception(read_mol_txt.__code__, ex, mol.mol)
-
-
-def read_mol_excel(mol):
-    """ Read a plain text file containing one or more SMILES strings """
-    try:
-        df = list(pd.read_excel(mol.mol, sheet_name=mol.sheet_name))
-        file_list = [file for file in df[mol.column][mol.row:]]
-        input_mol = get_mol_defaults(file_list, path=mol.path, core=mol.is_core)
-        input_mol = sanitize_mol_type(input_mol)
-        return read_mol(input_mol)
-    except (Exception, PlamsError) as ex:
-        print_exception(read_mol_excel.__code__, ex, mol.mol)
 
 
 def set_prop(mol, mol_dict):

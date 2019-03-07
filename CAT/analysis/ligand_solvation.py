@@ -14,7 +14,8 @@ from scm.plams.interfaces.adfsuite.adf import ADFJob
 
 from .crs import CRSJob
 from .. import utils as CAT
-from ..data_handling.database import (ligand_solv_to_database, check_index)
+from ..utils import get_time
+from ..data_handling.database import (property_to_database, get_empty_columns)
 
 
 def init_solv(mol_list, arg, solvent_list=None):
@@ -29,14 +30,11 @@ def init_solv(mol_list, arg, solvent_list=None):
     solvent_list.sort()
 
     # Prepare the dataframe
-    solv = ['E_solv', 'gamma'], [i.rsplit('.', 1)[0].rsplit('/', 1)[-1] for i in solvent_list]
-    idx = pd.MultiIndex.from_product(solv, names=['index', 'sub index'])
-    columns = pd.MultiIndex.from_tuples([(None, None)], names=['smiles', 'anchor'])
-    df = pd.DataFrame(index=idx, columns=columns)
+    df = _get_solv_df(solvent_list)
 
     # Check if the calculation has been donealready
     if 'ligand' not in arg.optional.database.overwrite:
-        previous_entries = check_index(arg, 'E_solv', database='ligand')
+        previous_entries = get_empty_columns('E_solv', arg, database='ligand')
         mol_list = [mol for mol in mol_list if
                     (mol.properties.smiles, mol.properties.anchor) not in previous_entries]
         if not mol_list:
@@ -56,8 +54,16 @@ def init_solv(mol_list, arg, solvent_list=None):
 
     # Update the database
     if 'ligand' in arg.optional.database.write:
-        del df[(np.nan, np.nan)]
-        ligand_solv_to_database(df, arg)
+        del df[(None, None)]
+        property_to_database(df, arg, database='ligand')
+
+
+def _get_solv_df(solvent_list):
+    """ Return an empty dataframe for init_solv(). """
+    solv = ['E_solv', 'gamma'], [i.rsplit('.', 1)[0].rsplit('/', 1)[-1] for i in solvent_list]
+    idx = pd.MultiIndex.from_product(solv, names=['index', 'sub index'])
+    columns = pd.MultiIndex.from_tuples([(None, None)], names=['smiles', 'anchor'])
+    return pd.DataFrame(index=idx, columns=columns)
 
 
 def get_surface_charge(mol, job=None, s=None):
@@ -76,10 +82,11 @@ def get_solv(mol, solvent_list, coskf, job=None, s=None):
     """ Calculate the solvation energy of *mol* in various *solvents*. """
     # Return 2x None if no coskf is None
     if coskf is None:
-        return None, None
+        return np.nan, np.nan
 
     # Prepare the job settings
     s.input.Compound._h = coskf
+    s.ignore_molecule = True
     s_list = []
     for solv in solvent_list:
         s_tmp = s.copy()
@@ -96,8 +103,14 @@ def get_solv(mol, solvent_list, coskf, job=None, s=None):
     Gamma = []
     for result in results:
         result.wait()
-        E_solv.append(result.get_energy())
-        Gamma.append(result.get_activity_coefficient())
+        try:
+            E_solv.append(result.get_energy())
+            Gamma.append(result.get_activity_coefficient())
+        except ValueError:
+            print(get_time() + 'WARNING: Failed to retrieve COSMO-RS results of ' +
+                  results.job.name)
+            E_solv.append(np.nan)
+            Gamma.append(np.nan)
 
     # Return the solvation energies and activity coefficients as dict
     return E_solv, Gamma
@@ -127,4 +140,5 @@ def get_coskf(results, extensions=['.coskf', '.t21']):
         for ext in extensions:
             if ext in file:
                 return results[file]
+    print(get_time() + 'WARNING: Failed to retrieve COSMO surface charges of ' + results.job.name)
     return None
