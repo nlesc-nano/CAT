@@ -1,21 +1,19 @@
-path: None
+path: /Users/basvanbeek/Documents/CdSe/Week_5
 
 input_cores:
     - Cd68Se55.xyz:
         guess_bonds: False
+        indices: [149, 143]
 
 input_ligands:
-    - OC(C)=O
-    - OC(CC)=O
-    - OC(CCC)=O
-    - OC(CCCC)=O
+    - OC
 
 optional:
     database:
         dirname: database
         read: True
         write: True
-        overwrite: False
+        overwrite: True
         mol_format: pdb
         mongodb: False
 
@@ -28,10 +26,10 @@ optional:
         functional_groups: None
         optimize: True
         split: True
-        cosmo-rs: False
+        cosmo-rs: True
 
     qd:
         dirname: QD
-        optimize: False
+        optimize: True
         activation_strain: False
         dissociate: False
