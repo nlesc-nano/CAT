@@ -281,7 +281,7 @@ str_to_class = {
     'mopac': MOPACJob, 'mopacjob': MOPACJob,
     'reaxff': ReaxFFJob, 'reaxffjob': ReaxFFJob,
     'cp2k': Cp2kJob, 'cp2kjob': Cp2kJob,
-    'orca': ORCAJob, 'orca': ORCAJob,
+    'orca': ORCAJob, 'orcajob': ORCAJob,
     'dirac': DiracJob, 'diracjob': DiracJob,
     'gamess': GamessJob, 'gamessjob': GamessJob,
     'dftbplus': DFTBPlusJob, 'dftbplusjob': DFTBPlusJob,
@@ -418,6 +418,8 @@ def val_job(job, job1=None, job2=None, s1=None, s2=None):
     for key in job:
         if job[key] is None or 'None':
             job[key] = str_to_def[key]
+        if not job[key]:
+            job[key] = False
         elif isinstance(job[key], str):
             try:
                 job[key] = str_to_class[job[key].lower()]
