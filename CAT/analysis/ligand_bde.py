@@ -63,8 +63,12 @@ def init_bde(mol_list, arg):
         init(path=mol.properties.path, folder='BDE')
         config.default_jobmanager.settings.hashing = None
         series['BDE dE'] = get_bde_dE(mol, lig, core, job=job_recipe.job1, s=job_recipe.s1)
-        series['BDE ddG'] = get_bde_ddG(mol, lig, core, job=job_recipe.job2, s=job_recipe.s2)
-        series['BDE dG'] = series['BDE dE'] + series['BDE ddG']
+        if job_recipe.job2 and job_recipe.s2:
+            series['BDE ddG'] = get_bde_ddG(mol, lig, core, job=job_recipe.job2, s=job_recipe.s2)
+            series['BDE dG'] = series['BDE dE'] + series['BDE ddG']
+        else:
+            series['BDE ddG'] = np.nan
+            series['BDE dG'] = np.nan
         finish()
 
         # Update the indices of df
