@@ -5,7 +5,7 @@ from os.path import (join, exists)
 
 from scm.plams.core.functions import read_molecules
 
-from CAT.attachment.dye import bob_ligand, bob_core, substitution
+from CAT.attachment.dye import bob_ligand, bob_core, substitution, del_equiv_structures
 
 
 ##################################          input             #####################################
@@ -17,9 +17,9 @@ start = time.time()
 # Path to the working folder where are prepared molecules and where folder with new coordinares
 # will be made with the specific name
 path = os.getcwd()
-input_ligands = read_molecules(join(path, 'LIGANDS'))
+input_ligands = read_molecules(join(path, 'LIGANDStest'))
 input_ligands = list(input_ligands.values())
-input_cores = read_molecules(join(path, 'CORES'))
+input_cores = read_molecules(join(path, 'COREStest'))
 input_cores = list(input_cores.values())
 
 # Bob does what Bob has to do.
@@ -50,8 +50,11 @@ di = substitution(input_ligands, mono)
 tri = substitution(input_ligands, di)
 tetra = substitution(input_ligands, tri)
 
+tetra = del_equiv_structures(tetra)
+
 # Combine and flatten all new molecules into a generator
 new_molecules = chain.from_iterable([mono, di, tri, tetra])
+
 
 
 # Export molecules to if the minimum core/ligand distance is smaller than min_dist
@@ -61,6 +64,7 @@ for mol in new_molecules:
     else:
         mol.write(join(path, new_dir, 'err_' + mol.properties.name + '.xyz'))
         print (mol.properties.name + ": \tDistance between ligand and core atoms is smaler than %f" % min_dist)
+
 
 # The End
 end = time.time()
