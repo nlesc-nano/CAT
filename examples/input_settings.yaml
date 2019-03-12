@@ -14,7 +14,7 @@ optional:
         read: True
         write: True
         overwrite: True
-        mol_format: pdb
+        mol_format: [xyz, pdb]
         mongodb: False
 
     core:
