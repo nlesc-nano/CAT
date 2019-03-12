@@ -5,8 +5,8 @@ from os.path import (join, exists)
 
 from scm.plams.core.functions import read_molecules
 
-from CAT.attachment.dye import bob_ligand, bob_core, substitution, del_equiv_structures
-
+from CAT.attachment.dye import bob_ligand, bob_core, substitution
+from CAT.attachment.substitution_symmetry import del_equiv_structures
 
 ##################################          input             #####################################
 
