@@ -426,7 +426,7 @@ def val_job(job, job1=None, job2=None, s1=None, s2=None):
             except KeyError:
                 raise KeyError(get_time() + 'No Job-derived object exists for the string:', job[key]
                                + ', please provide the actual <Job> object instead of <str>')
-        elif isinstance(job[key], Job):
+        elif isinstance(job[key], type):
             pass
         elif isinstance(job[key], dict):
             job[key] = Settings(job[key])
