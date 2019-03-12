@@ -1,4 +1,4 @@
-.. _path:
+.. _Path:
 
 path
 ====

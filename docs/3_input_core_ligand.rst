@@ -1,3 +1,5 @@
+.. _Input Cores and Ligands:
+
 input_cores & input_ligands
 ===========================
 

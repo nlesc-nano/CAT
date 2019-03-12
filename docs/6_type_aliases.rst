@@ -1,3 +1,5 @@
+.. _Type Aliases:
+
 Type Aliases
 ============
 

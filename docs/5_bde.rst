@@ -1,26 +1,32 @@
+.. _Bond Dissociation Energy:
+
 Bond Dissociation Energy
 ========================
 
 Calculate the bond dissociation energy (BDE) of ligands attached to the
 surface of the core. The calculation consists of five distinct steps:
 
-    1.  Dissociate all *n*2*(n-1)* combinations of 1 ligand (X), 1 Cd atom and
-    1 other ligand (X).
+    1.  Dissociate all combinations of *n* ligands (Y, see
+    **qd.dissociate.lig_count**) and an atom from the core (X, see
+    **qd.dissociate.core_atom**) within a radius *r* from aforementioned
+    core atom (see **qd.dissociate.lig_core_dist**).
+    General structure: |XYn|.
 
-    2.  Optimize the geometry of the CdX\ :sub:`2`\ structure with ADF MOPAC
-    [1_, 2_, 3_].
+    2.  Optimize the geometry of |XYn| at the first level of theory
+    (lvl1): ADF MOPAC [1_, 2_, 3_].
 
-    3.  Calculate the "electronic" contribution to the BDE (|dE|) with
-    ADF MOPAC [1_, 2_, 3_] for all partially dissociated compounds
-    created in step 1. This step consists of single point calculations.
+    3.  Calculate the "electronic" contribution to the BDE (|dE|)
+    at the first level of theory (lvl1): ADF MOPAC [1_, 2_, 3_].
+    This step consists of single point calculations of the complete
+    quantum dot, |XYn| and all |XYn|-dissociated quantum dots.
 
-    4.  Calculate the thermal contribution to the BDE (|ddG|) with
-    ADF UFF [4_, 5_]. This step consists of geometry optimizations and
-    frequency analyses.
+    4.  Calculate the thermalchemical contribution to the BDE (|ddG|) at the
+    second level of theory (lvl2): ADF UFF [4_, 5_]. This step consists
+    of geometry optimizations and frequency analyses of the same
+    compounds used for step 3.
 
-    5.  |dG| = |dE_lvl1| + |ddG_lvl2| = |dE_lvl1| + ( |dG_lvl2| - |dE_lvl2| )
-
-
+    5.  |dG| = |dE_lvl1| + |ddG_lvl2| = |dE_lvl1| + ( |dG_lvl2| - |dE_lvl2|
+    ).
 
 Default Settings
 ~~~~~~~~~~~~~~~~
@@ -30,42 +36,141 @@ Default Settings
     optional:
         qd:
             dissociate:
+                core_atom: 'Cd'
+                lig_count: 2
+                core_core_dist: 5.0
+                lig_core_dist: 5.0
+                topology:
+                    6: vertice
+                    7: edge
+                    9: face
+
                 job1: AMSJob
+                s1: True
                 job2: AMSJob
-                s1: None
-                s2: None
+                s2: True
 
 Arguments
 ~~~~~~~~~
 
-**qd.dissociate.job1** |None|_, |str|_ or |type|_ = *None*
+**qd.dissociate.core_atom** |str|_ or |int|_ = *Cd*
 
-    The Job type used for calculating the "electronic" component (|dE_lvl1|) of
-    the bond dissociation energy. Involves single point calculations.
-    Setting it to |None|_ will default to |AMSJob|_.
-
-    |
-
-**qd.dissociate.job2** |None|_, |bool|_, |str|_ or |type|_ = *None*
-
-    The Job type used for calculating the thermal component (|ddG_lvl2|) of the
-    bond dissociation energy. Involves a geometry reoptimizations and frequency
-    analyses.
-    Setting it to |None|_ will default to |AMSJob|_.
+    The atomic number or atomic symbol of the core atoms which are to be
+    dissociated. The core atoms are dissociated in combination with *n* ligands
+    (see **qd.dissociate.lig_count**).
 
     |
 
-**qd.dissociate.s1** |None|_, |str|_ or |Settings|_ = *None*
+**qd.dissociate.lig_count** |int|_ = *2*
 
-    The Job settings used for calculating the "electronic" component
+    The number of ligands which is to be dissociated in combination with a
+    single core atom (see **qd.dissociate.core_atom**).
+
+    |
+
+**qd.dissociate.core_core_dist** |float|_ = *5.0*
+
+    The maximum to be considered distance between atoms in
+    **qd.dissociate.core_atom**.
+    Used for determining the topology of the core atom
+    (see **qd.dissociate.topology**) and whether it is exposed to the
+    surface of the core or not. It is recommended to use a radius which
+    encapsulates a single (complete) shell of neighbours.
+
+    |
+
+**qd.dissociate.lig_core_dist** |float|_ = *5.0*
+
+    Dissociate all possible combinations of *n* ligands and a single core atom
+    (see **qd.dissociate.core_atom**) within a given radius (Ångström)
+    from aforementioned core atom. The number of ligands dissociated in
+    combination with a single core atom is controlled by
+    **qd.dissociate.lig_count**.
+
+    .. image:: _images/BDE_XY2.png
+        :scale: 25 %
+        :align: center
+
+    |
+
+**qd.dissociate.topology** |dict|_ =
+{*6*: *vertice*, *7*: *edge*, *9*: *face*}
+
+    A dictionary which translates the number neighbouring core atoms
+    (see **qd.dissociate.core_atom** and **qd.dissociate.core_core_dist**)
+    into a topology. Keys represent the number of neighbours, values represent
+    the matching topology.
+
+    |
+
+Arguments - Job Customization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**qd.dissociate.job1** |bool|_, |str|_ or |type|_ = *AMSJob*
+
+    The job |type|_ used for calculating the "electronic" component
     (|dE_lvl1|) of the bond dissociation energy.
+    Alternatively, |str|_ can be provided as alias for a specific
+    job type (see :ref:`Type Aliases`).
+    Setting it to *True* will default to |type|_ (|AMSJob|_), while *False*
+    is equivalent to ``optional.qd.dissociate = False``.
 
     |
 
-**qd.dissociate.s2** |None|_, |bool|_, |str|_ or |Settings|_ = *None*
+**qd.dissociate.s1** |bool|_, |str|_ or |Settings|_ =
 
-    The Job settings used for calculating the thermal component (|ddG_lvl2|)
+    ::
+
+        s1:
+            input:
+                mopac:
+                    model: PM7
+                ams:
+                    system:
+                        charge: 0
+
+    The job |Settings|_ used for calculating the "electronic" component
+    (|dE_lvl1|) of the bond dissociation energy. Alternatively, a path
+    (|str|_) can be provided to .json or .yaml file containing the job
+    settings.
+    Setting it to *True* will default to the *MOPAC* block in
+    CAT/data/templates/qd.yaml_, while *False* is equivalent to
+    ``optional.qd.dissociate = False``.
+
+    |
+
+**qd.dissociate.job2** |bool|_, |str|_ or |type|_ = *AMSJob*
+
+    The job |type|_ used for calculating the thermal component (|ddG_lvl2|)
     of the bond dissociation energy.
+    Alternatively, |str|_ can be provided as alias for a specific
+    job type (see :ref:`Type Aliases`).
+    Involves a geometry reoptimizations and frequency analyses.
+    Setting it to *True* will default to |type|_ (|AMSJob|_),
+    while *False* will skip the thermochemical analysis.
+
+    |
+
+**qd.dissociate.s2** |bool|_, |str|_ or |Settings|_ =
+
+    ::
+
+        s2:
+            input:
+                uff:
+                    library: uff
+                ams:
+                    system:
+                        charge: 0
+                        bondorders:
+                            _1: null
+
+    The job |Settings|_ used for calculating the thermal component (|ddG_lvl2|)
+    of the bond dissociation energy. Alternatively, a path (|str|_) can
+    be provided to .json or .yaml file containing the job settings.
+    Setting it to *True* will default to the the *MOPAC* block in
+    CAT/data/templates/qd.yaml_, while *False* will skip the thermochemical
+    analysis.
 
     |
 
@@ -74,6 +179,7 @@ Arguments
 .. _3: https://doi.org/10.1007/s00894-012-1667-x
 .. _4: https://doi.org/10.1021/ja00051a040
 .. _5: https://www.scm.com/doc/UFF/index.html
+.. _qd.yaml: https://github.com/BvB93/CAT/blob/master/CAT/data/templates/qd.yaml
 
 .. _AMSJob: https://www.scm.com/doc/plams/interfaces/ams.html#amsjob-api
 .. _Job: https://www.scm.com/doc/plams/components/jobs.html#job-api
@@ -82,7 +188,9 @@ Arguments
 .. _bool: https://docs.python.org/3/library/stdtypes.html#boolean-values
 .. _str: https://docs.python.org/3/library/stdtypes.html#str
 .. _list: https://docs.python.org/3/library/stdtypes.html#list
+.. _dict: https://docs.python.org/3/library/stdtypes.html#dict
 .. _int: https://docs.python.org/3/library/functions.html#int
+.. _float: https://docs.python.org/3/library/functions.html#float
 .. _None: https://docs.python.org/3/library/constants.html#None
 
 .. |AMSJob| replace:: ``AMSJob``
@@ -92,7 +200,9 @@ Arguments
 .. |bool| replace:: ``bool``
 .. |str| replace:: ``str``
 .. |list| replace:: ``list``
+.. |dict| replace:: ``dict``
 .. |int| replace:: ``int``
+.. |float| replace:: ``float``
 .. |None| replace:: ``None``
 
 .. |dE| replace:: d\ *E*
@@ -102,3 +212,4 @@ Arguments
 .. |dG_lvl2| replace:: d\ *G*\ :sub:`lvl2`
 .. |ddG| replace:: dd\ *G*
 .. |ddG_lvl2| replace:: dd\ *G*\ :sub:`lvl2`
+.. |XYn| replace:: XY\ :sub:`n`
