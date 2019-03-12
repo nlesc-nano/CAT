@@ -3,7 +3,6 @@ path: /Users/basvanbeek/Documents/CdSe/Week_5
 input_cores:
     - Cd68Se55.xyz:
         guess_bonds: False
-        indices: [149, 143]
 
 input_ligands:
     - OC
