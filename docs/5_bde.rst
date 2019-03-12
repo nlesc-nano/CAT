@@ -41,32 +41,33 @@ Arguments
 **qd.dissociate.job1** |None|_, |str|_ or |type|_ = *None*
 
     The Job type used for calculating the "electronic" component (|dE_lvl1|) of
-    the bond dissociation energy. Jobs c
-    |None|_ will default to |AMSJob|_.
+    the bond dissociation energy. Involves single point calculations.
+    Setting it to |None|_ will default to |AMSJob|_.
 
     |
 
 **qd.dissociate.job2** |None|_, |bool|_, |str|_ or |type|_ = *None*
 
     The Job type used for calculating the thermal component (|ddG_lvl2|) of the
-    bond dissociation energy. Setting it to |None|_ will default to |AMSJob|_.
+    bond dissociation energy. Involves a geometry reoptimizations and frequency
+    analyses.
+    Setting it to |None|_ will default to |AMSJob|_.
 
     |
 
 **qd.dissociate.s1** |None|_, |str|_ or |Settings|_ = *None*
 
-    The Job type used for calculating the "electronic" component (|dE_lvl1|) of
-    the bond dissociation energy.
+    The Job settings used for calculating the "electronic" component
+    (|dE_lvl1|) of the bond dissociation energy.
 
     |
 
 **qd.dissociate.s2** |None|_, |bool|_, |str|_ or |Settings|_ = *None*
 
-    The Job type used for calculating the thermal component (|ddG_lvl2|) of the
-    bond dissociation energy.
+    The Job settings used for calculating the thermal component (|ddG_lvl2|)
+    of the bond dissociation energy.
 
     |
-
 
 .. _1: https://www.scm.com/doc/MOPAC/Introduction.html
 .. _2: http://openmopac.net
