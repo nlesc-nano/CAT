@@ -2,7 +2,7 @@
 
 __all__ = ['init_bde']
 
-from itertools import chain
+from itertools import chain, combinations
 
 import numpy as np
 import pandas as pd
@@ -14,7 +14,6 @@ from scm.plams.core.functions import (init, finish, config)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 
 from .jobs import (job_single_point, job_geometry_opt, job_freq)
-from .ligand_dissociate import dissociate_ligand
 from .. import utils as CAT
 from ..mol_utils import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
@@ -38,7 +37,7 @@ def init_bde(mol_list, arg):
 
     # Check if the calculation has been done already
     if 'qd' not in arg.optional.database.overwrite:
-        previous_entries = get_empty_columns('BDE dG', arg, database='qd')
+        previous_entries = get_empty_columns('BDE dE', arg, database='qd')
         mol_list = [mol for mol in mol_list if
                     (mol.properties.core, mol.properties.core_anchor,
                      mol.properties.ligand, mol.properties.ligand_anchor) not in previous_entries]
@@ -53,7 +52,7 @@ def init_bde(mol_list, arg):
         lig = get_cdx2(mol)
         core = dissociate_ligand(mol)
 
-        # Construct a series
+        # Construct a Series
         index = list(zip(*[cor.properties.mark for cor in core]))
         index[1] = get_topology(mol, index[1])
         index = [str(i) + ' ' + j + ' ' + str(k) for i, j, k in zip(*index)]
@@ -225,28 +224,63 @@ def get_cdx2(mol, ion='Cd'):
     return CdX2
 
 
-def get_topology(mol, idx_list, max_dist=5.0):
-    """ Return the topology of all atoms *idx_list*, a list of atomic indices. The returned topology
-    is based on the number of atoms with a radius *max_dist* from a reference atom. Only atoms with
-    the same atomic number as those in *idx_list* will be considered, which in turn should all have
-    identical atomic symbols.
+def filter_core(xyz_array, idx, topology_dict, max_dist=5.0, ret_threshold=0.5):
+    """ """
+    # Create a distance matrix and find all elements with a distance smaller than **max_dist**
+    dist = cdist(xyz_array[idx], xyz_array[idx])
+    np.fill_diagonal(dist, max_dist+1)
+    xy = np.array(np.where(dist <= max_dist))
+    bincount = np.bincount(xy[0], minlength=len(idx))
 
-    mol <plams.Molecule>: A PLAMS molecule.
-    idx_list <list>: A list of atomic indices.
-    max_dist <float>: The maximum interatomic distance which is to be considered in topology
-        determination.
-    return <list>: A list of the topologies in idx_list. Can be either a <str> or <None> if the
-        topology is not recognized.
-    """
-    # Create a dictionary which translates the number of neighbours to a topology
-    neighbour_dict = {0: None, 1: None, 2: None, 3: None, 4: None, 5: None, 6: None,
-                      7: 'Vertice', 8: 'Edge', 9: 'Face', 10: None, 11: None}
-    atnum = mol[idx_list[0]].atnum
+    # Slice xyz_array, creating arrays of reference atoms and neighbouring atoms
+    x = xyz_array[idx]
+    y = xyz_array[idx[xy[1]]]
 
-    # Create an array with the number of neighbouring atoms in idx_list
-    array = mol.as_array(atom_subset=[mol[idx] for idx in idx_list])
-    array_other = mol.as_array(atom_subset=[at for at in mol.atoms if at.atnum == atnum])
-    dist = cdist(array, array_other)
-    dist_count = np.bincount(np.where(dist <= max_dist)[0])
+    # Calculate the length of a vector from a reference atom to the mean position of its neighbours
+    # A vector length close to 0.0 implies that a reference atom is surrounded by neighbours in
+    # a more or less spherical pattern (i.e. it is not exposed to the surface)
+    vec_length = np.empty((bincount.shape[0], 3), dtype=float)
+    k = 0
+    for i, j in enumerate(bincount):
+        vec_length[i] = x[i] - np.average(y[k:k+j], axis=0)
+        k += j
+    vec_length = np.linalg.norm(vec_length, axis=1)
 
-    return [neighbour_dict[i] + '_' + str(j) for i, j in zip(dist_count, idx_list)]
+    return idx[np.where(vec_length > ret_threshold)[0]], get_topology(bincount, topology_dict)
+
+
+def get_topology(bincount, topology_dict):
+    """ """
+    ret = []
+    for i in bincount:
+        try:
+            ret.append(topology_dict[i])
+        except KeyError:
+            ret.append(str(i) + '_neighbours')
+    return ret
+
+
+def filter_lig_core(xyz_array, idx_lig, idx_core, max_dist=5.0):
+    """ """
+    dist = cdist(xyz_array[idx_lig], xyz_array[idx_core]).T
+    xy = np.array(np.where(dist <= max_dist))
+    bincount = np.bincount(xy[0])
+    xy = xy[:, [i for i, j in enumerate(xy[0]) if bincount[j] >= 2]]
+    xy[0] = idx_core[xy[0]]
+    xy[1] += 1
+
+    return xy
+
+
+def get_lig_core_combinations(xy, res_list, lig_count=2):
+    """ """
+    ret = {}
+    for x, y in xy.T:
+        try:
+            ret[res_list[0][x].id].append([at.id for at in res_list[y]])
+        except KeyError:
+            ret[res_list[0][x].id] = [[at.id for at in res_list[y]]]
+    for i in ret:
+        ret[i] = combinations(ret[i], lig_count)
+
+    return ret
