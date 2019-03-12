@@ -321,15 +321,16 @@ def mol_to_database(mol_list, arg, database='ligand'):
 
 def export_mol(mol_list, arg, database='ligand'):
     """ """
-    path = join(arg.optional[database].dirname, mol.properties.name)
     if database in arg.optional.database.overwrite:
         for mol in mol_list:
+            path = join(arg.optional[database].dirname, mol.properties.name)
             if 'pdb' in arg.optional.database.mol_format:
                 molkit.writepdb(mol, path + '.pdb')
             if 'xyz' in arg.optional.database.mol_format:
                 mol.write(path + '.xyz')
     else:
         for mol in mol_list:
+            path = join(arg.optional[database].dirname, mol.properties.name)
             if 'pdb' in arg.optional.database.mol_format and not isfile(path + '.pdb'):
                 molkit.writepdb(mol, path + '.pdb')
             if 'xyz' in arg.optional.database.mol_format and not isfile(path + '.xyz'):
