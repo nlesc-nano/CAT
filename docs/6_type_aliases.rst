@@ -9,7 +9,10 @@ the input settings for **CAT**. Aliases are insensitive towards capitalization
 (or lack thereof).
 
 A comprehensive list of |Job|_ subclasses and their respective
-aliases (|str|_) is presented below:
+aliases (|str|_) is presented below.
+
+Aliases
+~~~~~~~
 
 -   |ADFJob|_ = *adf* = *adfjob*
 

@@ -9,8 +9,9 @@ surface of the core. The calculation consists of five distinct steps:
     1.  Dissociate all combinations of *n* ligands (Y, see
     **qd.dissociate.lig_count**) and an atom from the core (X, see
     **qd.dissociate.core_atom**) within a radius *r* from aforementioned
-    core atom (see **qd.dissociate.lig_core_dist**).
-    General structure: |XYn|.
+    core atom (see **qd.dissociate.lig_core_dist** and
+    **qd.dissociate.core_core_dist**).
+    The dissociated compound has the general structure of |XYn|.
 
     2.  Optimize the geometry of |XYn| at the first level of theory
     (lvl1): ADF MOPAC [1_, 2_, 3_].
@@ -36,7 +37,7 @@ Default Settings
     optional:
         qd:
             dissociate:
-                core_atom: 'Cd'
+                core_atom: Cd
                 lig_count: 2
                 core_core_dist: 5.0
                 lig_core_dist: 5.0
@@ -55,22 +56,24 @@ Arguments
 
 **qd.dissociate.core_atom** |str|_ or |int|_ = *Cd*
 
-    The atomic number or atomic symbol of the core atoms which are to be
+    The atomic number or atomic symbol of the core atoms (X) which are to be
     dissociated. The core atoms are dissociated in combination with *n* ligands
-    (see **qd.dissociate.lig_count**).
+    (Y, see **qd.dissociate.lig_count**).
+    Yields a compound with the general formula |XYn|.
 
     |
 
 **qd.dissociate.lig_count** |int|_ = *2*
 
-    The number of ligands which is to be dissociated in combination with a
-    single core atom (see **qd.dissociate.core_atom**).
+    The number of ligands, *n*, which is to be dissociated in combination
+    with a single core atom (X, see **qd.dissociate.core_atom**).
+    Yields a compound with the general formula |XYn|.
 
     |
 
 **qd.dissociate.core_core_dist** |float|_ = *5.0*
 
-    The maximum to be considered distance between atoms in
+    The maximum to be considered distance (Ångström) between atoms in
     **qd.dissociate.core_atom**.
     Used for determining the topology of the core atom
     (see **qd.dissociate.topology**) and whether it is exposed to the
@@ -101,23 +104,30 @@ Arguments
     into a topology. Keys represent the number of neighbours, values represent
     the matching topology.
 
+    Note: values can take on any user-specified value (*e.g.* Miller indices)
+    and are thus not limited to *vertice*, *edge* or *face*.
+
     |
 
 Arguments - Job Customization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**qd.dissociate.job1** |bool|_, |str|_ or |type|_ = *AMSJob*
+**qd.dissociate.job1** |type|_, |str|_ or |bool|_ = *AMSJob*
 
-    The job |type|_ used for calculating the "electronic" component
-    (|dE_lvl1|) of the bond dissociation energy.
-    Alternatively, |str|_ can be provided as alias for a specific
+    A |type|_ object of a |Job|_ subclass, used for calculating the
+    "electronic" component (|dE_lvl1|) of the bond dissociation energy.
+    Involves single point calculations.
+
+    Alternatively, an alias (|str|_) can be provided for a specific
     job type (see :ref:`Type Aliases`).
-    Setting it to *True* will default to |type|_ (|AMSJob|_), while *False*
-    is equivalent to ``optional.qd.dissociate = False``.
+
+    Setting it to *True* (|bool|_) will default to |type|_ (|AMSJob|_),
+    while *False* (|bool|_) is equivalent to
+    ``optional.qd.dissociate = False``.
 
     |
 
-**qd.dissociate.s1** |bool|_, |str|_ or |Settings|_ =
+**qd.dissociate.s1** |Settings|_, |str|_ or |bool|_ =
 
     ::
 
@@ -130,28 +140,33 @@ Arguments - Job Customization
                         charge: 0
 
     The job |Settings|_ used for calculating the "electronic" component
-    (|dE_lvl1|) of the bond dissociation energy. Alternatively, a path
-    (|str|_) can be provided to .json or .yaml file containing the job
-    settings.
-    Setting it to *True* will default to the *MOPAC* block in
-    CAT/data/templates/qd.yaml_, while *False* is equivalent to
+    (|dE_lvl1|) of the bond dissociation energy.
+
+    Alternatively, a path (|str|_) can be provided to .json or .yaml file
+    containing the job settings.
+
+    Setting it to *True* (|bool|_) will default to the *MOPAC* block in
+    CAT/data/templates/qd.yaml_, while *False* (|bool|_) is equivalent to
     ``optional.qd.dissociate = False``.
 
     |
 
-**qd.dissociate.job2** |bool|_, |str|_ or |type|_ = *AMSJob*
+**qd.dissociate.job2** |type|_, |str|_ or |bool|_ = *AMSJob*
 
-    The job |type|_ used for calculating the thermal component (|ddG_lvl2|)
-    of the bond dissociation energy.
-    Alternatively, |str|_ can be provided as alias for a specific
-    job type (see :ref:`Type Aliases`).
+    A |type|_ object of a |Job|_ subclass, used for calculating the
+    thermal component (|ddG_lvl2|) of the bond dissociation energy.
     Involves a geometry reoptimizations and frequency analyses.
-    Setting it to *True* will default to |type|_ (|AMSJob|_),
-    while *False* will skip the thermochemical analysis.
+
+    Alternatively, an alias (|str|_) can be provided for a specific
+    job type (see :ref:`Type Aliases`).
+
+
+    Setting it to *True* (|bool|_) will default to |type|_ (|AMSJob|_),
+    while *False* (|bool|_) will skip the thermochemical analysis completely.
 
     |
 
-**qd.dissociate.s2** |bool|_, |str|_ or |Settings|_ =
+**qd.dissociate.s2** |Settings|_, |str|_ or |bool|_ =
 
     ::
 
@@ -166,11 +181,14 @@ Arguments - Job Customization
                             _1: null
 
     The job |Settings|_ used for calculating the thermal component (|ddG_lvl2|)
-    of the bond dissociation energy. Alternatively, a path (|str|_) can
-    be provided to .json or .yaml file containing the job settings.
-    Setting it to *True* will default to the the *MOPAC* block in
-    CAT/data/templates/qd.yaml_, while *False* will skip the thermochemical
-    analysis.
+    of the bond dissociation energy.
+
+    Alternatively, a path (|str|_) can be provided to .json or .yaml file
+    containing the job settings.
+
+    Setting it to *True* (|bool|_) will default to the the *MOPAC* block in
+    CAT/data/templates/qd.yaml_, while *False* (|bool|_) will skip the
+    thermochemical analysis completely.
 
     |
 
@@ -213,3 +231,4 @@ Arguments - Job Customization
 .. |ddG| replace:: dd\ *G*
 .. |ddG_lvl2| replace:: dd\ *G*\ :sub:`lvl2`
 .. |XYn| replace:: XY\ :sub:`n`
+.. |Yn| replace:: Y\ :sub:`n`

@@ -3,7 +3,7 @@
 General Overview & Getting Started
 ==================================
 
-A basic recipe for running **CAT**:**
+A basic recipe for running **CAT**:
 
 1.  Create two directories named ‘core’ and ‘ligand’. The 'core' directory
 should contain the input cores & the 'ligand' should contain the input
@@ -21,6 +21,9 @@ As is implied by the name, everything in ``optional`` is completely optional.
 4.  Congratulations, you just ran
 **CAT**!
 
+The default **CAT** settings, at various levels of verbosity, are provided
+below.
+
 Default Settings
 ~~~~~~~~~~~~~~~~
 
@@ -36,8 +39,8 @@ Default Settings
         - OC(C)=O
         - OC(CC)=O
 
-More verbose default Settings
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Verbose default Settings
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 ::
 
@@ -75,5 +78,58 @@ More verbose default Settings
             optimize: False
             activation_strain: False
             dissociate: False
+
+Maximum verbose default Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+::
+
+    path: None
+
+    input_cores:
+        - Cd68Se55.xyz:
+            guess_bonds: False
+
+    input_ligands:
+        - OC(C)=O
+        - OC(CC)=O
+
+    optional:
+        database:
+            dirname: database
+            read: True
+            write: True
+            overwrite: False
+            mol_format: [pdb, xyz]
+            mongodb: False
+
+        core:
+            dirname: core
+            dummy: Cl
+
+        ligand:
+            dirname: ligand
+            optimize: True
+            split: True
+            cosmo-rs: False
+
+        qd:
+            dirname: QD
+            optimize: False
+            activation_strain: False
+            dissociate:
+                core_atom: Cd
+                lig_count: 2
+                core_core_dist: 5.0
+                lig_core_dist: 5.0
+                topology:
+                    6: vertice
+                    7: edge
+                    9: face
+
+                job1: False
+                s1: False
+                job2: False
+                s2: False
 
 .. _input_settings.yaml: https://github.com/BvB93/CAT/blob/devel/examples/input_settings.yaml
