@@ -22,7 +22,6 @@ def init_solv(mol_list, arg, solvent_list=None):
     """ Initialize the solvation energy calculation. """
     # Prepare the job settings and solvent list
     job_recipe = arg.optional.ligand.crs
-    job_recipe.s1.input.mopac.Mozyme = 'Yes'
     if solvent_list is None:
         path = join(join(dirname(dirname(__file__)), 'data'), 'coskf')
         solvent_list = [join(path, solv) for solv in os.listdir(path) if
