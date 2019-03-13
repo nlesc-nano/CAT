@@ -3,10 +3,9 @@
 __all__ = ['get_topology_dict']
 
 import copy
-import itertools
+from itertools import combinations, chain
 
 import numpy as np
-
 
 def dissociate_ligand(mol):
     """
@@ -18,7 +17,7 @@ def dissociate_ligand(mol):
     """
     mol.set_atoms_id()
     mol.properties.charge = 0
-    from_iter = itertools.chain.from_iterable
+    from_iter = chain.from_iterable
     res_dict = get_residue_dict(mol)
     core_array = np.array([at.coords for at in res_dict[1]])
     del res_dict[1]

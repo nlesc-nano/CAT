@@ -63,12 +63,15 @@ def dict_concatenate(dic):
     return concact_dic
 
 
-def get_template(template_name):
+def get_template(template_name, from_cat_data=True):
     """
     Grab a template and return it as Settings object.
     """
-    path = join('data/templates', template_name)
-    xs = pkg.resource_string('CAT', path)
+    if from_cat_data:
+        path = join('data/templates', template_name)
+        xs = pkg.resource_string('CAT', path)
+    else:
+        xs = path
     if 'json' in template_name:
         s = json.loads(xs.decode())
     elif 'yaml' in template_name or 'yml' in template_name:
