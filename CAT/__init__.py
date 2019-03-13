@@ -8,7 +8,7 @@ from .__version__ import __version__
 
 from .analysis import (
     init_asa, CRSJob, CRSResults, job_single_point, job_geometry_opt, job_freq,
-    init_bde, get_thermo, get_entropy, dissociate_ligand, init_solv
+    init_bde, get_thermo, get_entropy, init_solv
 )
 
 from .attachment import (
@@ -26,7 +26,7 @@ from .utils import get_template
 
 __all__ = [
     'init_asa', 'CRSJob', 'CRSResults', 'job_single_point', 'job_geometry_opt', 'job_freq',
-    'init_bde', 'get_thermo', 'get_entropy', 'dissociate_ligand', 'init_solv',
+    'init_bde', 'get_thermo', 'get_entropy', 'init_solv',
 
     'init_qd_opt', 'init_ligand_opt', 'init_qd_construction', 'init_ligand_anchoring',
 
