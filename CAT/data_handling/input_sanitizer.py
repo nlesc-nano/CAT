@@ -478,14 +478,16 @@ def val_dissociate(dissociate):
     if ret.job1 is True:
         ret.job1 = AMSJob
     elif isinstance(ret.job1, str):
-        ret.job1 = str_to_class(ret.job1.lower())
+        ret.job1 = str_to_class[ret.job1.lower()]
 
     # Interpret job2
     assert isinstance(ret.job2, (bool, type, str))
     if ret.job2 is True:
         ret.job2 = AMSJob
+    elif ret.job2 is False:
+        ret.s2 = False
     elif isinstance(ret.job2, str):
-        ret.job2 = str_to_class(ret.job2.lower())
+        ret.job2 = str_to_class[ret.job2.lower()]
 
     # Interpret s1
     assert isinstance(ret.s1, (bool, dict, str))
@@ -501,6 +503,8 @@ def val_dissociate(dissociate):
     assert isinstance(ret.s2, (bool, dict, str))
     if ret.s2 is True:
         ret.s2 = CAT.get_template('qd.yaml')['UFF']
+    elif ret.s2 is False:
+        ret.job2 = False
     elif isinstance(ret.s2, str):
         if isfile(ret.s2):
             ret.s2 = CAT.get_template(ret.s2, from_cat_dataj=False)

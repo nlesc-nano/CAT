@@ -26,19 +26,32 @@ def export_job_settings(job_recipe, arg, job_type=('geometry', 'geometry')):
     """ Export job settings to job_settings.yaml. """
     # Prepare the job settings
     if isinstance(job_recipe, bool):
-        jobs = 'RDKit', 'RDKit'
-        settings = 'UFF', 'UFF'
+        jobs = 'RDKit', None
+        settings = 'UFF', None
+
+    elif job_recipe.job2 is False:
+        if job_type[0] is not None:
+            s = qmflows.get_template(job_type[0] +
+                                      '.json')['specific'][type_to_string(job_recipe.job1)]
+        else:
+            s = Settings()
+        s.update(job_recipe.s)
+        settings = _sanitize_settings(s), None
+        jobs = str(job_recipe.job1).rsplit('.', 1)[-1].split("'")[0], None
+
     else:
         if job_type[0] is not None:
             s1 = qmflows.get_template(job_type[0] +
                                       '.json')['specific'][type_to_string(job_recipe.job1)]
         else:
             s1 = Settings()
+
         if job_type[1] is not None:
             s2 = qmflows.get_template(job_type[1] +
                                       '.json')['specific'][type_to_string(job_recipe.job2)]
         else:
             s2 = Settings()
+
         s1.update(job_recipe.s1)
         s2.update(job_recipe.s2)
         settings = _sanitize_settings(s1), _sanitize_settings(s2)
@@ -56,13 +69,16 @@ def export_job_settings(job_recipe, arg, job_type=('geometry', 'geometry')):
     # Update the job settings database
     idx = []
     for job, s in zip(jobs, settings):
-        if job not in yml:
-            yml[job] = []
-        if s in yml[job]:
-            idx.append(job + ' ' + str(yml[job].index(s)))
+        if job and s:
+            if job not in yml:
+                yml[job] = []
+            if s in yml[job]:
+                idx.append(job + ' ' + str(yml[job].index(s)))
+            else:
+                yml[job].append(s)
+                idx.append(job + ' ' + str(len(yml[job]) - 1))
         else:
-            yml[job].append(s)
-            idx.append(job + ' ' + str(len(yml[job]) - 1))
+            idx.append(None)
 
     # Write the job settings database
     with open(yml_file, 'w') as file:
@@ -314,7 +330,7 @@ def mol_to_database(mol_list, arg, database='ligand'):
 
     # Optional: export molecules to filetypes other than .hdf5
     if arg.optional.database.mol_format:
-        export_mol(mol_list, arg, database='ligand')
+        export_mol(mol_list, arg, database)
 
     print(get_time() + database + '_database.csv has been updated\n')
 
@@ -323,14 +339,14 @@ def export_mol(mol_list, arg, database='ligand'):
     """ """
     if database in arg.optional.database.overwrite:
         for mol in mol_list:
-            path = join(arg.optional[database].dirname, mol.properties.name)
+            path = join(arg.optional[database.lower()].dirname, mol.properties.name)
             if 'pdb' in arg.optional.database.mol_format:
                 molkit.writepdb(mol, path + '.pdb')
             if 'xyz' in arg.optional.database.mol_format:
                 mol.write(path + '.xyz')
     else:
         for mol in mol_list:
-            path = join(arg.optional[database].dirname, mol.properties.name)
+            path = join(arg.optional[database.lower()].dirname, mol.properties.name)
             if 'pdb' in arg.optional.database.mol_format and not isfile(path + '.pdb'):
                 molkit.writepdb(mol, path + '.pdb')
             if 'xyz' in arg.optional.database.mol_format and not isfile(path + '.xyz'):
@@ -544,7 +560,7 @@ def property_to_database(df_new, arg, database='ligand', prop='cosmo-rs'):
         idx = export_job_settings(recipe, arg, job_type=('singlepoint', None))
         df_new.loc['solv settings1', :], df_new.loc['solv settings2', :] = idx
     elif prop == 'bde':
-        recipe = arg.optional.qd.dissociation
+        recipe = arg.optional.qd.dissociate
         idx = export_job_settings(recipe, arg, job_type=('singlepoint', 'freq'))
         df_new.loc['bde settings1', :], df_new.loc['bde settings2', :] = idx
 

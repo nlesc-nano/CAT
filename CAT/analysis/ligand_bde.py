@@ -11,13 +11,14 @@ from scipy.spatial.distance import cdist
 from scm.plams.mol.molecule import Molecule
 from scm.plams.mol.atom import Atom
 from scm.plams.core.functions import (init, finish, config)
+from scm.plams.core.settings import Settings
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 
 from .jobs import (job_single_point, job_geometry_opt, job_freq)
 from .. import utils as CAT
 from ..mol_utils import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
-from ..data_handling.database import (property_to_database, get_empty_columns)
+from ..data_handling.database import (property_to_database, get_empty_columns, _anchor_to_idx)
 
 
 def init_bde(mol_list, arg):
@@ -40,23 +41,20 @@ def init_bde(mol_list, arg):
         previous_entries = get_empty_columns('BDE dE', arg, database='qd')
         mol_list = [mol for mol in mol_list if
                     (mol.properties.core, mol.properties.core_anchor,
-                     mol.properties.ligand, mol.properties.ligand_anchor) not in previous_entries]
+                     mol.properties.ligand, mol.properties.ligand_anchor) in previous_entries]
         if not mol_list:
             return
 
     # Prepare the dataframe
     df = _get_bde_df()
-
     for mol in mol_list:
         # Ready YX2 and the YX2 dissociated quantum dots
         lig = get_cdx2(mol)
-        core = dissociate_ligand(mol)
+        core = dissociate_ligand(mol, arg)
 
         # Construct a Series
-        index = list(zip(*[cor.properties.mark for cor in core]))
-        index[1] = get_topology(mol, index[1])
-        index = [str(i) + ' ' + j + ' ' + str(k) for i, j, k in zip(*index)]
-        series = _get_bde_series(index, mol)
+        index = [i.properties.df_index for i in core]
+        series = _get_bde_series(index, mol, job_recipe.job2)
 
         # Fill the series with energies
         init(path=mol.properties.path, folder='BDE')
@@ -65,9 +63,6 @@ def init_bde(mol_list, arg):
         if job_recipe.job2 and job_recipe.s2:
             series['BDE ddG'] = get_bde_ddG(mol, lig, core, job=job_recipe.job2, s=job_recipe.s2)
             series['BDE dG'] = series['BDE dE'] + series['BDE ddG']
-        else:
-            series['BDE ddG'] = np.nan
-            series['BDE dG'] = np.nan
         finish()
 
         # Update the indices of df
@@ -77,6 +72,7 @@ def init_bde(mol_list, arg):
 
         # Update the values of df
         df[series.name] = series
+        import pdb; pdb.set_trace()
 
     # Export the BDE results to the database
     del df[(None, None, None, None)]
@@ -93,12 +89,16 @@ def _get_bde_df():
     return pd.DataFrame(index=idx, columns=columns)
 
 
-def _get_bde_series(index, mol):
+def _get_bde_series(index, mol, job2=True):
     """ Return an empty series for the for loop in init_bde(). """
     name = (mol.properties.core, mol.properties.core_anchor,
             mol.properties.ligand, mol.properties.ligand_anchor)
-    super_index = ['BDE dE', 'BDE ddG', 'BDE dG']
+    if job2:
+        super_index = ['BDE dE', 'BDE ddG', 'BDE dG']
+    else:
+        super_index = ['BDE dE']
     index = [(i, j) for j in index for i in super_index]
+    index.sort()
     index += [('BDE settings1', ''), ('BDE settings2', '')]
     idx = pd.MultiIndex.from_tuples(index, names=['index', 'sub index'])
     return pd.Series(None, index=idx, name=name)
@@ -224,11 +224,74 @@ def get_cdx2(mol, ion='Cd'):
     return CdX2
 
 
+def dissociate_ligand(mol, arg):
+    """ """
+    # Unpack arguments
+    atnum = arg.optional.qd.dissociate.core_atom
+    lig_count = arg.optional.qd.dissociate.lig_count
+    core_core_dist = arg.optional.qd.dissociate.core_core_dist
+    lig_core_dist = arg.optional.qd.dissociate.lig_core_dist
+    topology_dict = arg.optional.qd.dissociate.topology
+
+    # Convert mol
+    mol.set_atoms_id()
+    xyz_array = mol.as_array()
+
+    # Create a nested list of atoms,
+    # each nested element containing all atoms with a given residue number
+    res_list = []
+    for at in mol:
+        try:
+            res_list[at.properties.pdb_info.ResidueNumber - 1].append(at)
+        except IndexError:
+            res_list.append([at])
+
+    # Create a list of all core indices and ligand anchor indices
+    idx_core_old = np.array([j for j, at in enumerate(res_list[0]) if at.atnum == atnum])
+    idx_core, topology = filter_core(xyz_array, idx_core_old, topology_dict, core_core_dist)
+    i, j = len(res_list[0]), len(res_list[1])
+    k = _anchor_to_idx(mol.properties.ligand_anchor)
+    idx_lig = np.arange(i + k, i + k + j * len(res_list[1:]), j) - 1
+
+    # Mark the core atoms with their topologies
+    for i, top in zip(idx_core_old, topology):
+        mol[int(i+1)].properties.topology = top
+
+    # Create a dictionary with core indices as keys and all combinations of 2 ligands as values
+    xy = filter_lig_core(xyz_array, idx_lig, idx_core, lig_core_dist)
+    combinations_dict = get_lig_core_combinations(xy, res_list, lig_count)
+
+    # Create and return new molecules
+    indices = [at.id for at in res_list[0][:-lig_count]] + (idx_lig[:-lig_count] + 1).tolist()
+    return remove_ligands(mol, combinations_dict, indices, idx_lig)
+
+
+def remove_ligands(mol, combinations_dict, indices, idx_lig):
+    """ """
+    ret = []
+    for core in combinations_dict:
+        for lig in combinations_dict[core]:
+            mol_tmp = mol.copy()
+            mol_tmp.properties = Settings()
+            mol_tmp.properties.core_topology = str(mol[core].properties.topology) + '_' + str(core)
+            mol_tmp.properties.lig_residue = sorted([mol[i[0]].properties.pdb_info.ResidueNumber
+                                                     for i in lig])
+            mol_tmp.properties.df_index = mol_tmp.properties.core_topology
+            mol_tmp.properties.df_index += ''.join([' ' + str(i)
+                                                    for i in mol_tmp.properties.lig_residue])
+            delete_idx = sorted([core + 1] + list(chain.from_iterable(lig)), reverse=True)
+            for i in delete_idx:
+                mol_tmp.delete_atom(mol_tmp[i])
+            mol_tmp.properties.indices = indices
+            ret.append(mol_tmp)
+    return ret
+
+
 def filter_core(xyz_array, idx, topology_dict, max_dist=5.0, ret_threshold=0.5):
     """ """
     # Create a distance matrix and find all elements with a distance smaller than **max_dist**
     dist = cdist(xyz_array[idx], xyz_array[idx])
-    np.fill_diagonal(dist, max_dist+1)
+    np.fill_diagonal(dist, max_dist)
     xy = np.array(np.where(dist <= max_dist))
     bincount = np.bincount(xy[0], minlength=len(idx))
 
@@ -249,8 +312,10 @@ def filter_core(xyz_array, idx, topology_dict, max_dist=5.0, ret_threshold=0.5):
     return idx[np.where(vec_length > ret_threshold)[0]], get_topology(bincount, topology_dict)
 
 
-def get_topology(bincount, topology_dict):
+def get_topology(bincount, topology_dict={6: 'vertice', 7: 'edge', 9: 'face'}):
     """ """
+    if isinstance(topology_dict, Settings):
+        topology_dict = topology_dict.as_dict()
     ret = []
     for i in bincount:
         try:
