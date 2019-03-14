@@ -16,6 +16,7 @@ from scm.plams.interfaces.adfsuite.ams import AMSJob
 
 from .jobs import (job_single_point, job_geometry_opt, job_freq)
 from .. import utils as CAT
+from ..utils import get_time
 from ..mol_utils import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
 from ..data_handling.database import (property_to_database, get_empty_columns, _anchor_to_idx)
@@ -38,10 +39,10 @@ def init_bde(mol_list, arg):
 
     # Check if the calculation has been done already
     if 'qd' not in arg.optional.database.overwrite:
-        previous_entries = get_empty_columns('BDE dE', arg, database='qd')
+        empty_columns = get_empty_columns('BDE dE', arg, database='qd')
         mol_list = [mol for mol in mol_list if
                     (mol.properties.core, mol.properties.core_anchor,
-                     mol.properties.ligand, mol.properties.ligand_anchor) in previous_entries]
+                     mol.properties.ligand, mol.properties.ligand_anchor) in empty_columns]
         if not mol_list:
             return
 
@@ -72,7 +73,6 @@ def init_bde(mol_list, arg):
 
         # Update the values of df
         df[series.name] = series
-        import pdb; pdb.set_trace()
 
     # Export the BDE results to the database
     del df[(None, None, None, None)]
@@ -99,7 +99,9 @@ def _get_bde_series(index, mol, job2=True):
         super_index = ['BDE dE']
     index = [(i, j) for j in index for i in super_index]
     index.sort()
-    index += [('BDE settings1', ''), ('BDE settings2', '')]
+    index.append(('BDE settings1', ''))
+    if job2:
+        index.append(('BDE settings2', ''))
     idx = pd.MultiIndex.from_tuples(index, names=['index', 'sub index'])
     return pd.Series(None, index=idx, name=name)
 
@@ -115,20 +117,29 @@ def get_bde_dE(tot, lig, core, job=None, s=None):
         finish()
         raise TypeError('job & s should neither or both be None')
 
-    # Perform single points
+    # Optimize XYn
+    lig.job_geometry_opt(job, s, name='BDE_geometry_optimization')
+    E_lig = lig.properties.energy.E
+    if E_lig is np.nan:
+        print(get_time() + 'WARNING: The BDE XYn geometry optimization failed, skipping further \
+              jobs')
+        return np.full(len(core), np.nan)
+
+    # Perform a single point on the full quantum dot
     tot.job_single_point(job, s, name='BDE_single_point')
+    E_tot = tot.properties.energy.E
+    if E_tot is np.nan:
+        print(get_time() + 'WARNING: The BDE quantum dot single point failed, \
+              skipping further jobs')
+        return np.full(len(core), np.nan)
+
+    # Perform a single point on the quantum dot(s) - XYn
     for mol in core:
         mol.job_single_point(job, s, name='BDE_single_point')
-    lig.job_geometry_opt(job, s, name='BDE_single_point')
-
-    # Extract total energies
-    E_lig = lig.properties.energy.E
     E_core = np.array([mol.properties.energy.E for mol in core])
-    E_tot = tot.properties.energy.E
 
     # Calculate and return dE
     dE = (E_lig + E_core) - E_tot
-
     return dE
 
 
@@ -143,30 +154,37 @@ def get_bde_ddG(tot, lig, core, job=None, s=None):
         finish()
         raise TypeError('job & s should neither or both be None')
 
-    # Perform a constrained geometry optimizations + frequency analyses
+    # Optimize XYn
     s.input.ams.Constraints.Atom = lig.properties.indices
     lig.job_freq(job, s, name='BDE_frequency_analysis')
+    G_lig = lig.properties.energy.G
+    E_lig = lig.properties.energy.E
+    if np.nan in (E_lig, G_lig):
+        print(get_time() + 'WARNING: The BDE XYn geometry optimization + freq analysis failed, \
+              skipping further jobs')
+        return np.full(len(core), np.nan)
+
+    # Optimize the full quantum dot
+    s.input.ams.Constraints.Atom = tot.properties.indices
+    tot.job_freq(job, s, name='BDE_frequency_analysis')
+    G_tot = tot.properties.energy.G
+    E_tot = tot.properties.energy.E
+    if np.nan in (E_tot, G_tot):
+        print(get_time() + 'WARNING: The BDE quantum dot geometry optimization + freq analysis \
+              failed, skipping further jobs')
+        return np.full(len(core), np.nan)
+
+    # Optimize the quantum dot(s) - XYn
     for mol in core:
         s.input.ams.Constraints.Atom = mol.properties.indices
         mol.job_freq(job, s, name='BDE_frequency_analysis')
-    s.input.ams.Constraints.Atom = mol.properties.indices
-    tot.job_freq(job, s, name='BDE_frequency_analysis')
-
-    # Extract total Gibbs free energies
-    G_lig = lig.properties.energy.G
     G_core = np.array([mol.properties.energy.G for mol in core])
-    G_tot = tot.properties.energy.G
-
-    # Extract total energies
-    E_lig = lig.properties.energy.E
     E_core = np.array([mol.properties.energy.E for mol in core])
-    E_tot = tot.properties.energy.E
 
     # Calculate and return dG and ddG
     dG = (G_lig + G_core) - G_tot
     dE = (E_lig + E_core) - E_tot
     ddG = dG - dE
-
     return ddG
 
 

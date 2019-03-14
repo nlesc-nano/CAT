@@ -25,9 +25,12 @@ from ..utils import (get_time, type_to_string)
 def export_job_settings(job_recipe, arg, job_type=('geometry', 'geometry')):
     """ Export job settings to job_settings.yaml. """
     # Prepare the job settings
-    if isinstance(job_recipe, bool):
+    if job_recipe is True:
         jobs = 'RDKit', None
         settings = 'UFF', None
+    elif job_recipe is False:
+        jobs = None, None
+        settings = None, None
 
     elif job_recipe.job2 is False:
         if job_type[0] is not None:
@@ -35,7 +38,7 @@ def export_job_settings(job_recipe, arg, job_type=('geometry', 'geometry')):
                                       '.json')['specific'][type_to_string(job_recipe.job1)]
         else:
             s = Settings()
-        s.update(job_recipe.s)
+        s.update(job_recipe.s1)
         settings = _sanitize_settings(s), None
         jobs = str(job_recipe.job1).rsplit('.', 1)[-1].split("'")[0], None
 
@@ -184,7 +187,7 @@ def _sanitize_database_name(database):
 
 def _export_ligand_df(df_file):
     """ """
-    idx = sorted(['hdf5 index', 'settings1', 'settings2', 'formula'])
+    idx = sorted(['hdf5 index', 'settings1', 'formula'])
     idx = pd.MultiIndex.from_tuples([(i, '') for i in idx], names=['index', 'sub index'])
     columns = pd.MultiIndex.from_tuples([(None, None)], names=['smiles', 'anchor'])
     df = pd.DataFrame(None, index=idx, columns=columns)
@@ -323,9 +326,9 @@ def mol_to_database(mol_list, arg, database='ligand'):
         _ligand_to_data_overwrite(mol_list, arg)
     elif database == 'ligand' and database not in arg.optional.database.overwrite:
         _ligand_to_data(mol_list, arg)
-    elif database == 'QD' and database in arg.optional.database.overwrite:
+    elif database == 'QD' and database.lower() in arg.optional.database.overwrite:
         _qd_to_data_overwrite(mol_list, arg)
-    elif database == 'QD' and database not in arg.optional.database.overwrite:
+    elif database == 'QD' and database.lower() not in arg.optional.database.overwrite:
         _qd_to_data(mol_list, arg)
 
     # Optional: export molecules to filetypes other than .hdf5
@@ -384,7 +387,6 @@ def _ligand_to_data_overwrite(ligand_list, arg):
             df[key]['hdf5 index'] = i
             df[key]['formula'] = lig.get_formula()
             df[key]['settings1'] = s[0]
-            df[key]['settings2'] = s[1]
 
     # Update the database with old ligands
     if lig_old:
@@ -394,7 +396,6 @@ def _ligand_to_data_overwrite(ligand_list, arg):
         for lig in lig_old:
             key = lig.properties.smiles, lig.properties.anchor
             df[key]['settings1'] = s[0]
-            df[key]['settings2'] = s[1]
 
     # Export the database
     file = join(arg.optional.database.dirname, 'ligand_database.csv')
@@ -426,7 +427,6 @@ def _ligand_to_data(ligand_list, arg):
         df[key]['hdf5 index'] = i
         df[key]['formula'] = lig.get_formula()
         df[key]['settings1'] = s[0]
-        df[key]['settings2'] = s[1]
 
     # Export the database
     file = join(arg.optional.database.dirname, 'ligand_database.csv')
@@ -441,6 +441,7 @@ def _qd_to_data_overwrite(qd_list, arg):
     hdf5 = h5py.File(join(arg.optional.database.dirname, 'structures.hdf5'), 'a')
     j = hdf5['QD'].shape[0]
     s = export_job_settings(arg.optional.qd.optimize, arg, job_type=('geometry', 'geometry'))
+    s[1] = s[0]
 
     # Split the qd_list into a list of new QDs and a list of to be overridden QDs
     qd_new = []
@@ -492,9 +493,11 @@ def _qd_to_data(qd_list, arg):
     df = get_database(arg, 'QD')
     hdf5 = h5py.File(join(arg.optional.database.dirname, 'structures.hdf5'))
     s = export_job_settings(arg.optional.qd.optimize, arg, job_type=('geometry', 'geometry'))
+    s[1] = s[0]
 
     # Remove ligand entries from ligand_list if they are already present in the database
-    qd_list = [qd for qd in qd_list if qd.properties.name not in df]
+    qd_list = [qd for qd in qd_list if (qd.properties.core, qd.properties.core_anchor,
+                                        qd.properties.ligand, qd.properties.ligand_anchor) not in df]
 
     # Prepare the pdb array and reshape the database
     j = hdf5['QD'].shape[0]
@@ -507,7 +510,8 @@ def _qd_to_data(qd_list, arg):
     for i, qd in enumerate(qd_list, j):
         key = (qd.properties.core, qd.properties.core_anchor,
                qd.properties.ligand, qd.properties.ligand_anchor)
-        df[key] = None
+        if key not in df:
+            df[key] = None
         df[key]['ligand count'] = qd.properties.ligand_count
         df[key]['hdf5 index'] = i
         df[key]['settings1'] = s[0]
@@ -523,7 +527,7 @@ def _qd_to_data(qd_list, arg):
 
 
 def get_empty_columns(index, arg, database='ligand'):
-    """ Return all columns in **database** where **index** is completely empty.
+    """ Return all the keys of columns in **database** where **index** is completely empty.
 
     index <str>: An indice in the database
     arg <dict>: arg <dict>: A dictionary containing all (optional) arguments.
@@ -531,9 +535,10 @@ def get_empty_columns(index, arg, database='ligand'):
     """
     df = get_database(arg, database)
     if index not in df.index:
-        return df.keys().to_list()
+        return df.keys()
     df.replace('', np.nan, inplace=True)
-    return df.columns[-df.loc[index].isna().all()].tolist()
+    series = df.loc[index].isna().all()
+    return df.loc[:, series].keys()
 
 
 def property_to_database(df_new, arg, database='ligand', prop='cosmo-rs'):
@@ -562,7 +567,10 @@ def property_to_database(df_new, arg, database='ligand', prop='cosmo-rs'):
     elif prop == 'bde':
         recipe = arg.optional.qd.dissociate
         idx = export_job_settings(recipe, arg, job_type=('singlepoint', 'freq'))
-        df_new.loc['bde settings1', :], df_new.loc['bde settings2', :] = idx
+        if idx[1] is None:
+            df_new.loc['BDE settings1', :] = idx[0]
+        else:
+            df_new.loc['BDE settings1', :], df_new.loc['BDE settings2', :] = idx
 
     # Update the database values
     if database.lower() in arg.optional.database.overwrite:
