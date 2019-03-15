@@ -42,9 +42,9 @@ Default Settings
                 core_core_dist: 5.0
                 lig_core_dist: 5.0
                 topology:
-                    6: vertice
-                    7: edge
-                    9: face
+                    7: vertice
+                    8: edge
+                    10: face
 
                 job1: AMSJob
                 s1: True
