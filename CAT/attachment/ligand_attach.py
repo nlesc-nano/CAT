@@ -113,8 +113,17 @@ def rot_mol_angle(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=Fa
             m1 = m2
             m1 = 1, m2 > 1
             m1 > 1, m2 = 1 """
-        a = vec1 / np.linalg.norm(vec1)
-        b = vec2 / np.linalg.norm(vec2, axis=1)[:, None]
+        with np.errstate(divide='raise', invalid='raise'):
+            # Return a unit matrix if either vec1 or vec2 is zero
+            try:
+                a = vec1 / np.linalg.norm(vec1)
+                b = vec2 / np.linalg.norm(vec2, axis=1)[:, None]
+            except FloatingPointError:
+                shape = max(len(vec1), len(vec2)), 3, 3
+                ret = np.zeros(shape, dtype=float)
+                ret[:] = np.identity(3)
+                return ret
+
         v1, v2, v3 = np.cross(a, b).T
         zero = np.zeros(len(b))
         M = np.array([[zero, -v3, v2],

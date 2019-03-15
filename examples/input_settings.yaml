@@ -5,18 +5,15 @@ input_cores:
         guess_bonds: False
 
 input_ligands:
-    - OC(C)=O
-    - OC(CC)=O
-    - OC(CCC)=O
-    - OC(CCCC)=O
+    - OC
 
 optional:
     database:
         dirname: database
         read: True
         write: True
-        overwrite: False
-        mol_format: pdb
+        overwrite: True
+        mol_format: [xyz, pdb]
         mongodb: False
 
     core:
@@ -28,10 +25,10 @@ optional:
         functional_groups: None
         optimize: True
         split: True
-        cosmo-rs: False
+        cosmo-rs: True
 
     qd:
         dirname: QD
-        optimize: False
+        optimize: True
         activation_strain: False
         dissociate: False

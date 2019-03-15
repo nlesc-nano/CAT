@@ -22,7 +22,6 @@ def init_solv(mol_list, arg, solvent_list=None):
     """ Initialize the solvation energy calculation. """
     # Prepare the job settings and solvent list
     job_recipe = arg.optional.ligand.crs
-    job_recipe.s1.input.mopac.Mozyme = 'Yes'
     if solvent_list is None:
         path = join(join(dirname(dirname(__file__)), 'data'), 'coskf')
         solvent_list = [join(path, solv) for solv in os.listdir(path) if
@@ -55,13 +54,15 @@ def init_solv(mol_list, arg, solvent_list=None):
     # Update the database
     if 'ligand' in arg.optional.database.write:
         del df[(None, None)]
-        property_to_database(df, arg, database='ligand')
+        property_to_database(df, arg, database='ligand', prop='cosmo-rs')
 
 
 def _get_solv_df(solvent_list):
     """ Return an empty dataframe for init_solv(). """
-    solv = ['E_solv', 'gamma'], [i.rsplit('.', 1)[0].rsplit('/', 1)[-1] for i in solvent_list]
-    idx = pd.MultiIndex.from_product(solv, names=['index', 'sub index'])
+    index = ['E_solv', 'gamma'], [i.rsplit('.', 1)[0].rsplit('/', 1)[-1] for i in solvent_list]
+    index = [(i, j) for j in index[1] for i in index[0]]
+    index += [('solv settings1', ''), ('solv settings2', '')]
+    idx = pd.MultiIndex.from_tuples(index, names=['index', 'sub index'])
     columns = pd.MultiIndex.from_tuples([(None, None)], names=['smiles', 'anchor'])
     return pd.DataFrame(index=idx, columns=columns)
 

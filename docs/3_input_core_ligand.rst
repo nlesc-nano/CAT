@@ -1,3 +1,5 @@
+.. _Input Cores and Ligands:
+
 input_cores & input_ligands
 ===========================
 
@@ -7,7 +9,7 @@ types, which can roughly be divided into three categories:
 
 1.  Files containing coordinates of a single molecule: .xyz, .pdb & .mol files
 2.  Python objects: |plams.Molecule|_, |rdkit.Chem.Mol|_ & (SMILES) |str|_
-3.  Containers with one or multiple input molecules: directories, .txt & .xlsx files
+3.  Containers with one or multiple input molecules: directories & .txt files
 
 In the later case, the container can consist of multiple SMILES strings or
 paths to .xyz, .pdb and/or .mol files. If necessary, containers are searched

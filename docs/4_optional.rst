@@ -1,4 +1,6 @@
-optional
+.. _Optional:
+
+Optional
 ========
 
 There are a number of arguments which can be used to modify the
@@ -59,7 +61,7 @@ Database
 
     The name of the directory where the database will be stored.
     The database directory will be created (if it does not yet exist)
-    at the path specified in :ref:`path`.
+    at the path specified in :ref:`Path`.
 
     |
 
@@ -144,7 +146,7 @@ Core
 
     The name of the directory where all cores will be stored.
     The core directory will be created (if it does not yet exist)
-    at the path specified in :ref:`path`.
+    at the path specified in :ref:`Path`.
 
     |
 
@@ -172,7 +174,7 @@ Ligand
 
     The name of the directory where all ligands will be stored.
     The ligand directory will be created (if it does not yet exist)
-    at the path specified in :ref:`path`.
+    at the path specified in :ref:`Path`.
 
     |
 
@@ -240,7 +242,7 @@ QD
 
     The name of the directory where all quantum dots will be stored.
     The quantum dot directory will be created (if it does not yet exist)
-    at the path specified in :ref:`path`.
+    at the path specified in :ref:`Path`.
 
     |
 
@@ -281,25 +283,28 @@ QD
 **qd.dissociate** |bool|_ = *False*
 
     Calculate the bond dissociation energy (BDE) of ligands attached to the
-    surface of the core. The calculation consists of five distinct steps:
+    surface of the core. See :ref:`Bond Dissociation Energy` for more details.
+    The calculation consists of five distinct steps:
 
-    1.  Dissociate all *n*2*(n-1)* combinations of 1 ligand (X), 1 Cd atom and
-    1 other ligand (X).
+    1.  Dissociate all combinations of *n* ligandsand an atom from the core
+    within a radius *r* from aforementioned core atom.
+    General structure: |XYn|.
 
+    2.  Optimize the geometry of |XYn| at the first level of theory
+    (lvl1): ADF MOPAC [1_, 2_, 3_].
 
-    2.  Optimize the geometry of the CdX\ :sub:`2`\ structure with ADF MOPAC
-    [8_, 9_, 10_].
+    3.  Calculate the "electronic" contribution to the BDE (|dE|)
+    at the first level of theory (lvl1): ADF MOPAC [1_, 2_, 3_].
+    This step consists of single point calculations of the complete
+    quantum dot, |XYn| and all |XYn|-dissociated quantum dots.
 
-    3.  Calculate the "electronic" contribution to the BDE (d\ *E* ) with
-    ADF MOPAC [8_, 9_, 10_] for all partially dissociated compounds
-    created in step 1. This step consists of single point calculations.
+    4.  Calculate the thermalchemical contribution to the BDE (|ddG|) at the
+    second level of theory (lvl2): ADF UFF [4_, 5_]. This step consists
+    of geometry optimizations and frequency analyses of the same
+    compounds used for step 3.
 
-    4.  Calculate the thermal contribution to the BDE (dd\ *G* ) with
-    ADF UFF [3_, 11_]. This step consists of geometry optimizations and
-    frequency analyses.
-
-    5.  Combine d\ *E* and dd\ *G*, yielding all bond dissociation
-    energies.
+    5.  |dG| = |dE_lvl1| + |ddG_lvl2| = |dE_lvl1| + ( |dG_lvl2| - |dE_lvl2|
+    ).
 
     |
 
@@ -328,3 +333,12 @@ QD
 .. |str| replace:: ``str``
 .. |list| replace:: ``list``
 .. |int| replace:: ``int``
+
+.. |dE| replace:: d\ *E*
+.. |dE_lvl1| replace:: d\ *E*\ :sub:`lvl1`
+.. |dE_lvl2| replace:: d\ *E*\ :sub:`lvl2`
+.. |dG| replace:: d\ *G*
+.. |dG_lvl2| replace:: d\ *G*\ :sub:`lvl2`
+.. |ddG| replace:: dd\ *G*
+.. |ddG_lvl2| replace:: dd\ *G*\ :sub:`lvl2`
+.. |XYn| replace:: XY\ :sub:`n`

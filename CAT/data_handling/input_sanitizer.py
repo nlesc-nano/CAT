@@ -230,11 +230,7 @@ def sanitize_optional(arg_dict):
                                        s1=CAT.get_template('qd.yaml')['UFF'],
                                        s2=CAT.get_template('qd.yaml')['UFF'])
 
-    arg.optional.qd.dissociate = val_job(arg.optional.qd.dissociate,
-                                         job1=AMSJob,
-                                         job2=AMSJob,
-                                         s1=CAT.get_template('qd.yaml')['MOPAC'],
-                                         s2=CAT.get_template('qd.yaml')['UFF'])
+    arg.optional.qd.dissociate = val_dissociate(arg.optional.qd.dissociate)
 
     del arg.path
     return arg
@@ -249,7 +245,7 @@ def get_default_optional():
                 read: True
                 write: True
                 overwrite: False
-                mol_format: pdb
+                mol_format: [pdb, xyz]
                 mongodb: False
 
             core:
@@ -272,6 +268,27 @@ def get_default_optional():
     return Settings(ret)
 
 
+def get_default_dissociate():
+    """ Return the default settings of arg.optional. """
+    ret = yaml.load("""
+        core_atom: Cd
+        lig_count: 2
+        core_core_dist: 5.0
+        lig_core_dist: 5.0
+        topology:
+            7: vertice
+            8: edge
+            10: face
+
+        job1: AMSJob
+        s1: True
+        job2: AMSJob
+        s2: True
+    """)
+
+    return Settings(ret)
+
+
 str_to_class = {
     'adf': ADFJob, 'adfjob': ADFJob,
     'ams': AMSJob, 'amsjob': AMSJob,
@@ -281,7 +298,7 @@ str_to_class = {
     'mopac': MOPACJob, 'mopacjob': MOPACJob,
     'reaxff': ReaxFFJob, 'reaxffjob': ReaxFFJob,
     'cp2k': Cp2kJob, 'cp2kjob': Cp2kJob,
-    'orca': ORCAJob, 'orca': ORCAJob,
+    'orca': ORCAJob, 'orcajob': ORCAJob,
     'dirac': DiracJob, 'diracjob': DiracJob,
     'gamess': GamessJob, 'gamessjob': GamessJob,
     'dftbplus': DFTBPlusJob, 'dftbplusjob': DFTBPlusJob,
@@ -416,18 +433,82 @@ def val_job(job, job1=None, job2=None, s1=None, s2=None):
     # Assign proper default settings
     str_to_def = {'job1': job1, 'job2': job2, 's1': s1, 's2': s2}
     for key in job:
-        if job[key] is None:
+        if job[key] is None or 'None':
             job[key] = str_to_def[key]
+        if not job[key]:
+            job[key] = False
         elif isinstance(job[key], str):
             try:
                 job[key] = str_to_class[job[key].lower()]
             except KeyError:
                 raise KeyError(get_time() + 'No Job-derived object exists for the string:', job[key]
                                + ', please provide the actual <Job> object instead of <str>')
-        elif isinstance(job[key], Job):
+        elif isinstance(job[key], type):
             pass
         elif isinstance(job[key], dict):
             job[key] = Settings(job[key])
         else:
             raise TypeError(get_time() + str(type(job[key])), 'is an unspported object type')
     return job
+
+
+def val_dissociate(dissociate):
+    """ Validate the optional.qd.dissociate block in the input file. """
+    ret = get_default_dissociate()
+    if dissociate is True:
+        dissociate = Settings()
+    elif dissociate is False:
+        return False
+
+    ret.update(dissociate)
+    if ret.job1 is False or ret.s1 is False:
+        return False
+
+    ret.core_atom = to_atnum(ret.core_atom)
+    ret.lig_count = int(ret.lig_count)
+    ret.core_core_dist = float(ret.core_core_dist)
+    ret.lig_core_dist = float(ret.lig_core_dist)
+    assert isinstance(ret.topology, dict)
+    for key in ret.topology:
+        assert isinstance(key, int)
+        assert isinstance(ret.topology[key], str)
+
+    # Interpret job1
+    assert isinstance(ret.job1, (bool, type, str))
+    if ret.job1 is True:
+        ret.job1 = AMSJob
+    elif isinstance(ret.job1, str):
+        ret.job1 = str_to_class[ret.job1.lower()]
+
+    # Interpret job2
+    assert isinstance(ret.job2, (bool, type, str))
+    if ret.job2 is True:
+        ret.job2 = AMSJob
+    elif ret.job2 is False:
+        ret.s2 = False
+    elif isinstance(ret.job2, str):
+        ret.job2 = str_to_class[ret.job2.lower()]
+
+    # Interpret s1
+    assert isinstance(ret.s1, (bool, dict, str))
+    if ret.s1 is True:
+        ret.s1 = CAT.get_template('qd.yaml')['MOPAC']
+    elif isinstance(ret.s1, str):
+        if isfile(ret.s1):
+            ret.s1 = CAT.get_template(ret.s1, from_cat_data=False)
+        else:
+            raise FileNotFoundError(get_time() + str(ret.s1) + ' was not found')
+
+    # Interpret s2
+    assert isinstance(ret.s2, (bool, dict, str))
+    if ret.s2 is True:
+        ret.s2 = CAT.get_template('qd.yaml')['UFF']
+    elif ret.s2 is False:
+        ret.job2 = False
+    elif isinstance(ret.s2, str):
+        if isfile(ret.s2):
+            ret.s2 = CAT.get_template(ret.s2, from_cat_dataj=False)
+        else:
+            raise FileNotFoundError(get_time() + str(ret.s1) + ' was not found')
+
+    return ret

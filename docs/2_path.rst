@@ -1,4 +1,4 @@
-.. _path:
+.. _Path:
 
 path
 ====
@@ -17,15 +17,15 @@ Arguments
 
     The path were all working directories are/will be stored.
     To use the current working directory, use one of the following values:
-    
+
     -   *None*
-    
+
     -   *.*
-    
+
     -   *cwd*
-    
+
     -   |$PWD|
-    
+
     -   /path/to/my/current/working/directory
 
 .. _str: https://docs.python.org/3/library/stdtypes.html#str

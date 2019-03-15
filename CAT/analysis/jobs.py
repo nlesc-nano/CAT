@@ -9,27 +9,12 @@ from scm.plams.core.settings import Settings
 from scm.plams.core.functions import add_to_class
 
 from scm.plams.interfaces.adfsuite.ams import AMSJob
-from scm.plams.interfaces.adfsuite.adf import ADFJob
-from scm.plams.interfaces.thirdparty.orca import ORCAJob
-from scm.plams.interfaces.thirdparty.cp2k import Cp2kJob
-from scm.plams.interfaces.thirdparty.dirac import DiracJob
-from scm.plams.interfaces.thirdparty.gamess import GamessJob
 
 from qmflows.templates import templates as qmflows
 
 from .thermo_chem import get_thermo
-from ..utils import get_time
+from ..utils import (get_time, type_to_string)
 from ..mol_utils import (adf_connectivity, from_mol_other)
-
-
-def type_to_string(job):
-    """ Turn a <type> object into a <str> object. """
-    job_dict = {ADFJob: 'adf', AMSJob: 'ams', DiracJob: 'dirac',
-                Cp2kJob: 'cp2k', GamessJob: 'gamess', ORCAJob: 'orca'}
-    try:
-        return job_dict[job]
-    except KeyError:
-        print(get_time() + 'WARNING: No default settings available for ' + str(job))
 
 
 @add_to_class(Molecule)

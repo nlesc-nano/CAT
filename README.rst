@@ -7,10 +7,11 @@
    :target: https://www.python.org
 
 #######################################
-Compound Attachment/Analysis Tool 0.3.1
+Compound Attachment/Analysis Tool 0.3.2
 #######################################
 
-**CAT** is a collection of tools designed for the construction, and subsequent analysis, of various chemical compounds.
+**CAT** is a collection of tools designed for the construction,
+and subsequent analysis, of various chemical compounds.
 Further information is provided in the documentation_.
 
 Installation
@@ -53,9 +54,15 @@ Now you are ready to use **CAT**.
 Input files
 ============
 
-Running **CAT** and can be done with the following command: ``init_cat my_settings.yaml``. The user merely has to provide a yaml_ file with the job settings, settings which can be tweaked and altered to suit ones purposes (see example1_). Alternatively, **CAT** can be run like a regular python script, bypassing the command-line interface (*i.e.* ``python input.py``, see example2_).
+Running **CAT** and can be done with the following command:
+``init_cat my_settings.yaml``. The user merely has to provide a yaml_ file
+with the job settings, settings which can be tweaked and altered to suit ones
+purposes (see example1_). Alternatively, **CAT** can be run like a regular
+python script, bypassing the command-line interface
+(*i.e.* ``python input.py``, see example2_).
 
-An extensive description of the various available settings is available in the documentation_.
+An extensive description of the various available settings is available in
+the documentation_.
 
 
 .. _yaml: https://yaml.org/

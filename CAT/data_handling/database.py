@@ -4,15 +4,102 @@ __all__ = ['mol_from_database', 'mol_to_database', 'property_to_database', 'get_
 
 from os.path import (join, isfile)
 
+import yaml
 import h5py
 import numpy as np
 import pandas as pd
 
+from scm.plams.core.settings import Settings
 import scm.plams.interfaces.molecule.rdkit as molkit
+
+from qmflows.templates import templates as qmflows
 
 from rdkit import Chem
 
-from ..utils import get_time
+from ..utils import (get_time, type_to_string)
+
+
+""" ###########################  Functions exporting job settings  ############################ """
+
+
+def export_job_settings(job_recipe, arg, job_type=('geometry', 'geometry')):
+    """ Export job settings to job_settings.yaml. """
+    # Prepare the job settings
+    if job_recipe is True:
+        jobs = 'RDKit', None
+        settings = 'UFF', None
+    elif job_recipe is False:
+        jobs = None, None
+        settings = None, None
+
+    elif job_recipe.job2 is False:
+        if job_type[0] is not None:
+            s = qmflows.get_template(job_type[0] +
+                                     '.json')['specific'][type_to_string(job_recipe.job1)]
+        else:
+            s = Settings()
+        s.update(job_recipe.s1)
+        settings = _sanitize_settings(s), None
+        jobs = str(job_recipe.job1).rsplit('.', 1)[-1].split("'")[0], None
+
+    else:
+        if job_type[0] is not None:
+            s1 = qmflows.get_template(job_type[0] +
+                                      '.json')['specific'][type_to_string(job_recipe.job1)]
+        else:
+            s1 = Settings()
+
+        if job_type[1] is not None:
+            s2 = qmflows.get_template(job_type[1] +
+                                      '.json')['specific'][type_to_string(job_recipe.job2)]
+        else:
+            s2 = Settings()
+
+        s1.update(job_recipe.s1)
+        s2.update(job_recipe.s2)
+        settings = _sanitize_settings(s1), _sanitize_settings(s2)
+        jobs = (str(job_recipe.job1).rsplit('.', 1)[-1].split("'")[0],
+                str(job_recipe.job2).rsplit('.', 1)[-1].split("'")[0])
+
+    # Open the job settings database
+    yml_file = join(arg.optional.database.dirname, 'job_settings.yaml')
+    if isfile(yml_file):
+        with open(yml_file) as file:
+            yml = yaml.load(file)
+    else:
+        yml = {}
+
+    # Update the job settings database
+    idx = []
+    for job, s in zip(jobs, settings):
+        if job and s:
+            if job not in yml:
+                yml[job] = []
+            if s in yml[job]:
+                idx.append(job + ' ' + str(yml[job].index(s)))
+            else:
+                yml[job].append(s)
+                idx.append(job + ' ' + str(len(yml[job]) - 1))
+        else:
+            idx.append(None)
+
+    # Write the job settings database
+    with open(yml_file, 'w') as file:
+        file.write(yaml.dump(yml, default_flow_style=False, indent=4))
+    return idx
+
+
+def _sanitize_settings(s):
+    """ """
+    s.description = s.ignore_molecule = s.input.ams = s.input.Compound = s.input.compound._h = None
+    del s.description
+    del s.ignore_molecule
+    del s.input.ams
+    del s.input.Compound
+    del s.input.compound._h
+    if not s.input.compound:
+        del s.input.compound
+    return s.as_dict()
 
 
 """ ############################  Functions for .pdb conversion  ############################## """
@@ -100,7 +187,7 @@ def _sanitize_database_name(database):
 
 def _export_ligand_df(df_file):
     """ """
-    idx = sorted(['hdf5 index', 'settings', 'formula'])
+    idx = sorted(['hdf5 index', 'settings1', 'formula'])
     idx = pd.MultiIndex.from_tuples([(i, '') for i in idx], names=['index', 'sub index'])
     columns = pd.MultiIndex.from_tuples([(None, None)], names=['smiles', 'anchor'])
     df = pd.DataFrame(None, index=idx, columns=columns)
@@ -110,7 +197,7 @@ def _export_ligand_df(df_file):
 
 def _export_qd_df(df_file):
     """ """
-    idx = sorted(['hdf5 index', 'settings', 'ligand count'])
+    idx = sorted(['hdf5 index', 'settings1', 'settings2', 'ligand count'])
     idx = pd.MultiIndex.from_tuples([(i, '') for i in idx], names=['index', 'sub index'])
     columns = pd.MultiIndex.from_tuples(
             [(None, None, None, None)],
@@ -239,14 +326,14 @@ def mol_to_database(mol_list, arg, database='ligand'):
         _ligand_to_data_overwrite(mol_list, arg)
     elif database == 'ligand' and database not in arg.optional.database.overwrite:
         _ligand_to_data(mol_list, arg)
-    elif database == 'QD' and database in arg.optional.database.overwrite:
+    elif database == 'QD' and database.lower() in arg.optional.database.overwrite:
         _qd_to_data_overwrite(mol_list, arg)
-    elif database == 'QD' and database not in arg.optional.database.overwrite:
+    elif database == 'QD' and database.lower() not in arg.optional.database.overwrite:
         _qd_to_data(mol_list, arg)
 
     # Optional: export molecules to filetypes other than .hdf5
     if arg.optional.database.mol_format:
-        export_mol(mol_list, arg, database='ligand')
+        export_mol(mol_list, arg, database)
 
     print(get_time() + database + '_database.csv has been updated\n')
 
@@ -255,14 +342,14 @@ def export_mol(mol_list, arg, database='ligand'):
     """ """
     if database in arg.optional.database.overwrite:
         for mol in mol_list:
-            path = join(arg.optional[database].dirname, mol.properties.name)
+            path = join(arg.optional[database.lower()].dirname, mol.properties.name)
             if 'pdb' in arg.optional.database.mol_format:
                 molkit.writepdb(mol, path + '.pdb')
             if 'xyz' in arg.optional.database.mol_format:
                 mol.write(path + '.xyz')
     else:
         for mol in mol_list:
-            path = join(arg.optional[database].dirname, mol.properties.name)
+            path = join(arg.optional[database.lower()].dirname, mol.properties.name)
             if 'pdb' in arg.optional.database.mol_format and not isfile(path + '.pdb'):
                 molkit.writepdb(mol, path + '.pdb')
             if 'xyz' in arg.optional.database.mol_format and not isfile(path + '.xyz'):
@@ -275,6 +362,7 @@ def _ligand_to_data_overwrite(ligand_list, arg):
     df = get_database(arg, 'ligand')
     hdf5 = h5py.File(join(arg.optional.database.dirname, 'structures.hdf5'), 'a')
     j = hdf5['ligand'].shape[0]
+    s = export_job_settings(arg.optional.ligand.optimize, arg, job_type=('geometry', 'geometry'))
 
     # Split the ligand_list into a list of new ligands and a list of to be overridden ligands
     lig_new = []
@@ -298,7 +386,7 @@ def _ligand_to_data_overwrite(ligand_list, arg):
             df[key] = None
             df[key]['hdf5 index'] = i
             df[key]['formula'] = lig.get_formula()
-            df[key]['settings'] = None
+            df[key]['settings1'] = s[0]
 
     # Update the database with old ligands
     if lig_old:
@@ -307,7 +395,7 @@ def _ligand_to_data_overwrite(ligand_list, arg):
         hdf5['ligand'][idx_old] = pdb_old
         for lig in lig_old:
             key = lig.properties.smiles, lig.properties.anchor
-            df[key]['settings'] = None
+            df[key]['settings1'] = s[0]
 
     # Export the database
     file = join(arg.optional.database.dirname, 'ligand_database.csv')
@@ -332,12 +420,13 @@ def _ligand_to_data(ligand_list, arg):
     hdf5['ligand'][j:len(hdf5['ligand'])] = pdb_array
 
     # Update the database
+    s = export_job_settings(arg.optional.ligand.optimize, arg, job_type=('geometry', 'geometry'))
     for i, lig in enumerate(ligand_list, j):
         key = lig.properties.smiles, lig.properties.anchor
         df[key] = None
         df[key]['hdf5 index'] = i
         df[key]['formula'] = lig.get_formula()
-        df[key]['settings'] = None
+        df[key]['settings1'] = s[0]
 
     # Export the database
     file = join(arg.optional.database.dirname, 'ligand_database.csv')
@@ -351,6 +440,8 @@ def _qd_to_data_overwrite(qd_list, arg):
     df = get_database(arg, 'QD')
     hdf5 = h5py.File(join(arg.optional.database.dirname, 'structures.hdf5'), 'a')
     j = hdf5['QD'].shape[0]
+    s = export_job_settings(arg.optional.qd.optimize, arg, job_type=('geometry', 'geometry'))
+    s[1] = s[0]
 
     # Split the qd_list into a list of new QDs and a list of to be overridden QDs
     qd_new = []
@@ -376,7 +467,8 @@ def _qd_to_data_overwrite(qd_list, arg):
             df[key] = None
             df[key]['ligand count'] = qd.properties.ligand_count
             df[key]['hdf5 index'] = i
-            df[key]['settings'] = None
+            df[key]['settings1'] = s[0]
+            df[key]['settings2'] = s[1]
 
     # Update the database with old quantum dots
     if qd_old:
@@ -386,12 +478,19 @@ def _qd_to_data_overwrite(qd_list, arg):
         for qd in qd_old:
             key = (qd.properties.core, qd.properties.core_anchor,
                    qd.properties.ligand, qd.properties.ligand_anchor)
-            df[key]['settings'] = None
+            df[key]['settings1'] = s[0]
+            df[key]['settings2'] = s[1]
 
     # Export the database
-    file = join(arg.optional.database.dirname, 'Qd_database.csv')
+    file = join(arg.optional.database.dirname, 'QD_database.csv')
     df.to_csv(file)
     hdf5.close()
+
+
+def _get_qd_key(qd):
+    """ """
+    return (qd.properties.core, qd.properties.core_anchor,
+            qd.properties.ligand, qd.properties.ligand_anchor)
 
 
 def _qd_to_data(qd_list, arg):
@@ -399,9 +498,11 @@ def _qd_to_data(qd_list, arg):
     # Open the database
     df = get_database(arg, 'QD')
     hdf5 = h5py.File(join(arg.optional.database.dirname, 'structures.hdf5'))
+    s = export_job_settings(arg.optional.qd.optimize, arg, job_type=('geometry', 'geometry'))
+    s[1] = s[0]
 
     # Remove ligand entries from ligand_list if they are already present in the database
-    qd_list = [qd for qd in qd_list if qd.properties.name not in df]
+    qd_list = [qd for qd in qd_list if _get_qd_key(qd) not in df]
 
     # Prepare the pdb array and reshape the database
     j = hdf5['QD'].shape[0]
@@ -410,16 +511,18 @@ def _qd_to_data(qd_list, arg):
     hdf5['QD'][j:len(hdf5['QD'])] = pdb_array
 
     # Update the database
+    s1, s2 = export_job_settings(arg.optional.qd.optimize, arg, job_type=('geometry', 'geometry'))
     for i, qd in enumerate(qd_list, j):
-        key = (qd.properties.core, qd.properties.core_anchor,
-               qd.properties.ligand, qd.properties.ligand_anchor)
-        df[key] = None
+        key = _get_qd_key(qd)
+        if key not in df:
+            df[key] = None
         df[key]['ligand count'] = qd.properties.ligand_count
         df[key]['hdf5 index'] = i
-        df[key]['settings'] = None
+        df[key]['settings1'] = s[0]
+        df[key]['settings2'] = s[1]
 
     # Export the database
-    file = join(arg.optional.database.dirname, 'Qd_database.csv')
+    file = join(arg.optional.database.dirname, 'QD_database.csv')
     df.to_csv(file)
     hdf5.close()
 
@@ -428,18 +531,21 @@ def _qd_to_data(qd_list, arg):
 
 
 def get_empty_columns(index, arg, database='ligand'):
-    """ Return all columns in **database** where **index** is completely empty.
+    """ Return all the keys of columns in **database** where **index** is completely empty.
 
     index <str>: An indice in the database
     arg <dict>: arg <dict>: A dictionary containing all (optional) arguments.
     return <list>: A list with the column names.
     """
     df = get_database(arg, database)
+    if index not in df.index:
+        return df.keys()
     df.replace('', np.nan, inplace=True)
-    return df.columns[-df.loc[index].isna().all()].tolist()
+    series = df.loc[index].isna().all()
+    return df.loc[:, series].keys()
 
 
-def property_to_database(df_new, arg, database='ligand'):
+def property_to_database(df_new, arg, database='ligand', prop='cosmo-rs'):
     """ Export a property to the ligand or qd database.
 
     df_new <pd.DataFrame>: A Pandas dataframe with new results.
@@ -456,6 +562,19 @@ def property_to_database(df_new, arg, database='ligand'):
     for i in df_new.index:
         if i not in df.index:
             df.loc[i, :] = None
+
+    # Update job settings in the database:
+    if prop == 'cosmo-rs':
+        recipe = arg.optional.ligand.crs
+        idx = export_job_settings(recipe, arg, job_type=('singlepoint', None))
+        df_new.loc['solv settings1', :], df_new.loc['solv settings2', :] = idx
+    elif prop == 'bde':
+        recipe = arg.optional.qd.dissociate
+        idx = export_job_settings(recipe, arg, job_type=('singlepoint', 'freq'))
+        if idx[1] is None:
+            df_new.loc['BDE settings1', :] = idx[0]
+        else:
+            df_new.loc['BDE settings1', :], df_new.loc['BDE settings2', :] = idx
 
     # Update the database values
     if database.lower() in arg.optional.database.overwrite:
