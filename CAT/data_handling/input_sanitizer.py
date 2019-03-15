@@ -245,7 +245,7 @@ def get_default_optional():
                 read: True
                 write: True
                 overwrite: False
-                mol_format: pdb
+                mol_format: [pdb, xyz]
                 mongodb: False
 
             core:
@@ -276,9 +276,9 @@ def get_default_dissociate():
         core_core_dist: 5.0
         lig_core_dist: 5.0
         topology:
-            6: vertice
-            7: edge
-            9: face
+            7: vertice
+            8: edge
+            10: face
 
         job1: AMSJob
         s1: True
