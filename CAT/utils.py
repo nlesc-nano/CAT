@@ -71,7 +71,9 @@ def get_template(template_name, from_cat_data=True):
         path = join('data/templates', template_name)
         xs = pkg.resource_string('CAT', path)
     else:
-        xs = path
+        with open(template_name, 'r') as file:
+            return Settings(yaml.load(file))
+
     if 'json' in template_name:
         s = json.loads(xs.decode())
     elif 'yaml' in template_name or 'yml' in template_name:
