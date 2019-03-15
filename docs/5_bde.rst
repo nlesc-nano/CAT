@@ -97,7 +97,7 @@ Arguments
     |
 
 **qd.dissociate.topology** |dict|_ =
-{*6*: *vertice*, *7*: *edge*, *9*: *face*}
+{*7*: *vertice*, *8*: *edge*, *10*: *face*}
 
     A dictionary which translates the number neighbouring core atoms
     (see **qd.dissociate.core_atom** and **qd.dissociate.core_core_dist**)
@@ -105,7 +105,7 @@ Arguments
     the matching topology.
 
     Note: values can take on any user-specified value (*e.g.* Miller indices)
-    and are thus not limited to *vertice*, *edge* or *face*.
+    and are thus not limited to *vertice*, *edge* and/or *face*.
 
     |
 

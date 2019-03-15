@@ -392,7 +392,7 @@ def _ligand_to_data_overwrite(ligand_list, arg):
     if lig_old:
         idx_old, lig_old = zip(*[(i, item) for i, item in sorted(zip(idx_old, lig_old))])
         pdb_old = as_pdb_array(lig_old, min_size=hdf5['ligand'].shape[1])
-        hdf5['ligand'][idx_old] = pdb_old
+        hdf5['ligand'][list(idx_old)] = pdb_old
         for lig in lig_old:
             key = lig.properties.smiles, lig.properties.anchor
             df[key]['settings1'] = s[0]
@@ -474,7 +474,7 @@ def _qd_to_data_overwrite(qd_list, arg):
     if qd_old:
         idx_old, qd_old = zip(*[(i, item) for i, item in sorted(zip(idx_old, qd_old))])
         pdb_old = as_pdb_array(qd_old, min_size=hdf5['QD'].shape[1])
-        hdf5['QD'][idx_old] = pdb_old
+        hdf5['QD'][list(idx_old)] = pdb_old
         for qd in qd_old:
             key = (qd.properties.core, qd.properties.core_anchor,
                    qd.properties.ligand, qd.properties.ligand_anchor)
