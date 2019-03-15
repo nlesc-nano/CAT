@@ -35,7 +35,7 @@ def export_job_settings(job_recipe, arg, job_type=('geometry', 'geometry')):
     elif job_recipe.job2 is False:
         if job_type[0] is not None:
             s = qmflows.get_template(job_type[0] +
-                                      '.json')['specific'][type_to_string(job_recipe.job1)]
+                                     '.json')['specific'][type_to_string(job_recipe.job1)]
         else:
             s = Settings()
         s.update(job_recipe.s1)
@@ -487,6 +487,12 @@ def _qd_to_data_overwrite(qd_list, arg):
     hdf5.close()
 
 
+def _get_qd_key(qd):
+    """ """
+    return (qd.properties.core, qd.properties.core_anchor,
+            qd.properties.ligand, qd.properties.ligand_anchor)
+
+
 def _qd_to_data(qd_list, arg):
     """ Export quantum dots to the database without overwriting previous entries if necessary. """
     # Open the database
@@ -496,8 +502,7 @@ def _qd_to_data(qd_list, arg):
     s[1] = s[0]
 
     # Remove ligand entries from ligand_list if they are already present in the database
-    qd_list = [qd for qd in qd_list if (qd.properties.core, qd.properties.core_anchor,
-                                        qd.properties.ligand, qd.properties.ligand_anchor) not in df]
+    qd_list = [qd for qd in qd_list if _get_qd_key(qd) not in df]
 
     # Prepare the pdb array and reshape the database
     j = hdf5['QD'].shape[0]
@@ -508,8 +513,7 @@ def _qd_to_data(qd_list, arg):
     # Update the database
     s1, s2 = export_job_settings(arg.optional.qd.optimize, arg, job_type=('geometry', 'geometry'))
     for i, qd in enumerate(qd_list, j):
-        key = (qd.properties.core, qd.properties.core_anchor,
-               qd.properties.ligand, qd.properties.ligand_anchor)
+        key = _get_qd_key(qd)
         if key not in df:
             df[key] = None
         df[key]['ligand count'] = qd.properties.ligand_count
