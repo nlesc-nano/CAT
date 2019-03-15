@@ -204,7 +204,6 @@ def prep_qd(ligand_list, core_list, arg):
     # Calculate the interaction between ligands on the quantum dot surface upon removal of CdX2
     if arg.optional.qd.dissociate:
         # Start the BDE calculation
-        check_sys_var()
         print(get_time() + 'calculating ligand dissociation energy')
         init_bde(qd_list, arg)
 
