@@ -9,12 +9,21 @@ from scm.plams.core.settings import Settings
 from scm.plams.core.functions import add_to_class
 
 from scm.plams.interfaces.adfsuite.ams import AMSJob
+from scm.plams.interfaces.thirdparty.cp2k import Cp2kResults
 
 from qmflows.templates import templates as qmflows
 
 from .thermo_chem import get_thermo
 from ..utils import (get_time, type_to_string)
 from ..mol_utils import (adf_connectivity, from_mol_other)
+
+
+@add_to_class(Cp2kResults)
+def get_main_molecule(self):
+    for file in self.files:
+        if '.xyz' in file:
+            return Molecule(self[file])
+    return None
 
 
 @add_to_class(Molecule)
