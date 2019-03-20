@@ -25,10 +25,10 @@ optional:
         functional_groups: None
         optimize: True
         split: True
-        cosmo-rs: True
+        cosmo-rs: False
 
     qd:
         dirname: QD
-        optimize: True
+        optimize: False
         activation_strain: False
         dissociate: False
