@@ -140,7 +140,7 @@ def prep_core(core_list, arg):
         core.properties.anchor = ''.join([str(i) for i in anchor[1:]])
         name_suffix = core.properties.anchor.replace(' ', '').replace('(', '[')
         name_suffix = name_suffix.replace(')', ']').replace(',', '_').replace(':', '-')
-        core.properties.name += '@' + name_suffix
+        # core.properties.name += '@' + name_suffix
 
         # Delete all core dummy atoms
         for at in reversed(core.properties.dummies):
