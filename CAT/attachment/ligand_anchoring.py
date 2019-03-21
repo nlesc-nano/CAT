@@ -55,7 +55,7 @@ def _get_df(mol_list):
     # Create the dataframe index and columns
     idx_tuples = [(mol.properties.smiles, mol.properties.anchor) for mol in mol_list]
     idx = pd.MultiIndex.from_tuples(idx_tuples, names=['smiles', 'anchor'])
-    columns_tuples = [('mol', ''), ('formula', ''), ('hdf5_index', '')]
+    columns_tuples = [('mol', ''), ('formula', ''), ('hdf5 index', '')]
     columns = pd.MultiIndex.from_tuples(columns_tuples, names=['index', 'sub index'])
 
     # Create, fill and return the dataframe

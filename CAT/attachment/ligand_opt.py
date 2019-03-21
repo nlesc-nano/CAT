@@ -45,7 +45,7 @@ def init_ligand_opt(ligand_df, arg):
         if 'ligand' in arg.optional.database.overwrite:
             idx = ligand_df.index
         else:
-            idx = -np.isnan(ligand_df['hdf5_index'])
+            idx = -np.isnan(ligand_df['hdf5 index'])
 
         # Optimize the ligands
         for i, ligand in ligand_df['mol'][idx].iteritems():
@@ -64,7 +64,7 @@ def init_ligand_opt(ligand_df, arg):
     if 'ligand' in arg.optional.database.write and arg.optional.ligand.optimize:
         recipe = Settings()
         recipe.settings = {'name': 'settings', 'key': 'RDKit', 'value': 'UFF'}
-        database.update_csv(ligand_df, columns=['formula', 'hdf5_index'],
+        database.update_csv(ligand_df, columns=['formula', 'hdf5 index'],
                             job_recipe=recipe, database='ligand')
 
 

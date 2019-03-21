@@ -197,7 +197,7 @@ def _export_ligand_df(df_file):
 
 def _export_qd_df(df_file):
     """ """
-    idx = sorted(['hdf5 index', 'settings1', 'settings2', 'ligand count'])
+    idx = sorted(['hdf5 index', 'settings1', 'settings2', 'ligand_count'])
     idx = pd.MultiIndex.from_tuples([(i, '') for i in idx], names=['index', 'sub index'])
     columns = pd.MultiIndex.from_tuples(
             [(None, None, None, None)],

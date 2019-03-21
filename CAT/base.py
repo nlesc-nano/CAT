@@ -113,52 +113,14 @@ def prep_core(core_df, arg):
         dummy = arg.optional.core.dummy
         formula_list.append(core.get_formula())
 
-        # Returns the indices (integer) of all dummy atom ligand placeholders in the core
+        # Returns the indices and Atoms of all dummy atom ligand placeholders in the core
         if core.properties.dummies is None:
             idx, dummies = zip(*[(j, atom) for j, atom in enumerate(core.atoms, 1) if
                                  atom.atnum == dummy])
         else:
             idx, dummies = zip(*[(j, core[i]) for j in core.properties.dummies])
-
-        # Prepare anchor_dict
-        anchor_dict = {}
-        idx = sorted(list(idx))
-        for j, at in zip(idx, dummies):
-            try:
-                anchor_dict[at.symbol].append(j)
-            except KeyError:
-                anchor_dict[at.symbol] = [j]
-
-        # Sort anchor_dict
-        for at in anchor_dict:
-            anchor_dict[at] = sorted(anchor_dict[at])
-
-        # Prepare anchor_dict for serialization
-        anchor = []
-        for at in anchor_dict:
-            anchor += [', ', at, '(']
-            if len(anchor_dict[at]) == 1:
-                del anchor[-1]
-                anchor.append(anchor_dict[at][0])
-            else:
-                for j in anchor_dict[at]:
-                    if anchor[-2:] == [':', j - 1]:
-                        anchor[-1] = j
-                    elif anchor[-1] == j - 1:
-                        anchor += [':', j]
-                    elif anchor[-1] == '(':
-                        anchor.append(j)
-                    else:
-                        anchor += [', ', j]
-                anchor.append(')')
-
-        # Update the core anchor and name
-        anchor = ''.join([str(j) for j in anchor[1:]])
-        anchor_list.append(anchor)
-        name_suffix = anchor.replace(' ', '').replace('(', '[')
-        name_suffix = name_suffix.replace(')', ']').replace(',', '_').replace(':', '-')
-        core.properties.name += '@' + name_suffix
         core.properties.dummies = dummies
+        anchor_list.append(tuple(sorted(idx)))
 
         # Delete all core dummy atoms
         for at in reversed(core.properties.dummies):
@@ -225,7 +187,7 @@ def prep_qd(ligand_df, core_df, arg):
     """
     # Construct the quantum dots
     qd_df = init_qd_construction(ligand_df, core_df, arg)
-    if not qd_df.all():
+    if not qd_df['mol'].all():
         raise MoleculeError('No valid quantum dots found, aborting')
 
     # Optimize the qd with the core frozen

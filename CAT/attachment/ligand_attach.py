@@ -3,6 +3,7 @@
 __all__ = ['init_qd_construction']
 
 import numpy as np
+import pandas as pd
 from scipy.spatial.distance import cdist
 
 from scm.plams.mol.molecule import Molecule
@@ -10,31 +11,69 @@ from scm.plams.core.settings import Settings
 
 from ..utils import get_time
 from ..mol_utils import (merge_mol, get_atom_index)
-from ..data_handling.database import (mol_from_database, mol_to_database)
+from ..data_handling.CAT_database import Database
 
 
-def init_qd_construction(ligand_list, core_list, arg):
-    """ Initialize the quantum dot construction. """
+def init_qd_construction(ligand_df, core_df, arg):
+    """ Initialize the quantum dot construction.
+
+    :parameter ligand_df: A dataframe of ligands.
+    :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index=|str|_, values=|plams.Molecule|_)
+    :parameter core_df: A dataframe of cores.
+    :type core_df: |pd.DataFrame|_ (columns: |str|_, index=|str|_, values=|plams.Molecule|_)
+    :parameter arg: A settings object containing all (optional) arguments.
+    :type arg: |plams.Settings|_ (superclass: |dict|_).
+    :return: A dataframe of quantum dots.
+    :rtype: |pd.DataFrame|_ (columns: |str|_, index=|str|_, values=|plams.Molecule|_)
+    """
     # Attempt to pull structures from the database
+    qd_df = _get_df(core_df.index, ligand_df.index)
     if 'qd' in arg.optional.database.read:
-        qd_list = mol_from_database(ligand_list, arg, 'qd', mol_list2=core_list)
-    else:
-        qd_list = [(core, ligand) for core in core_list for ligand in ligand_list]
+        data = Database(path=arg.optional.database.dirname)
+        data.from_csv(qd_df, database='QD')
+
+    # Identify the to be constructed quantum dots
+    idx = -np.isnan(qd_df['hdf5 index'])
 
     # Combine core and ligands into quantum dots
-    for i, qd in enumerate(qd_list):
-        if not isinstance(qd, Molecule):
-            qd_list[i] = ligand_to_qd(qd[0], qd[1], arg)
-            print(get_time() + qd_list[i].properties.name + '\t has been constructed')
-        else:
-            print(get_time() + qd.properties.name + '\t pulled from QD_database.csv')
-    print('')
+    for i, mol in qd_df['mol'][idx].iteritems():
+        j, k = i[0:2], i[2:4]
+        import pdb; pdb.set_trace()
+        qd_df['mol'][i] = ligand_to_qd(core_df['mol'][j], ligand_df['mol'][k], arg)
 
     # Export the resulting geometries back to the database
     if 'qd' in arg.optional.database.write and not arg.optional.qd.optimize:
-        mol_to_database(qd_list, arg, 'qd')
+        recipe = Settings()
+        recipe.settings = {'name': 'settings1', 'key': 'None', 'value': 'None'}
+        try:
+            data.update_csv(ligand_df, columns=['ligand count', 'hdf5 index'],
+                            job_recipe=recipe, database='ligand')
+        except NameError:
+            data = Database(path=arg.optional.database.dirname)
+            data.update_csv(ligand_df, columns=['ligand count', 'hdf5 index'],
+                            job_recipe=recipe, database='ligand')
+    import pdb; pdb.set_trace()
+    return qd_df
 
-    return qd_list
+
+def _get_df(core_index, ligand_index):
+    """ Create and return a new quantum dot dataframe.
+
+    :parameter core_index: A multiindex of the cores.
+    :type core_index: |pd.MultiIndex|_
+    :parameter ligand_index: A multiindex of the ligands.
+    :type ligand_index: |pd.MultiIndex|_
+    :return: An empty (*i.e.* filled with -1) dataframe of quantum dots.
+    :rtype: |pd.DataFrame|_ (columns: |str|_, index=|str|_, values=|np.int64|_)
+    """
+    idx_tups = [(i, j, k, l) for i, j in core_index for k, l in ligand_index]
+    index = pd.MultiIndex.from_tuples(
+            idx_tups,
+            names=['core', 'core anchor', 'ligand smiles', 'ligand anchor']
+    )
+    column_tups = [('mol', ''), ('hdf5 index', ''), ('ligand count', '')]
+    columns = pd.MultiIndex.from_tuples(column_tups, names=['index', 'sub index'])
+    return pd.DataFrame(-1, index=index, columns=columns)
 
 
 def ligand_to_qd(core, ligand, arg):
@@ -42,11 +81,14 @@ def ligand_to_qd(core, ligand, arg):
     Function that handles quantum dot (qd, i.e. core + all ligands) operations.
     Combine the core and ligands and assign properties to the quantom dot.
 
-    core <plams.Molecule>: The core molecule.
-    ligand <plams.Molecule>: The ligand molecule.
-    arg <dict>: A dictionary containing all (optional) arguments.
-
-    return <plams.Molecule>: The quantum dot (core + n*ligands).
+    :parameter core: A core molecule.
+    :type core: |plams.Molecule|_
+    :parameter ligand: A ligand molecule.
+    :type ligand: |plams.Molecule|_
+    :parameter arg: A settings object containing all (optional) arguments.
+    :type arg: |plams.Settings|_ (superclass: |dict|_)
+    :return: A quantum dot consisting of a core molecule and *n* ligands
+    :rtype: |plams.Molecule|_
     """
     # Define vectors and indices used for rotation and translation the ligands
     vec1 = sanitize_dim_2(ligand.properties.dummies) - np.array(ligand.get_center_of_mass())
@@ -92,27 +134,35 @@ def rot_mol_angle(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=Fa
     xyz_array and mol_other; Atomic coordinates will be extracted if necessary and cast into an
     appropriately shaped array.
 
-    xyz_array <np.ndarray>: A m*n*3 array, a n*3 numpy array or a (nested) iterable consisting of
-        the to be rotated PLAMS atoms.
-    vec1 & vec2 <np.ndarray>: Two n*3 and/or 3 arrays representing one or more vectors.
-        vec1 defines the initial vector(s) and vec2 defines the final vector(s) adopted by the to
-        be rotated molecule(s).
-    atoms_other <None> or <plams.Molecule>: None or a n*3 array, a 3 numpy array, a PLAMS atom or
-        iterable consisting of PLAMS atoms. All molecules will be translated to ensure that the
-        atom with the index idx adopts the same position as mol_other.
-    idx <int>: An atomic index or iterable consisting of multiple atomic indices.
-    bond_length <float>: A float or iterable consisting of floats. After translation from
-        xyz_array[:, idx] to mol_other, xyz_array will be further translated along vec2 by
-        a user-specified bond length.
-    return <np.ndarray>: A m*n*3 array or n*3 array representing xyz coordinates of m rotated
-        molecules, each consisting of n atoms.
+    :parameter xyz_array: An 3d array or list of PLAMS to be rotated PLAMS molecules consisting of
+        *m* molecules with up to *n* atoms.
+    :type xyz_array: *m*n*3* |np.ndarray|_ [|np.float64|_] or *m* |list|_ [|plams.Molecule|_]
+    :parameter vec1: One or multiple vectors representing the initial orientation of **xyz_array**.
+    :type vec1: *m*3* or *3* |np.ndarray|_ [|np.float64|_]
+    :parameter vec1: One or multiple vectors representing the final orientation of **xyz_array**.
+    :type vec2: *m*3* or *3* |np.ndarray|_ [|np.float64|_]
+    :parameter idx: An atomic index or iterable consisting of multiple atomic indices. Translate
+        **xyz_array**[:, **idx**] to **atoms_other**.
+    :type idx: |int|_ or *m* |np.ndarray|_ [|np.int64|_]
+    :parameter atoms_other: A list of PLAMS atoms or a 2d array. Translate
+        **xyz_array**[:, **idx**] to **atoms_other**.
+    :type atoms_other: |None|_, *m* |list|_ [|plams.Atom|_] or *m*3* |np.ndarray|_ [|np.float64|_]
+    :parameter bond_length: The distance(s) between **idx** and **atoms_other**.
+    :type bond_length: |float|_ or *m* |np.ndarray|_ [|np.float64|_]
+    :return: An array with *m* rotated molecules with up to *n* atoms.
+    :rtype: *m*n*3* or *n*3* |np.ndarray|_ [|np.float64|_].
     """
     def get_rotmat(vec1, vec2):
-        """ Calculate the rotation matrix for rotating m1 vectors in vec1 to m2 vectors in vec2.
-        The following values of m1 & m2 are acceptable:
-            m1 = m2
-            m1 = 1, m2 > 1
-            m1 > 1, m2 = 1 """
+        """ Calculate the rotation matrix between *m* vectors in **vec1** and
+        *m* vectors in **vec2**.
+
+        :parameter vec1: One or multiple vectors representing an inital orientation.
+        :type vec1: *m*3* or *3* |np.ndarray|_ [|np.float64|_]
+        :parameter vec1: One or multiple vectors representing a final orientation.
+        :type vec2: *m*3* or *3* |np.ndarray|_ [|np.float64|_]
+        :return: The rotation matrices for rotating all *m* vectors in **vec1** to **vec2**.
+        :rtype: *m*3*3* |np.ndarray|_ [|np.float64|_].
+        """
         with np.errstate(divide='raise', invalid='raise'):
             # Return a unit matrix if either vec1 or vec2 is zero
             try:
@@ -158,36 +208,47 @@ def rot_mol_angle(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=Fa
 def rot_mol_axis(xyz_array, vec, dist_to_self=True, atoms_other=None, step=(1/16), idx=0):
     """
     Rotates a m*n*3 array representing the cartesian coordinates of m molecules, each containging
-    n atoms. All m coordinates are rotated along an axis defined by vec, a m*3 array, yielding
-    k = (2 / step) possible conformations.
-    Returns all conformations if dist_to_self = True and atoms_other = None, resulting in a
-    m*k*n*3 array. Alternatively, returns the conformation of each molecule which maximizes* the
-    inter-moleculair distance, yielding a m*n*3 array.
+    up to *n* atoms. All *m* coordinates are rotated along an axis defined by vec, a *m*3* array,
+    yielding *k* = (*2* / **step**) possible conformations.
+    Returns all conformations if **dist_to_self** = *True* and **atoms_other** = *None*, resulting
+    in a *m*k*n*3* array. Alternatively, returns the conformation of each molecule which
+    maximizes(1) the inter-moleculair distance, yielding a *m*n*3* array.
 
-    * More specifically, the conformation which minimizes sum(e^-r(ij)), where i loops over a set
-    of n atoms in a single molecule and j over a set of all atoms within mol_other and all
-    previously rotated <m molecules.
+    (1) More specifically, the conformation which minimizes sum(e^-*r*(*ij*)), where *i* loops
+    over a set of *n* atoms in a single molecule and *j* over a set of all atoms within
+    **mol_other** and all previously rotated *m* molecules.
 
-    xyz_array <np.ndarray>: A m*n*3 array, a n*3 numpy array or a (nested) iterable consisting of
-        the to be rotated PLAMS atoms.
-    vec <np.ndarray>: An m*3 or 3 numpy array representing m vectors. All m molecules in xyz_array
-        will be rotated along an axis defined by their respective vector.
-    dist_to_self <bool>: If true, consider the inter-moaleculair distance(s) between a molecule in
-        xyz_array and all other (previously iterated) molecules in xyz_array when determining the
-        conformation that maximizes the inter-moleculair distance.
-    atoms_other <None> or <plams.Molecule>: None or a n*3 array, a 3 numpy array or a PLAMS atom
+    :parameter xyz_array: An 3d array or list of PLAMS to be rotated PLAMS molecules consisting of
+        *m* molecules with up to *n* atoms.
+    :type xyz_array: *m*n*3* |np.ndarray|_ [|np.float64|_] or *m* |list|_ [|plams.Molecule|_]
+    :parameter vec: One or multiple vectors representing the orientation of **xyz_array**.
+    :type vec: *m*3* or *3* |np.ndarray|_ [|np.float64|_]
+    :parameter bool dist_to_self: If *True*, consider the inter-moaleculair distance(s) between a
+        molecule in **xyz_array** and all other (previously iterated) molecules in **xyz_array**
+        when determining the conformation that maximizes the inter-moleculair distance.
+    :parameter atoms_other: None or a n*3 array, a 3 numpy array or a PLAMS atom
          or iterable consisting of PLAMS atoms. mol_other will be taken into consideration when
          picking the conformation(s) in xyz_array that maximize the inter-moleculair distance(s).
-    step <float>: Rotation stepsize in radian, yielding k = (2 / step) possible rotations.
-    idx <int>: An atomic index; the molecule will be rotated to ensure it's cartesian coordinates
-        remain unchanged during the rotation.
-    ret_array <np.ndarray>: A m*n*3 or n*3 numpy array representing the xyz coordinates of
-        m molecules with n atoms, all m molecules rotated to maximize the distance among
-        themselves and with mol_other.
+    :type atoms_other: |None|_, *m* |list|_ [|plams.Atom|_] or *m*3* |np.ndarray|_ [|np.float64|_]
+    :parameter float step: Rotation stepsize in radian (divided by pi),
+        yielding **k** = (*2* / **step**) possible rotations.
+    :parameter idx: An atomic index or iterable consisting of multiple atomic indices. Translate
+        **xyz_array**[:, **idx**] to **atoms_other**.
+    :type idx: |int|_ or *m* |np.ndarray|_ [|np.int64|_]
+    :return: A 3d array representing the xyz coordinates of *m* molecules with *n* atoms,
+        all *m* molecules rotated to maximize the distance among themselves and with **mol_other**.
+    :rtype: *m*n*3* or *n*3* |np.ndarray|_ [|np.float64|_].
     """
     def get_rotmat(vec, step=(1/16)):
-        """ Calculate the rotation matrix for rotating m vectors along their axes, each vector
-        yielding k = (2 / step) possible rotations. """
+        """ Calculate the rotation matrix for rotating *m* vectors along their axeses, each vector
+        yielding *k* = (2 / **step**) possible rotations.
+
+        :parameter vec: One or multiple vectors representing one or more axeses.
+        :type vec1: *m*3* or *3* |np.ndarray|_ [|np.float64|_]
+        :parameter float step: The stepsize in radian / pi.
+        :return: The rotation matrices for rotating an object along *m* axeses.
+        :rtype: *m*k*3*3* |np.ndarray|_ [|np.float64|_].
+        """
         v = vec / np.linalg.norm(vec, axis=1)[:, None]
         v1, v2, v3 = v.T
         zero = np.zeros(len(vec))
