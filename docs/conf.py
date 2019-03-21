@@ -19,7 +19,7 @@
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('..'))
 
 
 # -- General configuration ------------------------------------------------
@@ -38,7 +38,8 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
-    'sphinx.ext.githubpages']
+    'sphinx.ext.githubpages'
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -149,8 +150,11 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'CAT.tex', 'CAT Documentation',
-     'B. F. van Beek', 'manual'),
+    (master_doc,
+     'CAT.tex',
+     'CAT Documentation',
+     'B. F. van Beek',
+     'manual'),
 ]
 
 
@@ -159,8 +163,11 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'CAT', 'CAT Documentation',
-     [author], 1)
+    (master_doc,
+     'CAT',
+     'CAT Documentation',
+     [author],
+     1)
 ]
 
 
@@ -170,8 +177,10 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'CAT', 'CAT Documentation',
-     author, 'CAT',
+    (master_doc,
+     'CAT',
+     'CAT Documentation',
+     author,
      'A collection of tools designed for the construction, and subsequent analysis, of various chemical compounds.',
      'Miscellaneous'),
 ]
