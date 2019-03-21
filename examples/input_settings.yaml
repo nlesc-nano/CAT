@@ -12,7 +12,7 @@ optional:
         dirname: database
         read: True
         write: True
-        overwrite: True
+        overwrite: False
         mol_format: [xyz, pdb]
         mongodb: False
 
@@ -25,10 +25,10 @@ optional:
         functional_groups: None
         optimize: True
         split: True
-        cosmo-rs: True
+        cosmo-rs: False
 
     qd:
         dirname: QD
-        optimize: True
+        optimize: False
         activation_strain: False
         dissociate: False
