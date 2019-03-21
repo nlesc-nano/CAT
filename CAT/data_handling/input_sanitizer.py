@@ -122,8 +122,8 @@ def sanitize_mol_type(input_mol):
                 mol.type = mol.mol.rsplit('.', 1)[-1]
                 mol.name = mol.mol.rsplit('.', 1)[0]
                 mol.mol = join(mol.path, mol.mol)
-                if mol.type == '.xyz' and not mol.get('tmp_guess'):
-                    mol.guess_bonds = False
+                if mol.type == 'xyz' and not mol.get('tmp_guess'):
+                    mol.guess_bonds = True
             elif isdir(join(mol.path, mol.mol)):
                 mol.type = 'folder'
                 mol.name = mol.mol
