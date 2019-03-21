@@ -196,5 +196,11 @@ intersphinx_mapping = {'https://docs.python.org/': None}
 # File formats to generate. List of tuples or strings:
 plot_formats = [('png', 300)]
 
+
 # This value selects if automatically documented members are sorted alphabetical (value 'alphabetical'), by member type (value 'groupwise') or by source order (value 'bysource').
 autodoc_member_order = 'bysource'
+
+# This value contains a list of modules to be mocked up.
+# This is useful when some external dependencies are not met at build time and break the building process.
+# You may only specify the root package of the dependencies themselves and omit the sub-modules:
+autodoc_mock_imports = ['rdkit']
