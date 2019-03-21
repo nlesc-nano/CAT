@@ -211,5 +211,6 @@ autodoc_mock_imports = [
     'h5py',
     'numpy',
     'pandas',
-    'scipy'
+    'scipy',
+    'schema'
 ]
