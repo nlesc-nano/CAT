@@ -34,7 +34,6 @@ setup(
     package_dir={'CAT': 'CAT'},
     package_data={
         'CAT': [
-            'data/templates/*json',
             'data/templates/*yaml',
             'data/coskf/*coskf'
         ]
@@ -50,7 +49,7 @@ setup(
         'science',
         'chemistry',
         'python-3',
-        'python-3-6',
+        'python-3-7',
         'automation',
         'scientific-workflows'
     ],
@@ -69,7 +68,7 @@ setup(
         'pandas',
         'pyyaml',
         'schema',
-        'plams@git+https://github.com/SCM-NV/PLAMS@master#egg=plams-1.2',
+        'plams@git+https://github.com/SCM-NV/PLAMS@master',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master'
     ],
     setup_requires=[
