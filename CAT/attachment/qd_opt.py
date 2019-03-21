@@ -48,7 +48,6 @@ def qd_opt(mol, job_recipe):
     mol.job_geometry_opt(job_recipe.job1, job_recipe.s1, name='QD_opt_part1')
 
     # Fix broken angles
-    mol = fix_carboxyl(fix_h(mol))
+    fix_carboxyl(mol)
+    fix_h(mol)
     mol.job_geometry_opt(job_recipe.job2, job_recipe.s2, name='QD_opt_part2')
-
-    return mol

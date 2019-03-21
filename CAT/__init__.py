@@ -16,6 +16,7 @@ from .attachment import (
 )
 
 from .data_handling import (
+    Database,
     mol_from_database, mol_to_database, property_to_database, get_empty_columns,
     read_mol, set_prop, sanitize_optional, sanitize_input_mol, sanitize_path
 )
@@ -30,6 +31,7 @@ __all__ = [
 
     'init_qd_opt', 'init_ligand_opt', 'init_qd_construction', 'init_ligand_anchoring',
 
+    'Database',
     'mol_from_database', 'mol_to_database', 'property_to_database', 'get_empty_columns',
     'read_mol', 'set_prop', 'sanitize_optional', 'sanitize_input_mol', 'sanitize_path',
 

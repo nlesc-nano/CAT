@@ -2,7 +2,7 @@
 
 __all__ = ['Database']
 
-from os import get_cwd
+from os import getcwd
 from os.path import (join, isfile)
 
 import yaml
@@ -17,6 +17,7 @@ from qmflows.templates import templates as qmflows
 
 from rdkit import Chem
 
+from CAT.mol_utils import from_rdmol
 from CAT.utils import (get_time, type_to_string)
 
 
@@ -29,7 +30,7 @@ def as_pdb_array(mol_list, min_size=0):
     :parameter int min_size: The minimumum length of the pdb_array. The array is padded with empty
         strings if required.
     :return: An array with *m* partially deserialized .pdb files with up to *n* lines each.
-    :rtype: *m*n* |np.ndarray|_ [|np.bytes|_ / *|S80*]
+    :rtype: *m*n* |np.ndarray|_ [|np.bytes|_ *|S80*]
     """
     pdb_list = []
     shape = min_size
@@ -47,23 +48,28 @@ def as_pdb_array(mol_list, min_size=0):
     return ret
 
 
-def from_pdb_array(array):
-    """ Converts a an array with a (partially) de-serialized .pdb file into a PLAMS molecule.
+def from_pdb_array(array, rdmol=True):
+    """ Converts a an array with a (partially) de-serialized .pdb file into an
+    rdkit or PLAMS molecule.
 
     :parameter array: A (partially) de-serialized .pdb file.
     :type array: |np.ndarray|_ [|np.bytes|_ / *|S80*]
-    :return: A PLAMS molecule build from **array**.
-    :rtype: |plams.Molecule|_
+    :parameter bool rdmol: If *True*, return an rdkit molecule instead of a PLAMS molecule.
+    :return: A PLAMS or RDKit molecule build from **array**.
+    :rtype: |plams.Molecule|_ or |rdkit.Chem.Mol|_
     """
     pdb_str = ''.join([item.decode() + '\n' for item in array if item])
-    return molkit.from_rdmol(Chem.MolFromPDBBlock(pdb_str, removeHs=False, proximityBonding=False))
+    rdmol = Chem.MolFromPDBBlock(pdb_str, removeHs=False, proximityBonding=False)
+    if not rdmol:
+        return molkit.from_rdmol(rdmol)
+    return rdmol
 
 
 def _sanitize_yaml_settings(s):
     """ Remove a predetermined set of unwanted keys and values from a settings object.
 
     :param s: A settings object with, potentially, undesired keys and values.
-    :type s: |Settings|_
+    :type s: |plams.Settings|_ (superclass: |dict|_)
     :return: A (nested) dictionary with unwanted keys and values removed.
     :rtype: |dict|_.
     """
@@ -78,91 +84,250 @@ def _sanitize_yaml_settings(s):
     return s.as_dict()
 
 
-def _job_recipe_to_yaml(job_recipe):
-    """
-    Convert **job_recipe** into a more suitable form for storage in a *Database* object
-
-    :parameter job_recipe: A list of one or more settings specific to a job.
-    :type job_recipe: |list|_ [|Settings|_]
-    :return: A list of tuples, each tuple containg a key for *Database.yaml* and matching value.
-    :rtype: |list|_ [|tuple|_ [|str|_, |Settings|_]]
-    """
-    file_dict = {
-            'ligand.optimize': ('geometry.json', None),
-            'qd.optimize': ('geometry.json', 'geometry.json'),
-            'qd.dissociate': ('singlepoint.json', 'freq.json')}
-
-    ret = []
-    for job_dict in job_recipe:
-        if job_dict.job and job_dict.s:
-            if job_dict.job_type is not None:
-                template_key = type_to_string(job_recipe.job_type)
-                s = qmflows.get_template(file_dict[job_dict.job_type])['specific'][template_key]
-            else:
-                s = Settings()
-            s.update(job_dict.s)
-            tmp = _sanitize_yaml_settings(s), str(job_dict.job).rsplit('.', 1)[-1].split("'")[0]
-            ret.append(tmp)
-        else:
-            ret.append((None, None))
-
-
 class Database():
-    """ """
+    """ The Database class.
+
+    :Atributes:     * **path** (|plams.Settings|_) – A settings object with the absolute paths to \
+                    the various database components (see below).
+
+                    * **csv_lig** (|None|_ or |pd.DataFrame|_) – A dataframe with all results \
+                    related to the ligands.
+
+                    * **csv_qd** (|None|_ or |pd.DataFrame|_) – A dataframe with all results \
+                    related to the quantum dots.
+
+                    * **yaml** (|None|_ or |plams.Settings|_) – A settings object with all job \
+                    settings.
+
+                    * **hdf5** (|None|_ or |h5py.File|_) – A file object with all \
+                    (partially) deserialized .pdb files.
+
+                    * **mongodb** (|None|_) – *None*.
+
+    """
     def __init__(self, path=None):
         """ """
-        path = path or get_cwd()
+        path = path or getcwd()
 
         # Attributes which hold the absolute paths to various components of the database
         self.path = Settings()
-        self.path.lig_csv = self.create_csv(path, 'ligand')
-        self.path.qd_csv = self.create_csv(path, 'QD')
-        self.path.yaml = self.create_yaml(path)
-        self.path.hdf5 = self.create_hdf5(path)
+        self.path.csv_lig = self._create_csv(path, database='ligand')
+        self.path.csv_qd = self._create_csv(path, database='QD')
+        self.path.yaml = join(path, 'job_settings.yaml')
+        self.path.hdf5 = self._create_hdf5(path)
         self.path.mongodb = None
 
         # Attributes which hold the actual components of the database (when opened)
-        self.lig_csv = None
-        self.qd_csv = None
+        self.csv_lig = None
+        self.csv_qd = None
         self.yaml = None
         self.hdf5 = None
         self.mongodb = None
 
     """ #################################  Update **self.yaml** ############################### """
 
-    def update_yaml(self, job_recipe):
+    def update_yaml(self, job_recipe, close=True):
         """ Update **self.yaml** with (potentially) new user provided settings.
 
-        :parameter job_recipe: A list of one or more settings specific to a job.
-        :type job_recipe: |list|_ [|Settings|_]
-        :return: A tuple of keys, used for linking an entry in **self.csv** to a specific job
-            setting in **self.yaml**.
-        :rtype: |list|_ [|str|_].
+        :parameter job_recipe: A settings object with one or more settings specific to a job.
+        :type job_recipe: |plams.Settings|_ (superclass: |dict|_)
+        :parameter bool close: If the job settings database should be closed afterwards.
+        :return: A dictionary with the row name of **self.csv_lig** or **self.csv_qd** as keys
+            and the key for **self.yaml** as matching values.
+        :rtype: |dict|_ (keys: |str|_, values: |str|_).
         """
-        self.open_yaml()
-        yaml_input = _job_recipe_to_yaml()
+        if self.yaml is None:
+            self.open_yaml()
 
-        # Update the job settings database
-        idx = []
-        for job, s in yaml_input:
-            if None in (job, s):
-                idx.append(None)
+        ret = {}
+        for item in job_recipe:
+            # Prepare keys and values
+            if not isinstance(job_recipe[item].key, str):
+                template = job_recipe[item].template
+                key = type_to_string(job_recipe[item].key)
+                value = qmflows.get_template(template)['specific'][key]
+                value.update(_sanitize_yaml_settings(job_recipe[item].value))
+                key = key.rsplit('.', 1)[-1].split("'")[0]
             else:
-                if job not in self.yaml:
-                    self.yaml[job] = []
-                if s in self.yaml[job]:
-                    idx.append(job + ' ' + str(self.yaml[job].index(s)))
-                else:
-                    self.yaml[job].append(s)
-                    idx.append(job + ' ' + str(len(self.yaml[job]) - 1))
+                key = job_recipe[item].key
+                value = job_recipe[item].value
+            name = job_recipe[item].name
 
-        self.close_yaml()
-        return idx
+            # Update ret
+            if key not in self.yaml:
+                self.yaml[key] = []
+            if value in self.yaml[key]:
+                ret[name] = key + ' ' + str(self.yaml[key].index(value))
+            else:
+                self.yaml[key].append(value)
+                ret[name] = key + ' ' + str(len(self.yaml[key]) - 1)
+
+        if close:
+            self.close_yaml()
+        return ret
+
+    """ #####################  Update **self.csv_lig** and **self.csv_qd** #################### """
+
+    def from_csv(self, df, database='ligand', columns=None, close=True):
+        """ Pull results from **self.csv_lig** or **self.csv_qd**.
+        Performs in inplace update of **df**.
+
+        :parameter df: A dataframe of new (potential) database entries.
+        :type df: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
+        :parameter str database: The type of database; accepted values are *ligand* and *QD*.
+        :parameter bool close: If the database should be closed afterwards.
+        """
+        # Open the database
+        self.open_csv(database)
+
+        # Operate on either *self.csv_lig* or *self.csv_qd*
+        if database == 'ligand':
+            csv = self.csv_lig
+        elif database == 'QD':
+            csv = self.csv_qd
+        else:
+            raise TypeError()
+
+        # Attempt to update **df** with preexisting .pdb files from **self**
+        columns = list(df.loc[np.isin(df.index, csv.columns)].index)
+        if columns:
+            hdf5_idx = csv[columns]['hdf5_index']
+            mol_list = self.from_hdf5(hdf5_idx)
+            for i, rdmol in zip(columns, mol_list):
+                df['mol'][i].from_rdmol(rdmol)
+
+        # Close the database
+        if close:
+            self.close_csv(database, write=False)
+
+    def update_csv(self, df, database='ligand', columns=None, overwrite=False, close=True,
+                   job_recipe=None):
+        """ Update **self.csv_lig** or **self.csv_qd** with
+        (potentially) new user provided settings.
+
+        :parameter df: A dataframe of new (potential) database entries.
+        :type df: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
+        :parameter str database: The type of database; accepted values are *ligand* and *QD*.
+        :parameter columns: An array with *n* column keys in **df** which
+            (potentially) are to be added to **self**. If *None*: Add all columns.
+        :type columns: |None|_ or *n*2* |np.ndarray|_ [|np.str_|_]
+        :parameter bool overwrite: Whether or not previous entries can be overwritten or not.
+        :parameter bool close: If the database should be closed afterwards.
+        :parameter job_recipe: A Settings object with settings specific to a job.
+        :type job_recipe: |None|_ or |plams.Settings|_ (superclass: |dict|_)
+        """
+        # Open the database
+        self.open_csv(database)
+
+        # Operate on either *self.csv_lig* or *self.csv_qd*
+        if database == 'ligand':
+            csv = self.csv_lig
+        elif database == 'QD':
+            csv = self.csv_qd
+        else:
+            raise TypeError()
+
+        # Update job settings
+        if job_recipe is not None:
+            job_settings = self.update_yaml(job_recipe)
+            for key in job_settings:
+                df[key] = job_settings[key]
+
+        # Update columns
+        idx_array = np.array(df.index)
+        for i in idx_array[np.isin(df.index, csv.columns, invert=True)]:
+            csv[i] = np.nan
+
+        # Update index
+        if columns is None:
+            columns = df.columns
+        else:
+            columns += list(job_settings.keys())
+            columns = np.array(columns)
+        for i in columns:
+            if i not in csv.index:
+                csv.loc[i, :] = None
+
+        # Update hdf5 values
+        hdf5_series = self.update_hdf5(df, database=database, overwrite=overwrite, close=False)
+        df.update(hdf5_series, overwrite=True)
+
+        # Update csv values
+        csv.update(df.T, overwrite=overwrite)
+
+        # Close the database
+        if close:
+            self.close_csv(database)
+
+    """ #################################  Update **self.hdf5** ############################### """
+
+    def from_hdf5(self, index, database='ligand', rdmol=True, close=False):
+        """ Import structures from the hdf5 database as rdkit or PLAMS molecules.
+
+        :parameter index: The indices of the to be retrieved structures.
+        :type index: |list|_ [|int|_]
+        :parameter str database: The type of database; accepted values are *ligand* and *QD*.
+        :parameter bool rdmol: If *True*, return an rdkit molecule instead of a PLAMS molecule.
+        :parameter bool close: If the database should be closed afterwards.
+        :return: A list of PLAMS or rdkit molecules.
+        :rtype: |list|_ [|plams.Molecule|_] or |list|_ [|rdkit.Chem.Mol|_]
+        """
+        # Open the database
+        self.open_hdf5()
+
+        # Pull entries from the database as a list of RDKit molecules
+        pdb_array = self.hdf5[database][index]
+        ret = from_pdb_array(pdb_array, rdmol=rdmol)
+
+        # Close the database
+        if close:
+            self.close_hdf5()
+        return ret
+
+    def update_hdf5(self, df, database='ligand', overwrite=False, close=True):
+        """ Export molecules (see the *mol* column in **df**) to the structure database.
+        Returns a series with the **self.hdf5** indices of all new entries.
+
+        :parameter df: A dataframe of new (potential) database entries.
+        :type df: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
+        :parameter str database: The type of database; accepted values are *ligand* and *QD*.
+        :parameter bool overwrite: Whether or not previous entries can be overwritten or not.
+        :parameter bool close: If the database should be closed afterwards.
+        :return: A series with the index of all new molecules in **self.hdf5**
+        :rtype: |pd.Series|_ (index: |str|_, values: |np.int64|_)
+        """
+        self.open_hdf5()
+
+        # Identify new and preexisting entries
+        new = df['hdf5_index'][df['hdf5_index'] == -1]
+        old = df['hdf5_index'][df['hdf5_index'] != -1]
+
+        i, j = self.hdf5[database].shape
+
+        # Add new entries to the database
+        if new.any():
+            pdb_array = as_pdb_array(df['mol'][new], min_size=j)
+
+            # Reshape and update **self.hdf5**
+            self.hdf5[database].shape = i + pdb_array.shape[0], pdb_array.shape[1]
+            self.hdf5[database][i:i+pdb_array.shape[0]] = pdb_array
+            ret = pd.Series(np.arange(i, i + pdb_array.shape[0]),
+                            index=new.index, name=('hdf5_index', ''))
+
+        # If **overwrite** is *True*
+        if overwrite and old.any():
+            self.hdf5[database][old] = as_pdb_array(df['mol'][old], min_size=j)
+
+        if close:
+            self.close_hdf5()
+            self.close_csv(database)
+
+        return ret
 
     """ #################################  Opening the database ############################### """
 
     def open_csv(self, database='ligand'):
-        """ Open the ligand or quantum dot database, populating **self.lig_csv** or **self.qd_csv**
+        """ Open the ligand or quantum dot database, populating **self.csv_lig** or **self.csv_qd**
         with a |pd.DataFrame|_ object.
 
         :parameter str database: The type of database; accepted values are *ligand* and *QD*.
@@ -171,45 +336,65 @@ class Database():
             self._open_csv_lig()
         elif database == 'QD':
             self._open_csv_qd()
-        raise KeyError()
+        else:
+            raise KeyError()
 
     def _open_csv_lig(self):
-        """ Open the ligand database, populating **self.lig_csv** with a |pd.DataFrame|_ object. """
-        self.csv_lig = pd.read_csv(self.path.lig_csv, index_col=[0, 1],
-                                   header=[0, 1], keep_default_na=False)
+        """ Open the ligand database, populating **self.csv_lig** with a |pd.DataFrame|_ object. """
+        if self.csv_lig is None:
+            self.csv_lig = pd.read_csv(self.path.csv_lig, index_col=[0, 1],
+                                       header=[0, 1], keep_default_na=False)
+            self.csv_lig.replace('', np.nan, inplace=True)
 
     def _open_csv_qd(self):
-        """ Open the quantum dot database, populating **self.qd_csv**
+        """ Open the quantum dot database, populating **self.csv_qd**
         with a |pd.DataFrame|_ object.
         """
-        self.csv_qd = pd.read_csv(self.path.qd_csv, index_col=[0, 1],
-                                  header=[0, 1, 2, 3], keep_default_na=False)
+        if self.csv_qd is None:
+            self.csv_qd = pd.read_csv(self.path.csv_qd, index_col=[0, 1],
+                                      header=[0, 1, 2, 3], keep_default_na=False)
+            self.csv_qd.replace('', np.nan, inplace=True)
 
     def open_yaml(self):
-        """ Open the job settings database, populating **self.yaml** with a |Settings|_ object. """
-        self.yaml = Settings(yaml.load(self.path.yaml))
+        """ Open the job settings database, populating **self.yaml** with a
+        |plams.Settings|_ object.
+        """
+        if self.yaml is None:
+            if isfile(self.path.yaml):
+                self.yaml = Settings(yaml.load(self.path.yaml))
+            else:
+                self.yaml = Settings()
 
     def open_hdf5(self):
         """ Open the .pdb structure database, populating **self.hdf5**
         with a |h5py.File|_ object.
         """
-        self.hdf5 = h5py.File(self.path.hdf5, 'a')
+        if self.hdf5 is None:
+            self.hdf5 = h5py.File(self.path.hdf5, 'a')
 
-    def open_all(self):
-        """ Open all components of the database, populating their respective attributes. """
-        self.open_csv(database='ligand')
-        self.open_csv(database='QD')
+    def open_all(self, database=None):
+        """ Open all components of the database, populating their respective attributes.
+
+        :parameter database: If not *None*, open all components of a specific database.
+            Accepted values (besides *None*) are *ligand* and *QD*.
+        :type database: |None|_ or |str|_
+        """
         self.open_yaml()
         self.open_hdf5()
+        if database is None:
+            self.open_csv(database='ligand')
+            self.open_csv(database='QD')
+        else:
+            self.open_csv(database=database)
 
     """ #################################  Closing the database ############################### """
 
     def close_csv(self, database='ligand', write=True):
-        """ Close the ligand or quantum dot database, depopulating **self.lig_csv** or
-        **self.qd_csv** and exporting its content to a .csv file.
+        """ Close the ligand or quantum dot database, depopulating **self.csv_lig** or
+        **self.csv_qd** and exporting its content to a .csv file.
 
         :parameter str database: The type of database; accepted values are *ligand* and *QD*.
-        :parameter bool write: Whether or not **self.lig_csv** / **self.qd_csv** should be
+        :parameter bool write: Whether or not **self.csv_lig** / **self.csv_qd** should be
             exported to a .csv file.
         """
         if database == 'ligand':
@@ -220,42 +405,47 @@ class Database():
             raise KeyError()
 
     def _close_csv_lig(self, write=True):
-        """ Close the ligand database, depopulating **self.lig_csv** and exporting its content to
+        """ Close the ligand database, depopulating **self.csv_lig** and exporting its content to
         a .csv file.
 
-        :parameter bool write: Whether or not **self.lig_csv** should be exported to a .csv file.
+        :parameter bool write: Whether or not **self.csv_lig** should be exported to a .csv file.
         """
-        if write:
-            self.csv_lig.to_csv(self.path.csv_lig)
-        self.csv_lig = None
+        if self.csv_lig is not None:
+            if write:
+                print(self.path.csv_lig)
+                self.csv_lig.to_csv(self.path.csv_lig)
+            self.csv_lig = None
 
     def _close_csv_qd(self, write=True):
-        """ Close the quantum dot database, depopulating **self.qd_csv** and exporting its content
+        """ Close the quantum dot database, depopulating **self.csv_qd** and exporting its content
         to a .csv file.
 
-        :parameter bool write: Whether or not **self.qd_csv** should be exported to a .csv file.
+        :parameter bool write: Whether or not **self.csv_qd** should be exported to a .csv file.
         """
-        if write:
-            self.csv_qd.to_csv(self.path.csv_qd)
-        self.csv_qd = None
+        if self.csv_qd is not None:
+            if write:
+                self.csv_qd.to_csv(self.path.csv_qd)
+            self.csv_qd = None
 
     def close_yaml(self, write=True):
         """ Close the job settings database, depopulating **self.yaml** and exporting
         its content to a .yaml file.
 
-        :parameter bool write: Whether or not **self.lig_csv** should be exported to a .csv file.
+        :parameter bool write: Whether or not **self.csv_lig** should be exported to a .csv file.
         """
-        if write:
-            with open(self.path.yaml, 'w') as file:
-                file.write(yaml.dump(self.yaml, default_flow_style=False, indent=4))
-        self.yaml = None
+        if self.yaml is not None:
+            if write:
+                with open(self.path.yaml, 'w') as file:
+                    file.write(yaml.dump(self.yaml.as_dict(), default_flow_style=False, indent=4))
+            self.yaml = None
 
     def close_hdf5(self):
         """ Close the .pdb structure database, depopulating **self.hdf5** and closing
         the .hdf5 file.
         """
-        self.hdf5.close()
-        self.hdf5 = None
+        if self.hdf5 is not None:
+            self.hdf5.close()
+            self.hdf5 = None
 
     def close_all(self, write=True):
         """ Close all components of the database, depopulating their respective attributes and
@@ -263,14 +453,14 @@ class Database():
 
         :parameter bool write: Whether or not the database content should be exported.
         """
-        self.close_csv(database='ligand', write)
-        self.close_csv(database='QD', write)
-        self.close_yaml(write)
+        self.close_csv(database='ligand', write=write)
+        self.close_csv(database='QD', write=write)
+        self.close_yaml(write=write)
         self.close_hdf5()
 
     """ ##################################  Creating the database ############################# """
 
-    def create_csv(self, path, database='ligand'):
+    def _create_csv(self, path, database='ligand'):
         """ Create a ligand or QD database (csv format) and, if it does not exist, and return
         its absolute path.
 
@@ -284,7 +474,7 @@ class Database():
         # Check if the database exists and has the proper keys; create it if it does not
         if not isfile(path):
             print(get_time() + database + '_database.csv not found in ' +
-                  self.dir + ', creating ' + database + ' database')
+                  path + ', creating ' + database + ' database')
             if database == 'ligand':
                 self._create_csv_lig(path)
             elif database == 'QD':
@@ -298,7 +488,7 @@ class Database():
 
         :param str path: The path to the database.
         """
-        idx = sorted(['hdf5 index', 'settings1', 'formula'])
+        idx = sorted(['hdf5_index', 'formula'])
         idx = pd.MultiIndex.from_tuples([(i, '') for i in idx], names=['index', 'sub index'])
         columns = pd.MultiIndex.from_tuples([(None, None)], names=['smiles', 'anchor'])
         df = pd.DataFrame(None, index=idx, columns=columns)
@@ -309,7 +499,7 @@ class Database():
 
         :param str path: The path to the database.
         """
-        idx = sorted(['hdf5 index', 'settings1', 'settings2', 'ligand count'])
+        idx = sorted(['hdf5_index', 'ligand count'])
         idx = pd.MultiIndex.from_tuples([(i, '') for i in idx], names=['index', 'sub index'])
         columns = pd.MultiIndex.from_tuples(
                 [(None, None, None, None)],
@@ -318,7 +508,7 @@ class Database():
         df = pd.DataFrame(None, index=idx, columns=columns)
         df.to_csv(path)
 
-    def create_hdf5(self, path, name='structures.hdf5'):
+    def _create_hdf5(self, path, name='structures.hdf5'):
         """ Create a pdb structure database (hdf5 format), populate it with the *core*, *ligand*
         and *QD* datasets and finally return its absolute path.
 
@@ -331,25 +521,10 @@ class Database():
         hdf5 = h5py.File(path, 'a')
 
         # Check if the dataset is already available in structures.hdf5
-        databases = 'core', 'ligand', 'QD'
-        for name in databases:
+        dataset_names = 'core', 'ligand', 'QD'
+        for name in dataset_names:
             if name not in hdf5:
                 hdf5.create_dataset(name=name, data=np.empty((0, 1), dtype='S80'),
                                     chunks=True, maxshape=(None, None), compression='gzip')
         hdf5.close()
-        return path
-
-    def create_yaml(self, path, name='job_settings.yaml'):
-        """ Create a job settings database (yaml format), if it does not exist, and return
-        its absolute path.
-
-        :param str path: The path to the database.
-        :param str name: The filename of the database (excluding its path)
-        :return: The absolute path to the job settings database.
-        :rtype: |str|_.
-        """
-        path = join(path, name)
-        if not isfile(path):
-            with open(path, 'w') as file:
-                file.write()
         return path

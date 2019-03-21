@@ -19,7 +19,14 @@ from rdkit.Chem import rdMolTransforms
 @add_to_class(Molecule)
 def from_mol_other(self, mol, atom_subset=None):
     """ Update the atomic coordinates of *self* with coordinates from another PLAMS molecule.
-    Alternatively, update only a subset of atoms. """
+    Alternatively, update only a subset of atoms.
+    Performs an inplace update of **self**.
+
+    :parameter mol: A PLAMS molecule.
+    :type mol: |plams.Molecule|_
+    :parameter atom_subset: A subset of atoms in **self**.
+    :type atom_subset: |None|_ or |list|_ [|plams.Atom|_]
+    """
     atom_subset = atom_subset or self.atoms
     for at1, at2 in zip(atom_subset, mol):
         at1.coords = at2.coords
@@ -28,7 +35,14 @@ def from_mol_other(self, mol, atom_subset=None):
 @add_to_class(Molecule)
 def from_rdmol(self, rdmol, atom_subset=None):
     """ Update the atomic coordinates of *self* with coordinates from an RDKit molecule.
-    Alternatively, update only a subset of atoms. """
+    Alternatively, update only a subset of atoms.
+    Performs an inplace update of **self**.
+
+    :parameter rdmol: An RDKit molecule.
+    :type rdmol: |rdkit.Chem.Mol|_
+    :parameter atom_subset: A subset of atoms in **self**.
+    :type atom_subset: |None|_ or |list|_ [|plams.Atom|_]
+    """
     atom_subset = atom_subset or self.atoms
     conf = rdmol.GetConformer()
     for at1, at2 in zip(atom_subset, rdmol.GetAtoms()):
@@ -37,10 +51,12 @@ def from_rdmol(self, rdmol, atom_subset=None):
 
 
 def to_atnum(item):
-    """
-    Turn an atomic symbol into an atomic number.
-    item <str> or <int>: An atomic symbol or number.
-    return <int>: An atomic number.
+    """ Turn an atomic symbol into an atomic number.
+
+    :parameter item: An atomic symbol or number.
+    :type item: |int|_ or |str|_
+    :return: An atomic number.
+    :rtype: |int|_
     """
     if isinstance(item, str):
         return PeriodicTable.get_atomic_number(item)
@@ -48,10 +64,12 @@ def to_atnum(item):
 
 
 def to_symbol(item):
-    """
-    Turn an atomic number into an atomic symbol.
-    item <str> or <int>: An atomic symbol or number.
-    return <str>: An atomic symbol.
+    """ Turn an atomic number into an atomic symbol.
+
+    :parameter item: An atomic symbol or number.
+    :type item: |int|_ or |str|_
+    :return: An atomic symbol.
+    :rtype: |str|_
     """
     if isinstance(item, int):
         return PeriodicTable.get_symbol(item)
@@ -60,33 +78,32 @@ def to_symbol(item):
 
 @add_to_class(Atom)
 def get_atom_index(self):
-    """
-    Return the index of an atom (numbering starts with 1).
-    self <plams.Atom>: A PLAMS atom.
-    return <int>: An atomic index.
+    """ Return the index of an atom (numbering starts with 1).
+
+    :return: An atomic index.
+    :rtype: |int|_.
     """
     return self.mol.atoms.index(self) + 1
 
 
 @add_to_class(Bond)
 def get_bond_index(self):
-    """
-    Return a tuple of two atomic indices defining a bond (numbering starts with 1).
-    self <plams.Bond>: A PLAMS bond.
-    return <tuple>[<int>, <int>]: A tuple of two atomic indices defining a bond.
+    """ Return a tuple of two atomic indices defining a bond (numbering starts with 1).
+
+    :return: A tuple of 2 atomic indices defining a bond.
+    :rtype: 2 |tuple|_ [|int|_].
     """
     return self.atom1.get_atom_index(), self.atom2.get_atom_index()
 
 
 @add_to_class(Molecule)
 def merge_mol(self, mol_list):
-    """
-    Merge two or more molecules into a single molecule.
+    """ Merge two or more molecules into a single molecule.
     No new copies of atoms/bonds are created, all atoms/bonds are moved from mol_list to plams_mol.
-    plams_mol <plams.Molecule>: A PLAMS molecule.
-    mol_list <plams.Molecule> or <list>[<plams.Molecule>]: A PLAMS molecule or an iterable
-        consisting of PLAMS molecules.
-    return <plams.Molecule>: The new combined PLAMS molecule
+    Performs an inplace update of **self**.
+
+    :parameter mol_list: A molecule or list of molecules.
+    :type mol_list: |plams.Molecule|_ or |list|_ [|plams.Molecule|_].
     """
     if isinstance(mol_list, Molecule):
         mol_list = [mol_list]
@@ -103,14 +120,16 @@ def merge_mol(self, mol_list):
 
 @add_to_class(Molecule)
 def separate_mod(self):
-    """
-    Modified PLAMS function: seperates a molecule instead of a copy of a molecule.
+    """ Modified PLAMS function: seperates a molecule instead of a copy of a molecule.
     Separate the molecule into connected components.
-    Returned is a list of new |Molecule| objects (all atoms and bonds are disjoint with
+    returns is a list of new |Molecule| objects (all atoms and bonds are disjoint with
         the original molecule).
     Each element of this list is identical to one connected component of the base molecule.
     A connected component is a subset of atoms such that there exists a path
         (along one or more bonds) between any two atoms.
+
+    :return: A list of molecules with atoms and bonds from **self**.
+    :rtype: |list|_ [|plams.Molecule|_]
     """
     frags = []
     for at in self:
@@ -141,10 +160,12 @@ def separate_mod(self):
 
 
 def adf_connectivity(plams_mol):
-    """
-    Create an ADF-compatible connectivity list.
-    plams_mol <plams.Molecule>: A PLAMS molecule.
-    return <list>[<str>]: An ADF-compatible connectivity list.
+    """ Create an AMS-compatible connectivity list.
+
+    :parameter plams_mol: A PLAMS molecule.
+    :type plams_mol: |plams.Molecule|_
+    :return: An ADF-compatible connectivity list of *n* bonds.
+    :rtype: *n* |list|_ [|str|_].
     """
     # Create list of indices of all aromatic bonds
     rdmol = molkit.to_rdmol(plams_mol)
@@ -164,9 +185,11 @@ def adf_connectivity(plams_mol):
 
 
 def fix_carboxyl(plams_mol):
-    """
-    Resets carboxylate OCO angles if smaller than 60 degrees.
-    return <plams.Molecule>: A PLAMS molecule without OCO angles smaller than 60.0 degrees.
+    """ Resets carboxylate OCO angles if it is smaller than 60 degrees.
+    Performs an inplace update of **plams_mol**.
+
+    :parameter plams_mol: A PLAMS molecule.
+    :type plams_mol: |plams.Molecule|_
     """
     rdmol = molkit.to_rdmol(plams_mol)
     carboxylate = Chem.MolFromSmarts('[O-]C(C)=O')
@@ -180,14 +203,14 @@ def fix_carboxyl(plams_mol):
                 set_angle(rdmol.GetConformer(), idx[2], idx[1], idx[3], 180.0)
                 set_angle(rdmol.GetConformer(), idx[0], idx[1], idx[3], 120.0)
         plams_mol.from_rdmol(rdmol)
-    return plams_mol
 
 
 def fix_h(plams_mol):
-    """
-    If a C=C-H angle is smaller than 20.0 degrees, set it back to 120.0 degrees.
-    plams_mol <plams.Molecule>: A PLAMS molecule.
-    return <plams.Molecule>: A PLAMS molecule without C=C-H angles smaller than 20.0 degrees.
+    """ If a C=C-H angle is smaller than 20.0 degrees, set it back to 120.0 degrees.
+    Performs an inplace update of **plams_mol**.
+
+    :parameter plams_mol: A PLAMS molecule.
+    :type plams_mol: |plams.Molecule|_
     """
     H_list = [atom for atom in plams_mol if atom.atnum == 1 and 2.0 in
               [bond.order for bond in plams_mol.neighbors(atom)[0].bonds]]
@@ -211,4 +234,3 @@ def fix_h(plams_mol):
 
     if update:
         plams_mol.from_rdmol(rdmol)
-    return plams_mol
