@@ -12,7 +12,7 @@ optional:
         dirname: database
         read: True
         write: True
-        overwrite: True
+        overwrite: False
         mol_format: [xyz, pdb]
         mongodb: False
 
