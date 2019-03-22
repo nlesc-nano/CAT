@@ -176,8 +176,8 @@ class Database():
                     (partially) deserialized .pdb files.
 
                     * **mongodb** (|None|_) – *None*.
-
     """
+
     def __init__(self, path=None):
         """ """
         path = path or getcwd()
@@ -196,7 +196,6 @@ class Database():
         self.yaml = None
         self.hdf5 = None
         self.mongodb = None
-
 
     """ #################################  Opening the database ############################### """
 
@@ -487,7 +486,7 @@ class Database():
 
     """ ########################  Pulling results from the database ########################### """
 
-    def from_csv(self, df, database='ligand', columns=None, close=True):
+    def from_csv(self, df, database='ligand', columns=None, close=True, inplace=True):
         """ Pull results from **self.csv_lig** or **self.csv_qd**.
         Performs in inplace update of **df**.
 
@@ -495,6 +494,11 @@ class Database():
         :type df: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
         :parameter str database: The type of database; accepted values are *ligand* and *QD*.
         :parameter bool close: If the database should be closed afterwards.
+        :parameter bool inplace: If *True* perform an inplace update of the *mol* column in **df**.
+            Otherwise Return a new series of PLAMS molecules.
+        :return: If **inplace** = *False*: return a new series of PLAMS molecules pulled
+            from **self**.
+        :rtype: |pd.Series|_ (index: |str|, values: |plams.Molecule|_, name=|str|_)
         """
         # Open the database
         self.open_csv(database)
@@ -508,16 +512,28 @@ class Database():
             raise TypeError()
 
         # Attempt to update **df** with preexisting .pdb files from **self**
+        # Or create and return a new series of PLAMS molecules
         columns = list(df.loc[np.isin(df.index, csv.columns)].index)
         if columns:
             hdf5_idx = csv[columns]['hdf5 index']
-            mol_list = self.from_hdf5(hdf5_idx)
-            for i, rdmol in zip(columns, mol_list):
-                df['mol'][i].from_rdmol(rdmol)
+            if inplace:
+                mol_list = self.from_hdf5(hdf5_idx)
+                for i, rdmol in zip(columns, mol_list):
+                    df.at[i, 'mol'].from_rdmol(rdmol)
+            else:
+                mol_list = self.from_hdf5(hdf5_idx, rdmol=False)
+                idx = pd.MultiIndex.from_tuples(columns, names=df.index.names)
+                ret = pd.Series(mol_list, index=idx, name=('mol', ''))
 
         # Close the database
         if close:
             self.close_csv(database, write=False)
+
+        # Return a new series if **inplace** = *False*
+        if not inplace:
+            if columns:
+                return ret
+            return pd.Series(np.empty((0), dtype=object), name=('mol', ''))
 
     def from_hdf5(self, index, database='ligand', rdmol=True, close=False):
         """ Import structures from the hdf5 database as RDKit or PLAMS molecules.

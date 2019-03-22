@@ -52,9 +52,8 @@ def init_ligand_opt(ligand_df, arg):
             mol_list = split_mol(ligand)
             for mol in mol_list:
                 mol.set_dihed(180.0)
-            ligand = recombine_mol(mol_list)
-            fix_carboxyl(ligand)
-            ligand_df['mol'][i] = ligand
+            ligand_tmp = recombine_mol(mol_list)
+            fix_carboxyl(ligand_tmp)
 
             # Print messages
             print(get_time() + ligand.properties.name + '\t has been optimized')
