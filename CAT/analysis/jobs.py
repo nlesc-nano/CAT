@@ -9,6 +9,7 @@ import numpy as np
 from scm.plams.mol.molecule import Molecule
 from scm.plams.core.settings import Settings
 from scm.plams.core.functions import add_to_class
+from scm.plams.tools.units import Units
 
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 from scm.plams.interfaces.thirdparty.cp2k import Cp2kResults
@@ -31,6 +32,13 @@ def get_main_molecule(self):
             print(Molecule(join(self.job.path, file)))
             return Molecule(join(self.job.path, file))
     return None
+
+
+@add_to_class(Cp2kResults)
+def get_energy(self, index=0, unit='Hartree'):
+    """Returns last occurence of 'Total energy:' in the output."""
+    energy = self._get_energy_type('Total', index=index)
+    return Units.convert(energy, 'Hartree', unit)
 
 
 @add_to_class(Molecule)
