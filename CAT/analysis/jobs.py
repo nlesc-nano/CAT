@@ -27,8 +27,8 @@ def get_main_molecule(self):
     for file in self.files:
         print(file)
         if '.xyz' in file:
-            print(join(self.job.path, file)
-            print(Molecule(join(self.job.path, file))
+            print(join(self.job.path, file))
+            print(Molecule(join(self.job.path, file)))
             return Molecule(join(self.job.path, file))
     return None
 
