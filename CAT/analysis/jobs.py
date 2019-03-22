@@ -90,7 +90,8 @@ def job_geometry_opt(self, job, settings, name='Geometry_optimization', ret_resu
     try:
         self.from_mol_other(results.get_main_molecule())
         self.properties.energy.E = results.get_energy(unit='kcal/mol')
-    except TypeError:
+    except TypeError as ex:
+        print(ex)
         print(get_time() + 'WARNING: Failed to retrieve results of ' + results.job.name)
     if not self.properties.energy.E or self.properties.energy.E is None:
         self.properties.energy.E = np.nan
