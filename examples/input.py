@@ -10,4 +10,4 @@ yaml_path = join(dirname(__file__), 'input_settings.yaml')
 with open(yaml_path, 'r') as file:
     arg = Settings(yaml.load(file))
 
-qd_list, core_list, ligand_list = CAT.base.prep(arg)
+qd_df, core_df, ligand_df = CAT.base.prep(arg)
