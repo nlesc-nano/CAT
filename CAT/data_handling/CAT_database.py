@@ -113,9 +113,9 @@ def _create_csv_lig(path):
 
     :param str path: The path to the database.
     """
-    idx = sorted(['hdf5 index', 'formula'])
-    idx = pd.MultiIndex.from_tuples([(i, '') for i in idx], names=['index', 'sub index'])
-    columns = pd.MultiIndex.from_tuples([(None, None)], names=['smiles', 'anchor'])
+    idx = pd.MultiIndex.from_tuples([(None, None)], names=['smiles', 'anchor'])
+    columns = sorted(['hdf5 index', 'formula'])
+    columns = pd.MultiIndex.from_tuples([(i, '') for i in columns] + [('None', 'None')], names=['index', 'sub index'])
     df = pd.DataFrame(None, index=idx, columns=columns)
     df.to_csv(path)
 
@@ -125,12 +125,12 @@ def _create_csv_qd(path):
 
     :param str path: The path to the database.
     """
-    idx = sorted(['hdf5 index', 'ligand count'])
-    idx = pd.MultiIndex.from_tuples([(i, '') for i in idx], names=['index', 'sub index'])
-    columns = pd.MultiIndex.from_tuples(
+    idx = pd.MultiIndex.from_tuples(
             [(None, None, None, None)],
             names=['core', 'core anchor', 'ligand smiles', 'ligand anchor']
     )
+    columns = sorted(['hdf5 index', 'ligand count'])
+    columns = pd.MultiIndex.from_tuples([(i, '') for i in columns] + [('None', 'None')], names=['index', 'sub index'])
     df = pd.DataFrame(None, index=idx, columns=columns)
     df.to_csv(path)
 
@@ -236,6 +236,7 @@ class Database():
     def _open_csv_lig(self):
         """ Open the ligand database, populating **self.csv_lig** with a |pd.DataFrame|_ object. """
         if self.csv_lig is None:
+            import pdb; pdb.set_trace()
             self.csv_lig = pd.read_csv(self.path.csv_lig, index_col=[0, 1],
                                        header=[0, 1], keep_default_na=False)
             self.csv_lig.replace('', np.nan, inplace=True)
@@ -245,8 +246,8 @@ class Database():
         with a |pd.DataFrame|_ object.
         """
         if self.csv_qd is None:
-            self.csv_qd = pd.read_csv(self.path.csv_qd, index_col=[0, 1],
-                                      header=[0, 1, 2, 3], keep_default_na=False)
+            self.csv_qd = pd.read_csv(self.path.csv_qd, index_col=[0, 1, 2, 3],
+                                      header=[0, 1], keep_default_na=False)
             self.csv_qd.replace('', np.nan, inplace=True)
 
     def open_yaml(self):
@@ -353,7 +354,7 @@ class Database():
         :parameter df: A dataframe of new (potential) database entries.
         :type df: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
         :parameter str database: The type of database; accepted values are *ligand* and *QD*.
-        :parameter columns: An array with *n* column keys in **df** which
+        :parameter columns: A list of column keys in **df** which
             (potentially) are to be added to **self**. If *None*: Add all columns.
         :type columns: |None|_ or *n*2* |np.ndarray|_ [|np.str_|_]
         :parameter bool overwrite: Whether or not previous entries can be overwritten or not.
@@ -378,27 +379,29 @@ class Database():
             for key in job_settings:
                 df[key] = job_settings[key]
 
-        # Update columns
-        idx_array = np.array(df.index)
-        for i in idx_array[np.isin(df.index, csv.columns, invert=True)]:
-            csv[i] = np.nan
-
         # Update index
         if columns is None:
-            columns = df.columns
+            df_columns = df.columns
         else:
-            columns += list(job_settings.keys())
-            columns = np.array(columns)
-        for i in columns:
-            if i not in csv.index:
-                csv.loc[i, :] = None
+            df_columns = columns + list(job_settings.keys())
+            df_columns = np.array(df_columns)
+        for idx in df_columns:
+            if idx not in csv.index:
+                csv.loc[idx, :] = None
+
+        # Update columns
+        bool_array = np.zeros_like(df.index, dtype=bool)
+        for i, j in enumerate(df.index):
+            bool_array[i] = j not in csv.columns
+        for i in df.index[bool_array]:
+            csv[i] = None
 
         # Update hdf5 values
         hdf5_series = self.update_hdf5(df, database=database, overwrite=overwrite, close=False)
-        df.update(hdf5_series, overwrite=True)
 
         # Update csv values
         csv.update(df.T, overwrite=overwrite)
+        csv.update(pd.DataFrame(hdf5_series).T, overwrite=True)
 
         # Close the database
         if close:
@@ -486,7 +489,7 @@ class Database():
 
     """ ########################  Pulling results from the database ########################### """
 
-    def from_csv(self, df, database='ligand', columns=None, close=True, inplace=True):
+    def from_csv(self, df, database='ligand', close=True, inplace=True):
         """ Pull results from **self.csv_lig** or **self.csv_qd**.
         Performs in inplace update of **df**.
 
@@ -511,19 +514,23 @@ class Database():
         else:
             raise TypeError()
 
+        # Prepare a boolean array for slicing df.index
+        bool_array = np.zeros_like(df.index, dtype=bool)
+        for i, j in enumerate(df.index):
+            bool_array[i] = j in csv.columns
+
         # Attempt to update **df** with preexisting .pdb files from **self**
         # Or create and return a new series of PLAMS molecules
-        columns = list(df.loc[np.isin(df.index, csv.columns)].index)
-        if columns:
-            hdf5_idx = csv[columns]['hdf5 index']
+        if bool_array.any():
+            columns = df.index[bool_array]
+            hdf5_idx = np.asarray(csv.loc['hdf5 index', columns], dtype=int)
             if inplace:
-                mol_list = self.from_hdf5(hdf5_idx)
+                mol_list = self.from_hdf5(hdf5_idx.values)
                 for i, rdmol in zip(columns, mol_list):
                     df.at[i, 'mol'].from_rdmol(rdmol)
             else:
                 mol_list = self.from_hdf5(hdf5_idx, rdmol=False)
-                idx = pd.MultiIndex.from_tuples(columns, names=df.index.names)
-                ret = pd.Series(mol_list, index=idx, name=('mol', ''))
+                ret = pd.Series(mol_list, index=columns, name=('mol', ''))
 
         # Close the database
         if close:
@@ -531,11 +538,11 @@ class Database():
 
         # Return a new series if **inplace** = *False*
         if not inplace:
-            if columns:
+            if bool_array.any():
                 return ret
             return pd.Series(np.empty((0), dtype=object), name=('mol', ''))
 
-    def from_hdf5(self, index, database='ligand', rdmol=True, close=False):
+    def from_hdf5(self, index, database='ligand', rdmol=True, close=True):
         """ Import structures from the hdf5 database as RDKit or PLAMS molecules.
 
         :parameter index: The indices of the to be retrieved structures.

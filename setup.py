@@ -66,7 +66,7 @@ setup(
         'numpy',
         'scipy',
         'pandas',
-        'pyyaml',
+        'pyyaml==3.13',
         'schema',
         'plams@git+https://github.com/SCM-NV/PLAMS@master',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master'

@@ -31,18 +31,20 @@ def init_qd_construction(ligand_df, core_df, arg):
     if 'qd' in arg.optional.database.read:
         data = Database(path=arg.optional.database.dirname)
         mol_series1 = data.from_csv(qd_df, database='QD', inplace=False)
+        for mol in mol_series1:
+            print(get_time() + mol.properties.name + '\t has been pulled from the database')
 
     # Identify the to be constructed quantum dots
     idx = -np.isnan(qd_df['hdf5 index'])
 
     # Create a series of new quantum dots
-    mol_list = [ligand_to_qd(core, lig, arg) for
-                core, lig in zip(core_df['mol'][idx], ligand_df['mol'][idx])]
+    mol_list = [ligand_to_qd(core_df['mol'][(i, j)], ligand_df['mol'][(k, l)], arg) for
+                i, j, k, l in qd_df.index[idx]]
     mol_series2 = pd.Series(mol_list, index=idx.index, name=('mol', ''))
 
-    # Update qd_df with the 1 or 2 series of quantum dots
+    # Update the *mol* columnqd_df with or 2 series of quantum dots
     try:
-        qd_df['mol'] = pd.concat(mol_series1, mol_series2)
+        qd_df['mol'] = mol_series1.append(mol_series2)
     except NameError:
         qd_df['mol'] = mol_series2
 
@@ -51,13 +53,12 @@ def init_qd_construction(ligand_df, core_df, arg):
         recipe = Settings()
         recipe.settings = {'name': 'settings1', 'key': 'None', 'value': 'None'}
         try:
-            data.update_csv(ligand_df, columns=['hdf5 index'],
-                            job_recipe=recipe, database='ligand')
+            data.update_csv(qd_df, columns=['hdf5 index', 'ligand count'],
+                            job_recipe=recipe, database='QD')
         except NameError:
             data = Database(path=arg.optional.database.dirname)
-            data.update_csv(ligand_df, columns=['hdf5 index'],
-                            job_recipe=recipe, database='ligand')
-    import pdb; pdb.set_trace()
+            data.update_csv(qd_df, columns=['hdf5 index', 'ligand count'],
+                            job_recipe=recipe, database='QD')
     return qd_df
 
 
@@ -76,7 +77,7 @@ def _get_df(core_index, ligand_index):
             idx_tups,
             names=['core', 'core anchor', 'ligand smiles', 'ligand anchor']
     )
-    column_tups = [('hdf5 index', '')]
+    column_tups = [('hdf5 index', ''), ('ligand count', '')]
     columns = pd.MultiIndex.from_tuples(column_tups, names=['index', 'sub index'])
     return pd.DataFrame(-1, index=index, columns=columns)
 
@@ -115,14 +116,12 @@ def ligand_to_qd(core, ligand, arg):
     qd.properties = Settings()
     qd.properties.indices = qd_indices
     qd.properties.path = arg.optional.qd.dirname
-    qd.properties.core = core.properties.formula
-    qd.properties.core_anchor = core.properties.anchor
-    qd.properties.ligand = ligand.properties.smiles
-    qd.properties.ligand_anchor = ligand.properties.anchor
-    qd.properties.ligand_count = qd[-1].properties.pdb_info.ResidueNumber - 1
-    qd.properties.name = core.properties.name + '__' + str(qd.properties.ligand_count)
+    qd.properties.name = core.properties.name + '__'
+    qd.properties.name += str(qd[-1].properties.pdb_info.ResidueNumber - 1)
     qd.properties.name += '_' + ligand.properties.name
 
+    # Print and return
+    print(get_time() + qd.properties.name + '\t has been constructed')
     return qd
 
 

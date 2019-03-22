@@ -7,7 +7,6 @@ import time
 import numpy as np
 import pandas as pd
 
-from scm.plams import Settings
 from scm.plams.mol.atom import Atom
 from scm.plams.core.errors import MoleculeError
 
@@ -120,7 +119,7 @@ def prep_core(core_df, arg):
         else:
             idx, dummies = zip(*[(j, core[i]) for j in core.properties.dummies])
         core.properties.dummies = dummies
-        anchor_list.append(tuple(sorted(idx)))
+        anchor_list.append(''.join([' ' + str(i) for i in sorted(idx)])[1:])
 
         # Delete all core dummy atoms
         for at in reversed(core.properties.dummies):
