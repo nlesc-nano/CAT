@@ -2,6 +2,8 @@
 
 __all__ = ['job_single_point', 'job_geometry_opt', 'job_freq']
 
+from os.path import join
+
 import numpy as np
 
 from scm.plams.mol.molecule import Molecule
@@ -21,9 +23,8 @@ from ..mol_utils import (adf_connectivity, from_mol_other)
 @add_to_class(Cp2kResults)
 def get_main_molecule(self):
     for file in self.files:
-        print(file)
         if '.xyz' in file:
-            return Molecule(self[file])
+            return Molecule(join(self.job.path, file))
     return None
 
 
