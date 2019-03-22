@@ -23,13 +23,13 @@ Installation
 
 - Create a new virtual environment, for python 3.7, using the following commands:
 
-  - ``conda create --name CAT python``
+    - ``conda create --name CAT python``
 
 - The virtual environment can be enabled and disabled by, respectively, typing:
 
-  - Enable: ``conda activate CAT``
+    - Enable: ``conda activate CAT``
 
-  - Disable: ``conda deactivate``
+    - Disable: ``conda deactivate``
 
 
 .. _dependecies:
