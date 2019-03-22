@@ -21,6 +21,7 @@ from ..mol_utils import (adf_connectivity, from_mol_other)
 @add_to_class(Cp2kResults)
 def get_main_molecule(self):
     for file in self.files:
+        print(file)
         if '.xyz' in file:
             return Molecule(self[file])
     return None
