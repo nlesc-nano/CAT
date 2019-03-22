@@ -22,6 +22,7 @@ from ..mol_utils import (adf_connectivity, from_mol_other)
 
 @add_to_class(Cp2kResults)
 def get_main_molecule(self):
+    import pdb; pdb.set_trace()
     for file in self.files:
         if '.xyz' in file:
             return Molecule(join(self.job.path, file))
