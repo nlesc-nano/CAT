@@ -113,10 +113,11 @@ def _create_csv_lig(path):
 
     :param str path: The path to the database.
     """
-    idx = pd.MultiIndex.from_tuples([(None, None)], names=['smiles', 'anchor'])
-    columns = sorted(['hdf5 index', 'formula'])
-    columns = pd.MultiIndex.from_tuples([(i, '') for i in columns] + [('None', 'None')], names=['index', 'sub index'])
-    df = pd.DataFrame(None, index=idx, columns=columns)
+    idx = pd.MultiIndex.from_tuples([('-', '-')], names=['smiles', 'anchor'])
+    columns = pd.MultiIndex.from_tuples([('-', '-')], names=['index', 'sub index'])
+    df = pd.DataFrame(np.nan, index=idx, columns=columns)
+    df['hdf5 index'] = -1
+    df['formula'] = 'str'
     df.to_csv(path)
 
 
@@ -126,12 +127,13 @@ def _create_csv_qd(path):
     :param str path: The path to the database.
     """
     idx = pd.MultiIndex.from_tuples(
-            [(None, None, None, None)],
+            [('-', '-', '-', '-')],
             names=['core', 'core anchor', 'ligand smiles', 'ligand anchor']
     )
-    columns = sorted(['hdf5 index', 'ligand count'])
-    columns = pd.MultiIndex.from_tuples([(i, '') for i in columns] + [('None', 'None')], names=['index', 'sub index'])
+    columns = pd.MultiIndex.from_tuples([('-', '-')], names=['index', 'sub index'])
     df = pd.DataFrame(None, index=idx, columns=columns)
+    df['hdf5 index'] = -1
+    df['ligand count'] = -1
     df.to_csv(path)
 
 
@@ -163,11 +165,11 @@ class Database():
     :Atributes:     * **path** (|plams.Settings|_) – A settings object with the absolute paths to \
                     the various database components (see below).
 
-                    * **csv_lig** (|None|_ or |pd.DataFrame|_) – A dataframe with all results \
-                    related to the ligands.
+                    * **csv_lig** (|None|_ or |pd.DataFrame|_) – A dataframe with all ligand \
+                    related results.
 
-                    * **csv_qd** (|None|_ or |pd.DataFrame|_) – A dataframe with all results \
-                    related to the quantum dots.
+                    * **csv_qd** (|None|_ or |pd.DataFrame|_) – A dataframe with all quantum dot \
+                    related results.
 
                     * **yaml** (|None|_ or |plams.Settings|_) – A settings object with all job \
                     settings.
@@ -236,19 +238,20 @@ class Database():
     def _open_csv_lig(self):
         """ Open the ligand database, populating **self.csv_lig** with a |pd.DataFrame|_ object. """
         if self.csv_lig is None:
-            import pdb; pdb.set_trace()
-            self.csv_lig = pd.read_csv(self.path.csv_lig, index_col=[0, 1],
-                                       header=[0, 1], keep_default_na=False)
-            self.csv_lig.replace('', np.nan, inplace=True)
+            self.csv_lig = pd.read_csv(self.path.csv_lig, index_col=[0, 1], header=[0, 1])
+            idx_tups = [(i, '') if 'Unnamed' in j else (i, j) for i, j in self.csv_lig.columns]
+            columns = pd.MultiIndex.from_tuples(idx_tups, names=self.csv_lig.columns.names)
+            self.csv_lig.columns = columns
 
     def _open_csv_qd(self):
         """ Open the quantum dot database, populating **self.csv_qd**
         with a |pd.DataFrame|_ object.
         """
         if self.csv_qd is None:
-            self.csv_qd = pd.read_csv(self.path.csv_qd, index_col=[0, 1, 2, 3],
-                                      header=[0, 1], keep_default_na=False)
-            self.csv_qd.replace('', np.nan, inplace=True)
+            self.csv_qd = pd.read_csv(self.path.csv_qd, index_col=[0, 1, 2, 3], header=[0, 1])
+            idx_tups = [(i, '') if 'Unnamed' in j else (i, j) for i, j in self.csv_qd.columns]
+            columns = pd.MultiIndex.from_tuples(idx_tups, names=self.csv_qd.columns.names)
+            self.csv_qd.columns = columns
 
     def open_yaml(self):
         """ Open the job settings database, populating **self.yaml** with a
@@ -380,28 +383,27 @@ class Database():
                 df[key] = job_settings[key]
 
         # Update index
+        for i in df.index:
+            if i not in csv.index:
+                csv.loc[i, :] = np.nan
+
+        # Filter columns
         if columns is None:
             df_columns = df.columns
         else:
             df_columns = columns + list(job_settings.keys())
-            df_columns = np.array(df_columns)
-        for idx in df_columns:
-            if idx not in csv.index:
-                csv.loc[idx, :] = None
 
         # Update columns
-        bool_array = np.zeros_like(df.index, dtype=bool)
-        for i, j in enumerate(df.index):
-            bool_array[i] = j not in csv.columns
-        for i in df.index[bool_array]:
-            csv[i] = None
+        for i in df_columns:
+            if i not in csv.columns:
+                csv[i] = np.nan
 
         # Update hdf5 values
         hdf5_series = self.update_hdf5(df, database=database, overwrite=overwrite, close=False)
 
         # Update csv values
-        csv.update(df.T, overwrite=overwrite)
-        csv.update(pd.DataFrame(hdf5_series).T, overwrite=True)
+        csv.update(df, overwrite=overwrite)
+        csv.update(hdf5_series, overwrite=True)
 
         # Close the database
         if close:
@@ -506,7 +508,7 @@ class Database():
         # Open the database
         self.open_csv(database)
 
-        # Operate on either *self.csv_lig* or *self.csv_qd*
+        # Operate on either **self.csv_lig** or **self.csv_qd**
         if database == 'ligand':
             csv = self.csv_lig
         elif database == 'QD':
@@ -514,23 +516,18 @@ class Database():
         else:
             raise TypeError()
 
-        # Prepare a boolean array for slicing df.index
-        bool_array = np.zeros_like(df.index, dtype=bool)
-        for i, j in enumerate(df.index):
-            bool_array[i] = j in csv.columns
+        # Update **df** with content from **self.csv_lig** or **self.csv_qd**
+        df.update(csv['hdf5 index'])
+        df_slice = df['hdf5 index'] >= 0
 
-        # Attempt to update **df** with preexisting .pdb files from **self**
-        # Or create and return a new series of PLAMS molecules
-        if bool_array.any():
-            columns = df.index[bool_array]
-            hdf5_idx = np.asarray(csv.loc['hdf5 index', columns], dtype=int)
-            if inplace:
-                mol_list = self.from_hdf5(hdf5_idx.values)
-                for i, rdmol in zip(columns, mol_list):
+        if df_slice.any():
+            if inplace:  # Update **df** with preexisting molecules from **self**
+                mol_list = self.from_hdf5(df_slice.values)
+                for i, rdmol in zip(df_slice.index, mol_list):
                     df.at[i, 'mol'].from_rdmol(rdmol)
-            else:
-                mol_list = self.from_hdf5(hdf5_idx, rdmol=False)
-                ret = pd.Series(mol_list, index=columns, name=('mol', ''))
+            else:  # Create and return a new series of PLAMS molecules
+                mol_list = self.from_hdf5(df_slice.values, rdmol=False)
+                ret = pd.Series(mol_list, index=df_slice.index, name=('mol', ''))
 
         # Close the database
         if close:
@@ -538,7 +535,7 @@ class Database():
 
         # Return a new series if **inplace** = *False*
         if not inplace:
-            if bool_array.any():
+            if df_slice.any():
                 return ret
             return pd.Series(np.empty((0), dtype=object), name=('mol', ''))
 
@@ -555,6 +552,10 @@ class Database():
         """
         # Open the database
         self.open_hdf5()
+
+        # Convert **index** to an array if it is a series or dataframe
+        if isinstance(index, (pd.Series, pd.DataFrame)):
+            index = index.values
 
         # Pull entries from the database as a list of RDKit or PLAMS molecules
         pdb_array = self.hdf5[database][index]
