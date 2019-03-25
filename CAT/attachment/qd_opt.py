@@ -2,39 +2,59 @@
 
 __all__ = ['init_qd_opt']
 
+import numpy as np
+
+from scm.plams.core.settings import Settings
 from scm.plams.core.functions import (init, finish)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 
 from ..utils import get_time
 from ..mol_utils import (fix_carboxyl, fix_h)
 from ..analysis.jobs import job_geometry_opt
-from ..data_handling.database import mol_to_database
+from ..data_handling.CAT_database import Database
 
+def init_qd_opt(qd_df, arg):
+    """ Initialized the quantum dot (constrained) geometry optimization.
+    performs an inplace update of the *mol* column in **qd_df**.
 
-def init_qd_opt(mol_list, arg):
+    :parameter qd_df: A dataframe of quantum dots.
+    :type qd_df: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
+    :parameter arg: A settings object containing all (optional) arguments.
+    :type arg: |plams.Settings|_ (superclass: |dict|_).
     """
-    Check if the to be optimized quantom dot has previously been optimized.
-    Pull if the structure from the database if it has, otherwise perform a geometry optimization.
-
-    mol_list <list> [<plams.Molecule>]: The list of input quantom dots with the 'name' property.
-    arg <dict>: A dictionary containing all (optional) arguments.
-    """
-    # Optimize all geometries
+    # Prepare slices
     job_recipe = arg.optional.qd.optimize
-    overwrite = 'qd' in arg.optional.database.overwrite
+    if 'qd' in arg.optional.database.overwrite:
+        idx = qd_df.index
+        message = '\t has been (re-)optimized'
+    else:
+        idx = -np.isnan(qd_df['hdf5 index'])
+        message = '\t has been optimized'
+
+    # Optimize the geometries
     init(path=arg.optional.qd.dirname, folder='QD_optimize')
-    for mol in mol_list:
-        if overwrite or not mol.properties.read:
+    for mol in qd_df['mol'][idx]:
             qd_opt(mol, job_recipe)
-            if mol.properties.read:
-                print(get_time() + mol.properties.name + '\t has been reoptimized')
-            else:
-                print(get_time() + mol.properties.name + '\t has been optimized')
+            print(get_time() + mol.properties.name + message)
     finish()
 
     # Export the geometries to the database
     if 'qd' in arg.optional.database.write:
-        mol_to_database(mol_list, arg, 'qd')
+        recipe = Settings()
+        recipe.settings1 = {
+            'name': '1',
+            'key': job_recipe.job1,
+            'value': job_recipe.s1,
+            'template': 'geometry.json'
+        }
+        recipe.settings2 = {
+            'name': '2',
+            'key': job_recipe.job2,
+            'value': job_recipe.s2,
+            'template': 'geometry.json'
+        }
+        database = Database(path=arg.optional.database.dirname)
+        database.update_csv(qd_df, columns=['hdf5 index'], job_recipe=recipe, database='QD')
 
 
 def qd_opt(mol, job_recipe):

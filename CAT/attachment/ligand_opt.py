@@ -38,14 +38,20 @@ def init_ligand_opt(ligand_df, arg):
     # Searches for matches between the input ligand and the database; imports the structure
     if 'ligand' in arg.optional.database.read:
         database.from_csv(ligand_df, database='ligand')
+        for i, mol in zip(ligand_df['hdf5 index'], ligand_df['mol']):
+            if i >= 0:
+                print(get_time() + mol.properties.name + '\t has been pulled from the database')
+        print('')
 
     # Optimize all new ligands
     if arg.optional.ligand.optimize:
         # Identify the to be optimized ligands
         if 'ligand' in arg.optional.database.overwrite:
             idx = ligand_df.index
+            message = '\t has been (re-)optimized'
         else:
             idx = -np.isnan(ligand_df['hdf5 index'])
+            message = '\t has been optimized'
 
         # Optimize the ligands
         for i, ligand in ligand_df['mol'][idx].iteritems():
@@ -56,13 +62,13 @@ def init_ligand_opt(ligand_df, arg):
             fix_carboxyl(ligand_tmp)
 
             # Print messages
-            print(get_time() + ligand.properties.name + '\t has been optimized')
+            print(get_time() + ligand.properties.name + message)
         print('')
 
     # Write newly optimized structures to the database
     if 'ligand' in arg.optional.database.write and arg.optional.ligand.optimize:
         recipe = Settings()
-        recipe.settings = {'name': 'settings', 'key': 'RDKit', 'value': 'UFF'}
+        recipe.settings = {'name': '1', 'key': 'RDKit', 'value': 'UFF'}
         database.update_csv(ligand_df, columns=['formula', 'hdf5 index'],
                             job_recipe=recipe, database='ligand')
 

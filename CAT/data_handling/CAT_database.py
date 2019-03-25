@@ -52,17 +52,17 @@ def from_pdb_array(array, rdmol=True):
     """ Converts a an array with a (partially) de-serialized .pdb file into an
     RDKit or PLAMS molecule.
 
-    :parameter array: A (partially) de-serialized .pdb file.
-    :type array: |np.ndarray|_ [|np.bytes|_ / *|S80*]
+    :parameter array: A (partially) de-serialized .pdb file with *n* lines.
+    :type array: *n* |np.ndarray|_ [|np.bytes|_ / *|S80*]
     :parameter bool rdmol: If *True*, return an RDKit molecule instead of a PLAMS molecule.
     :return: A PLAMS or RDKit molecule build from **array**.
     :rtype: |plams.Molecule|_ or |rdkit.Chem.Mol|_
     """
     pdb_str = ''.join([item.decode() + '\n' for item in array if item])
-    rdmol = Chem.MolFromPDBBlock(pdb_str, removeHs=False, proximityBonding=False)
+    ret = Chem.MolFromPDBBlock(pdb_str, removeHs=False, proximityBonding=False)
     if not rdmol:
-        return molkit.from_rdmol(rdmol)
-    return rdmol
+        return molkit.from_rdmol(ret)
+    return ret
 
 
 def _sanitize_yaml_settings(s):
@@ -114,10 +114,12 @@ def _create_csv_lig(path):
     :param str path: The path to the database.
     """
     idx = pd.MultiIndex.from_tuples([('-', '-')], names=['smiles', 'anchor'])
-    columns = pd.MultiIndex.from_tuples([('-', '-')], names=['index', 'sub index'])
-    df = pd.DataFrame(np.nan, index=idx, columns=columns)
+    columns_tups = [('hdf5 index', ''), ('formula', ''), ('settings', 1)]
+    columns = pd.MultiIndex.from_tuples(columns_tups, names=['index', 'sub index'])
+    df = pd.DataFrame(None, index=idx, columns=columns)
     df['hdf5 index'] = -1
     df['formula'] = 'str'
+    df['settings'] = 'str'
     df.to_csv(path)
 
 
@@ -130,10 +132,12 @@ def _create_csv_qd(path):
             [('-', '-', '-', '-')],
             names=['core', 'core anchor', 'ligand smiles', 'ligand anchor']
     )
-    columns = pd.MultiIndex.from_tuples([('-', '-')], names=['index', 'sub index'])
+    columns_tups = [('hdf5 index', ''), ('ligand count', ''), ('settings', 1), ('settings', 2)]
+    columns = pd.MultiIndex.from_tuples(columns_tups, names=['index', 'sub index'])
     df = pd.DataFrame(None, index=idx, columns=columns)
     df['hdf5 index'] = -1
     df['ligand count'] = -1
+    df['settings'] = 'str'
     df.to_csv(path)
 
 
@@ -238,7 +242,9 @@ class Database():
     def _open_csv_lig(self):
         """ Open the ligand database, populating **self.csv_lig** with a |pd.DataFrame|_ object. """
         if self.csv_lig is None:
-            self.csv_lig = pd.read_csv(self.path.csv_lig, index_col=[0, 1], header=[0, 1])
+            dtype = {'hdf5 index': int, 'formula': str, 'settings': str}
+            self.csv_lig = pd.read_csv(self.path.csv_lig, index_col=[0, 1],
+                                       header=[0, 1], dtype=dtype)
             idx_tups = [(i, '') if 'Unnamed' in j else (i, j) for i, j in self.csv_lig.columns]
             columns = pd.MultiIndex.from_tuples(idx_tups, names=self.csv_lig.columns.names)
             self.csv_lig.columns = columns
@@ -248,7 +254,9 @@ class Database():
         with a |pd.DataFrame|_ object.
         """
         if self.csv_qd is None:
-            self.csv_qd = pd.read_csv(self.path.csv_qd, index_col=[0, 1, 2, 3], header=[0, 1])
+            dtype = {'hdf5 index': int, 'ligand count': np.int64, 'settings': str}
+            self.csv_qd = pd.read_csv(self.path.csv_qd, index_col=[0, 1, 2, 3],
+                                      header=[0, 1], dtype=dtype)
             idx_tups = [(i, '') if 'Unnamed' in j else (i, j) for i, j in self.csv_qd.columns]
             columns = pd.MultiIndex.from_tuples(idx_tups, names=self.csv_qd.columns.names)
             self.csv_qd.columns = columns
@@ -380,28 +388,33 @@ class Database():
         if job_recipe is not None:
             job_settings = self.update_yaml(job_recipe)
             for key in job_settings:
-                df[key] = job_settings[key]
+                df[('settings', key)] = job_settings[key]
 
-        # Update index
+        # Update **csv.index**
+        row_dtypes = self._get_none(database, close=False)
         for i in df.index:
             if i not in csv.index:
-                csv.loc[i, :] = np.nan
+                csv.at[i, :] = row_dtypes
+        if not csv['hdf5 index'].dtype is np.dtype('int64'):
+            csv['hdf5 index'] = csv['hdf5 index'].astype(int)
 
         # Filter columns
         if columns is None:
             df_columns = df.columns
         else:
-            df_columns = columns + list(job_settings.keys())
+            df_columns = columns
+            if job_recipe is not None:
+                df_columns += [('settings', key) for key in job_settings]
 
-        # Update columns
+        # Update **csv.columns**
         for i in df_columns:
             if i not in csv.columns:
-                csv[i] = np.nan
+                csv[i] = np.zeros((1), dtype=df[i].dtype)
 
-        # Update hdf5 values
-        hdf5_series = self.update_hdf5(df, database=database, overwrite=overwrite, close=False)
+        # Update **self.hdf5**, returning a new series of indices
+        hdf5_series = self.update_hdf5(df, database=database, overwrite=overwrite)
 
-        # Update csv values
+        # Update **csv.values**
         csv.update(df, overwrite=overwrite)
         csv.update(hdf5_series, overwrite=True)
 
@@ -428,7 +441,10 @@ class Database():
             if not isinstance(job_recipe[item].key, str):
                 template = job_recipe[item].template
                 key = type_to_string(job_recipe[item].key)
-                value = qmflows.get_template(template)['specific'][key]
+                if template:
+                    value = qmflows.get_template(template)['specific'][key]
+                else:
+                    value = Settings()
                 value.update(_sanitize_yaml_settings(job_recipe[item].value))
                 key = key.rsplit('.', 1)[-1].split("'")[0]
             else:
@@ -478,6 +494,8 @@ class Database():
             self.hdf5[database][i:i+pdb_array.shape[0]] = pdb_array
             ret = pd.Series(np.arange(i, i + pdb_array.shape[0]),
                             index=new.index, name=('hdf5 index', ''))
+        else:
+            ret = pd.Series(name=('hdf5 index', ''), dtype=object)
 
         # If **overwrite** is *True*
         if overwrite and old.any():
@@ -517,16 +535,16 @@ class Database():
             raise TypeError()
 
         # Update **df** with content from **self.csv_lig** or **self.csv_qd**
-        df.update(csv['hdf5 index'])
+        df.update(csv, overwrite=True)
         df_slice = df['hdf5 index'] >= 0
 
         if df_slice.any():
             if inplace:  # Update **df** with preexisting molecules from **self**
-                mol_list = self.from_hdf5(df_slice.values)
+                mol_list = self.from_hdf5(df['hdf5 index'][df_slice].values)
                 for i, rdmol in zip(df_slice.index, mol_list):
-                    df.at[i, 'mol'].from_rdmol(rdmol)
+                    df.loc[i, ('mol', '')].from_rdmol(rdmol)
             else:  # Create and return a new series of PLAMS molecules
-                mol_list = self.from_hdf5(df_slice.values, rdmol=False)
+                mol_list = self.from_hdf5(df['hdf5 index'][df_slice].values, rdmol=False)
                 ret = pd.Series(mol_list, index=df_slice.index, name=('mol', ''))
 
         # Close the database
@@ -555,13 +573,61 @@ class Database():
 
         # Convert **index** to an array if it is a series or dataframe
         if isinstance(index, (pd.Series, pd.DataFrame)):
-            index = index.values
+            index = index.values.tolist()
+        elif isinstance(index, np.ndarray):
+            index = index.tolist()
 
         # Pull entries from the database as a list of RDKit or PLAMS molecules
         pdb_array = self.hdf5[database][index]
-        ret = from_pdb_array(pdb_array, rdmol=rdmol)
+        ret = [from_pdb_array(mol, rdmol=rdmol) for mol in pdb_array]
 
         # Close the database
         if close:
             self.close_hdf5()
+        return ret
+
+    """ ###########################  Miscellaneous functions ################################## """
+
+    def _get_none(self, database='ligand', close=True):
+        """ Create a list of None-esque objects, it's length and dtype matching the number of rows
+        in **self** as well as the rows respective data types. Usefull as values for new empty rows
+        in a dataframe while preserving the existing rows datatype:
+
+                * |np.int64|_: *-1*
+
+                * |np.float64|_: *np.nan*
+
+                * |object|_: *None*
+
+                * |bool|_: *False*
+
+        :parameter str database: The type of database; accepted values are *ligand* and *QD*.
+        :parameter bool close: If the database should be closed afterwards.
+        :return: A list with *-1*, *np.nan*, *None* and/or *False*, its dtype and length (*n*) matching
+            the columns of **df**.
+        :rtype: *n* |list|_ [|np.int64|_, |np.float64|_, |None|_ and/or |bool|_]
+        """
+        # Open the database
+        self.open_csv(database)
+
+        # Operate on either **self.csv_lig** or **self.csv_qd**
+        if database == 'ligand':
+            csv = self.csv_lig
+        elif database == 'QD':
+            csv = self.csv_qd
+        else:
+            raise TypeError()
+
+        # Create a list of None-esque objects
+        dtype_to_none = {
+            np.dtype('int64'): -1,
+            np.dtype('float64'): np.nan,
+            np.dtype('O'): None,
+            np.dtype('bool'): False
+        }
+        ret = [dtype_to_none[csv[key].dtype] for key in csv]
+
+        # Close the database
+        if close:
+            self.close_csv(database, write=False)
         return ret

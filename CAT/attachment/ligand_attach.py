@@ -18,31 +18,40 @@ def init_qd_construction(ligand_df, core_df, arg):
     """ Initialize the quantum dot construction.
 
     :parameter ligand_df: A dataframe of ligands.
-    :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index=|str|_, values=|plams.Molecule|_)
+    :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
     :parameter core_df: A dataframe of cores.
-    :type core_df: |pd.DataFrame|_ (columns: |str|_, index=|str|_, values=|plams.Molecule|_)
+    :type core_df: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
     :parameter arg: A settings object containing all (optional) arguments.
     :type arg: |plams.Settings|_ (superclass: |dict|_).
     :return: A dataframe of quantum dots.
-    :rtype: |pd.DataFrame|_ (columns: |str|_, index=|str|_, values=|plams.Molecule|_)
+    :rtype: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
     """
+    data = Database(path=arg.optional.database.dirname)
+
     # Attempt to pull structures from the database
     qd_df = _get_df(core_df.index, ligand_df.index)
     if 'qd' in arg.optional.database.read:
         data = Database(path=arg.optional.database.dirname)
         mol_series1 = data.from_csv(qd_df, database='QD', inplace=False)
-        for mol in mol_series1:
+        for i, mol in mol_series1.iteritems():
+            j, k, l, m = i
+            mol.properties = Settings()
+            mol.properties.indices = _get_indices(mol, i)
+            mol.properties.path = arg.optional.qd.dirname
+            mol.properties.name = core_df.at[(j, k), ('mol', '')].properties.name + '__'
+            mol.properties.name += str(mol[-1].properties.pdb_info.ResidueNumber - 1)
+            mol.properties.name += '_' + ligand_df.at[(l, m), ('mol', '')].properties.name
             print(get_time() + mol.properties.name + '\t has been pulled from the database')
+        print('')
 
-    # Identify the to be constructed quantum dots
+    # Identify and create the to be constructed quantum dots
     idx = -np.isnan(qd_df['hdf5 index'])
-
-    # Create a series of new quantum dots
     mol_list = [ligand_to_qd(core_df['mol'][(i, j)], ligand_df['mol'][(k, l)], arg) for
                 i, j, k, l in qd_df.index[idx]]
-    mol_series2 = pd.Series(mol_list, index=idx.index, name=('mol', ''))
+    mol_series2 = pd.Series(mol_list, index=qd_df.index[idx], name=('mol', ''), dtype=object)
+    print('')
 
-    # Update the *mol* columnqd_df with or 2 series of quantum dots
+    # Update the *mol* column in qd_df with 1 or 2 series of quantum dots
     try:
         qd_df['mol'] = mol_series1.append(mol_series2)
     except NameError:
@@ -51,15 +60,34 @@ def init_qd_construction(ligand_df, core_df, arg):
     # Export the resulting geometries back to the database
     if 'qd' in arg.optional.database.write and not arg.optional.qd.optimize:
         recipe = Settings()
-        recipe.settings = {'name': 'settings1', 'key': 'None', 'value': 'None'}
-        try:
-            data.update_csv(qd_df, columns=['hdf5 index', 'ligand count'],
-                            job_recipe=recipe, database='QD')
-        except NameError:
-            data = Database(path=arg.optional.database.dirname)
-            data.update_csv(qd_df, columns=['hdf5 index', 'ligand count'],
-                            job_recipe=recipe, database='QD')
+        recipe.settings = {'name': '1', 'key': 'None', 'value': 'None'}
+        data.update_csv(qd_df, columns=['hdf5 index', 'ligand count'],
+                        job_recipe=recipe, database='QD')
     return qd_df
+
+
+def _get_indices(mol, index):
+    """
+    :parameter mol: A PLAMS molecule.
+    :type mol: |plams.Molecule|_
+    :parameter index: A tuple of 4 strings.
+    :type index: *4* |tuple|_ [|str|_]
+    """
+    ret = []
+    for i, at in enumerate(mol, 1):
+        if at.properties.pdb_info.ResidueName == 'COR':
+            ret.append(i)
+        else:
+            break
+
+    index = index[2]
+    for j, _ in enumerate(index):
+        try:
+            k = int(index[j:])
+        except ValueError:
+            pass
+
+    ret += []
 
 
 def _get_df(core_index, ligand_index):
@@ -70,7 +98,7 @@ def _get_df(core_index, ligand_index):
     :parameter ligand_index: A multiindex of the ligands.
     :type ligand_index: |pd.MultiIndex|_
     :return: An empty (*i.e.* filled with -1) dataframe of quantum dots.
-    :rtype: |pd.DataFrame|_ (columns: |str|_, index=|str|_, values=|np.int64|_)
+    :rtype: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |np.int64|_)
     """
     idx_tups = [(i, j, k, l) for i, j in core_index for k, l in ligand_index]
     index = pd.MultiIndex.from_tuples(
@@ -108,13 +136,10 @@ def ligand_to_qd(core, ligand, arg):
     qd = core.copy()
     array_to_qd(ligand, lig_array, mol_other=qd)
 
-    # indices of all the atoms in the core and the ligand heteroatom anchor.
-    qd_indices = [i for i, at in enumerate(qd, 1) if at.properties.pdb_info.ResidueName == 'COR' or
-                  at.properties.anchor]
-
-    # Prepare the QD properties
+    # Set properties
     qd.properties = Settings()
-    qd.properties.indices = qd_indices
+    qd.properties.indices = [i for i, at in enumerate(qd, 1) if
+                             at.properties.pdb_info.ResidueName == 'COR' or at.properties.anchor]
     qd.properties.path = arg.optional.qd.dirname
     qd.properties.name = core.properties.name + '__'
     qd.properties.name += str(qd[-1].properties.pdb_info.ResidueNumber - 1)

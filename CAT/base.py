@@ -33,7 +33,7 @@ def prep(arg, return_mol=True):
     :parameter bool return_mol: If qd_df, core_df & ligand_df should be returned or not.
     :return: If ``return=True``, return a dataframe with quantum dots, cores and ligands.
         Molecules are stored in the *mol* column.
-    :rtype: |pd.DataFrame|_ (columns: |str|_, index=|int|_, values=|plams.Molecule|_)
+    :rtype: |pd.DataFrame|_ (columns: |str|_, index: |int|_, values: |plams.Molecule|_)
     """
     # The start
     time_start = time.time()
@@ -65,7 +65,7 @@ def prep_input(arg):
     :parameter arg: A settings object containing all (optional) arguments.
     :type arg: |plams.Settings|_
     :return: A dataframe of ligands and a dataframe of cores.
-    :rtype: |pd.DataFrame|_ (columns: |str|_, index=|int|_, values=|plams.Molecule|_)
+    :rtype: |pd.DataFrame|_ (columns: |str|_, index: |int|_, values: |plams.Molecule|_)
     """
     # Interpret arguments
     arg.update(sanitize_path(arg))
@@ -98,11 +98,11 @@ def prep_core(core_df, arg):
     """ Function that handles the identification and marking of all core dummy atoms.
 
     :parameter core_df: A dataframe of core molecules. Molecules are stored in the *mol* column.
-    :type core_df: |pd.DataFrame|_ (columns: |str|_, index=|int|_, values=|plams.Molecule|_)
+    :type core_df: |pd.DataFrame|_ (columns: |str|_, index: |int|_, values: |plams.Molecule|_)
     :parameter arg: A settings object containing all (optional) arguments.
     :type arg: |plams.Settings|_ (superclass: |dict|_)
     :return: A dataframe of cores with all dummy/anchor atoms removed.
-    :rtype: |pd.DataFrame|_ (columns: |str|_, index=|str|_, values=|plams.Molecule|_)
+    :rtype: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
     """
     formula_list = []
     anchor_list = []
@@ -145,7 +145,7 @@ def prep_ligand(ligand_df, arg):
         - Ligand COSMO-RS calculations
 
     :parameter ligand_df: A dataframe of ligand molecules. Molecules are stored in the *mol* column.
-    :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index=|int|_, values=|plams.Molecule|_)
+    :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index: |int|_, values: |plams.Molecule|_)
     :parameter arg: A settings object containing all (optional) arguments.
     :type arg: |plams.Settings|_ (superclass: |dict|_)
     """
@@ -176,13 +176,13 @@ def prep_qd(ligand_df, core_df, arg):
         - Dissociating ligands on the quantum dot surface
 
     :parameter ligand_df: A dataframe of ligand molecules. Molecules are stored in the *mol* column.
-    :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index=|int|_, values=|plams.Molecule|_)
+    :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index: |int|_, values: |plams.Molecule|_)
     :parameter core_df: A dataframe of core molecules. Molecules are stored in the *mol* column.
-    :type core_df: |pd.DataFrame|_ (columns: |str|_, index=|int|_, values=|plams.Molecule|_)
+    :type core_df: |pd.DataFrame|_ (columns: |str|_, index: |int|_, values: |plams.Molecule|_)
     :parameter arg: A settings object containing all (optional) arguments.
     :type arg: |plams.Settings|_ (superclass: |dict|_)
     :return: A dataframe of quantum dots molecules. Molecules are stored in the *mol* column.
-    :rtype: |pd.DataFrame|_ (columns: |str|_, index=|int|_, values=|plams.Molecule|_)
+    :rtype: |pd.DataFrame|_ (columns: |str|_, index: |int|_, values: |plams.Molecule|_)
     """
     # Construct the quantum dots
     qd_df = init_qd_construction(ligand_df, core_df, arg)
