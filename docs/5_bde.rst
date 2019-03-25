@@ -14,7 +14,7 @@ surface of the core. The calculation consists of five distinct steps:
     The dissociated compound has the general structure of |XYn|.
 
     2.  Optimize the geometry of |XYn| at the first level of theory
-    (lvl1): ADF MOPAC [1_, 2_, 3_].
+    (lvl1). Default: ADF MOPAC [1_, 2_, 3_].
 
     3.  Calculate the "electronic" contribution to the BDE (|dE|)
     at the first level of theory (lvl1): ADF MOPAC [1_, 2_, 3_].
@@ -22,8 +22,8 @@ surface of the core. The calculation consists of five distinct steps:
     quantum dot, |XYn| and all |XYn|-dissociated quantum dots.
 
     4.  Calculate the thermalchemical contribution to the BDE (|ddG|) at the
-    second level of theory (lvl2): ADF UFF [4_, 5_]. This step consists
-    of geometry optimizations and frequency analyses of the same
+    second level of theory (lvl2). Default: ADF UFF [4_, 5_]. This step
+    consists of geometry optimizations and frequency analyses of the same
     compounds used for step 3.
 
     5.  |dG| = |dE_lvl1| + |ddG_lvl2| = |dE_lvl1| + ( |dG_lvl2| - |dE_lvl2|
