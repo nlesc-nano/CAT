@@ -99,11 +99,11 @@ def _get_rotmat1(vec1, vec2):
             return ret
 
     v1, v2, v3 = np.cross(a, b).T
-    zero = np.zeros(len(b))
+    zero = np.zeros(max(len(b), len(a)))
     M = np.array([[zero, -v3, v2],
                   [v3, zero, -v1],
                   [-v2, v1, zero]]).T
-    return np.identity(3) + M + ((M@M).T / (1 + b@a.T).T).T
+    return np.identity(3) + M + ((M@M).T / (1 + b@a.T)).T
 
 
 def _get_rotmat2(vec, step=(1/16)):
@@ -122,8 +122,8 @@ def _get_rotmat2(vec, step=(1/16)):
     return np.identity(3) + a1 * W + a2 * W@W
 
 
-def rot_mol(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=False, step=1/16,
-            dist_to_self=True, ret_min_dist=False):
+def rot_mol(xyz_array, vec1, vec2, idx=0, atoms_core=[0, 0, 0], atoms_other=None,
+            bond_length=False, step=1/16, dist_to_self=True, ret_min_dist=False):
     """  Define a m*3*3 rotation matrix using vec1 and vec2.
     Depending on the dimension of xyz_array, vec1 & vec2 the following operations can be conducted:
         Rotate 1 molecule by 1 rotation matrix    > 1 rotated molecule
@@ -160,7 +160,7 @@ def rot_mol(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=False, s
         length = len(xyz_array)
     else:
         length = max([len(vec1), len(vec2)])
-    idx1 = np.arange(len(xyz_array)), idx
+    idx1 = np.arange(len(xyz_array)), None, idx
     idx2 = np.arange(length), slice(int(2 / step)), idx
 
     # Translate xyz_array[idx] to the origin and rotate
@@ -173,12 +173,16 @@ def rot_mol(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=False, s
     xyz_array = np.swapaxes(xyz_array@rotmat, 0, 1)
 
     # Translate the the molecules in xyz_array
-    if atoms_other is not None:
-        atoms_other = sanitize_dim_2(atoms_other)
-        xyz_array += (atoms_other[:, None, :] - xyz_array[idx2])[..., None, :]
-        if bond_length:
+    if atoms_core is not None:
+        atoms_core = sanitize_dim_2(atoms_core)
+        xyz_array += (atoms_core[:, None, :] - xyz_array[idx2])[..., None, :]
+        try:
+            if bond_length:
+                mult = (np.asarray(bond_length) / np.linalg.norm(vec2, axis=1))[:, None]
+                xyz_array -= (vec2 * mult)[:, None, :]
+        except ValueError:
             mult = (np.asarray(bond_length) / np.linalg.norm(vec2, axis=1))[:, None]
-            xyz_array -= (vec2 * mult)[:, None, :]
+            xyz_array -= (vec2 * mult)[:, None, None, :]
 
     # Returns the conformation of each molecule that maximizes the inter-moleculair distance
     # Or return all conformations if dist_to_self = False and atoms_other = None
@@ -193,7 +197,10 @@ def rot_mol(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=False, s
                 atoms_other = np.concatenate((atoms_other, xyz[idx_min]))
             ret_array[i] = xyz[idx_min]
             min_dist[i] = np.nanmin(dist_array[idx_min])
+        if ret_min_dist:
+            return ret_array, min_dist
         return ret_array
+
     return xyz_array
 
 
