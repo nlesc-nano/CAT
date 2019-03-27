@@ -5,6 +5,7 @@ __all__ = ['init_qd_construction']
 import numpy as np
 from scipy.spatial.distance import cdist
 
+from scm.plams import rotation_matrix
 from scm.plams.mol.molecule import Molecule
 from scm.plams.core.settings import Settings
 
@@ -90,7 +91,7 @@ def _get_rotmat1(vec1, vec2):
     with np.errstate(divide='raise', invalid='raise'):
         # Return a unit matrix if either vec1 or vec2 is zero
         try:
-            a = vec1 / np.linalg.norm(vec1)
+            a = vec1 / np.linalg.norm(vec1, axis=1)[:, None]
             b = vec2 / np.linalg.norm(vec2, axis=1)[:, None]
         except FloatingPointError:
             shape = max(len(vec1), len(vec2)), 3, 3
@@ -99,7 +100,7 @@ def _get_rotmat1(vec1, vec2):
             return ret
 
     v1, v2, v3 = np.cross(a, b).T
-    zero = np.zeros(max(len(b), len(a)))
+    zero = np.zeros(max(len(vec1), len(vec2)))
     M = np.array([[zero, -v3, v2],
                   [v3, zero, -v1],
                   [-v2, v1, zero]]).T
@@ -160,7 +161,7 @@ def rot_mol(xyz_array, vec1, vec2, idx=0, atoms_core=[0, 0, 0], atoms_other=None
         length = len(xyz_array)
     else:
         length = max([len(vec1), len(vec2)])
-    idx1 = np.arange(len(xyz_array)), None, idx
+    idx1 = np.arange(len(xyz_array)), idx, None
     idx2 = np.arange(length), slice(int(2 / step)), idx
 
     # Translate xyz_array[idx] to the origin and rotate
