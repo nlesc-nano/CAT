@@ -17,8 +17,41 @@ from qmflows.templates import templates as qmflows
 
 from rdkit import Chem
 
+from CAT import utils as CAT
 from CAT.mol_utils import from_rdmol
 from CAT.utils import (get_time, type_to_string)
+
+
+def get_nan_row(df):
+    """ Return a list of None-esque objects for each column in **df**.
+    The object in question depends on the data type of the column.
+    Will default to *None* if a specific data type is not recognized
+
+        * |np.int64|_: *-1*
+
+        * |np.float64|_: *np.nan*
+
+        * |object|_: *None*
+
+    :parameter df: A dataframe
+    :type df: |pd.DataFrame|_
+    :return: A list of non-esque objects, one for each column in **df**.
+    :rtype: |list|_ [|int|_, |float|_ and/or |None|_]
+    """
+    dtype_dict = {np.dtype('int64'): -1, np.dtype('float64'): np.nan, np.dtype('O'): None}
+    try:
+        # Plan A
+        return [dtype_dict[df[i].dtype] for i in df]
+    except KeyError:
+        # Plan B
+        ret = []
+        for i in df:
+            try:
+                j = dtype_dict[df[i].dtype]
+            except KeyError:
+                j = None
+            ret.append(j)
+        return ret
 
 
 def as_pdb_array(mol_list, min_size=0):
@@ -65,7 +98,7 @@ def from_pdb_array(array, rdmol=True):
     return ret
 
 
-def _sanitize_yaml_settings(s):
+def _sanitize_yaml_settings(s, job_type):
     """ Remove a predetermined set of unwanted keys and values from a settings object.
 
     :param s: A settings object with, potentially, undesired keys and values.
@@ -73,14 +106,23 @@ def _sanitize_yaml_settings(s):
     :return: A (nested) dictionary with unwanted keys and values removed.
     :rtype: |dict|_.
     """
-    s.description = s.ignore_molecule = s.input.ams = s.input.Compound = s.input.compound._h = None
-    del s.description
-    del s.ignore_molecule
-    del s.input.ams
-    del s.input.Compound
-    del s.input.compound._h
-    if not s.input.compound:
-        del s.input.compound
+    def recursive_del(s, s_del):
+        for key in s:
+            if key in s_del:
+                if isinstance(s_del[key], dict):
+                    recursive_del(s[key], s_del[key])
+                else:
+                    del s[key]
+            if not s[key]:
+                del s[key]
+
+    # Prepare a blacklist of specific keys
+    blacklist = CAT.get_template('settings_blacklist.yaml')
+    s_del = blacklist['generic']
+    s_del.update(blacklist[job_type])
+
+    # Recursivelly delete all keys from **s** if aforementioned keys are present in the s_del
+    recursive_del(s, s_del)
     return s.as_dict()
 
 
@@ -381,8 +423,6 @@ class Database():
             csv = self.csv_lig
         elif database == 'QD':
             csv = self.csv_qd
-        else:
-            raise ValueError('update_csv: {} is not an accepted value'.format(str(database)))
 
         # Update **self.yaml**
         if job_recipe is not None:
@@ -391,9 +431,10 @@ class Database():
                 df[('settings', key)] = job_settings[key]
 
         # Update **csv.index**
+        nan_row = get_nan_row(csv)
         for i in df.index:
             if i not in csv.index:
-                csv.at[i, :] = np.nan
+                csv.at[i, :] = nan_row
         csv['hdf5 index'] = csv['hdf5 index'].astype(int)
 
         # Filter columns
@@ -401,8 +442,6 @@ class Database():
             df_columns = df.columns
         else:
             df_columns = columns
-            if job_recipe is not None:
-                df_columns.append('settings')
 
         # Update **csv.columns**
         for i in df_columns:
@@ -411,6 +450,12 @@ class Database():
                     csv[i] = np.array((None), dtype=df[i].dtype)
                 except TypeError:
                     csv[i] = -1
+                except AttributeError:
+                    for j in df[i].columns:
+                        try:
+                            csv[i] = np.array((None), dtype=df[i].dtype)
+                        except TypeError:
+                            csv[i] = -1
 
         # Update **self.hdf5**; returns a new series of indices
         hdf5_series = self.update_hdf5(df, database=database, overwrite=overwrite)
@@ -439,15 +484,17 @@ class Database():
         ret = {}
         for item in job_recipe:
             # Prepare keys and values
-            if not isinstance(job_recipe[item].key, str):
-                template = job_recipe[item].template
-                key = type_to_string(job_recipe[item].key)
-                if template:
-                    value = qmflows.get_template(template)['specific'][key]
+            if isinstance(job_recipe[item].key, type):
+                template_name = job_recipe[item].template
+                template_key = type_to_string(job_recipe[item].key)
+                if template_name and template_key:
+                    value = qmflows.get_template(template_name)['specific'][template_key]
                 else:
                     value = Settings()
-                value.update(_sanitize_yaml_settings(job_recipe[item].value))
-                key = key.rsplit('.', 1)[-1].split("'")[0]
+
+                key = str(job_recipe[item].key).rsplit('.', 1)[-1].split("'")[0]
+                value.update(job_recipe[item].value)
+                value = _sanitize_yaml_settings(value, key)
             else:
                 key = job_recipe[item].key
                 value = job_recipe[item].value
@@ -533,22 +580,24 @@ class Database():
             csv = self.csv_lig
         elif database == 'QD':
             csv = self.csv_qd
-        else:
-            raise ValueError('from_csv: {} is not an accepted value'.format(str(database)))
 
-        # Update **df** with content from **self.csv_lig** or **self.csv_qd**
+        # Update the *hdf5 index* column in **df**
         df.update(csv, overwrite=True)
+        df['hdf5 index'] = df['hdf5 index'].astype(int)
+        df.sort_values(by=['hdf5 index'], inplace=True)
 
+        # Update the *mol* column in **df** or return a new series
         if get_mol:
             df_slice = df['hdf5 index'] >= 0
             if df_slice.any():
+                idx = df['hdf5 index'][df_slice].values
                 if inplace:  # Update **df** with preexisting molecules from **self**
-                    mol_list = self.from_hdf5(df['hdf5 index'][df_slice].values)
+                    mol_list = self.from_hdf5(idx, database=database)
                     for i, rdmol in zip(df_slice.index, mol_list):
                         df.loc[i, ('mol', '')].from_rdmol(rdmol)
                 else:  # Create and return a new series of PLAMS molecules
-                    mol_list = self.from_hdf5(df['hdf5 index'][df_slice].values, rdmol=False)
-                    ret = pd.Series(mol_list, index=df_slice.index, name=('mol', ''))
+                    mol_list = self.from_hdf5(idx, database=database, rdmol=False)
+                    ret = pd.Series(mol_list, index=df[df_slice].index, name=('mol', ''))
 
         # Close the database
         if close:
@@ -588,3 +637,5 @@ class Database():
         if close:
             self.close_hdf5()
         return ret
+
+    """ #####################################  Utilities  #################################### """

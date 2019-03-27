@@ -24,18 +24,20 @@ def init_qd_opt(qd_df, arg):
     # Prepare slices
     job_recipe = arg.optional.qd.optimize
     if 'qd' in arg.optional.database.overwrite:
-        idx = qd_df.index
+        idx = qd_df['hdf5 index']
         message = '\t has been (re-)optimized'
     else:
         idx = qd_df['hdf5 index'] < 0
         message = '\t has been optimized'
 
     # Optimize the geometries
-    init(path=arg.optional.qd.dirname, folder='QD_optimize')
-    for mol in qd_df['mol'][idx]:
-        qd_opt(mol, job_recipe)
-        print(get_time() + mol.properties.name + message)
-    finish()
+    if idx.any():
+        init(path=arg.optional.qd.dirname, folder='QD_optimize')
+        for mol in qd_df['mol'][idx]:
+            qd_opt(mol, job_recipe)
+            print(get_time() + mol.properties.name + message)
+        finish()
+        print('')
 
     # Export the geometries to the database
     if 'qd' in arg.optional.database.write:

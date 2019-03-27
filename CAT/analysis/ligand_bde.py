@@ -2,7 +2,7 @@
 
 __all__ = ['init_bde']
 
-from itertools import chain, combinations
+from itertools import chain, combinations, product
 
 import numpy as np
 import pandas as pd
@@ -55,16 +55,29 @@ def init_bde(qd_df, arg):
         data.from_csv(qd_df, database='QD', get_mol=False)
         qd_df.dropna(axis='columns', how='all', inplace=True)
 
-    for i, mol in qd_df['mol'].iteritems:
-        # Ready YX2 and the YX2 dissociated quantum dots
-        lig = get_cdx2(mol)
+    # Calculate the BDE
+    for i, mol in qd_df['mol'].iteritems():
+        # Create the fragments
+        lig = get_xy2(mol)
         core = dissociate_ligand(mol, arg)
 
-        # Fill the series with energies
+        # Construct new columns for **qd_df**
+        sub_idx = [i.properties.df_index for i in core]
+        super_idx = ['BDE label', 'BDE dE']
+        idx = product(super_idx, sub_idx)
+        for j in idx:
+            qd_df[j] = np.nan
+
+        # Run the BDE calculations
         init(path=mol.properties.path, folder='BDE')
         config.default_jobmanager.settings.hashing = None
-        qd_df.loc[i, 'BDE dE'] = get_bde_dE(mol, lig, core, job=j1, s=s1)
+        tmp = get_bde_dE(mol, lig, core, job=j1, s=s1)
+        qd_df.loc[i, 'BDE dE'] = tmp
         if j2 and s2:
+            super_idx = ['BDE dG', 'BDE dGG']
+            idx = product(super_idx, sub_idx)
+            for j in idx:
+                qd_df[j] = np.nan
             qd_df.loc[i, 'BDE dG'] = get_bde_ddG(mol, lig, core, job=j2, s=s2)
             qd_df.loc[i, 'BDE ddG'] = qd_df.loc[i, 'BDE dE'] + qd_df.loc[i, 'BDE dG']
         finish()
@@ -76,40 +89,16 @@ def init_bde(qd_df, arg):
                             'template': 'singlepoint.json'}
         if j2 and s2:
             recipe.settings2 = {'name': 'BDE 2', 'key': j2, 'value': s2, 'template': 'freq.json'}
-            data.update_csv('QD', columns=['BDE dE', 'BDE dG', 'BDE ddG'],
-                            job_recipe=recipe, overwrite=overwrite)
+            data.update_csv(qd_df, database='QD', job_recipe=recipe, overwrite=overwrite,
+                            columns=['BDE label', 'BDE dE', 'BDE dG', 'BDE ddG'],)
         else:
-            data.update_csv('QD', columns=['BDE'], job_recipe=recipe, overwrite=overwrite)
-
-
-def _get_bde_series(index, mol, job2=True):
-    """ Return an empty series for the for loop in init_bde(). """
-    name = (mol.properties.core, mol.properties.core_anchor,
-            mol.properties.ligand, mol.properties.ligand_anchor)
-    if job2:
-        super_index = ['BDE dE', 'BDE ddG', 'BDE dG']
-    else:
-        super_index = ['BDE dE']
-    index = [(i, j) for j in index for i in super_index]
-    index.sort()
-    index.append(('BDE settings1', ''))
-    if job2:
-        index.append(('BDE settings2', ''))
-    idx = pd.MultiIndex.from_tuples(index, names=['index', 'sub index'])
-    return pd.Series(None, index=idx, name=name)
+            data.update_csv(qd_df, database='QD', job_recipe=recipe, overwrite=overwrite,
+                            columns=['BDE label', 'BDE dE'])
 
 
 def get_bde_dE(tot, lig, core, job=None, s=None):
     """ Calculate the bond dissociation energy: dE = dE(mopac) + (dG(uff) - dE(uff))
     """
-    # Switch to default settings if no job & s are <None>
-    if job is None and s is None:
-        job = AMSJob
-        s = CAT.get_template('qd.yaml')['MOPAC']
-    elif job is None or s is None:
-        finish()
-        raise TypeError('job & s should neither or both be None')
-
     # Optimize XYn
     lig.job_geometry_opt(job, s, name='BDE_geometry_optimization')
     E_lig = lig.properties.energy.E
@@ -139,14 +128,6 @@ def get_bde_dE(tot, lig, core, job=None, s=None):
 def get_bde_ddG(tot, lig, core, job=None, s=None):
     """ Calculate the bond dissociation energy: dE = dE(mopac) + (dG(uff) - dE(uff))
     """
-    # Switch to default settings if no job & s are <None>
-    if job is None and s is None:
-        job = AMSJob
-        s = CAT.get_template('qd.yaml')['UFF']
-    elif job is None or s is None:
-        finish()
-        raise TypeError('job & s should neither or both be None')
-
     # Optimize XYn
     s.input.ams.Constraints.Atom = lig.properties.indices
     lig.job_freq(job, s, name='BDE_frequency_analysis')
@@ -181,9 +162,9 @@ def get_bde_ddG(tot, lig, core, job=None, s=None):
     return ddG
 
 
-def get_cdx2(mol, ion='Cd'):
-    """ Takes a quantum dot with ligands (X) and an ion (Y) and turns it into YX2.
-    Returns the total energy of YX2 at the MOPAC level of theory. """
+def get_xy2(mol, ion='Cd'):
+    """ Takes a quantum dot with ligands (Y) and an ion (X) and turns it into YX2.
+    Returns a XY2 molecule. """
     def get_anchor(mol):
         """ Return an index and atom if marked with the properties.anchor attribute """
         for i, at in enumerate(mol.atoms):
@@ -191,7 +172,7 @@ def get_cdx2(mol, ion='Cd'):
                 return i, at
 
     def get_ligand(mol):
-        """ Extract a single ligand from *mol*. """
+        """ Extract a single ligand from **mol**. """
         at_list = []
         res = mol.atoms[-1].properties.pdb_info.ResidueNumber
         for at in reversed(mol.atoms):
@@ -228,7 +209,7 @@ def get_cdx2(mol, ion='Cd'):
     CdX2 = Molecule()
     CdX2.add_atom(Atom(atnum=to_atnum(ion)))
     CdX2.merge_mol([lig1, lig2])
-    CdX2.properties.name = 'YX2'
+    CdX2.properties.name = 'XY2'
     CdX2.properties.path = mol.properties.path
     CdX2.properties.indices = [1, 1 + idx1, 2 + len(lig2) + idx2]
 
@@ -260,9 +241,8 @@ def dissociate_ligand(mol, arg):
     # Create a list of all core indices and ligand anchor indices
     idx_core_old = np.array([j for j, at in enumerate(res_list[0]) if at.atnum == atnum])
     idx_core, topology = filter_core(xyz_array, idx_core_old, topology_dict, core_core_dist)
-    i, j = len(res_list[0]), len(res_list[1])
-    k = _anchor_to_idx(mol.properties.ligand_anchor)
-    idx_lig = np.arange(i + k, i + k + j * len(res_list[1:]), j) - 1
+    idx_lig = np.array([i for i in mol.properties.indices if
+                        mol[i].properties.pdb_info.ResidueName == 'LIG']) - 1
 
     # Mark the core atoms with their topologies
     for i, top in zip(idx_core_old, topology):

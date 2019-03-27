@@ -67,7 +67,7 @@ def init_qd_construction(ligand_df, core_df, arg):
 
 def _get_indices(mol, index):
     """ Return a list with the indices of all atoms in the core of **mol** plus the ligand anchor
-    atoms.
+    atoms. Ligand anchor atoms are furthermore marked with the properties.anchor attribute.
 
     :parameter mol: A PLAMS molecule.
     :type mol: |plams.Molecule|_
@@ -96,7 +96,10 @@ def _get_indices(mol, index):
 
     # Append and return
     ref_name = mol[k].properties.pdb_info.Name
-    ret += [i for i, at in enumerate(mol.atoms[k:], k+1) if at.properties.pdb_info.Name == ref_name]
+    for i, at in enumerate(mol.atoms[k:], k+1):
+        if at.properties.pdb_info.Name == ref_name:
+            at.properties.anchor = True
+            ret.append(i)
     return ret
 
 

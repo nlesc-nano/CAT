@@ -55,20 +55,24 @@ def init_solv(ligand_df, arg, solvent_list=None):
         data.from_csv(ligand_df, database='ligand', get_mol=False)
 
     # Run COSMO-RS
-    init(path=ligand_df['mol'][0].properties.path, folder='ligand_solvation')
-    for i, mol in ligand_df['mol'].iteritems():
-        coskf = get_surface_charge(mol, job=j1, s=s1)
-        ligand_df.loc[i, 'E_solv'], ligand_df.loc[i, 'gamma'] = get_solv(mol, solvent_list,
-                                                                         coskf, job=j2, s=s2)
-    finish()
+    idx = ligand_df[['E_solv', 'gamma']].isna().all(axis='columns')
+    if idx.any():
+        init(path=ligand_df['mol'][0].properties.path, folder='ligand_solvation')
+        for i, mol in ligand_df['mol'][idx].iteritems():
+            coskf = get_surface_charge(mol, job=j1, s=s1)
+            ligand_df.loc[i, 'E_solv'], ligand_df.loc[i, 'gamma'] = get_solv(mol, solvent_list,
+                                                                             coskf, job=j2, s=s2)
+        finish()
+        print('')
 
     # Update the database
     if 'ligand' in arg.optional.database.write:
         recipe = Settings()
-        recipe.settings1 = {'name': 'crs_settings1', 'key': j1, 'value': s1,
+        recipe.settings1 = {'name': 'solv 1', 'key': j1, 'value': s1,
                             'template': 'singlepoint.json'}
-        recipe.settings2 = {'name': 'crs_settings2', 'key': j2, 'value': s2}
-        data.update_csv(ligand_df, database='ligand', columns=columns,
+        recipe.settings2 = {'name': 'solv 2', 'key': j2, 'value': s2}
+        data.update_csv(ligand_df, database='ligand',
+                        columns=[('settings', 'solv 1'), ('settings', 'solv 2')]+columns,
                         overwrite=overwrite, job_recipe=recipe)
 
 

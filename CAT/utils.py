@@ -27,6 +27,7 @@ def type_to_string(job):
         return job_dict[job]
     except KeyError:
         print(get_time() + 'WARNING: No default settings available for ' + str(job))
+        return False
 
 
 def get_time():
