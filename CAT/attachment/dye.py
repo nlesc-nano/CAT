@@ -65,16 +65,14 @@ def connect_ligands_to_core(lig_dict, core):
 def get_args(core, lig_list, lig_idx):
     # Extract the various arguments from core and ligand_list
     core_other_atom = core.properties.coords_other_atom[0]
-
     lig_other = [lig[lig.properties.idx_other+1] for lig in lig_list]
-    # core_h = core.properties.coords_h[0]
-
     bond_length = np.array([core_other_atom.radius + lig.radius for lig in lig_other])
 
     # Roll through the arguments of core
     core.properties.the_h = core.properties.coords_h[0]
     at_h = core.closest_atom(core.properties.the_h)
     core.properties.vec = core.properties.vec[1:]
+    core.properties.coords_other_atom = core.properties.coords_other_atom[1:]
     core.properties.coords_other = core.properties.coords_other[1:]
     core.properties.coords_h = core.properties.coords_h[1:]
 
@@ -82,7 +80,6 @@ def get_args(core, lig_list, lig_idx):
     core_array = core.as_array()
     idx = core.atoms.index(at_h)
     core_array[idx] = np.nan
-
     return {'atoms_core': core_other_atom, 'atoms_other': core_array,
             'bond_length': bond_length, 'dist_to_self': False, 'idx': lig_idx, 'ret_min_dist': True}
 
