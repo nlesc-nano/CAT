@@ -34,18 +34,17 @@ def init_qd_construction(ligand_df, core_df, arg):
         data = Database(path=arg.optional.database.dirname)
         mol_series1 = data.from_csv(qd_df, database='QD', inplace=False)
         for i, mol in mol_series1.iteritems():
-            j, k, l, m = i
             mol.properties = Settings()
             mol.properties.indices = _get_indices(mol, i)
             mol.properties.path = arg.optional.qd.dirname
-            mol.properties.name = core_df.at[(j, k), ('mol', '')].properties.name + '__'
+            mol.properties.name = core_df.at[(i[0:2]), ('mol', '')].properties.name + '__'
             mol.properties.name += str(mol[-1].properties.pdb_info.ResidueNumber - 1)
-            mol.properties.name += '_' + ligand_df.at[(l, m), ('mol', '')].properties.name
+            mol.properties.name += '_' + ligand_df.at[(i[2:4]), ('mol', '')].properties.name
             print(get_time() + mol.properties.name + '\t has been pulled from the database')
         print('')
 
     # Identify and create the to be constructed quantum dots
-    idx = -np.isnan(qd_df['hdf5 index'])
+    idx = qd_df['hdf5 index'] < 0
     mol_list = [ligand_to_qd(core_df['mol'][(i, j)], ligand_df['mol'][(k, l)], arg) for
                 i, j, k, l in qd_df.index[idx]]
     mol_series2 = pd.Series(mol_list, index=qd_df.index[idx], name=('mol', ''), dtype=object)
@@ -67,12 +66,17 @@ def init_qd_construction(ligand_df, core_df, arg):
 
 
 def _get_indices(mol, index):
-    """
+    """ Return a list with the indices of all atoms in the core of **mol** plus the ligand anchor
+    atoms.
+
     :parameter mol: A PLAMS molecule.
     :type mol: |plams.Molecule|_
     :parameter index: A tuple of 4 strings.
     :type index: *4* |tuple|_ [|str|_]
+    :return: A list of atomic indices
+    :rtype: |list|_ [|int|_]
     """
+    # Collect the indices of the atoms in the core
     ret = []
     for i, at in enumerate(mol, 1):
         if at.properties.pdb_info.ResidueName == 'COR':
@@ -80,14 +84,20 @@ def _get_indices(mol, index):
         else:
             break
 
-    index = index[2]
+    # Extract the index (within the ligand) of the ligand anchor atom
+    index = index[3]
     for j, _ in enumerate(index):
         try:
             k = int(index[j:])
+            break
         except ValueError:
             pass
+    k += i
 
-    ret += []
+    # Append and return
+    ref_name = mol[k].properties.pdb_info.Name
+    ret += [i for i, at in enumerate(mol.atoms[k:], k+1) if at.properties.pdb_info.Name == ref_name]
+    return ret
 
 
 def _get_df(core_index, ligand_index):

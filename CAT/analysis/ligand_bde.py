@@ -19,74 +19,67 @@ from .. import utils as CAT
 from ..utils import get_time
 from ..mol_utils import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
-from ..data_handling.database import (property_to_database, get_empty_columns, _anchor_to_idx)
+from ..data_handling.CAT_database import Database
 
 
-def init_bde(mol_list, arg):
+def init_bde(qd_df, arg):
     """ Initialize the bond dissociation energy calculation; involves 4 distinct steps:
     1.  Take two ligands X and another atom from the core Y (e.g. Cd) and create YX2.
     2.  Create all n*2*(n-1) possible molecules where YX2 is dissociated.
     3.  Calculate dE: the "electronic" component of the bond dissociation energy (BDE).
     4.  Calculate ddG: the thermal and entropic component of the BDE.
 
-    mol_list <list> [<plams.Molecule>]: A list of PLAMS molecule.
-    job1 <type> & s1 <Settings>: A type object of a job and its settings; used in step 3.
-    job2 <type> & s2 <Settings>: A type object of a job and its settings; used in step 4.
-    return <pd.DataFrame>: A pandas dataframe with ligand residue numbers, Cd topology and BDEs.
+    :parameter ligand_df: A dataframe of valid ligands.
+    :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index=|int|_, values=|plams.Molecule|_)
+    :parameter arg: A settings object containing all (optional) arguments.
+    :type arg: |plams.Settings|_ (superclass: |dict|_).
     """
+    data = Database(arg.optional.database.path)
+
     # Prepare the job settings
-    job_recipe = arg.optional.qd.dissociate
+    j1, j2 = arg.optional.qd.dissociate.job1, arg.optional.qd.dissociate.job2
+    s1, s2 = arg.optional.qd.dissociate.s1, arg.optional.qd.dissociate.s2
 
     # Check if the calculation has been done already
-    if 'qd' not in arg.optional.database.overwrite:
-        empty_columns = get_empty_columns('BDE dE', arg, database='qd')
-        mol_list = [mol for mol in mol_list if
-                    (mol.properties.core, mol.properties.core_anchor,
-                     mol.properties.ligand, mol.properties.ligand_anchor) in empty_columns]
-        if not mol_list:
-            return
+    overwrite = 'qd' in arg.optional.database.overwrite
+    if not overwrite and 'qd' in arg.optional.database.read:
+        data.open_csv(database='QD')
+        try:
+            for i, j, k in data.csv_qd[['BDE label', 'BDE dE', 'BDE dG', 'BDE ddG']].columns:
+                qd_df[('BDE label', i)] = None
+                qd_df[('BDE dE', i)] = np.nan
+                qd_df[('BDE dG', j)] = np.nan
+                qd_df[('BDE ddG', k)] = np.nan
+        except KeyError:
+            pass
+        data.from_csv(qd_df, database='QD', get_mol=False)
+        qd_df.dropna(axis='columns', how='all', inplace=True)
 
-    # Prepare the dataframe
-    df = _get_bde_df()
-    for mol in mol_list:
+    for i, mol in qd_df['mol'].iteritems:
         # Ready YX2 and the YX2 dissociated quantum dots
         lig = get_cdx2(mol)
         core = dissociate_ligand(mol, arg)
 
-        # Construct a Series
-        index = [i.properties.df_index for i in core]
-        series = _get_bde_series(index, mol, job_recipe.job2)
-
         # Fill the series with energies
         init(path=mol.properties.path, folder='BDE')
         config.default_jobmanager.settings.hashing = None
-        series['BDE dE'] = get_bde_dE(mol, lig, core, job=job_recipe.job1, s=job_recipe.s1)
-        if job_recipe.job2 and job_recipe.s2:
-            series['BDE ddG'] = get_bde_ddG(mol, lig, core, job=job_recipe.job2, s=job_recipe.s2)
-            series['BDE dG'] = series['BDE dE'] + series['BDE ddG']
+        qd_df.loc[i, 'BDE dE'] = get_bde_dE(mol, lig, core, job=j1, s=s1)
+        if j2 and s2:
+            qd_df.loc[i, 'BDE dG'] = get_bde_ddG(mol, lig, core, job=j2, s=s2)
+            qd_df.loc[i, 'BDE ddG'] = qd_df.loc[i, 'BDE dE'] + qd_df.loc[i, 'BDE dG']
         finish()
 
-        # Update the indices of df
-        for i in series.index:
-            if i not in df.index:
-                df.loc[i, :] = None
-
-        # Update the values of df
-        df[series.name] = series
-
-    # Export the BDE results to the database
-    del df[(None, None, None, None)]
+    # Update the database
     if 'qd' in arg.optional.database.write:
-        property_to_database(df, arg, database='qd', prop='bde')
-
-
-def _get_bde_df():
-    """ Return an empty dataframe for init_bde(). """
-    idx_names = ['index', 'sub index']
-    idx = pd.MultiIndex(levels=[[], []], codes=[[], []], names=idx_names)
-    column_names = ['core', 'core_anchor', 'ligand smiles', 'ligand anchor']
-    columns = pd.MultiIndex.from_tuples([(None, None, None, None)], names=column_names)
-    return pd.DataFrame(index=idx, columns=columns)
+        recipe = Settings()
+        recipe.settings1 = {'name': 'BDE 1', 'key': j2, 'value': s1,
+                            'template': 'singlepoint.json'}
+        if j2 and s2:
+            recipe.settings2 = {'name': 'BDE 2', 'key': j2, 'value': s2, 'template': 'freq.json'}
+            data.update_csv('QD', columns=['BDE dE', 'BDE dG', 'BDE ddG'],
+                            job_recipe=recipe, overwrite=overwrite)
+        else:
+            data.update_csv('QD', columns=['BDE'], job_recipe=recipe, overwrite=overwrite)
 
 
 def _get_bde_series(index, mol, job2=True):

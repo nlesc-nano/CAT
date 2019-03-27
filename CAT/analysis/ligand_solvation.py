@@ -7,7 +7,6 @@ from itertools import product
 from os.path import (join, dirname)
 
 import numpy as np
-import pandas as pd
 
 from scm.plams.core.settings import Settings
 from scm.plams.core.jobrunner import JobRunner
@@ -33,6 +32,8 @@ def init_solv(ligand_df, arg, solvent_list=None):
         use the default .coskf files distributed with CAT (see CAT.data.coskf).
     :type solvent_list: |None|_ or |list|_ [|str|_].
     """
+    data = Database(path=arg.optional.database.dirname)
+
     # Prepare the job settings and solvent list
     j1, j2 = arg.optional.ligand.crs.job1, arg.optional.ligand.crs.job2
     s1, s2 = arg.optional.ligand.crs.s1, arg.optional.ligand.crs.s2
@@ -42,7 +43,7 @@ def init_solv(ligand_df, arg, solvent_list=None):
                         solv not in ('__init__.py', 'README.rst')]
     solvent_list.sort()
 
-    # Update the columns of **mol_df**
+    # Update the columns of **ligand_df**
     columns = [i.rsplit('.', 1)[0].rsplit('/', 1)[-1] for i in solvent_list]
     columns = list(product(('E_solv', 'gamma'), columns))
     for item in columns:
@@ -51,10 +52,7 @@ def init_solv(ligand_df, arg, solvent_list=None):
     # Check if the calculation has been done already
     overwrite = 'ligand' in arg.optional.database.overwrite
     if not overwrite and 'ligand' in arg.optional.database.read:
-        data = Database(path=arg.optional.database.dirname)
-        data.open_csv(database='ligand')
-        ligand_df.update(data.csv_lig)
-        data.close_csv(write=False)
+        data.from_csv(ligand_df, database='ligand', get_mol=False)
 
     # Run COSMO-RS
     init(path=ligand_df['mol'][0].properties.path, folder='ligand_solvation')
@@ -67,15 +65,11 @@ def init_solv(ligand_df, arg, solvent_list=None):
     # Update the database
     if 'ligand' in arg.optional.database.write:
         recipe = Settings()
-        recipe.settings1 = {'name': 'crs_settings1', 'key': j1, 'value': s1}
+        recipe.settings1 = {'name': 'crs_settings1', 'key': j1, 'value': s1,
+                            'template': 'singlepoint.json'}
         recipe.settings2 = {'name': 'crs_settings2', 'key': j2, 'value': s2}
-        try:
-            data.update_csv(ligand_df, database='ligand', columns=columns,
-                            overwrite=overwrite, job_recipe=recipe)
-        except NameError:
-            data = Database(path=arg.optional.database.dirname)
-            data.update_csv(ligand_df, database='ligand', columns=columns,
-                            overwrite=overwrite, job_recipe=recipe)
+        data.update_csv(ligand_df, database='ligand', columns=columns,
+                        overwrite=overwrite, job_recipe=recipe)
 
 
 def get_surface_charge(mol, job=None, s=None):

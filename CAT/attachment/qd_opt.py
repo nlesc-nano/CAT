@@ -2,8 +2,6 @@
 
 __all__ = ['init_qd_opt']
 
-import numpy as np
-
 from scm.plams.core.settings import Settings
 from scm.plams.core.functions import (init, finish)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
@@ -12,6 +10,7 @@ from ..utils import get_time
 from ..mol_utils import (fix_carboxyl, fix_h)
 from ..analysis.jobs import job_geometry_opt
 from ..data_handling.CAT_database import Database
+
 
 def init_qd_opt(qd_df, arg):
     """ Initialized the quantum dot (constrained) geometry optimization.
@@ -28,14 +27,14 @@ def init_qd_opt(qd_df, arg):
         idx = qd_df.index
         message = '\t has been (re-)optimized'
     else:
-        idx = -np.isnan(qd_df['hdf5 index'])
+        idx = qd_df['hdf5 index'] < 0
         message = '\t has been optimized'
 
     # Optimize the geometries
     init(path=arg.optional.qd.dirname, folder='QD_optimize')
     for mol in qd_df['mol'][idx]:
-            qd_opt(mol, job_recipe)
-            print(get_time() + mol.properties.name + message)
+        qd_opt(mol, job_recipe)
+        print(get_time() + mol.properties.name + message)
     finish()
 
     # Export the geometries to the database

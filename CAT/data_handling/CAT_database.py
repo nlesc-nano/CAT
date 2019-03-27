@@ -237,7 +237,7 @@ class Database():
         elif database == 'QD':
             self._open_csv_qd()
         else:
-            raise KeyError()
+            raise ValueError('open_csv: {} is not an accepted value'.format(str(database)))
 
     def _open_csv_lig(self):
         """ Open the ligand database, populating **self.csv_lig** with a |pd.DataFrame|_ object. """
@@ -311,7 +311,7 @@ class Database():
         elif database == 'QD':
             self._close_csv_qd(write)
         else:
-            raise KeyError()
+            raise ValueError('close_csv: {} is not an accepted value'.format(str(database)))
 
     def _close_csv_lig(self, write=True):
         """ Close the ligand database, depopulating **self.csv_lig** and exporting its content to
@@ -382,21 +382,19 @@ class Database():
         elif database == 'QD':
             csv = self.csv_qd
         else:
-            raise TypeError()
+            raise ValueError('update_csv: {} is not an accepted value'.format(str(database)))
 
-        # Update job settings
+        # Update **self.yaml**
         if job_recipe is not None:
             job_settings = self.update_yaml(job_recipe)
             for key in job_settings:
                 df[('settings', key)] = job_settings[key]
 
         # Update **csv.index**
-        row_dtypes = self._get_none(database, close=False)
         for i in df.index:
             if i not in csv.index:
-                csv.at[i, :] = row_dtypes
-        if not csv['hdf5 index'].dtype is np.dtype('int64'):
-            csv['hdf5 index'] = csv['hdf5 index'].astype(int)
+                csv.at[i, :] = np.nan
+        csv['hdf5 index'] = csv['hdf5 index'].astype(int)
 
         # Filter columns
         if columns is None:
@@ -404,18 +402,21 @@ class Database():
         else:
             df_columns = columns
             if job_recipe is not None:
-                df_columns += [('settings', key) for key in job_settings]
+                df_columns.append('settings')
 
         # Update **csv.columns**
         for i in df_columns:
             if i not in csv.columns:
-                csv[i] = np.zeros((1), dtype=df[i].dtype)
+                try:
+                    csv[i] = np.array((None), dtype=df[i].dtype)
+                except TypeError:
+                    csv[i] = -1
 
-        # Update **self.hdf5**, returning a new series of indices
+        # Update **self.hdf5**; returns a new series of indices
         hdf5_series = self.update_hdf5(df, database=database, overwrite=overwrite)
 
         # Update **csv.values**
-        csv.update(df, overwrite=overwrite)
+        csv.update(df[columns], overwrite=overwrite)
         csv.update(hdf5_series, overwrite=True)
 
         # Close the database
@@ -490,12 +491,12 @@ class Database():
             pdb_array = as_pdb_array(df['mol'][new], min_size=j)
 
             # Reshape and update **self.hdf5**
-            self.hdf5[database].shape = i + pdb_array.shape[0], pdb_array.shape[1]
-            self.hdf5[database][i:i+pdb_array.shape[0]] = pdb_array
-            ret = pd.Series(np.arange(i, i + pdb_array.shape[0]),
-                            index=new.index, name=('hdf5 index', ''))
+            k = i + pdb_array.shape[0]
+            self.hdf5[database].shape = k, pdb_array.shape[1]
+            self.hdf5[database][i:k] = pdb_array
+            ret = pd.Series(np.arange(i, k), index=new.index, name=('hdf5 index', ''))
         else:
-            ret = pd.Series(name=('hdf5 index', ''), dtype=object)
+            ret = pd.Series(name=('hdf5 index', ''), dtype=int)
 
         # If **overwrite** is *True*
         if overwrite and old.any():
@@ -503,20 +504,21 @@ class Database():
 
         if close:
             self.close_hdf5()
-            self.close_csv(database)
 
         return ret
 
     """ ########################  Pulling results from the database ########################### """
 
-    def from_csv(self, df, database='ligand', close=True, inplace=True):
+    def from_csv(self, df, database='ligand', close=True, get_mol=True, inplace=True):
         """ Pull results from **self.csv_lig** or **self.csv_qd**.
-        Performs in inplace update of **df**.
+        Performs in inplace update of **df** if **inplace** = *True*.
 
         :parameter df: A dataframe of new (potential) database entries.
         :type df: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
         :parameter str database: The type of database; accepted values are *ligand* and *QD*.
-        :parameter bool close: If the database should be closed afterwards.
+        :parameter columns: A list of to be updated columns in **df**.
+        :parameter bool get_mol: Attempt to pull preexisting molecules from the database.
+            See **inplace** for more details.
         :parameter bool inplace: If *True* perform an inplace update of the *mol* column in **df**.
             Otherwise Return a new series of PLAMS molecules.
         :return: If **inplace** = *False*: return a new series of PLAMS molecules pulled
@@ -532,30 +534,31 @@ class Database():
         elif database == 'QD':
             csv = self.csv_qd
         else:
-            raise TypeError()
+            raise ValueError('from_csv: {} is not an accepted value'.format(str(database)))
 
         # Update **df** with content from **self.csv_lig** or **self.csv_qd**
         df.update(csv, overwrite=True)
-        df_slice = df['hdf5 index'] >= 0
 
-        if df_slice.any():
-            if inplace:  # Update **df** with preexisting molecules from **self**
-                mol_list = self.from_hdf5(df['hdf5 index'][df_slice].values)
-                for i, rdmol in zip(df_slice.index, mol_list):
-                    df.loc[i, ('mol', '')].from_rdmol(rdmol)
-            else:  # Create and return a new series of PLAMS molecules
-                mol_list = self.from_hdf5(df['hdf5 index'][df_slice].values, rdmol=False)
-                ret = pd.Series(mol_list, index=df_slice.index, name=('mol', ''))
+        if get_mol:
+            df_slice = df['hdf5 index'] >= 0
+            if df_slice.any():
+                if inplace:  # Update **df** with preexisting molecules from **self**
+                    mol_list = self.from_hdf5(df['hdf5 index'][df_slice].values)
+                    for i, rdmol in zip(df_slice.index, mol_list):
+                        df.loc[i, ('mol', '')].from_rdmol(rdmol)
+                else:  # Create and return a new series of PLAMS molecules
+                    mol_list = self.from_hdf5(df['hdf5 index'][df_slice].values, rdmol=False)
+                    ret = pd.Series(mol_list, index=df_slice.index, name=('mol', ''))
 
         # Close the database
         if close:
             self.close_csv(database, write=False)
 
         # Return a new series if **inplace** = *False*
-        if not inplace:
+        if get_mol and not inplace:
             if df_slice.any():
                 return ret
-            return pd.Series(np.empty((0), dtype=object), name=('mol', ''))
+            return pd.Series(None, name=('mol', ''), dtype=object)
 
     def from_hdf5(self, index, database='ligand', rdmol=True, close=True):
         """ Import structures from the hdf5 database as RDKit or PLAMS molecules.
@@ -584,50 +587,4 @@ class Database():
         # Close the database
         if close:
             self.close_hdf5()
-        return ret
-
-    """ ###########################  Miscellaneous functions ################################## """
-
-    def _get_none(self, database='ligand', close=True):
-        """ Create a list of None-esque objects, it's length and dtype matching the number of rows
-        in **self** as well as the rows respective data types. Usefull as values for new empty rows
-        in a dataframe while preserving the existing rows datatype:
-
-                * |np.int64|_: *-1*
-
-                * |np.float64|_: *np.nan*
-
-                * |object|_: *None*
-
-                * |bool|_: *False*
-
-        :parameter str database: The type of database; accepted values are *ligand* and *QD*.
-        :parameter bool close: If the database should be closed afterwards.
-        :return: A list with *-1*, *np.nan*, *None* and/or *False*, its dtype and length (*n*) matching
-            the columns of **df**.
-        :rtype: *n* |list|_ [|np.int64|_, |np.float64|_, |None|_ and/or |bool|_]
-        """
-        # Open the database
-        self.open_csv(database)
-
-        # Operate on either **self.csv_lig** or **self.csv_qd**
-        if database == 'ligand':
-            csv = self.csv_lig
-        elif database == 'QD':
-            csv = self.csv_qd
-        else:
-            raise TypeError()
-
-        # Create a list of None-esque objects
-        dtype_to_none = {
-            np.dtype('int64'): -1,
-            np.dtype('float64'): np.nan,
-            np.dtype('O'): None,
-            np.dtype('bool'): False
-        }
-        ret = [dtype_to_none[csv[key].dtype] for key in csv]
-
-        # Close the database
-        if close:
-            self.close_csv(database, write=False)
         return ret

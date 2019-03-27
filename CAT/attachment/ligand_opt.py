@@ -50,7 +50,7 @@ def init_ligand_opt(ligand_df, arg):
             idx = ligand_df.index
             message = '\t has been (re-)optimized'
         else:
-            idx = -np.isnan(ligand_df['hdf5 index'])
+            idx = ligand_df['hdf5 index'] < 0
             message = '\t has been optimized'
 
         # Optimize the ligands
