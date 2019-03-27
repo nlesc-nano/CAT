@@ -11,7 +11,7 @@ from scipy.spatial.distance import cdist
 from scm.plams import Molecule, Settings, Atom
 from scm.plams.tools.geometry import rotation_matrix
 
-from .ligand_attach import rot_mol_angle, rot_mol_axis
+from .ligand_attach import rot_mol
 
 
 def connect_ligands_to_core(lig_dict, core):
@@ -35,11 +35,10 @@ def connect_ligands_to_core(lig_dict, core):
         return []
 
     # Construct keyword arguments
-    kwarg1, kwarg2 = get_args(core, lig_list, lig_idx)
+    kwarg = get_args(core, lig_list, lig_idx)
 
     # Allign the ligands with the core; perform the ration check
-    lig_array = rot_mol_angle(lig_list, lig_vec, core_vec, **kwarg1)
-    lig_array, min_dist_array = rot_mol_axis(lig_array, core_vec, **kwarg2)
+    lig_array, min_dist_array = rot_mol(lig_list, lig_vec, core_vec, **kwarg)
 
     # Combine the rotated ligands and core into new molecules
     ret = []
@@ -65,7 +64,6 @@ def connect_ligands_to_core(lig_dict, core):
 
 def get_args(core, lig_list, lig_idx):
     # Extract the various arguments from core and ligand_list
-    core_other = core.properties.coords_other[0]
     core_other_atom = core.properties.coords_other_atom[0]
 
     lig_other = [lig[lig.properties.idx_other+1] for lig in lig_list]
@@ -85,11 +83,8 @@ def get_args(core, lig_list, lig_idx):
     idx = core.atoms.index(at_h)
     core_array[idx] = np.nan
 
-    # Create a dictionary of arguments
-    kwarg1 = {'atoms_other': core_other, 'idx': lig_idx, 'bond_length': bond_length}
-    kwarg2 = {'atoms_other': core_array, 'dist_to_self': False, 'idx': lig_idx, 'ret_min_dist': True}
-
-    return kwarg1, kwarg2
+    return {'atoms_other': core_array, 'bond_length': bond_length,
+            'dist_to_self': False, 'idx': lig_idx, 'ret_min_dist': True}
 
 
 def bob_core(mol):
