@@ -153,7 +153,7 @@ def prep_ligand(ligand_df, arg):
     ligand_df = init_ligand_anchoring(ligand_df, arg)
 
     # Check if any valid functional groups were found
-    if not ligand_df['mol'].all():
+    if not ligand_df['mol'].any():
         raise MoleculeError('No valid functional groups found in any of the ligands, aborting run')
 
     # Optimize the ligands
@@ -186,7 +186,7 @@ def prep_qd(ligand_df, core_df, arg):
     """
     # Construct the quantum dots
     qd_df = init_qd_construction(ligand_df, core_df, arg)
-    if not qd_df['mol'].all():
+    if not qd_df['mol'].any():
         raise MoleculeError('No valid quantum dots found, aborting')
 
     # Optimize the qd with the core frozen
@@ -195,9 +195,9 @@ def prep_qd(ligand_df, core_df, arg):
         init_qd_opt(qd_df, arg)
 
     # Calculate the interaction between ligands on the quantum dot surface
-    if arg.optional.qd.int:
+    if arg.optional.qd.activation_strain:
         print(get_time() + 'calculating ligand distortion and inter-ligand interaction')
-        qd_df = list(init_asa(qd) for qd in qd_df)
+        init_asa(qd_df, arg)
 
     # Calculate the interaction between ligands on the quantum dot surface upon removal of CdX2
     if arg.optional.qd.dissociate:
