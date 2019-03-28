@@ -90,11 +90,11 @@ def get_surface_charge(mol, job=None, s=None):
 
 def get_solv(mol, solvent_list, coskf, job=None, s=None):
     """ Calculate the solvation energy of *mol* in various *solvents*. """
-    # Return 2x None if no coskf is None
+    # Return 2x np.nan if no coskf is None (i.e. the COSMO-surface construction failed)
     if coskf is None:
         return np.nan, np.nan
 
-    # Prepare the job settings
+    # Prepare a list of job settings
     s.input.Compound._h = coskf
     s.ignore_molecule = True
     s_list = []

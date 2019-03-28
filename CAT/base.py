@@ -117,7 +117,7 @@ def prep_core(core_df, arg):
             idx, dummies = zip(*[(j, atom) for j, atom in enumerate(core.atoms, 1) if
                                  atom.atnum == dummy])
         else:
-            idx, dummies = zip(*[(j, core[i]) for j in core.properties.dummies])
+            idx, dummies = zip(*[(j, core[j]) for j in core.properties.dummies])
         core.properties.dummies = dummies
         anchor_list.append(''.join([' ' + str(i) for i in sorted(idx)])[1:])
 

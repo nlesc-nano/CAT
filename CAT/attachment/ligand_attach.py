@@ -88,7 +88,7 @@ def _get_indices(mol, index):
     index = index[3]
     for j, _ in enumerate(index):
         try:
-            k = int(index[j:])
+            k = int(index[j:]) - 1
             break
         except ValueError:
             pass

@@ -345,7 +345,7 @@ class Database():
         **self.csv_qd** and exporting its content to a .csv file.
 
         :parameter str database: The type of database; accepted values are *ligand* and *QD*.
-        :parameter bool write: Whether or not **self.csv_lig** / **self.csv_qd** should be
+        :parameter bool write: Whether or not **self.csv_lig** or **self.csv_qd** should be
             exported to a .csv file.
         """
         if database == 'ligand':
@@ -381,7 +381,7 @@ class Database():
         """ Close the job settings database, depopulating **self.yaml** and exporting
         its content to a .yaml file.
 
-        :parameter bool write: Whether or not **self.csv_lig** should be exported to a .csv file.
+        :parameter bool write: Whether or not **self.yaml** should be exported to a .yaml file.
         """
         if self.yaml is not None:
             if write:
@@ -399,8 +399,8 @@ class Database():
 
     """ #################################  Updating the database ############################## """
 
-    def update_csv(self, df, database='ligand', columns=None, overwrite=False, close=True,
-                   job_recipe=None):
+    def update_csv(self, df, database='ligand', columns=None, overwrite=False, job_recipe=None,
+                   close=True):
         """ Update **self.csv_lig** or **self.csv_qd** with
         (potentially) new user provided settings.
 
@@ -409,11 +409,11 @@ class Database():
         :parameter str database: The type of database; accepted values are *ligand* and *QD*.
         :parameter columns: A list of column keys in **df** which
             (potentially) are to be added to **self**. If *None*: Add all columns.
-        :type columns: |None|_ or *n*2* |np.ndarray|_ [|np.str_|_]
+        :type columns: |None|_ or |list|_ [|tuple|_ [|str|_]]
         :parameter bool overwrite: Whether or not previous entries can be overwritten or not.
-        :parameter bool close: If the database should be closed afterwards.
         :parameter job_recipe: A Settings object with settings specific to a job.
         :type job_recipe: |None|_ or |plams.Settings|_ (superclass: |dict|_)
+        :parameter bool close: If the database component should be closed afterwards.
         """
         # Open the database
         self.open_csv(database)
@@ -453,7 +453,7 @@ class Database():
                 except AttributeError:
                     for j in df[i].columns:
                         try:
-                            csv[i] = np.array((None), dtype=df[i].dtype)
+                            csv[i] = np.array((None), dtype=df[(i, j)].dtype)
                         except TypeError:
                             csv[i] = -1
 
@@ -473,7 +473,7 @@ class Database():
 
         :parameter job_recipe: A settings object with one or more settings specific to a job.
         :type job_recipe: |plams.Settings|_ (superclass: |dict|_)
-        :parameter bool close: If the job settings database should be closed afterwards.
+        :parameter bool close: If the database component should be closed afterwards.
         :return: A dictionary with the row name of **self.csv_lig** or **self.csv_qd** as keys
             and the key for **self.yaml** as matching values.
         :rtype: |dict|_ (keys: |str|_, values: |str|_).
@@ -521,7 +521,7 @@ class Database():
         :type df: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
         :parameter str database: The type of database; accepted values are *ligand* and *QD*.
         :parameter bool overwrite: Whether or not previous entries can be overwritten or not.
-        :parameter bool close: If the database should be closed afterwards.
+        :parameter bool close: If the database component should be closed afterwards.
         :return: A series with the index of all new molecules in **self.hdf5**
         :rtype: |pd.Series|_ (index: |str|_, values: |np.int64|_)
         """
@@ -535,7 +535,7 @@ class Database():
 
         # Add new entries to the database
         if new.any():
-            pdb_array = as_pdb_array(df['mol'][new], min_size=j)
+            pdb_array = as_pdb_array(df['mol'][new.index], min_size=j)
 
             # Reshape and update **self.hdf5**
             k = i + pdb_array.shape[0]
@@ -547,7 +547,7 @@ class Database():
 
         # If **overwrite** is *True*
         if overwrite and old.any():
-            self.hdf5[database][old] = as_pdb_array(df['mol'][old], min_size=j)
+            self.hdf5[database][old] = as_pdb_array(df['mol'][old.index], min_size=j)
 
         if close:
             self.close_hdf5()
@@ -556,7 +556,7 @@ class Database():
 
     """ ########################  Pulling results from the database ########################### """
 
-    def from_csv(self, df, database='ligand', close=True, get_mol=True, inplace=True):
+    def from_csv(self, df, database='ligand', get_mol=True, inplace=True, close=True):
         """ Pull results from **self.csv_lig** or **self.csv_qd**.
         Performs in inplace update of **df** if **inplace** = *True*.
 
@@ -568,9 +568,10 @@ class Database():
             See **inplace** for more details.
         :parameter bool inplace: If *True* perform an inplace update of the *mol* column in **df**.
             Otherwise Return a new series of PLAMS molecules.
+        :parameter bool close: If the database component should be closed afterwards.
         :return: If **inplace** = *False*: return a new series of PLAMS molecules pulled
             from **self**.
-        :rtype: |pd.Series|_ (index: |str|, values: |plams.Molecule|_, name=|str|_)
+        :rtype: |pd.Series|_ (index: |str|_, values: |plams.Molecule|_)
         """
         # Open the database
         self.open_csv(database)
@@ -616,9 +617,9 @@ class Database():
         :type index: |list|_ [|int|_]
         :parameter str database: The type of database; accepted values are *ligand* and *QD*.
         :parameter bool rdmol: If *True*, return an RDKit molecule instead of a PLAMS molecule.
-        :parameter bool close: If the database should be closed afterwards.
+        :parameter bool close: If the database component should be closed afterwards.
         :return: A list of PLAMS or RDKit molecules.
-        :rtype: |list|_ [|plams.Molecule|_] or |list|_ [|rdkit.Chem.Mol|_]
+        :rtype: |list|_ [|plams.Molecule|_ or |rdkit.Chem.Mol|_]
         """
         # Open the database
         self.open_hdf5()

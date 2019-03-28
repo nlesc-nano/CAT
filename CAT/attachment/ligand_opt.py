@@ -34,7 +34,7 @@ def init_ligand_opt(ligand_df, arg):
     :type arg: |plams.Settings|_ (superclass: |dict|_).
     """
     database = Database(path=arg.optional.database.dirname)
-    overwrite = 'ligand' in arg.optional.database.overwrite:
+    overwrite = 'ligand' in arg.optional.database.overwrite
 
     # Searches for matches between the input ligand and the database; imports the structure
     if 'ligand' in arg.optional.database.read:
