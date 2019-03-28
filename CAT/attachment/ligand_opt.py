@@ -34,6 +34,7 @@ def init_ligand_opt(ligand_df, arg):
     :type arg: |plams.Settings|_ (superclass: |dict|_).
     """
     database = Database(path=arg.optional.database.dirname)
+    overwrite = 'ligand' in arg.optional.database.overwrite:
 
     # Searches for matches between the input ligand and the database; imports the structure
     if 'ligand' in arg.optional.database.read:
@@ -46,7 +47,7 @@ def init_ligand_opt(ligand_df, arg):
     # Optimize all new ligands
     if arg.optional.ligand.optimize:
         # Identify the to be optimized ligands
-        if 'ligand' in arg.optional.database.overwrite:
+        if overwrite:
             idx = ligand_df.index
             message = '\t has been (re-)optimized'
         else:
@@ -69,8 +70,9 @@ def init_ligand_opt(ligand_df, arg):
     if 'ligand' in arg.optional.database.write and arg.optional.ligand.optimize:
         recipe = Settings()
         recipe.settings = {'name': '1', 'key': 'RDKit', 'value': 'UFF'}
+        overwrite = 'ligand' in arg.optional
         database.update_csv(ligand_df, columns=['formula', 'hdf5 index'],
-                            job_recipe=recipe, database='ligand')
+                            job_recipe=recipe, database='ligand', overwrite=overwrite)
 
 
 @add_to_class(Molecule)
