@@ -1,9 +1,9 @@
 """ A module which holds the Database class. """
 
-__all__ = ['Database']
+__all__ = ['Database', 'mol_to_file']
 
 from os import getcwd
-from os.path import (join, isfile)
+from os.path import (join, isfile, isdir)
 
 import yaml
 import h5py
@@ -20,6 +20,44 @@ from rdkit import Chem
 from CAT import utils as CAT
 from CAT.mol_utils import from_rdmol
 from CAT.utils import (get_time, type_to_string)
+
+
+def mol_to_file(mol_list, path=None, overwrite=False, mol_format=['xyz', 'pdb']):
+    """ Export all molecules in **mol_list** to .pdb and/or .xyz files.
+
+    :parameter mol_list: A list of PLAMS molecules.
+    :type mol_list: |list|_ [|plams.Molecule|_]
+    :parameter path: The path to the directory where the molecules will be stored. Defaults
+        to the current working directory if *None*.
+    :type path: |None|_ or |str|_
+    :parameter bool overwrite: If previously generated structures can be overwritten or not.
+    :parameter mol_format: A list of strings with the to-be exported file types. Accepted values
+        are *xyz* and/or *pdb*.
+    :type mol_format: |list|_ [|str|_]
+    """
+    # Set the export path
+    path = path or getcwd()
+    assert isdir(path)
+
+    # Raise an error if mol_format is empty
+    if not mol_format:
+        return
+
+    if overwrite:  # Export molecules while allowing for file overriding
+        for mol in mol_list:
+            mol_path = join(path, mol.properties.name)
+            if 'pdb' in mol_format:
+                molkit.writepdb(mol, mol_path + '.pdb')
+            if 'xyz' in mol_format:
+                mol.write(mol_path + '.xyz')
+
+    else:  # Export molecules without allowing for file overriding
+        for mol in mol_list:
+            mol_path = join(path, mol.properties.name)
+            if 'pdb' in mol_format and not isfile(mol_path + '.pdb'):
+                molkit.writepdb(mol, mol_path + '.pdb')
+            if 'xyz' in mol_format and not isfile(path + '.xyz'):
+                mol.write(path + '.xyz')
 
 
 def get_nan_row(df):
@@ -55,8 +93,8 @@ def get_nan_row(df):
 
 
 def as_pdb_array(mol_list, min_size=0):
-    """ Converts a PLAMS molecule into an array of strings, the array consisting of a
-    (partially) de-serialized .pdb file.
+    """ Converts a list of PLAMS molecule into an array of strings representing (partially)
+    de-serialized .pdb files.
 
     :parameter mol_list: A list of PLAMS molecules.
     :type mol_list: |list|_ [|plams.Molecule|_]
@@ -82,11 +120,11 @@ def as_pdb_array(mol_list, min_size=0):
 
 
 def from_pdb_array(array, rdmol=True):
-    """ Converts a an array with a (partially) de-serialized .pdb file into an
+    """ Converts an array with a (partially) de-serialized .pdb file into an
     RDKit or PLAMS molecule.
 
     :parameter array: A (partially) de-serialized .pdb file with *n* lines.
-    :type array: *n* |np.ndarray|_ [|np.bytes|_ / *|S80*]
+    :type array: *n* |np.ndarray|_ [|np.bytes|_ / S80]
     :parameter bool rdmol: If *True*, return an RDKit molecule instead of a PLAMS molecule.
     :return: A PLAMS or RDKit molecule build from **array**.
     :rtype: |plams.Molecule|_ or |rdkit.Chem.Mol|_
@@ -98,13 +136,13 @@ def from_pdb_array(array, rdmol=True):
     return ret
 
 
-def _sanitize_yaml_settings(s, job_type):
+def sanitize_yaml_settings(s, job_type):
     """ Remove a predetermined set of unwanted keys and values from a settings object.
 
     :param s: A settings object with, potentially, undesired keys and values.
     :type s: |plams.Settings|_ (superclass: |dict|_)
     :return: A (nested) dictionary with unwanted keys and values removed.
-    :rtype: |dict|_.
+    :rtype: |dict|_
     """
     def recursive_del(s, s_del):
         for key in s:
@@ -133,7 +171,7 @@ def _create_csv(path, database='ligand'):
     :param str path: The path to the database.
     :param str database: The type of database, accepted values are *ligand* and *qd*.
     :return: The absolute path to the ligand or QD database.
-    :rtype: |str|_.
+    :rtype: |str|_
     """
     path = join(path, database + '_database.csv')
 
@@ -190,7 +228,7 @@ def _create_hdf5(path, name='structures.hdf5'):
     :param str path: The path to the database.
     :param str name: The filename of the database (excluding its path)
     :return: The absolute path to the pdb structure database.
-    :rtype: |str|_.
+    :rtype: |str|_
     """
     path = join(path, name)
     hdf5 = h5py.File(path, 'a')
@@ -476,7 +514,7 @@ class Database():
         :parameter bool close: If the database component should be closed afterwards.
         :return: A dictionary with the row name of **self.csv_lig** or **self.csv_qd** as keys
             and the key for **self.yaml** as matching values.
-        :rtype: |dict|_ (keys: |str|_, values: |str|_).
+        :rtype: |dict|_ (keys: |str|_, values: |str|_)
         """
         if self.yaml is None:
             self.open_yaml()
@@ -494,7 +532,7 @@ class Database():
 
                 key = str(job_recipe[item].key).rsplit('.', 1)[-1].split("'")[0]
                 value.update(job_recipe[item].value)
-                value = _sanitize_yaml_settings(value, key)
+                value = sanitize_yaml_settings(value, key)
             else:
                 key = job_recipe[item].key
                 value = job_recipe[item].value

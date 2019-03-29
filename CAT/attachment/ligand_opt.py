@@ -17,11 +17,10 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 from rdkit.Chem import AllChem
 
 from .ligand_attach import (rot_mol_angle, sanitize_dim_2)
-from ..data_handling.CAT_database import Database
+from ..data_handling.CAT_database import Database, mol_to_file
 from ..utils import get_time
 from ..mol_utils import (to_symbol, fix_carboxyl, get_bond_index,
                          from_mol_other, from_rdmol, separate_mod)
-from ..data_handling.database import (mol_from_database, mol_to_database)
 
 
 def init_ligand_opt(ligand_df, arg):
@@ -33,7 +32,8 @@ def init_ligand_opt(ligand_df, arg):
     :parameter arg: A settings object containing all (optional) arguments.
     :type arg: |plams.Settings|_ (superclass: |dict|_).
     """
-    database = Database(path=arg.optional.database.dirname)
+    path = arg.optional.database.dirname
+    database = Database(path)
     overwrite = 'ligand' in arg.optional.database.overwrite
 
     # Searches for matches between the input ligand and the database; imports the structure
@@ -73,6 +73,7 @@ def init_ligand_opt(ligand_df, arg):
         overwrite = 'ligand' in arg.optional
         database.update_csv(ligand_df, columns=['formula', 'hdf5 index'],
                             job_recipe=recipe, database='ligand', overwrite=overwrite)
+        mol_to_file(ligand_df['mol'], path, overwrite, arg.optional.database.mol_format)
 
 
 @add_to_class(Molecule)

@@ -46,6 +46,7 @@ setup(
     zip_safe=False,
     keywords=[
         'quantum-mechanics',
+        'molecular-mechanics',
         'science',
         'chemistry',
         'python-3',
@@ -66,9 +67,10 @@ setup(
         'numpy',
         'scipy',
         'pandas',
-        'pyyaml==3.13',
+        'pyyaml',
         'schema',
-        'plams@git+https://github.com/SCM-NV/PLAMS@master',
+        'netCDF4',
+        'plams@git+https://github.com/SCM-NV/PLAMS@release',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master'
     ],
     setup_requires=[

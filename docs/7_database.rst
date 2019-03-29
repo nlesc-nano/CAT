@@ -3,8 +3,6 @@
 The Database Class
 ==================
 
-
-
 A Class designed for the storing, retrieval and updating of results.
 The methods of the Database class can be divided into four categories
 accoring to their function:
@@ -42,11 +40,22 @@ accoring to their function:
     :meth:`.from_csv`  :meth:`.from_hdf5`
     =================  ==================
 
-API
-~~~
+Class API
+~~~~~~~~~
 
 .. autoclass:: CAT.data_handling.CAT_database.Database
     :members:
+
+Function API
+~~~~~~~~~~~~
+
+.. autofunction:: CAT.data_handling.CAT_database.mol_to_file
+
+.. autofunction:: CAT.data_handling.CAT_database.as_pdb_array
+
+.. autofunction:: CAT.data_handling.CAT_database.from_pdb_array
+
+.. autofunction:: CAT.data_handling.CAT_database.sanitize_yaml_settings
 
 .. _rdkit.Chem.Mol: http://rdkit.org/docs/source/rdkit.Chem.rdchem.html#rdkit.Chem.rdchem.Mol
 .. _h5py.File: http://docs.h5py.org/en/stable/high/file.html
@@ -56,6 +65,7 @@ API
 .. _np.float64: https://docs.scipy.org/doc/numpy/user/basics.types.html#array-types-and-conversions-between-types
 .. _np.int64: https://docs.scipy.org/doc/numpy/user/basics.types.html#array-types-and-conversions-between-types
 .. _np.str_: https://docs.scipy.org/doc/numpy/reference/arrays.dtypes.html#arrays-dtypes
+.. _np.bytes: https://docs.scipy.org/doc/numpy-1.15.1/reference/arrays.dtypes.html
 .. _pd.Series: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.html
 .. _pd.DataFrame: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html
 .. _dict: https://docs.python.org/3/library/stdtypes.html#dict
@@ -75,6 +85,7 @@ API
 .. |np.float64| replace:: *np.float64*
 .. |np.int64| replace:: *np.int64*
 .. |np.str_| replace:: *np.str_*
+.. |np.bytes| replace:: *np.bytes*
 .. |dict| replace:: *dict*
 .. |list| replace:: *list*
 .. |tuple| replace:: *tuple*

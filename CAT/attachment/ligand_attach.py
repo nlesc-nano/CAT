@@ -11,7 +11,7 @@ from scm.plams.core.settings import Settings
 
 from ..utils import get_time
 from ..mol_utils import (merge_mol, get_atom_index)
-from ..data_handling.CAT_database import Database
+from ..data_handling.CAT_database import (Database, mol_to_file)
 
 
 def init_qd_construction(ligand_df, core_df, arg):
@@ -26,7 +26,9 @@ def init_qd_construction(ligand_df, core_df, arg):
     :return: A dataframe of quantum dots.
     :rtype: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
     """
-    data = Database(path=arg.optional.database.dirname)
+    path = arg.optional.database.dirname
+    overwrite = 'qd' in arg.optional.database.overwrite
+    data = Database(path=path)
 
     # Attempt to pull structures from the database
     qd_df = _get_df(core_df.index, ligand_df.index)
@@ -62,6 +64,7 @@ def init_qd_construction(ligand_df, core_df, arg):
         recipe.settings = {'name': '1', 'key': 'None', 'value': 'None'}
         data.update_csv(qd_df, columns=['hdf5 index', 'ligand count'],
                         job_recipe=recipe, database='QD')
+        mol_to_file(qd_df['mol'], path, overwrite, arg.optional.database.mol_format)
     return qd_df
 
 

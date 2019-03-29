@@ -9,7 +9,7 @@ from scm.plams.interfaces.adfsuite.ams import AMSJob
 from ..utils import get_time
 from ..mol_utils import (fix_carboxyl, fix_h)
 from ..analysis.jobs import job_geometry_opt
-from ..data_handling.CAT_database import Database
+from ..data_handling.CAT_database import (Database, mol_to_file)
 
 
 def init_qd_opt(qd_df, arg):
@@ -23,7 +23,8 @@ def init_qd_opt(qd_df, arg):
     """
     # Prepare slices
     job_recipe = arg.optional.qd.optimize
-    if 'qd' in arg.optional.database.overwrite:
+    overwrite = 'qd' in arg.optional.database.overwrite
+    if overwrite:
         idx = qd_df['hdf5 index']
         message = '\t has been (re-)optimized'
     else:
@@ -54,8 +55,10 @@ def init_qd_opt(qd_df, arg):
             'value': job_recipe.s2,
             'template': 'geometry.json'
         }
-        database = Database(path=arg.optional.database.dirname)
+        path = arg.optional.database.dirname
+        database = Database(path=path)
         database.update_csv(qd_df, columns=['hdf5 index'], job_recipe=recipe, database='QD')
+        mol_to_file(qd_df['mol'], path, overwrite, arg.optional.database.mol_format)
 
 
 def qd_opt(mol, job_recipe):
