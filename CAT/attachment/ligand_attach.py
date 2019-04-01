@@ -26,14 +26,12 @@ def init_qd_construction(ligand_df, core_df, arg):
     :return: A dataframe of quantum dots.
     :rtype: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
     """
-    path = arg.optional.database.dirname
     overwrite = 'qd' in arg.optional.database.overwrite
-    data = Database(path=path)
+    data = Database(path=arg.optional.database.dirname)
 
     # Attempt to pull structures from the database
     qd_df = _get_df(core_df.index, ligand_df.index)
     if 'qd' in arg.optional.database.read:
-        data = Database(path=arg.optional.database.dirname)
         mol_series1 = data.from_csv(qd_df, database='QD', inplace=False)
         for i, mol in mol_series1.iteritems():
             mol.properties = Settings()
@@ -64,6 +62,7 @@ def init_qd_construction(ligand_df, core_df, arg):
         recipe.settings = {'name': '1', 'key': 'None', 'value': 'None'}
         data.update_csv(qd_df, columns=['hdf5 index', 'ligand count'],
                         job_recipe=recipe, database='QD')
+        path = arg.optional.qd.dirname
         mol_to_file(qd_df['mol'], path, overwrite, arg.optional.database.mol_format)
     return qd_df
 

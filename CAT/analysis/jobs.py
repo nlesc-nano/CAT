@@ -14,7 +14,7 @@ from scm.plams.tools.units import Units
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 from scm.plams.interfaces.thirdparty.cp2k import Cp2kResults
 
-from qmflows.templates import templates as qmflows
+import qmflows
 
 from .thermo_chem import get_thermo
 from ..utils import (get_time, type_to_string)
@@ -52,7 +52,7 @@ def job_single_point(self, job, settings, name='Single_point', ret_results=False
     """
     # Grab the default settings for a specific job and update them with user provided settings
     s = Settings()
-    s.input = qmflows.get_template('singlepoint.json')['specific'][type_to_string(job)]
+    s.input = qmflows.singlepoint['specific'][type_to_string(job)]
     s.update(settings)
     if job == AMSJob:
         s.input.ams.system.bondorders._1 = adf_connectivity(self)
@@ -85,7 +85,7 @@ def job_geometry_opt(self, job, settings, name='Geometry_optimization', ret_resu
     """
     # Grab the default settings for a specific job and update them with user provided settings
     s = Settings()
-    s.input = qmflows.get_template('geometry.json')['specific'][type_to_string(job)]
+    s.input = qmflows.geometry['specific'][type_to_string(job)]
     s.update(settings)
     if job == AMSJob:
         s.input.ams.system.bondorders._1 = adf_connectivity(self)
@@ -126,7 +126,7 @@ def job_freq(self, job, settings, name='Frequency_analysis', opt=True, ret_resul
 
     # Grab the default settings for a specific job and update them with user provided settings
     s = Settings()
-    s.input = qmflows.get_template('freq.json')['specific'][type_to_string(job)]
+    s.input = qmflows.freq['specific'][type_to_string(job)]
     s.update(settings)
     if job == AMSJob:
         s.input.ams.system.bondorders._1 = adf_connectivity(self)

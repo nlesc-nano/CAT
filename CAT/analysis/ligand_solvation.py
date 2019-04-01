@@ -13,6 +13,8 @@ from scm.plams.core.jobrunner import JobRunner
 from scm.plams.core.functions import (init, finish)
 from scm.plams.interfaces.adfsuite.adf import ADFJob
 
+import qmflows
+
 from .crs import CRSJob
 from .. import utils as CAT
 from ..utils import get_time
@@ -69,7 +71,7 @@ def init_solv(ligand_df, arg, solvent_list=None):
     if 'ligand' in arg.optional.database.write:
         recipe = Settings()
         recipe.settings1 = {'name': 'solv 1', 'key': j1, 'value': s1,
-                            'template': 'singlepoint.json'}
+                            'template': qmflows.singlepoint}
         recipe.settings2 = {'name': 'solv 2', 'key': j2, 'value': s2}
         data.update_csv(ligand_df, database='ligand',
                         columns=[('settings', 'solv 1'), ('settings', 'solv 2')]+columns,

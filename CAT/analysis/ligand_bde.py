@@ -13,6 +13,8 @@ from scm.plams.mol.atom import Atom
 from scm.plams.core.functions import (init, finish, config)
 from scm.plams.core.settings import Settings
 
+import qmflows
+
 from .jobs import (job_single_point, job_geometry_opt, job_freq)
 from .. import utils as CAT
 from ..utils import get_time
@@ -110,8 +112,8 @@ def _bde_w_dg(qd_df, arg):
     # Update the database
     if 'qd' in arg.optional.database.write:
         recipe = Settings()
-        recipe.settings1 = {'name': 'BDE 1', 'key': j1, 'value': s1, 'template': 'singlepoint.json'}
-        recipe.settings2 = {'name': 'BDE 2', 'key': j2, 'value': s2, 'template': 'freq.json'}
+        recipe.settings1 = {'name': 'BDE 1', 'key': j1, 'value': s1, 'template': qmflows.singlepoint}
+        recipe.settings2 = {'name': 'BDE 2', 'key': j2, 'value': s2, 'template': qmflows.freq}
         data.update_csv(qd_df, database='QD', job_recipe=recipe, overwrite=overwrite,
                         columns=[('settings', 'BDE 1'), ('settings', 'BDE 2')]+idx)
 
@@ -166,7 +168,7 @@ def _bde_wo_dg(qd_df, arg):
     # Update the database
     if 'qd' in arg.optional.database.write:
         recipe = Settings()
-        recipe.settings1 = {'name': 'BDE 1', 'key': j1, 'value': s1, 'template': 'singlepoint.json'}
+        recipe.settings1 = {'name': 'BDE 1', 'key': j1, 'value': s1, 'template': qmflows.singlepoint}
         data.update_csv(qd_df, database='QD', job_recipe=recipe, overwrite=overwrite,
                         columns=[('settings', 'BDE 1')]+idx)
 
