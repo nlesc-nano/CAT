@@ -312,10 +312,10 @@ def dissociate_ligand(mol, arg):
     """
     # Unpack arguments
     atnum = arg.optional.qd.dissociate.core_atom
-    lig_count = arg.optional.qd.dissociate.lig_count
-    core_core_dist = arg.optional.qd.dissociate.core_core_dist
-    lig_core_dist = arg.optional.qd.dissociate.lig_core_dist
-    topology_dict = arg.optional.qd.dissociate.topology
+    l_count = arg.optional.qd.dissociate.lig_count
+    cc_dist = arg.optional.qd.dissociate.core_core_dist
+    lc_dist = arg.optional.qd.dissociate.lig_core_dist
+    top_dict = arg.optional.qd.dissociate.topology
 
     # Convert **mol** to an XYZ array
     mol.set_atoms_id()
@@ -331,22 +331,24 @@ def dissociate_ligand(mol, arg):
             res_list.append([at])
 
     # Create a list of all core indices and ligand anchor indices
-    idx_core_old = np.array([j for j, at in enumerate(res_list[0]) if at.atnum == atnum])
-    idx_core, topology = filter_core(xyz_array, idx_core_old, topology_dict, core_core_dist)
-    idx_lig = np.array([i for i in mol.properties.indices if
-                        mol[i].properties.pdb_info.ResidueName == 'LIG']) - 1
+    idx_c_old = np.array([j for j, at in enumerate(res_list[0]) if at.atnum == atnum])
+    idx_c, topology = filter_core(xyz_array, idx_c_old, top_dict, cc_dist)
+    idx_l = np.array([i for i in mol.properties.indices if
+                      mol[i].properties.pdb_info.ResidueName == 'LIG']) - 1
 
     # Mark the core atoms with their topologies
-    for i, top in zip(idx_core_old, topology):
+    for i, top in zip(idx_c_old, topology):
         mol[int(i+1)].properties.topology = top
 
     # Create a dictionary with core indices as keys and all combinations of 2 ligands as values
-    xy = filter_lig_core(xyz_array, idx_lig, idx_core, lig_core_dist, lig_count)
-    combinations_dict = get_lig_core_combinations(xy, res_list, lig_count)
+    xy = filter_lig_core(xyz_array, idx_l, idx_c, lc_dist, l_count)
+    combinations_dict = get_lig_core_combinations(xy, res_list, l_count)
 
     # Create and return new molecules
-    indices = [at.id for at in res_list[0][:-lig_count]] + (idx_lig[:-lig_count] + 1).tolist()
-    return remove_ligands(mol, combinations_dict, indices, idx_lig)
+    indices = [at.id for at in res_list[0][:-l_count]]
+    indices += (idx_l[:-l_count] + 1).tolist()
+    ret = remove_ligands(mol, combinations_dict, indices, idx_l)
+    return ret
 
 
 def remove_ligands(mol, combinations_dict, indices, idx_lig):
@@ -354,6 +356,7 @@ def remove_ligands(mol, combinations_dict, indices, idx_lig):
     ret = []
     for core in combinations_dict:
         for lig in combinations_dict[core]:
+            print(core, lig)
             mol_tmp = mol.copy()
             mol_tmp.properties = Settings()
             mol_tmp.properties.core_topology = str(mol[core].properties.topology) + '_' + str(core)
@@ -450,13 +453,13 @@ def filter_lig_core(xyz_array, idx_lig, idx_core, max_dist=5.0, lig_count=2):
         ligand/core pairs.
     :rtype: *m*2* |np.ndarray|_ [|np.int64|_].
     """
-    dist = cdist(xyz_array[idx_lig], xyz_array[idx_core]).T
+    dist = cdist(xyz_array[idx_lig], xyz_array[idx_core])
     xy = np.array(np.where(dist <= max_dist))
     bincount = np.bincount(xy[0])
 
     xy = xy[:, [i for i, j in enumerate(xy[0]) if bincount[j] >= lig_count]]
-    xy[0] = idx_core[xy[0]]
-    xy[1] += 1
+    xy[1] = idx_core[xy[1]]
+    xy[0] += 2
     return xy
 
 
@@ -472,7 +475,7 @@ def get_lig_core_combinations(xy, res_list, lig_count=2):
     :return:
     """
     ret = {}
-    for x, y in xy.T:
+    for y, x in xy.T:
         try:
             ret[res_list[0][x].id].append([at.id for at in res_list[y]])
         except KeyError:
