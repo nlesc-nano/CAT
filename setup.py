@@ -50,7 +50,7 @@ setup(
         'science',
         'chemistry',
         'python-3',
-        'python-3-6',
+        'python-3-7',
         'automation',
         'scientific-workflows'
     ],
@@ -67,9 +67,9 @@ setup(
         'numpy',
         'scipy',
         'pandas',
-        'pyyaml',
+        'pyyaml>=5.1',
         'schema',
-        'plams@git+https://github.com/SCM-NV/PLAMS@master#egg=plams-1.2',
+        'plams@git+https://github.com/SCM-NV/PLAMS@release',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master'
     ],
     setup_requires=[
