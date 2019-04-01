@@ -4,7 +4,6 @@ __all__ = ['check_sys_var', 'dict_concatenate', 'get_time', 'get_template']
 
 import os
 import time
-import json
 import yaml
 import pkg_resources as pkg
 from os.path import join
@@ -70,12 +69,7 @@ def get_template(template_name, from_cat_data=True):
     if from_cat_data:
         path = join('data/templates', template_name)
         xs = pkg.resource_string('CAT', path)
+        return Settings(yaml.load(xs.decode(), Loader=yaml.FullLoader))
     else:
         with open(template_name, 'r') as file:
-            return Settings(yaml.load(file))
-
-    if 'json' in template_name:
-        s = json.loads(xs.decode())
-    elif 'yaml' in template_name or 'yml' in template_name:
-        s = yaml.load(xs.decode())
-    return Settings(s)
+            return Settings(yaml.load(file, Loader=yaml.FullLoader))

@@ -22,7 +22,7 @@ def extract_args(args):
         raise FileNotFoundError(error)
 
     with open(input_file, 'r') as file:
-        return Settings(yaml.load(file))
+        return Settings(yaml.load(file, Loader=yaml.FullLoader)))
 
 
 def main(args=None):

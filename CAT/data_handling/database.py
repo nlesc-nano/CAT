@@ -12,7 +12,7 @@ import pandas as pd
 from scm.plams.core.settings import Settings
 import scm.plams.interfaces.molecule.rdkit as molkit
 
-from qmflows.templates import templates as qmflows
+import qmflows
 
 from rdkit import Chem
 
@@ -22,7 +22,7 @@ from ..utils import (get_time, type_to_string)
 """ ###########################  Functions exporting job settings  ############################ """
 
 
-def export_job_settings(job_recipe, arg, job_type=('geometry', 'geometry')):
+def export_job_settings(job_recipe, arg, job_type=(qmflows.geometry, qmflows.geometry)):
     """ Export job settings to job_settings.yaml. """
     # Prepare the job settings
     if job_recipe is True:
@@ -34,8 +34,7 @@ def export_job_settings(job_recipe, arg, job_type=('geometry', 'geometry')):
 
     elif job_recipe.job2 is False:
         if job_type[0] is not None:
-            s = qmflows.get_template(job_type[0] +
-                                     '.json')['specific'][type_to_string(job_recipe.job1)]
+            s = job_type[0]['specific'][type_to_string(job_recipe.job1)]
         else:
             s = Settings()
         s.update(job_recipe.s1)
@@ -44,14 +43,12 @@ def export_job_settings(job_recipe, arg, job_type=('geometry', 'geometry')):
 
     else:
         if job_type[0] is not None:
-            s1 = qmflows.get_template(job_type[0] +
-                                      '.json')['specific'][type_to_string(job_recipe.job1)]
+            s1 = job_type[0]['specific'][type_to_string(job_recipe.job1)]
         else:
             s1 = Settings()
 
         if job_type[1] is not None:
-            s2 = qmflows.get_template(job_type[1] +
-                                      '.json')['specific'][type_to_string(job_recipe.job2)]
+            s2 = job_type[1]['specific'][type_to_string(job_recipe.job2)]
         else:
             s2 = Settings()
 
@@ -65,7 +62,7 @@ def export_job_settings(job_recipe, arg, job_type=('geometry', 'geometry')):
     yml_file = join(arg.optional.database.dirname, 'job_settings.yaml')
     if isfile(yml_file):
         with open(yml_file) as file:
-            yml = yaml.load(file)
+            yml = yaml.load(file, Loader=yaml.FullLoader)
     else:
         yml = {}
 
@@ -362,7 +359,8 @@ def _ligand_to_data_overwrite(ligand_list, arg):
     df = get_database(arg, 'ligand')
     hdf5 = h5py.File(join(arg.optional.database.dirname, 'structures.hdf5'), 'a')
     j = hdf5['ligand'].shape[0]
-    s = export_job_settings(arg.optional.ligand.optimize, arg, job_type=('geometry', 'geometry'))
+    s = export_job_settings(arg.optional.ligand.optimize, arg,
+                            job_type=(qmflows.geometry, qmflows.geometry))
 
     # Split the ligand_list into a list of new ligands and a list of to be overridden ligands
     lig_new = []
@@ -420,7 +418,8 @@ def _ligand_to_data(ligand_list, arg):
     hdf5['ligand'][j:len(hdf5['ligand'])] = pdb_array
 
     # Update the database
-    s = export_job_settings(arg.optional.ligand.optimize, arg, job_type=('geometry', 'geometry'))
+    s = export_job_settings(arg.optional.ligand.optimize, arg,
+                            job_type=(qmflows.geometry, qmflows.geometry))
     for i, lig in enumerate(ligand_list, j):
         key = lig.properties.smiles, lig.properties.anchor
         df[key] = None
@@ -440,7 +439,8 @@ def _qd_to_data_overwrite(qd_list, arg):
     df = get_database(arg, 'QD')
     hdf5 = h5py.File(join(arg.optional.database.dirname, 'structures.hdf5'), 'a')
     j = hdf5['QD'].shape[0]
-    s = export_job_settings(arg.optional.qd.optimize, arg, job_type=('geometry', 'geometry'))
+    s = export_job_settings(arg.optional.qd.optimize, arg,
+                            job_type=(qmflows.geometry, qmflows.geometry))
     s[1] = s[0]
 
     # Split the qd_list into a list of new QDs and a list of to be overridden QDs
@@ -498,7 +498,8 @@ def _qd_to_data(qd_list, arg):
     # Open the database
     df = get_database(arg, 'QD')
     hdf5 = h5py.File(join(arg.optional.database.dirname, 'structures.hdf5'))
-    s = export_job_settings(arg.optional.qd.optimize, arg, job_type=('geometry', 'geometry'))
+    s = export_job_settings(arg.optional.qd.optimize, arg,
+                            job_type=(qmflows.geometry, qmflows.geometry))
     s[1] = s[0]
 
     # Remove ligand entries from ligand_list if they are already present in the database
@@ -511,7 +512,8 @@ def _qd_to_data(qd_list, arg):
     hdf5['QD'][j:len(hdf5['QD'])] = pdb_array
 
     # Update the database
-    s1, s2 = export_job_settings(arg.optional.qd.optimize, arg, job_type=('geometry', 'geometry'))
+    s1, s2 = export_job_settings(arg.optional.qd.optimize, arg,
+                                 job_type=(qmflows.geometry, qmflows.geometry))
     for i, qd in enumerate(qd_list, j):
         key = _get_qd_key(qd)
         if key not in df:
@@ -566,11 +568,11 @@ def property_to_database(df_new, arg, database='ligand', prop='cosmo-rs'):
     # Update job settings in the database:
     if prop == 'cosmo-rs':
         recipe = arg.optional.ligand.crs
-        idx = export_job_settings(recipe, arg, job_type=('singlepoint', None))
+        idx = export_job_settings(recipe, arg, job_type=(qmflows.singlepoint, None))
         df_new.loc['solv settings1', :], df_new.loc['solv settings2', :] = idx
     elif prop == 'bde':
         recipe = arg.optional.qd.dissociate
-        idx = export_job_settings(recipe, arg, job_type=('singlepoint', 'freq'))
+        idx = export_job_settings(recipe, arg, job_type=(qmflows.singlepoint, qmflows.freq))
         if idx[1] is None:
             df_new.loc['BDE settings1', :] = idx[0]
         else:
