@@ -348,7 +348,7 @@ class Database():
         if self.yaml is None:
             if isfile(self.path.yaml):
                 with open(self.path.yaml, 'r') as file:
-                    self.yaml = Settings(yaml.load(file))
+                    self.yaml = Settings(yaml.load(file, Loader=yaml.FullLoader))
             else:
                 self.yaml = Settings()
 
@@ -526,7 +526,7 @@ class Database():
                 template_name = job_recipe[item].template
                 template_key = type_to_string(job_recipe[item].key)
                 if template_name and template_key:
-                    value = qmflows.get_template(template_name)['specific'][template_key]
+                    value = template_name['specific'][template_key]
                 else:
                     value = Settings()
 

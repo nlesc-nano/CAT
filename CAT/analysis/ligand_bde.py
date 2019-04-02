@@ -13,6 +13,8 @@ from scm.plams.mol.atom import Atom
 from scm.plams.core.functions import (init, finish, config)
 from scm.plams.core.settings import Settings
 
+import qmflows
+
 from .jobs import (job_single_point, job_geometry_opt, job_freq)
 from .. import utils as CAT
 from ..utils import get_time
@@ -110,10 +112,12 @@ def _bde_w_dg(qd_df, arg):
     # Update the database
     if 'qd' in arg.optional.database.write:
         recipe = Settings()
-        recipe.settings1 = {'name': 'BDE 1', 'key': j1, 'value': s1, 'template': 'singlepoint.json'}
-        recipe.settings2 = {'name': 'BDE 2', 'key': j2, 'value': s2, 'template': 'freq.json'}
+        recipe.settings1 = {'name': 'BDE 1', 'key': j1, 'value': s1,
+                            'template': qmflows.singlepoint}
+        recipe.settings2 = {'name': 'BDE 2', 'key': j2, 'value': s2, 'template': qmflows.freq}
         data.update_csv(qd_df, database='QD', job_recipe=recipe, overwrite=overwrite,
                         columns=[('settings', 'BDE 1'), ('settings', 'BDE 2')]+idx)
+
 
 def _bde_wo_dg(qd_df, arg):
     """ Calculate the BDEs without thermochemical corrections.
@@ -166,7 +170,8 @@ def _bde_wo_dg(qd_df, arg):
     # Update the database
     if 'qd' in arg.optional.database.write:
         recipe = Settings()
-        recipe.settings1 = {'name': 'BDE 1', 'key': j1, 'value': s1, 'template': 'singlepoint.json'}
+        recipe.settings1 = {'name': 'BDE 1', 'key': j1, 'value': s1,
+                            'template': qmflows.singlepoint}
         data.update_csv(qd_df, database='QD', job_recipe=recipe, overwrite=overwrite,
                         columns=[('settings', 'BDE 1')]+idx)
 
@@ -310,10 +315,10 @@ def dissociate_ligand(mol, arg):
     """
     # Unpack arguments
     atnum = arg.optional.qd.dissociate.core_atom
-    lig_count = arg.optional.qd.dissociate.lig_count
-    core_core_dist = arg.optional.qd.dissociate.core_core_dist
-    lig_core_dist = arg.optional.qd.dissociate.lig_core_dist
-    topology_dict = arg.optional.qd.dissociate.topology
+    l_count = arg.optional.qd.dissociate.lig_count
+    cc_dist = arg.optional.qd.dissociate.core_core_dist
+    lc_dist = arg.optional.qd.dissociate.lig_core_dist
+    top_dict = arg.optional.qd.dissociate.topology
 
     # Convert **mol** to an XYZ array
     mol.set_atoms_id()
@@ -329,22 +334,24 @@ def dissociate_ligand(mol, arg):
             res_list.append([at])
 
     # Create a list of all core indices and ligand anchor indices
-    idx_core_old = np.array([j for j, at in enumerate(res_list[0]) if at.atnum == atnum])
-    idx_core, topology = filter_core(xyz_array, idx_core_old, topology_dict, core_core_dist)
-    idx_lig = np.array([i for i in mol.properties.indices if
-                        mol[i].properties.pdb_info.ResidueName == 'LIG']) - 1
+    idx_c_old = np.array([j for j, at in enumerate(res_list[0]) if at.atnum == atnum])
+    idx_c, topology = filter_core(xyz_array, idx_c_old, top_dict, cc_dist)
+    idx_l = np.array([i for i in mol.properties.indices if
+                      mol[i].properties.pdb_info.ResidueName == 'LIG']) - 1
 
     # Mark the core atoms with their topologies
-    for i, top in zip(idx_core_old, topology):
+    for i, top in zip(idx_c_old, topology):
         mol[int(i+1)].properties.topology = top
 
     # Create a dictionary with core indices as keys and all combinations of 2 ligands as values
-    xy = filter_lig_core(xyz_array, idx_lig, idx_core, lig_core_dist, lig_count)
-    combinations_dict = get_lig_core_combinations(xy, res_list, lig_count)
+    xy = filter_lig_core(xyz_array, idx_l, idx_c, lc_dist, l_count)
+    combinations_dict = get_lig_core_combinations(xy, res_list, l_count)
 
     # Create and return new molecules
-    indices = [at.id for at in res_list[0][:-lig_count]] + (idx_lig[:-lig_count] + 1).tolist()
-    return remove_ligands(mol, combinations_dict, indices, idx_lig)
+    indices = [at.id for at in res_list[0][:-l_count]]
+    indices += (idx_l[:-l_count] + 1).tolist()
+    ret = remove_ligands(mol, combinations_dict, indices, idx_l)
+    return ret
 
 
 def remove_ligands(mol, combinations_dict, indices, idx_lig):
@@ -404,7 +411,6 @@ def filter_core(xyz_array, idx, topology_dict={6: 'vertice', 7: 'edge', 9: 'face
         vec_length[i] = x[i] - np.average(y[k:k+j], axis=0)
         k += j
     vec_length = np.linalg.norm(vec_length, axis=1)
-
     return idx[np.where(vec_length > 0.5)[0]], get_topology(bincount, topology_dict)
 
 
@@ -448,13 +454,13 @@ def filter_lig_core(xyz_array, idx_lig, idx_core, max_dist=5.0, lig_count=2):
         ligand/core pairs.
     :rtype: *m*2* |np.ndarray|_ [|np.int64|_].
     """
-    dist = cdist(xyz_array[idx_lig], xyz_array[idx_core]).T
+    dist = cdist(xyz_array[idx_lig], xyz_array[idx_core])
     xy = np.array(np.where(dist <= max_dist))
     bincount = np.bincount(xy[0])
 
     xy = xy[:, [i for i, j in enumerate(xy[0]) if bincount[j] >= lig_count]]
-    xy[0] = idx_core[xy[0]]
-    xy[1] += 1
+    xy[1] = idx_core[xy[1]]
+    xy[0] += 1
     return xy
 
 
@@ -470,7 +476,7 @@ def get_lig_core_combinations(xy, res_list, lig_count=2):
     :return:
     """
     ret = {}
-    for x, y in xy.T:
+    for y, x in xy.T:
         try:
             ret[res_list[0][x].id].append([at.id for at in res_list[y]])
         except KeyError:

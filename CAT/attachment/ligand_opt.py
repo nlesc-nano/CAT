@@ -32,8 +32,7 @@ def init_ligand_opt(ligand_df, arg):
     :parameter arg: A settings object containing all (optional) arguments.
     :type arg: |plams.Settings|_ (superclass: |dict|_).
     """
-    path = arg.optional.database.dirname
-    database = Database(path)
+    database = Database(arg.optional.database.dirname)
     overwrite = 'ligand' in arg.optional.database.overwrite
 
     # Searches for matches between the input ligand and the database; imports the structure
@@ -73,6 +72,7 @@ def init_ligand_opt(ligand_df, arg):
         overwrite = 'ligand' in arg.optional
         database.update_csv(ligand_df, columns=['formula', 'hdf5 index'],
                             job_recipe=recipe, database='ligand', overwrite=overwrite)
+        path = arg.optional.ligand.dirname
         mol_to_file(ligand_df['mol'], path, overwrite, arg.optional.database.mol_format)
 
 

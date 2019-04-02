@@ -164,7 +164,7 @@ def get_default_input_mol():
         row: 0
         indices: None
         type: None
-    """)
+    """, Loader=yaml.FullLoader)
 
     for key in ret:
         if ret[key] == 'None':
@@ -263,7 +263,7 @@ def get_default_optional():
                 optimize: False
                 activation_strain: False
                 dissociate: False
-    """)
+    """, Loader=yaml.FullLoader)
 
     return Settings(ret)
 
@@ -284,7 +284,7 @@ def get_default_dissociate():
         s1: True
         job2: AMSJob
         s2: True
-    """)
+    """, Loader=yaml.FullLoader)
 
     return Settings(ret)
 
@@ -461,6 +461,9 @@ def val_dissociate(dissociate):
         return False
 
     ret.update(dissociate)
+    if dissociate.topology:
+        ret.topology = dissociate.topology
+
     if ret.job1 is False or ret.s1 is False:
         return False
 

@@ -6,6 +6,8 @@ from scm.plams.core.settings import Settings
 from scm.plams.core.functions import (init, finish)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 
+import qmflows
+
 from ..utils import get_time
 from ..mol_utils import (fix_carboxyl, fix_h)
 from ..analysis.jobs import job_geometry_opt
@@ -47,17 +49,17 @@ def init_qd_opt(qd_df, arg):
             'name': '1',
             'key': job_recipe.job1,
             'value': job_recipe.s1,
-            'template': 'geometry.json'
+            'template': qmflows.geometry
         }
         recipe.settings2 = {
             'name': '2',
             'key': job_recipe.job2,
             'value': job_recipe.s2,
-            'template': 'geometry.json'
+            'template': qmflows.geometry
         }
-        path = arg.optional.database.dirname
-        database = Database(path=path)
+        database = Database(path=arg.optional.database.dirname)
         database.update_csv(qd_df, columns=['hdf5 index'], job_recipe=recipe, database='QD')
+        path = arg.optional.qd.dirname
         mol_to_file(qd_df['mol'], path, overwrite, arg.optional.database.mol_format)
 
 
