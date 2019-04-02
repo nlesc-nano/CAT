@@ -13,8 +13,6 @@ import pandas as pd
 from scm.plams.core.settings import Settings
 import scm.plams.interfaces.molecule.rdkit as molkit
 
-from qmflows.templates import templates as qmflows
-
 from rdkit import Chem
 
 from CAT import utils as CAT
@@ -265,7 +263,6 @@ class Database():
     """
 
     def __init__(self, path=None):
-        """ """
         path = path or getcwd()
 
         # Attributes which hold the absolute paths to various components of the database
@@ -282,6 +279,13 @@ class Database():
         self.yaml = None
         self.hdf5 = None
         self.mongodb = None
+
+    def __str__(self):
+        ret = Settings()
+        attr_dict = vars(self)
+        for key in attr_dict:
+            ret[key] = type(attr_dict[key])
+        return str(ret)
 
     """ #################################  Opening the database ############################### """
 
@@ -473,7 +477,7 @@ class Database():
         for i in df.index:
             if i not in csv.index:
                 csv.at[i, :] = nan_row
-        csv['hdf5 index'] = csv['hdf5 index'].astype(int)
+        csv['hdf5 index'] = csv['hdf5 index'].astype(int, copy=False)
 
         # Filter columns
         if columns is None:
@@ -622,7 +626,7 @@ class Database():
 
         # Update the *hdf5 index* column in **df**
         df.update(csv, overwrite=True)
-        df['hdf5 index'] = df['hdf5 index'].astype(int)
+        df['hdf5 index'] = df['hdf5 index'].astype(int, copy=False)
         df.sort_values(by=['hdf5 index'], inplace=True)
 
         # Update the *mol* column in **df** or return a new series
