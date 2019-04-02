@@ -461,6 +461,9 @@ def val_dissociate(dissociate):
         return False
 
     ret.update(dissociate)
+    if dissociate.topology:
+        ret.topology = dissociate.topology
+
     if ret.job1 is False or ret.s1 is False:
         return False
 
