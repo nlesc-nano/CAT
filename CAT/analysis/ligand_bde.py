@@ -345,20 +345,20 @@ def get_topology(bincount, topology_dict={6: 'vertice', 7: 'edge', 9: 'face'}):
 
 def filter_lig_core(xyz_array, idx_lig, idx_core, max_dist=5.0):
     """ """
-    dist = cdist(xyz_array[idx_lig], xyz_array[idx_core]).T
+    dist = cdist(xyz_array[idx_lig], xyz_array[idx_core])
     xy = np.array(np.where(dist <= max_dist))
     bincount = np.bincount(xy[0])
-    xy = xy[:, [i for i, j in enumerate(xy[0]) if bincount[j] >= 2]]
-    xy[0] = idx_core[xy[0]]
-    xy[1] += 1
 
+    xy = xy[:, [i for i, j in enumerate(xy[0]) if bincount[j] >= lig_count]]
+    xy[1] = idx_core[xy[1]]
+    xy[0] += 1
     return xy
 
 
 def get_lig_core_combinations(xy, res_list, lig_count=2):
     """ """
     ret = {}
-    for x, y in xy.T:
+    for y, x in xy.T:
         try:
             ret[res_list[0][x].id].append([at.id for at in res_list[y]])
         except KeyError:
