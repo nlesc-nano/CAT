@@ -112,10 +112,12 @@ def _bde_w_dg(qd_df, arg):
     # Update the database
     if 'qd' in arg.optional.database.write:
         recipe = Settings()
-        recipe.settings1 = {'name': 'BDE 1', 'key': j1, 'value': s1, 'template': qmflows.singlepoint}
+        recipe.settings1 = {'name': 'BDE 1', 'key': j1, 'value': s1,
+                            'template': qmflows.singlepoint}
         recipe.settings2 = {'name': 'BDE 2', 'key': j2, 'value': s2, 'template': qmflows.freq}
         data.update_csv(qd_df, database='QD', job_recipe=recipe, overwrite=overwrite,
                         columns=[('settings', 'BDE 1'), ('settings', 'BDE 2')]+idx)
+
 
 def _bde_wo_dg(qd_df, arg):
     """ Calculate the BDEs without thermochemical corrections.
@@ -168,7 +170,8 @@ def _bde_wo_dg(qd_df, arg):
     # Update the database
     if 'qd' in arg.optional.database.write:
         recipe = Settings()
-        recipe.settings1 = {'name': 'BDE 1', 'key': j1, 'value': s1, 'template': qmflows.singlepoint}
+        recipe.settings1 = {'name': 'BDE 1', 'key': j1, 'value': s1,
+                            'template': qmflows.singlepoint}
         data.update_csv(qd_df, database='QD', job_recipe=recipe, overwrite=overwrite,
                         columns=[('settings', 'BDE 1')]+idx)
 
@@ -356,7 +359,6 @@ def remove_ligands(mol, combinations_dict, indices, idx_lig):
     ret = []
     for core in combinations_dict:
         for lig in combinations_dict[core]:
-            print(core, lig)
             mol_tmp = mol.copy()
             mol_tmp.properties = Settings()
             mol_tmp.properties.core_topology = str(mol[core].properties.topology) + '_' + str(core)
@@ -409,7 +411,6 @@ def filter_core(xyz_array, idx, topology_dict={6: 'vertice', 7: 'edge', 9: 'face
         vec_length[i] = x[i] - np.average(y[k:k+j], axis=0)
         k += j
     vec_length = np.linalg.norm(vec_length, axis=1)
-
     return idx[np.where(vec_length > 0.5)[0]], get_topology(bincount, topology_dict)
 
 
@@ -459,7 +460,7 @@ def filter_lig_core(xyz_array, idx_lig, idx_core, max_dist=5.0, lig_count=2):
 
     xy = xy[:, [i for i, j in enumerate(xy[0]) if bincount[j] >= lig_count]]
     xy[1] = idx_core[xy[1]]
-    xy[0] += 2
+    xy[0] += 1
     return xy
 
 
