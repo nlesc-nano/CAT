@@ -52,7 +52,6 @@ def get_asa_energy(mol_series):
     ret = np.zeros((len(mol_series), 4))
 
     for i, mol in enumerate(mol_series):
-        print(len(mol))
         mol_cp = mol.copy()
         rd_uff = AllChem.UFFGetMoleculeForceField
 
