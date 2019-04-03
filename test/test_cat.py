@@ -83,7 +83,7 @@ def test_prep_core():
 
 
 def test_prep_ligand():
-    """ Test the :func:`CAT.base.prep_ligand` function. """
+    """ Test the :func:`CAT.base.prep_ligand` function with **split** = *True*. """
     arg = ARG.copy()
     lig_df = LIGAND_DF.copy()
     os.mkdir(arg.optional.database.dirname)
@@ -126,7 +126,7 @@ def test_prep_ligand():
 
 
 def test_prep_ligand_split():
-    """ Test the :func:`CAT.base.prep_ligand` function. """
+    """ Test the :func:`CAT.base.prep_ligand` function with **split** = *False*. """
     arg = ARG.copy()
     lig_df = LIGAND_DF.copy()
     os.mkdir(arg.optional.database.dirname)
