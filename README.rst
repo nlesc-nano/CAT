@@ -77,3 +77,4 @@ the documentation_.
 .. _QMFlows: https://github.com/SCM-NV/qmflows
 .. _example1: https://github.com/BvB93/CAT/blob/master/examples/input_settings.yaml
 .. _example2: https://github.com/BvB93/CAT/blob/master/examples/input.py
+.. _test: 
