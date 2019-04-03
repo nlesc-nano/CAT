@@ -243,15 +243,20 @@ def get_cdx2(mol, ion='Cd'):
 
 
 def dissociate_ligand(mol, arg):
-    """ """
+    """ Create all XYn dissociated quantum dots.
+    :parameter mol: A PLAMS molecule.
+    :type mol: |plams.Molecule|_
+    :parameter arg: A settings object containing all (optional) arguments.
+    :type arg: |plams.Settings|_ (superclass: |dict|_).
+    """
     # Unpack arguments
     atnum = arg.optional.qd.dissociate.core_atom
-    lig_count = arg.optional.qd.dissociate.lig_count
-    core_core_dist = arg.optional.qd.dissociate.core_core_dist
-    lig_core_dist = arg.optional.qd.dissociate.lig_core_dist
-    topology_dict = arg.optional.qd.dissociate.topology
+    l_count = arg.optional.qd.dissociate.lig_count
+    cc_dist = arg.optional.qd.dissociate.core_core_dist
+    lc_dist = arg.optional.qd.dissociate.lig_core_dist
+    top_dict = arg.optional.qd.dissociate.topology
 
-    # Convert mol
+    # Convert **mol** to an XYZ array
     mol.set_atoms_id()
     xyz_array = mol.as_array()
 
@@ -265,23 +270,23 @@ def dissociate_ligand(mol, arg):
             res_list.append([at])
 
     # Create a list of all core indices and ligand anchor indices
-    idx_core_old = np.array([j for j, at in enumerate(res_list[0]) if at.atnum == atnum])
-    idx_core, topology = filter_core(xyz_array, idx_core_old, topology_dict, core_core_dist)
-    i, j = len(res_list[0]), len(res_list[1])
-    k = _anchor_to_idx(mol.properties.ligand_anchor)
-    idx_lig = np.arange(i + k, i + k + j * len(res_list[1:]), j) - 1
+    idx_c_old = np.array([j for j, at in enumerate(res_list[0]) if at.atnum == atnum])
+    idx_c, topology = filter_core(xyz_array, idx_c_old, top_dict, cc_dist)
+    idx_l = np.array([i for i in mol.properties.indices if
+                      mol[i].properties.pdb_info.ResidueName == 'LIG']) - 1
 
     # Mark the core atoms with their topologies
-    for i, top in zip(idx_core_old, topology):
+    for i, top in zip(idx_c_old, topology):
         mol[int(i+1)].properties.topology = top
 
     # Create a dictionary with core indices as keys and all combinations of 2 ligands as values
-    xy = filter_lig_core(xyz_array, idx_lig, idx_core, lig_core_dist, lig_count)
-    combinations_dict = get_lig_core_combinations(xy, res_list, lig_count)
+    xy = filter_lig_core(xyz_array, idx_l, idx_c, lc_dist, l_count)
+    combinations_dict = get_lig_core_combinations(xy, res_list, l_count)
 
     # Create and return new molecules
-    indices = [at.id for at in res_list[0][:-lig_count]] + (idx_lig[:-lig_count] + 1).tolist()
-    return remove_ligands(mol, combinations_dict, indices, idx_lig)
+    indices = [at.id for at in res_list[0][:-l_count]]
+    indices += (idx_l[:-l_count] + 1).tolist()
+    return remove_ligands(mol, combinations_dict, indices, idx_l)
 
 
 def remove_ligands(mol, combinations_dict, indices, idx_lig):
@@ -297,7 +302,7 @@ def remove_ligands(mol, combinations_dict, indices, idx_lig):
             mol_tmp.properties.df_index = mol_tmp.properties.core_topology
             mol_tmp.properties.df_index += ''.join([' ' + str(i)
                                                     for i in mol_tmp.properties.lig_residue])
-            delete_idx = sorted([core + 1] + list(chain.from_iterable(lig)), reverse=True)
+            delete_idx = sorted([core] + list(chain.from_iterable(lig)), reverse=True)
             for i in delete_idx:
                 mol_tmp.delete_atom(mol_tmp[i])
             mol_tmp.properties.indices = indices
@@ -305,8 +310,22 @@ def remove_ligands(mol, combinations_dict, indices, idx_lig):
     return ret
 
 
-def filter_core(xyz_array, idx, topology_dict, max_dist=5.0, ret_threshold=0.5):
-    """ """
+def filter_core(xyz_array, idx, topology_dict={6: 'vertice', 7: 'edge', 9: 'face'}, max_dist=5.0):
+    """ Find all atoms (**idx**) in **xyz_array** which are exposed to the surface
+    and assign a topology to aforementioned atoms based on the number of neighbouring atoms.
+    :parameter xyz_array: An array with the cartesian coordinates of a molecule with *n* atoms.
+    :type xyz_array: *n*3* |np.ndarray|_ [|np.float64|_]
+    :parameter idx: An array of atomic indices in **xyz_array**.
+    :type idx: |np.ndarray|_ [|np.int64|_]
+    :parameter topology_dict: A dictionary which maps the number of neighbours (per atom) to a
+        user-specified topology.
+    :type topology_dict: |dict|_ (keys: |int|_)
+    :parameter float max_dist: The radius (Angstrom) for determining if an atom counts as a
+        neighbour or not.
+    :return: The indices of all atoms in **xyz_array[idx]** exposed to the surface and
+        the topology of atoms in **xyz_array[idx]**.
+    :rtype: |np.ndarray|_ [|np.int64|_] and |np.ndarray|_ [|np.int64|_]
+    """
     # Create a distance matrix and find all elements with a distance smaller than **max_dist**
     dist = cdist(xyz_array[idx], xyz_array[idx])
     np.fill_diagonal(dist, max_dist)
@@ -319,19 +338,28 @@ def filter_core(xyz_array, idx, topology_dict, max_dist=5.0, ret_threshold=0.5):
 
     # Calculate the length of a vector from a reference atom to the mean position of its neighbours
     # A vector length close to 0.0 implies that a reference atom is surrounded by neighbours in
-    # a more or less spherical pattern (i.e. it is not exposed to the surface)
+    # a more or less spherical pattern (i.e. the reference atom is in the bulk, not on the surface)
     vec_length = np.empty((bincount.shape[0], 3), dtype=float)
     k = 0
     for i, j in enumerate(bincount):
         vec_length[i] = x[i] - np.average(y[k:k+j], axis=0)
         k += j
     vec_length = np.linalg.norm(vec_length, axis=1)
-
-    return idx[np.where(vec_length > ret_threshold)[0]], get_topology(bincount, topology_dict)
+    return idx[np.where(vec_length > 0.5)[0]], get_topology(bincount, topology_dict)
 
 
 def get_topology(bincount, topology_dict={6: 'vertice', 7: 'edge', 9: 'face'}):
-    """ """
+    """ Translate the number of neighbouring atoms (**bincount**) into a list of topologies.
+    If a specific number of neighbours (*i*) is absent from **topology_dict** then that particular
+    element is set to a generic str(*i*) + '_neighbours'.
+    :parameter bincount: An array with the number of neighbours per atom for a total of *n* atoms.
+    :type bincount: *n* |np.ndarray|_ [|np.int64|_]
+    :parameter topology_dict: A dictionary which maps the number of neighbours (per atom) to a
+        user-specified topology.
+    :type topology_dict: |dict|_ (keys: |int|_)
+    :return: A list of topologies for all *n* atoms in **bincount**.
+    :rtype: *n* |list|_.
+    """
     if isinstance(topology_dict, Settings):
         topology_dict = topology_dict.as_dict()
     ret = []
@@ -344,26 +372,45 @@ def get_topology(bincount, topology_dict={6: 'vertice', 7: 'edge', 9: 'face'}):
 
 
 def filter_lig_core(xyz_array, idx_lig, idx_core, max_dist=5.0, lig_count=2):
-    """ """
-    dist = cdist(xyz_array[idx_lig], xyz_array[idx_core])
+    """ Create and return the indices of all possible ligand/pairs that can be constructed within a
+    given radius (**max_dist**).
+    :parameter xyz_array: An array with the cartesian coordinates of a molecule with *n* atoms.
+    :type xyz_array: *n*3* |np.ndarray|_ [|np.float64|_]
+    :parameter idx: An array of all ligand anchor atoms (Y).
+    :type idx: |np.ndarray|_ [|np.int64|_]
+    :parameter idx: An array of all core atoms (X).
+    :type idx: |np.ndarray|_ [|np.int64|_]
+    :parameter float max_dist: The maximum distance for considering XYn pairs.
+    :parameter int lig_count: The number of ligand (*n*) in XYn.
+    :return: An array with the indices of all *m* valid (as determined by **max_diist**)
+        ligand/core pairs.
+    :rtype: *m*2* |np.ndarray|_ [|np.int64|_].
+    """
+    dist = cdist(xyz_array[idx_core], xyz_array[idx_lig])
     xy = np.array(np.where(dist <= max_dist))
     bincount = np.bincount(xy[0])
-
     xy = xy[:, [i for i, j in enumerate(xy[0]) if bincount[j] >= lig_count]]
-    xy[1] = idx_core[xy[1]]
-    xy[0] += 1
+    xy[0] = idx_core[xy[0]]
+    xy[1] += 1
     return xy
 
 
 def get_lig_core_combinations(xy, res_list, lig_count=2):
-    """ """
+    """ Given an array of indices (**xy**) and a nested list of atoms **res_list**.
+    :parameter xy: An array with the indices of all *m* core/ligand pairs.
+    :type xy: *m*2* |np.ndarray|_ [|np.int64|_]
+    :parameter res_list: A list of PLAMS atoms, each nested tuple representing all atoms within
+        a given residue.
+    :type res_list: |list|_ [|tuple|_ [|plams.Atom|_]]
+    :parameter int lig_count: The number of ligand (*n*) in XYn.
+    :return:
+    """
     ret = {}
-    for y, x in xy.T:
+    for core, lig in xy.T:
         try:
-            ret[res_list[0][x].id].append([at.id for at in res_list[y]])
+            ret[res_list[0][core].id].append([at.id for at in res_list[lig]])
         except KeyError:
-            ret[res_list[0][x].id] = [[at.id for at in res_list[y]]]
+            ret[res_list[0][core].id] = [[at.id for at in res_list[lig]]]
     for i in ret:
         ret[i] = combinations(ret[i], lig_count)
-
     return ret
