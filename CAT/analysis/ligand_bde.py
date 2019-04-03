@@ -111,9 +111,9 @@ def _bde_w_dg(qd_df, arg):
 
     # Update the database
     if 'qd' in arg.optional.database.write:
-        value1 = qmflows.singlepoint[type_to_string(j1)]
+        value1 = qmflows.singlepoint['specific'][type_to_string(j1)].copy()
         value1.update(s1)
-        value2 = qmflows.freq[type_to_string(j2)]
+        value2 = qmflows.freq['specific'][type_to_string(j2)].copy()
         value2.update(s2)
         recipe = Settings()
         recipe['BDE 1'] = {'key': j1, 'value': value1}

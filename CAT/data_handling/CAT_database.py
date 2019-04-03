@@ -478,7 +478,10 @@ class Database():
         csv['hdf5 index'] = csv['hdf5 index'].astype(int, copy=False)  # Fix the data type
 
         # Filter columns
-        df_columns = columns or df.columns
+        if not columns:
+            df_columns = df.columns
+        else:
+            df_columns = columns + [i for i in df.columns if i[0] == 'settings']
 
         # Update **csv.columns**
         for i in df_columns:
@@ -505,8 +508,8 @@ class Database():
         :parameter job_recipe: A settings object with one or more settings specific to a job.
         :type job_recipe: |plams.Settings|_ (superclass: |dict|_)
         :parameter bool close: If the database component should be closed afterwards.
-        :return: A dictionary with the row name of **self.csv_lig** or **self.csv_qd** as keys
-            and the key for **self.yaml** as matching values.
+        :return: A dictionary with the column names as keys and the key for **self.yaml** as
+            matching values.
         :rtype: |dict|_ (keys: |str|_, values: |str|_)
         """
         if self.yaml is None:
@@ -514,8 +517,12 @@ class Database():
 
         ret = {}
         for item in job_recipe:
-            # Unpack keys & value; sanitize the values
+            # Unpack and sanitize keys
             key = job_recipe[item].key
+            if isinstance(key, type):
+                key = str(key).rsplit("'", 1)[0].rsplit('.', 1)[-1]
+
+            # Unpack and sanitize values
             value = job_recipe[item].value
             if isinstance(value, Settings):
                 value = sanitize_yaml_settings(value, key)

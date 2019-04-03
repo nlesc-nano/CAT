@@ -71,7 +71,8 @@ def init_ligand_opt(ligand_df, arg):
         recipe = Settings()
         recipe['1'] = {'key': 'RDKit_' + rdkit.__version__, 'value': 'UFF'}
         overwrite = 'ligand' in arg.optional
-        database.update_csv(ligand_df, columns=['formula', 'hdf5 index'],
+        columns = [('formula', ''), ('hdf5 index', ''), ('settings', '1')]
+        database.update_csv(ligand_df, columns=columns,
                             job_recipe=recipe, database='ligand', overwrite=overwrite)
         path = arg.optional.ligand.dirname
         mol_to_file(ligand_df['mol'], path, overwrite, arg.optional.database.mol_format)

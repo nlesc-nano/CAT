@@ -27,7 +27,7 @@ def init_solv(ligand_df, arg, solvent_list=None):
     to hold all solvation energies and activity coefficients, respectively.
 
     :parameter ligand_df: A dataframe of ligands.
-    :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index=|int|_, values=|plams.Molecule|_)
+    :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index: |int|_, values: |plams.Molecule|_)
     :parameter arg: A settings object containing all (optional) arguments.
     :type arg: |plams.Settings|_ (superclass: |dict|_).
     :parameter solvent_list: A list of paths to the .t21 or .coskf files of solvents. If *None*,
@@ -69,7 +69,7 @@ def init_solv(ligand_df, arg, solvent_list=None):
 
     # Update the database
     if 'ligand' in arg.optional.database.write:
-        value1 = qmflows.singlepoint[type_to_string(j1)]
+        value1 = qmflows.singlepoint['specific'][type_to_string(j1)].copy()
         value1.update(s1)
         recipe = Settings()
         recipe['solv 1'] = {'key': j1, 'value': value1}
