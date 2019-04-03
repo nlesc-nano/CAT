@@ -23,13 +23,8 @@ from ..mol_utils import (adf_connectivity, from_mol_other)
 
 @add_to_class(Cp2kResults)
 def get_main_molecule(self):
-    print(self.files)
-    print('')
     for file in self.files:
-        print(file)
         if '.xyz' in file:
-            print(join(self.job.path, file))
-            print(Molecule(join(self.job.path, file)))
             return Molecule(join(self.job.path, file))
     return None
 
