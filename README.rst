@@ -47,7 +47,7 @@ Package installation
 --------------------
 Finally, install **CAT** using pip:
 
-- **CAT**: ``pip install git+https://github.com/BvB93/CAT@master --upgrade``
+- **CAT**: ``pip install git+https://github.com/nlesc-nano/CAT@master --upgrade``
 
 Now you are ready to use **CAT**.
 
