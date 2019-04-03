@@ -34,7 +34,7 @@ def export_job_settings(job_recipe, arg, job_type=(qmflows.geometry, qmflows.geo
 
     elif job_recipe.job2 is False:
         if job_type[0] is not None:
-            s = job_type[0]['specific'][type_to_string(job_recipe.job1)]
+            s = job_type[0]['specific'][type_to_string(job_recipe.job1)].copy()
         else:
             s = Settings()
         s.update(job_recipe.s1)
@@ -43,12 +43,12 @@ def export_job_settings(job_recipe, arg, job_type=(qmflows.geometry, qmflows.geo
 
     else:
         if job_type[0] is not None:
-            s1 = job_type[0]['specific'][type_to_string(job_recipe.job1)]
+            s1 = job_type[0]['specific'][type_to_string(job_recipe.job1)].copy()
         else:
             s1 = Settings()
 
         if job_type[1] is not None:
-            s2 = job_type[1]['specific'][type_to_string(job_recipe.job2)]
+            s2 = job_type[1]['specific'][type_to_string(job_recipe.job2)].copy()
         else:
             s2 = Settings()
 

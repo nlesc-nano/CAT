@@ -23,13 +23,8 @@ from ..mol_utils import (adf_connectivity, from_mol_other)
 
 @add_to_class(Cp2kResults)
 def get_main_molecule(self):
-    print(self.files)
-    print('')
     for file in self.files:
-        print(file)
         if '.xyz' in file:
-            print(join(self.job.path, file))
-            print(Molecule(join(self.job.path, file)))
             return Molecule(join(self.job.path, file))
     return None
 
@@ -52,7 +47,7 @@ def job_single_point(self, job, settings, name='Single_point', ret_results=False
     """
     # Grab the default settings for a specific job and update them with user provided settings
     s = Settings()
-    s.input = qmflows.singlepoint['specific'][type_to_string(job)]
+    s.input = qmflows.singlepoint['specific'][type_to_string(job)].copy()
     s.update(settings)
     if job == AMSJob:
         s.input.ams.system.bondorders._1 = adf_connectivity(self)
@@ -85,7 +80,7 @@ def job_geometry_opt(self, job, settings, name='Geometry_optimization', ret_resu
     """
     # Grab the default settings for a specific job and update them with user provided settings
     s = Settings()
-    s.input = qmflows.geometry['specific'][type_to_string(job)]
+    s.input = qmflows.geometry['specific'][type_to_string(job)].copy()
     s.update(settings)
     if job == AMSJob:
         s.input.ams.system.bondorders._1 = adf_connectivity(self)
@@ -126,7 +121,7 @@ def job_freq(self, job, settings, name='Frequency_analysis', opt=True, ret_resul
 
     # Grab the default settings for a specific job and update them with user provided settings
     s = Settings()
-    s.input = qmflows.freq['specific'][type_to_string(job)]
+    s.input = qmflows.freq['specific'][type_to_string(job)].copy()
     s.update(settings)
     if job == AMSJob:
         s.input.ams.system.bondorders._1 = adf_connectivity(self)
