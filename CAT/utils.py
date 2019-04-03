@@ -4,7 +4,6 @@ __all__ = ['check_sys_var', 'dict_concatenate', 'get_time', 'get_template']
 
 import os
 import time
-import json
 import yaml
 import pkg_resources as pkg
 from os.path import join

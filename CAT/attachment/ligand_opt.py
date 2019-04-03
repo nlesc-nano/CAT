@@ -14,11 +14,12 @@ from scm.plams.tools.units import Units
 from scm.plams.recipes.global_minimum import global_minimum_scan_rdkit
 import scm.plams.interfaces.molecule.rdkit as molkit
 
+import rdkit
 from rdkit.Chem import AllChem
 
 from .ligand_attach import (rot_mol_angle, sanitize_dim_2)
 from ..data_handling.CAT_database import Database, mol_to_file
-from ..utils import get_time
+from ..utils import (get_time, type_to_string)
 from ..mol_utils import (to_symbol, fix_carboxyl, get_bond_index,
                          from_mol_other, from_rdmol, separate_mod)
 
@@ -68,9 +69,10 @@ def init_ligand_opt(ligand_df, arg):
     # Write newly optimized structures to the database
     if 'ligand' in arg.optional.database.write and arg.optional.ligand.optimize:
         recipe = Settings()
-        recipe.settings = {'name': '1', 'key': 'RDKit', 'value': 'UFF'}
+        recipe['1'] = {'key': 'RDKit_' + rdkit.__version__, 'value': 'UFF'}
         overwrite = 'ligand' in arg.optional
-        database.update_csv(ligand_df, columns=['formula', 'hdf5 index'],
+        columns = [('formula', ''), ('hdf5 index', ''), ('settings', '1')]
+        database.update_csv(ligand_df, columns=columns,
                             job_recipe=recipe, database='ligand', overwrite=overwrite)
         path = arg.optional.ligand.dirname
         mol_to_file(ligand_df['mol'], path, overwrite, arg.optional.database.mol_format)

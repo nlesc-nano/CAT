@@ -7,10 +7,10 @@ import numpy as np
 from scm.plams.core.settings import Settings
 import scm.plams.interfaces.molecule.rdkit as molkit
 
+import rdkit
 from rdkit.Chem import AllChem
 
 from ..data_handling.CAT_database import Database
-from ..utils import get_time
 
 
 def init_asa(qd_df, arg):
@@ -34,7 +34,7 @@ def init_asa(qd_df, arg):
     # Calculate E_int, E_strain and E
     if 'qd' in arg.optional.database.write:
         recipe = Settings()
-        recipe.settings = {'name': 'ASA 1', 'key': 'RDKit', 'value': 'UFF'}
+        recipe['ASA 1'] = {'key': 'RDKit_' + rdkit.__version__, 'value': 'UFF'}
         data.update_csv(qd_df, columns=[('settings', 'ASA 1')]+columns,
                         job_recipe=recipe, database='QD', overwrite=overwrite)
 

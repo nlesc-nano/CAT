@@ -17,7 +17,7 @@ import qmflows
 
 from .jobs import (job_single_point, job_geometry_opt, job_freq)
 from .. import utils as CAT
-from ..utils import get_time
+from ..utils import (get_time, type_to_string)
 from ..mol_utils import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
 from ..data_handling.CAT_database import Database
@@ -111,10 +111,13 @@ def _bde_w_dg(qd_df, arg):
 
     # Update the database
     if 'qd' in arg.optional.database.write:
+        value1 = qmflows.singlepoint['specific'][type_to_string(j1)].copy()
+        value1.update(s1)
+        value2 = qmflows.freq['specific'][type_to_string(j2)].copy()
+        value2.update(s2)
         recipe = Settings()
-        recipe.settings1 = {'name': 'BDE 1', 'key': j1, 'value': s1,
-                            'template': qmflows.singlepoint}
-        recipe.settings2 = {'name': 'BDE 2', 'key': j2, 'value': s2, 'template': qmflows.freq}
+        recipe['BDE 1'] = {'key': j1, 'value': value1}
+        recipe['BDE 2'] = {'key': j2, 'value': value2}
         data.update_csv(qd_df, database='QD', job_recipe=recipe, overwrite=overwrite,
                         columns=[('settings', 'BDE 1'), ('settings', 'BDE 2')]+idx)
 
@@ -170,8 +173,9 @@ def _bde_wo_dg(qd_df, arg):
     # Update the database
     if 'qd' in arg.optional.database.write:
         recipe = Settings()
-        recipe.settings1 = {'name': 'BDE 1', 'key': j1, 'value': s1,
-                            'template': qmflows.singlepoint}
+        value = qmflows.singlepoint[type_to_string(j1)]
+        value.update(s1)
+        recipe['BDE 1'] = {'key': j1, 'value': value}
         data.update_csv(qd_df, database='QD', job_recipe=recipe, overwrite=overwrite,
                         columns=[('settings', 'BDE 1')]+idx)
 

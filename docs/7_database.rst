@@ -4,12 +4,14 @@ The Database Class
 ==================
 
 A Class designed for the storing, retrieval and updating of results.
-The methods of the Database class can be divided into four categories
-accoring to their function:
+
 
 .. image:: _images/Database.png
     :scale: 35 %
     :align: center
+
+The methods of the Database class can be divided into four categories
+accoring to their functionality:
 
 -   Opening the database - these methods load parts of the database from their
     respective files on the harddrive, storing them as suitable python objects
@@ -34,7 +36,7 @@ accoring to their function:
     ===================  ====================  ====================
 
 -   Exporting from the database - these methods handle the exporting of data
-    from the Database class to other python objects:
+    from the Database class to other python objects or remote locations:
 
     =================  ==================
     :meth:`.from_csv`  :meth:`.from_hdf5`

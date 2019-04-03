@@ -9,7 +9,7 @@ from scipy.spatial.distance import cdist
 from scm.plams.mol.molecule import Molecule
 from scm.plams.core.settings import Settings
 
-from ..utils import get_time
+from ..utils import (get_time, type_to_string)
 from ..mol_utils import (merge_mol, get_atom_index)
 from ..data_handling.CAT_database import (Database, mol_to_file)
 
@@ -59,7 +59,7 @@ def init_qd_construction(ligand_df, core_df, arg):
     # Export the resulting geometries back to the database
     if 'qd' in arg.optional.database.write and not arg.optional.qd.optimize:
         recipe = Settings()
-        recipe.settings = {'name': '1', 'key': 'None', 'value': 'None'}
+        recipe['1'] = {'key': 'None', 'value': 'None'}
         data.update_csv(qd_df, columns=['hdf5 index', 'ligand count'],
                         job_recipe=recipe, database='QD')
         path = arg.optional.qd.dirname
