@@ -157,7 +157,7 @@ def sanitize_yaml_settings(s, job_type):
 
     # Recursivelly delete all keys from **s** if aforementioned keys are present in the s_del
     recursive_del(s, s_del)
-    return s.as_dict()
+    return s
 
 
 def _create_csv(path, database='ligand'):
@@ -425,8 +425,13 @@ class Database():
         """
         if self.yaml is not None:
             if write:
+                yml_dict = self.yaml.as_dict()
+                for key in yml_dict:
+                    for i, value in enumerate(yml_dict[key]):
+                        if isinstance(value, Settings):
+                            yml_dict[key][i] = value.as_dict()
                 with open(self.path.yaml, 'w') as file:
-                    file.write(yaml.dump(self.yaml.as_dict(), default_flow_style=False, indent=4))
+                    file.write(yaml.dump(yml_dict, default_flow_style=False, indent=4))
             self.yaml = None
 
     def close_hdf5(self):
@@ -524,7 +529,7 @@ class Database():
 
             # Unpack and sanitize values
             value = job_recipe[item].value
-            if isinstance(value, Settings):
+            if isinstance(value, dict):
                 value = sanitize_yaml_settings(value, key)
 
             # Check if the appropiate key is available in **self.yaml**
