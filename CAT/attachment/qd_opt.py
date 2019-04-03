@@ -8,7 +8,7 @@ from scm.plams.interfaces.adfsuite.ams import AMSJob
 
 import qmflows
 
-from ..utils import get_time
+from ..utils import (get_time, type_to_string)
 from ..mol_utils import (fix_carboxyl, fix_h)
 from ..analysis.jobs import job_geometry_opt
 from ..data_handling.CAT_database import (Database, mol_to_file)
@@ -44,19 +44,14 @@ def init_qd_opt(qd_df, arg):
 
     # Export the geometries to the database
     if 'qd' in arg.optional.database.write:
+        value1 = qmflows.geometry[type_to_string(job_recipe.j1)]
+        value1.update(job_recipe.s1)
+        value2 = qmflows.geometry[type_to_string(job_recipe.j2)]
+        value2.update(job_recipe.s2)
         recipe = Settings()
-        recipe.settings1 = {
-            'name': '1',
-            'key': job_recipe.job1,
-            'value': job_recipe.s1,
-            'template': qmflows.geometry
-        }
-        recipe.settings2 = {
-            'name': '2',
-            'key': job_recipe.job2,
-            'value': job_recipe.s2,
-            'template': qmflows.geometry
-        }
+        recipe['1'] = {'key': job_recipe.job1, 'value': value1}
+        recipe['2'] = {'key': job_recipe.job2, 'value': value2}
+
         database = Database(path=arg.optional.database.dirname)
         database.update_csv(qd_df, columns=['hdf5 index'], job_recipe=recipe, database='QD')
         path = arg.optional.qd.dirname

@@ -17,7 +17,7 @@ import qmflows
 
 from .crs import CRSJob
 from .. import utils as CAT
-from ..utils import get_time
+from ..utils import (get_time, type_to_string)
 from ..data_handling.CAT_database import Database
 
 
@@ -69,10 +69,11 @@ def init_solv(ligand_df, arg, solvent_list=None):
 
     # Update the database
     if 'ligand' in arg.optional.database.write:
+        value1 = qmflows.singlepoint[type_to_string(j1)]
+        value1.update(s1)
         recipe = Settings()
-        recipe.settings1 = {'name': 'solv 1', 'key': j1, 'value': s1,
-                            'template': qmflows.singlepoint}
-        recipe.settings2 = {'name': 'solv 2', 'key': j2, 'value': s2}
+        recipe['solv 1'] = {'key': j1, 'value': value1}
+        recipe['solv 2'] = {'key': j2, 'value': s2}
         data.update_csv(ligand_df, database='ligand',
                         columns=[('settings', 'solv 1'), ('settings', 'solv 2')]+columns,
                         overwrite=overwrite, job_recipe=recipe)

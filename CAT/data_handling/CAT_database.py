@@ -75,11 +75,9 @@ def get_nan_row(df):
     :rtype: |list|_ [|int|_, |float|_ and/or |None|_]
     """
     dtype_dict = {np.dtype('int64'): -1, np.dtype('float64'): np.nan, np.dtype('O'): None}
-    try:
-        # Plan A
+    try:  # Plan A
         return [dtype_dict[df[i].dtype] for i in df]
-    except KeyError:
-        # Plan B
+    except KeyError:  # Plan B (for when dealing with multiindices)
         ret = []
         for i in df:
             try:
@@ -271,14 +269,14 @@ class Database():
         self.path.csv_qd = _create_csv(path, database='QD')
         self.path.yaml = join(path, 'job_settings.yaml')
         self.path.hdf5 = _create_hdf5(path)
-        self.path.mongodb = None
+        self.path.mongodb = None  # Placeholder
 
         # Attributes which hold the actual components of the database (when opened)
         self.csv_lig = None
         self.csv_qd = None
         self.yaml = None
         self.hdf5 = None
-        self.mongodb = None
+        self.mongodb = None  # Placeholder
 
     def __str__(self):
         ret = Settings()
@@ -477,27 +475,18 @@ class Database():
         for i in df.index:
             if i not in csv.index:
                 csv.at[i, :] = nan_row
-        csv['hdf5 index'] = csv['hdf5 index'].astype(int, copy=False)
+        csv['hdf5 index'] = csv['hdf5 index'].astype(int, copy=False)  # Fix the data type
 
         # Filter columns
-        if columns is None:
-            df_columns = df.columns
-        else:
-            df_columns = columns
+        df_columns = columns or df.columns
 
         # Update **csv.columns**
         for i in df_columns:
             if i not in csv.columns:
                 try:
                     csv[i] = np.array((None), dtype=df[i].dtype)
-                except TypeError:
+                except TypeError:  # i.e. if csv[i] consists of np.int64
                     csv[i] = -1
-                except AttributeError:
-                    for j in df[i].columns:
-                        try:
-                            csv[i] = np.array((None), dtype=df[(i, j)].dtype)
-                        except TypeError:
-                            csv[i] = -1
 
         # Update **self.hdf5**; returns a new series of indices
         hdf5_series = self.update_hdf5(df, database=database, overwrite=overwrite)
@@ -525,31 +514,22 @@ class Database():
 
         ret = {}
         for item in job_recipe:
-            # Prepare keys and values
-            if isinstance(job_recipe[item].key, type):
-                template_name = job_recipe[item].template
-                template_key = type_to_string(job_recipe[item].key)
-                if template_name and template_key:
-                    value = template_name['specific'][template_key]
-                else:
-                    value = Settings()
-
-                key = str(job_recipe[item].key).rsplit('.', 1)[-1].split("'")[0]
-                value.update(job_recipe[item].value)
+            # Unpack keys & value; sanitize the values
+            key = job_recipe[item].key
+            value = job_recipe[item].value
+            if isinstance(value, Settings):
                 value = sanitize_yaml_settings(value, key)
-            else:
-                key = job_recipe[item].key
-                value = job_recipe[item].value
-            name = job_recipe[item].name
 
-            # Update ret
+            # Check if the appropiate key is available in **self.yaml**
             if key not in self.yaml:
                 self.yaml[key] = []
+
+            # Check if the appropiate value is available in **self.yaml**
             if value in self.yaml[key]:
-                ret[name] = key + ' ' + str(self.yaml[key].index(value))
+                ret[item] = key + ' ' + str(self.yaml[key].index(value))
             else:
                 self.yaml[key].append(value)
-                ret[name] = key + ' ' + str(len(self.yaml[key]) - 1)
+                ret[item] = key + ' ' + str(len(self.yaml[key]) - 1)
 
         if close:
             self.close_yaml()
@@ -627,6 +607,8 @@ class Database():
         # Update the *hdf5 index* column in **df**
         df.update(csv, overwrite=True)
         df['hdf5 index'] = df['hdf5 index'].astype(int, copy=False)
+
+        # hdf5 fancy indexing only supports use of sorted lists of indices
         df.sort_values(by=['hdf5 index'], inplace=True)
 
         # Update the *mol* column in **df** or return a new series
