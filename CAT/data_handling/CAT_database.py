@@ -323,7 +323,7 @@ class Database():
                     f.write(yaml.dump(yml_dict, default_flow_style=False, indent=4))
             self.settings = False
 
-    class open_csv_lig():
+    class _open_csv_lig():
         """ Context manager for opening and closing the ligand database.
 
         :param str path: The path+filename to the database component.
@@ -351,7 +351,7 @@ class Database():
                 self.df.to_csv(self.path)
             self.df = None
 
-    class open_csv_qd():
+    class _open_csv_qd():
         """ Context manager for opening and closing the quantum dot database.
 
         :param str path: The path+filename to the database component.
@@ -380,11 +380,18 @@ class Database():
             self.df = None
 
     def open_csv(self, path=None, database='ligand', write=True):
-        """ """
+        """ Calls the appropiate context manager for opening and closing the ligand or
+        quantum dot database.
+
+        :param str path: The path+filename to the database component.
+        :parameter str database: The type of database; accepted values are *ligand* and *QD*.
+        :param bool write: Whether or not the database file should be updated after
+            closing **self**.
+        """
         if database == 'ligand':
-            self.open_csv_lig(path, write)
+            self._open_csv_lig(path, write)
         elif database == 'QD':
-            self.open_csv_qd(path, write)
+            self._open_csv_qd(path, write)
         else:
             raise TypeError(str(database) + " is not an accepated value for the 'database' \
                             argument")
