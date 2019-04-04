@@ -82,7 +82,7 @@ def get_nan_row(df):
         for i in df:
             try:
                 j = dtype_dict[df[i].dtype]
-            except KeyError:
+            except KeyError:  # dtype is neither int, float nor object
                 j = None
             ret.append(j)
         return ret
@@ -430,6 +430,7 @@ class Database():
                     for i, value in enumerate(yml_dict[key]):
                         if isinstance(value, Settings):
                             yml_dict[key][i] = value.as_dict()
+
                 with open(self.path.yaml, 'w') as file:
                     file.write(yaml.dump(yml_dict, default_flow_style=False, indent=4))
             self.yaml = None
@@ -620,31 +621,39 @@ class Database():
         df.update(csv, overwrite=True)
         df['hdf5 index'] = df['hdf5 index'].astype(int, copy=False)
 
+        # **df** has been updated and **get_mol** = *False*
+        if get_mol:
+            ret = self._from_csv_mol()
+
+        if close:
+            self.close_csv(database, write=False)
+
         # hdf5 fancy indexing only supports use of sorted lists of indices
         df.sort_values(by=['hdf5 index'], inplace=True)
-
-        # Update the *mol* column in **df** or return a new series
-        if get_mol:
-            df_slice = df['hdf5 index'] >= 0
-            if df_slice.any():
-                idx = df['hdf5 index'][df_slice].values
-                if inplace:  # Update **df** with preexisting molecules from **self**
-                    mol_list = self.from_hdf5(idx, database=database)
-                    for i, rdmol in zip(df_slice.index, mol_list):
-                        df.loc[i, ('mol', '')].from_rdmol(rdmol)
-                else:  # Create and return a new series of PLAMS molecules
-                    mol_list = self.from_hdf5(idx, database=database, rdmol=False)
-                    ret = pd.Series(mol_list, index=df[df_slice].index, name=('mol', ''))
 
         # Close the database
         if close:
             self.close_csv(database, write=False)
 
         # Return a new series if **inplace** = *False*
-        if get_mol and not inplace:
+        if not inplace:
             if df_slice.any():
                 return ret
             return pd.Series(None, name=('mol', ''), dtype=object)
+
+    def _from_csv_mol(self):
+        """ """
+        # Update the *mol* column in **df** or return a new series
+        df_slice = df['hdf5 index'] >= 0
+        if df_slice.any():
+            idx = df['hdf5 index'][df_slice].values
+            if inplace:  # Update **df** with preexisting molecules from **self**
+                mol_list = self.from_hdf5(idx, database=database)
+                for i, rdmol in zip(df_slice.index, mol_list):
+                    df.loc[i, ('mol', '')].from_rdmol(rdmol)
+            else:  # Create and return a new series of PLAMS molecules
+                mol_list = self.from_hdf5(idx, database=database, rdmol=False)
+                ret = pd.Series(mol_list, index=df[df_slice].index, name=('mol', ''))
 
     def from_hdf5(self, index, database='ligand', rdmol=True, close=True):
         """ Import structures from the hdf5 database as RDKit or PLAMS molecules.
