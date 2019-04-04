@@ -180,7 +180,8 @@ def _create_csv(path, database='ligand'):
         elif database == 'QD':
             _create_csv_qd(path)
         else:
-            raise TypeError()
+            raise TypeError(str(database) + " is not an accepated value for the 'database' \
+                            argument")
     return path
 
 
