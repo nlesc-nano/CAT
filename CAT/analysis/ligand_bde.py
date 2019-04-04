@@ -40,7 +40,6 @@ def init_bde(qd_df, arg):
 
     # Check if the calculation has been done already
     if not overwrite and 'qd' in arg.optional.database.read:
-        data.open_csv(database='QD')
         try:
             for i in data.csv_qd[['BDE label', 'BDE dE', 'BDE dG', 'BDE ddG']]:
                 qd_df[i] = np.nan
