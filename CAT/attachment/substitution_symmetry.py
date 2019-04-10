@@ -98,35 +98,34 @@ def supstitution_symmetry(mol):
         """
     dataframe, at_simbols,type_of_symetry = [], [], []
 
-    old_hatoms = mol.properties.coords_h_atom
-    substituted_atoms = [mol.closest_atom(i) for i in old_hatoms]
+    hatoms = mol.properties.coords_h_atom
+    substituted_atoms = [mol.closest_atom(i) for i in hatoms]
     not_hatoms = [at for at in substituted_atoms if at.symbol != 'H']
+    
+    # Defining C atoms conected to substituents and making Molecule object (cmol) out of them
+    catoms = mol.properties.coords_other_arrays
+    cmol = Molecule()
+    for at in catoms:
+        cmol.add_atom(mol.closest_atom(at))
     
     # If substitution is linear, simple combinations without repetition can be applied
     if len(not_hatoms) <= 2:
         pass
     
     else:
-        # Defining tree, four or more substituents and caring about their symmetry and symbols
-        mol = Molecule()
-        for at in not_hatoms:
-            mol.add_atom(at)
-
-        dataframe = get_symmetry(mol,decimals=2)
-        atomic_simbols = [at.symbol for at in not_hatoms]
-    
-        # Getting non zero row indices from data frame - defines symmetry type 
-        
+        # Defining tree, four or more substituents and caring about their symbols
+        # Getting non zero row indices from data frame - defines symmetry type
+        dataframe = get_symmetry(cmol,decimals=2)
+        atomic_symbols = [at.symbol for at in not_hatoms]
         type_of_symetry = np.unique(dataframe.to_numpy().nonzero()[0])
-        #type_of_symetry = np.flatnonzero(dataframe.to_numpy())
 
-        # rectangle
+        # Assign type of symetry and atomic symbols
         if list(type_of_symetry) == [0, 1, 8, 9]:
             mol.properties.subsymmetry = 'D2h'
         else:
             print ("Well, Jelena made me to recognize only rectangles and this is not rectangle!")
 
-    return atomic_simbols 
+    return atomic_symbols
 
 
 def get_symmetry(mol, decimals=2):
@@ -182,13 +181,13 @@ def del_equiv_structures(mols):
     uniques=[]
    
     for mol in mols:
-        atomic_simbols = supstitution_symmetry(mol)
+        atomic_symbols = supstitution_symmetry(mol)
         #lig_positions = np.unique(atomic_simbols, return_counts=True)
 
-        mol.properties.subsymmetry.symbols = atomic_simbols
+        mol.properties.subsymbols = atomic_symbols
         # order has two arrays, repeated symbol and number of repetition
         subsymmetry = mol.properties.subsymmetry 
-        symbol_combination = subsymm_combinations(atomic_simbols, subsymmetry)
+        symbol_combination = subsymm_combinations(atomic_symbols, subsymmetry)
         uniques.append(symbol_combination)
 
     scos = [sorted(sc) for sc in uniques]
@@ -210,8 +209,7 @@ def subsymm_combinations(listy,subsymmetry):
         return j
     
     # Making a string out of molecule combinations
-    if len(listy) == 4: 
-    #if subsymmetry == 'D2h':
+    if subsymmetry == 'D2h':
         a = ''.join(listy)
         b = ''.join(swap_neighbours(listy))
         c = ''.join(swap_pairs(listy))
