@@ -80,6 +80,7 @@ def get_args(core, lig_list, lig_idx):
     core_array = core.as_array()
     idx = core.atoms.index(at_h)
     core_array[idx] = np.nan
+    
     return {'atoms_core': core_other_atom, 'atoms_other': core_array,
             'bond_length': bond_length, 'dist_to_self': False, 'idx': lig_idx, 'ret_min_dist': True}
 
@@ -104,6 +105,7 @@ def bob_core(mol):
 
     mol.properties.coords_h_atom = at_h
     mol.properties.coords_other_atom = at_other
+    mol.properties.coords_other_arrays = [np.array(i.coords) for i in at_other]
 
 
 def bob_ligand(mol):
