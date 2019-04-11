@@ -163,7 +163,3 @@ def test_prep_ligand_split():
     shutil.rmtree(arg.optional.database.dirname)
     shutil.rmtree(arg.optional.ligand.dirname)
     os.mkdir(arg.optional.ligand.dirname)
-
-test_prep_core()
-test_prep_ligand()
-test_prep_ligand_split()
