@@ -47,14 +47,14 @@ min_dist = 1.3
 # Generate structures by combining ligands and cores
 mono = substitution(input_ligands, input_cores)
 di = substitution(input_ligands, mono)
+di_unique = del_equiv_structures(di)
 tri = substitution(input_ligands, di)
 tetra = substitution(input_ligands, tri)
 
-tetra = del_equiv_structures(tetra)
+tetra_unique = del_equiv_structures(tetra)
 
 # Combine and flatten all new molecules into a generator
-new_molecules = chain.from_iterable([mono, di, tri, tetra])
-
+new_molecules = chain.from_iterable([mono, di_unique, tri, tetra_unique])
 
 
 # Export molecules to if the minimum core/ligand distance is smaller than min_dist
