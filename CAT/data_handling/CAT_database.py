@@ -280,7 +280,7 @@ class Database():
         self.csv_qd = _create_csv(path, database='QD')
         self.yaml = _create_yaml(path)
         self.hdf5 = _create_hdf5(path)
-        self.mongodb = None # Placeholder
+        self.mongodb = None  # Placeholder
 
     def __str__(self):
         ret = Settings()
