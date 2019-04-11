@@ -98,17 +98,16 @@ def test_prep_ligand():
 
     # Check the molecules in the dataframe
     lig_list = ret['mol'].values.tolist()
-    data.open_csv('ligand')
-    assert [6, 9, 12, 15] == [len(lig) for lig in lig_list]
-    for lig in lig_list:
-        assert isinstance(lig, Molecule)
-        assert 'O' in lig.properties.anchor
-        assert lig.properties.charge == 0
-        assert lig.properties.dummies.properties.charge == 0
-        assert lig.properties.name + '.pdb' in os.listdir(arg.optional.ligand.dirname)
-        assert lig.properties.name + '.xyz' in os.listdir(arg.optional.ligand.dirname)
-        assert (lig.properties.smiles, lig.properties.anchor) in data.csv_lig.index
-    data.close_csv('ligand', write=False)
+    with data.open_csv_lig(data.csv_lig) as db:
+        assert [6, 9, 12, 15] == [len(lig) for lig in lig_list]
+        for lig in lig_list:
+            assert isinstance(lig, Molecule)
+            assert 'O' in lig.properties.anchor
+            assert lig.properties.charge == 0
+            assert lig.properties.dummies.properties.charge == 0
+            assert lig.properties.name + '.pdb' in os.listdir(arg.optional.ligand.dirname)
+            assert lig.properties.name + '.xyz' in os.listdir(arg.optional.ligand.dirname)
+            assert (lig.properties.smiles, lig.properties.anchor) in db.index
 
     # Check if previous structures can be pulled from the database
     f = io.StringIO()
@@ -140,17 +139,16 @@ def test_prep_ligand_split():
 
     # Check the molecules in the dataframe
     lig_list = ret['mol'].values.tolist()
-    data.open_csv('ligand')
-    assert [5, 8, 11, 14] == [len(lig) for lig in lig_list]
-    for lig in lig_list:
-        assert isinstance(lig, Molecule)
-        assert 'O' in lig.properties.anchor
-        assert lig.properties.charge == -1
-        assert lig.properties.dummies.properties.charge == -1
-        assert lig.properties.name + '.pdb' in os.listdir(arg.optional.ligand.dirname)
-        assert lig.properties.name + '.xyz' in os.listdir(arg.optional.ligand.dirname)
-        assert (lig.properties.smiles, lig.properties.anchor) in data.csv_lig.index
-    data.close_csv('ligand', write=False)
+    with data.open_csv_lig(data.csv_lig) as db:
+        assert [5, 8, 11, 14] == [len(lig) for lig in lig_list]
+        for lig in lig_list:
+            assert isinstance(lig, Molecule)
+            assert 'O' in lig.properties.anchor
+            assert lig.properties.charge == -1
+            assert lig.properties.dummies.properties.charge == -1
+            assert lig.properties.name + '.pdb' in os.listdir(arg.optional.ligand.dirname)
+            assert lig.properties.name + '.xyz' in os.listdir(arg.optional.ligand.dirname)
+            assert (lig.properties.smiles, lig.properties.anchor) in db.index
 
     # Check if previous structures can be pulled from the database
     f = io.StringIO()
@@ -165,3 +163,7 @@ def test_prep_ligand_split():
     shutil.rmtree(arg.optional.database.dirname)
     shutil.rmtree(arg.optional.ligand.dirname)
     os.mkdir(arg.optional.ligand.dirname)
+
+test_prep_core()
+test_prep_ligand()
+test_prep_ligand_split()
