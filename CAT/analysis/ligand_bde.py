@@ -16,7 +16,6 @@ from scm.plams.core.settings import Settings
 import qmflows
 
 from .jobs import (job_single_point, job_geometry_opt, job_freq)
-from .. import utils as CAT
 from ..utils import (get_time, type_to_string)
 from ..mol_utils import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
@@ -40,12 +39,13 @@ def init_bde(qd_df, arg):
 
     # Check if the calculation has been done already
     if not overwrite and 'qd' in arg.optional.database.read:
-        try:
-            for i in data.csv_qd[['BDE label', 'BDE dE', 'BDE dG', 'BDE ddG']]:
-                qd_df[i] = np.nan
-        except KeyError:
-            pass
-        data.from_csv(qd_df, database='QD', get_mol=False)
+        with data.open_csv_qd(data.csv_qd, write=False) as db:
+            try:
+                for i in db[['BDE label', 'BDE dE', 'BDE dG', 'BDE ddG']]:
+                    qd_df[i] = np.nan
+            except KeyError:
+                pass
+            data.from_csv(qd_df, database='QD', get_mol=False)
         qd_df.dropna(axis='columns', how='all', inplace=True)
 
     # Calculate the BDEs with thermochemical corrections
