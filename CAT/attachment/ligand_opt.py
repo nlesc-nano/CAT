@@ -66,7 +66,8 @@ def init_ligand_opt(ligand_df, arg):
 
             # Print messages
             print(get_time() + ligand.properties.name + message)
-        ligand_df['mol'] = lig_new
+        if lig_new:
+            ligand_df['mol'] = lig_new
         print('')
 
     # Write newly optimized structures to the database
