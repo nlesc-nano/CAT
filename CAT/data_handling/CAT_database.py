@@ -323,7 +323,7 @@ class Database():
                     f.write(yaml.dump(yml_dict, default_flow_style=False, indent=4))
             self.settings = False
 
-    class _open_csv_lig():
+    class open_csv_lig():
         """ Context manager for opening and closing the ligand database.
 
         :param str path: The path+filename to the database component.
@@ -351,7 +351,7 @@ class Database():
                 self.df.to_csv(self.path)
             self.df = None
 
-    class _open_csv_qd():
+    class open_csv_qd():
         """ Context manager for opening and closing the quantum dot database.
 
         :param str path: The path+filename to the database component.
@@ -379,23 +379,6 @@ class Database():
                 self.df.to_csv(self.path)
             self.df = None
 
-    def open_csv(self, path=None, database='ligand', write=True):
-        """ Calls the appropiate context manager for opening and closing the ligand or
-        quantum dot database.
-
-        :param str path: The path+filename to the database component.
-        :parameter str database: The type of database; accepted values are *ligand* and *QD*.
-        :param bool write: Whether or not the database file should be updated after
-            closing **self**.
-        """
-        if database == 'ligand':
-            self._open_csv_lig(path, write)
-        elif database == 'QD':
-            self._open_csv_qd(path, write)
-        else:
-            raise TypeError(str(database) + " is not an accepated value for the 'database' \
-                            argument")
-
     """ #################################  Updating the database ############################## """
 
     def update_csv(self, df, database='ligand', columns=None, overwrite=False, job_recipe=None):
@@ -415,8 +398,10 @@ class Database():
         # Operate on either the ligand or quantum dot database
         if database == 'ligand':
             path = self.csv_lig
+            open_csv = self.open_csv_lig
         elif database == 'QD':
             path = self.csv_qd
+            open_csv = self.open_csv_qd
 
         # Update **self.yaml**
         if job_recipe is not None:
@@ -424,7 +409,7 @@ class Database():
             for key in job_settings:
                 df[('settings', key)] = job_settings[key]
 
-        with self.open_csv(path, database) as db:
+        with open_csv(path, write=True) as db:
             # Update **db.index**
             nan_row = get_nan_row(db)
             for i in df.index:
@@ -544,11 +529,13 @@ class Database():
         # Operate on either the ligand or quantum dot database
         if database == 'ligand':
             path = self.csv_lig
+            open_csv = self.open_csv_lig
         elif database == 'QD':
             path = self.csv_qd
+            open_csv = self.open_csv_qd
 
         # Update the *hdf5 index* column in **df**
-        with self.open_csv(path, database, write=False) as db:
+        with open_csv(path, write=False) as db:
             df.update(db, overwrite=True)
             df['hdf5 index'] = df['hdf5 index'].astype(int, copy=False)
 

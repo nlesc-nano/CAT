@@ -22,16 +22,16 @@ accoring to their functionality:
         import CAT
 
         database = CAT.Database()
-        with database.open_csv(db.csv_lig, database='ligand') as db:
+        with database.open_csv_lig(db.csv_lig) as db:
             print('my ligand database')
         with database.open_yaml(db.yaml) as db:
             print('my job settings database')
         with h5py.File(db.hdf5) as db:
             print('my structure database')
 
-    =================  ==================  =================
-    :meth:`.open_csv`  :meth:`.open_yaml`  :meth:`h5py.File`
-    =================  ==================  =================
+    ======================  =====================  ===================  ==================
+    :class:`.open_csv_lig`  :class:`.open_csv_qd`  :class:`.open_yaml`  :class:`h5py.File`
+    ======================  =====================  ===================  ==================
 
 -   Importing to the database - these methods handle the importing of new data
     from python objects to the Database class:
