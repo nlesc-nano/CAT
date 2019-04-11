@@ -4,6 +4,9 @@ __all__ = ['init_ligand_anchoring']
 
 from itertools import chain
 
+import numpy as np
+import pandas as pd
+
 import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit import Chem
@@ -13,30 +16,65 @@ from ..mol_utils import separate_mod
 from ..data_handling.input_sanitizer import santize_smiles
 
 
-def init_ligand_anchoring(ligand_list, arg):
-    """ """
-    ret = []
-    for lig in ligand_list:
-        if not lig.properties.dummies:
-            ret += find_substructure(lig, split=arg.optional.ligand.split)
-        else:
-            if len(lig.properties.dummies) == 1:
+def init_ligand_anchoring(ligand_df, arg):
+    """ Initialize the ligand functional group searcher.
+
+    :parameter ligand_df: A dataframe of valid ligands.
+    :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index=|int|_, values=|plams.Molecule|_)
+    :parameter arg: A settings object containing all (optional) arguments.
+    :type arg: |plams.Settings|_ (superclass: |dict|_)
+    :return: A dataframe of ligands with functional groups that can serve as valid anchor points.
+    :rtype: |pd.DataFrame|_ (columns: |str|_, index=|str|_, values=|plams.Molecule|_)
+    """
+    # Find all functional groups; return a copy of each mol for each functional group
+    mol_list = []
+    for lig in ligand_df['mol']:
+        if not lig.properties.dummies:  # Functional group search
+            mol_list += find_substructure(lig, split=arg.optional.ligand.split)
+        else:  # Manual specification of a functional group
+            if len(lig.properties.dummies) == 1:  # optional.ligand.split = False
                 lig.properties.dummies = lig.properties.dummies[0] - 1
                 split = False
-            elif len(lig.properties.dummies) == 2:
+            elif len(lig.properties.dummies) == 2:  # optional.ligand.split = True
                 lig.properties.dummies = [i - 1 for i in lig.properties.dummies]
                 split = True
-            ret += [substructure_split(lig, lig.properties.dummies, split=split)]
-    return ret
+            mol_list += [substructure_split(lig, lig.properties.dummies, split=split)]
+
+    # Convert the results into a dataframe
+    return _get_df(mol_list)
+
+
+def _get_df(mol_list):
+    """ Create and return a new ligand dataframe.
+
+    :parameter mol_list: A list of PLAMS molecules.
+    :type mol_list: |list|_ [|plams.Molecule|_]
+    :return: A dataframe of ligands with functional groups that can serve as valid anchor points.
+    :rtype: |pd.DataFrame|_ (columns: |str|_, index=|str|_, values=|plams.Molecule|_)
+    """
+    # Create the dataframe index and columns
+    idx_tuples = [(mol.properties.smiles, mol.properties.anchor) for mol in mol_list]
+    idx = pd.MultiIndex.from_tuples(idx_tuples, names=['smiles', 'anchor'])
+    columns_tuples = [('mol', ''), ('formula', ''), ('hdf5 index', '')]
+    columns = pd.MultiIndex.from_tuples(columns_tuples, names=['index', 'sub index'])
+
+    # Create, fill and return the dataframe
+    df = pd.DataFrame(-1, index=idx, columns=columns)
+    df['mol'] = mol_list
+    df['formula'] = [lig.get_formula() for lig in df['mol']]
+    return df
 
 
 def find_substructure(ligand, split=True):
     """ Identify interesting functional groups within the ligand.
 
-    ligand <plams.Molecule>: The ligand molecule.
-    split <bool>: If a functional group should be split from the ligand (True) or not (False).
-
-    return <list>[<plams.Molecule>]: A copy of the ligand for each identified functional group.
+    :parameter ligand: The ligand molecule.
+    :type ligand: |plams.Molecule|_
+    :parameter bool split: If a functional group should be split from **ligand** (*True*)
+        or not (*False*).
+    :return: A list of ligands. A single copy of **ligand** is created for each identified
+        functional group, removing parts of the functional group if required (see **split**).
+    :rtype: |list|_ [|plams.Molecule|_].
     """
     rdmol = molkit.to_rdmol(ligand)
 
@@ -77,11 +115,14 @@ def substructure_split(ligand, idx, split=True):
     Delete the hydrogen or mono-/polyatomic counterion attached to the functional group.
     Sets the charge of the remaining heteroatom to -1 if split=True.
 
-    ligand <plams.Molecule>: The ligand molecule.
-    idx <list>[<int>, <int>]: A list of atomic indices associated with a functional group.
-    split <bool>: If a functional group should be split from the ligand (True) or not (False).
-
-    return <plams.Molecule>: The ligand molecule.
+    :parameter ligand: The ligand molecule.
+    :type ligand: |plams.Molecule|_
+    :parameter idx: A list of 2 atomic indices associated with a functional group.
+    :type idx: 2 |list|_ [|int|_]
+    :parameter bool split: If a functional group should be split from **ligand** (*True*)
+        or not (*False*).
+    :return: A copy of **ligand**, with part of its functional group removed (see **split**).
+    :rtype: |plams.Molecule|_
     """
     lig = ligand.copy()
     at1 = lig[idx[0] + 1]

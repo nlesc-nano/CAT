@@ -2,43 +2,82 @@
 
 __all__ = ['init_asa']
 
+import numpy as np
+
+from scm.plams.core.settings import Settings
 import scm.plams.interfaces.molecule.rdkit as molkit
 
+import rdkit
 from rdkit.Chem import AllChem
 
+from ..data_handling.CAT_database import Database
 
-def init_asa(plams_mol):
-    """ Perform an activation-strain analyses (RDKit UFF) on the ligands in the absence of the core.
 
-    plams_mol <plams.Molecule>: A PLAMS molecule.
-    return <plams.Molecule>: A PLAMS molecule with the int and int_mean properties.
+def init_asa(qd_df, arg):
+    """ Initialize the activation-strain analyses (RDKit UFF level) on the ligands in the
+    absence of the core.
+
+    :parameter qd_df: A dataframe of quantum dots.
+    :type qd_df: |pd.DataFrame|_ (columns: |str|_, index=|int|_, values=|plams.Molecule|_)
     """
-    mol_copy = plams_mol.copy()
-    uff = AllChem.UFFGetMoleculeForceField
+    data = Database(arg.optional.database.dirname)
+    overwrite = 'qd' in arg.optional.database.overwrite
 
-    # Calculate the total energy of all perturbed ligands in the absence of the core
-    for atom in reversed(mol_copy.atoms):
-        if atom.properties.pdb_info.ResidueName == 'COR':
-            mol_copy.delete_atom(atom)
+    # Prepare columns
+    columns = [('ASA', 'E_int'), ('ASA', 'E_strain'), ('ASA', 'E')]
+    for i in columns:
+        qd_df[i] = np.nan
 
-    rdmol = molkit.to_rdmol(mol_copy)
-    E_no_frag = uff(rdmol, ignoreInterfragInteractions=False).CalcEnergy()
+    # Fill columns
+    qd_df['ASA'] = get_asa_energy(qd_df['mol'])
 
-    # Calculate the total energy of the isolated perturbed ligands in the absence of the core
-    mol_frag = mol_copy.separate()
-    E_frag = 0.0
-    for mol in mol_frag:
-        rdmol = molkit.to_rdmol(mol)
-        E_frag += uff(rdmol, ignoreInterfragInteractions=False).CalcEnergy()
+    # Calculate E_int, E_strain and E
+    if 'qd' in arg.optional.database.write:
+        recipe = Settings()
+        recipe['ASA 1'] = {'key': 'RDKit_' + rdkit.__version__, 'value': 'UFF'}
+        data.update_csv(qd_df, columns=[('settings', 'ASA 1')]+columns,
+                        job_recipe=recipe, database='QD', overwrite=overwrite)
 
-    # Calculate the total energy of the optimized ligand
-    uff(rdmol, ignoreInterfragInteractions=False).Minimize()
-    E_opt = uff(rdmol, ignoreInterfragInteractions=False).CalcEnergy()
 
-    # Calculate E, Eint and Estrain
-    plams_mol.properties.energy.Eint = float(E_no_frag - E_frag)
-    plams_mol.properties.energy.Estrain = float(E_frag - (E_opt * len(mol_frag)))
-    plams_mol.properties.energy.E = (plams_mol.properties.energy.Eint
-                                     + plams_mol.properties.energy.Estrain)
+def get_asa_energy(mol_series):
+    """ Calculate the interaction, strain and total energy in the framework of the
+    activation-strain analysis (ASA).
+    The ASA is performed on all ligands in the absence of the core at the UFF level (RDKit).
 
-    return plams_mol
+    :parameter mol_series: A series of PLAMS molecules.
+    :type mol_series: |pd.Series|_ (index=|str|_, values: |plams.Molecule|_)
+    :return: An array containing E_int, E_strain and E for all *n* molecules in **mol_series**.
+    :rtype: *n*3* |np.ndarray|_ [|np.float64|_]
+    """
+    ret = np.zeros((len(mol_series), 4))
+
+    for i, mol in enumerate(mol_series):
+        mol_cp = mol.copy()
+        rd_uff = AllChem.UFFGetMoleculeForceField
+
+        # Calculate the total energy of all perturbed ligands in the absence of the core
+        for atom in reversed(mol_cp.atoms):
+            if atom.properties.pdb_info.ResidueName == 'COR':
+                mol_cp.delete_atom(atom)
+        rdmol = molkit.to_rdmol(mol_cp)
+        E_no_frag = rd_uff(rdmol, ignoreInterfragInteractions=False).CalcEnergy()
+
+        # Calculate the total energy of the isolated perturbed ligands in the absence of the core
+        mol_frag = mol_cp.separate()
+        E_frag = 0.0
+        for plams_mol in mol_frag:
+            rdmol = molkit.to_rdmol(plams_mol)
+            E_frag += rd_uff(rdmol, ignoreInterfragInteractions=False).CalcEnergy()
+
+        # Calculate the total energy of the optimized ligand
+        rd_uff(rdmol, ignoreInterfragInteractions=False).Minimize()
+        E_opt = rd_uff(rdmol, ignoreInterfragInteractions=False).CalcEnergy()
+
+        # Update ret with the new activation strain terms
+        ret[i] = E_no_frag, E_frag, E_opt, len(mol_frag)
+
+    # Post-process and return
+    ret[:, 0] -= ret[:, 1]
+    ret[:, 1] -= ret[:, 2] * ret[:, 3]
+    ret[:, 2] = ret[:, 0] + ret[:, 1]
+    return ret[:, 0:3]

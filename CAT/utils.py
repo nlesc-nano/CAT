@@ -26,6 +26,7 @@ def type_to_string(job):
         return job_dict[job]
     except KeyError:
         print(get_time() + 'WARNING: No default settings available for ' + str(job))
+        return False
 
 
 def get_time():
@@ -64,7 +65,7 @@ def dict_concatenate(dic):
 
 def get_template(template_name, from_cat_data=True):
     """
-    Grab a template and return it as Settings object.
+    Grab a yaml template and return it as Settings object.
     """
     if from_cat_data:
         path = join('data/templates', template_name)

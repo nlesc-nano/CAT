@@ -34,7 +34,6 @@ setup(
     package_dir={'CAT': 'CAT'},
     package_data={
         'CAT': [
-            'data/templates/*json',
             'data/templates/*yaml',
             'data/coskf/*coskf'
         ]
@@ -47,6 +46,7 @@ setup(
     zip_safe=False,
     keywords=[
         'quantum-mechanics',
+        'molecular-mechanics',
         'science',
         'chemistry',
         'python-3',

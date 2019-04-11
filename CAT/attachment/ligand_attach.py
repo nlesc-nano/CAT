@@ -3,38 +3,126 @@
 __all__ = ['init_qd_construction']
 
 import numpy as np
+import pandas as pd
 from scipy.spatial.distance import cdist
 
 from scm.plams.mol.molecule import Molecule
 from scm.plams.core.settings import Settings
 
-from ..utils import get_time
+from ..utils import (get_time, type_to_string)
 from ..mol_utils import (merge_mol, get_atom_index)
-from ..data_handling.database import (mol_from_database, mol_to_database)
+from ..data_handling.CAT_database import (Database, mol_to_file)
 
 
-def init_qd_construction(ligand_list, core_list, arg):
-    """ Initialize the quantum dot construction. """
+def init_qd_construction(ligand_df, core_df, arg):
+    """ Initialize the quantum dot construction.
+
+    :parameter ligand_df: A dataframe of ligands.
+    :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
+    :parameter core_df: A dataframe of cores.
+    :type core_df: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
+    :parameter arg: A settings object containing all (optional) arguments.
+    :type arg: |plams.Settings|_ (superclass: |dict|_).
+    :return: A dataframe of quantum dots.
+    :rtype: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
+    """
+    overwrite = 'qd' in arg.optional.database.overwrite
+    data = Database(path=arg.optional.database.dirname)
+
     # Attempt to pull structures from the database
+    qd_df = _get_df(core_df.index, ligand_df.index)
     if 'qd' in arg.optional.database.read:
-        qd_list = mol_from_database(ligand_list, arg, 'qd', mol_list2=core_list)
-    else:
-        qd_list = [(core, ligand) for core in core_list for ligand in ligand_list]
+        mol_series1 = data.from_csv(qd_df, database='QD', inplace=False)
+        for i, mol in mol_series1.iteritems():
+            mol.properties = Settings()
+            mol.properties.indices = _get_indices(mol, i)
+            mol.properties.path = arg.optional.qd.dirname
+            mol.properties.name = core_df.at[(i[0:2]), ('mol', '')].properties.name + '__'
+            mol.properties.name += str(mol[-1].properties.pdb_info.ResidueNumber - 1)
+            mol.properties.name += '_' + ligand_df.at[(i[2:4]), ('mol', '')].properties.name
+            print(get_time() + mol.properties.name + '\t has been pulled from the database')
+        print('')
 
-    # Combine core and ligands into quantum dots
-    for i, qd in enumerate(qd_list):
-        if not isinstance(qd, Molecule):
-            qd_list[i] = ligand_to_qd(qd[0], qd[1], arg)
-            print(get_time() + qd_list[i].properties.name + '\t has been constructed')
-        else:
-            print(get_time() + qd.properties.name + '\t pulled from QD_database.csv')
+    # Identify and create the to be constructed quantum dots
+    idx = qd_df['hdf5 index'] < 0
+    mol_list = [ligand_to_qd(core_df['mol'][(i, j)], ligand_df['mol'][(k, l)], arg) for
+                i, j, k, l in qd_df.index[idx]]
+    mol_series2 = pd.Series(mol_list, index=qd_df.index[idx], name=('mol', ''), dtype=object)
     print('')
+
+    # Update the *mol* column in qd_df with 1 or 2 series of quantum dots
+    try:
+        qd_df['mol'] = mol_series1.append(mol_series2)
+    except NameError:
+        qd_df['mol'] = mol_series2
 
     # Export the resulting geometries back to the database
     if 'qd' in arg.optional.database.write and not arg.optional.qd.optimize:
-        mol_to_database(qd_list, arg, 'qd')
+        recipe = Settings()
+        recipe['1'] = {'key': 'None', 'value': 'None'}
+        data.update_csv(qd_df, columns=['hdf5 index', 'ligand count'],
+                        job_recipe=recipe, database='QD')
+        path = arg.optional.qd.dirname
+        mol_to_file(qd_df['mol'], path, overwrite, arg.optional.database.mol_format)
+    return qd_df
 
-    return qd_list
+
+def _get_indices(mol, index):
+    """ Return a list with the indices of all atoms in the core of **mol** plus the ligand anchor
+    atoms. Ligand anchor atoms are furthermore marked with the properties.anchor attribute.
+
+    :parameter mol: A PLAMS molecule.
+    :type mol: |plams.Molecule|_
+    :parameter index: A tuple of 4 strings.
+    :type index: *4* |tuple|_ [|str|_]
+    :return: A list of atomic indices
+    :rtype: |list|_ [|int|_]
+    """
+    # Collect the indices of the atoms in the core
+    ret = []
+    for i, at in enumerate(mol, 1):
+        if at.properties.pdb_info.ResidueName == 'COR':
+            ret.append(i)
+        else:
+            break
+
+    # Extract the index (within the ligand) of the ligand anchor atom
+    index = index[3]
+    for j, _ in enumerate(index):
+        try:
+            k = int(index[j:]) - 1
+            break
+        except ValueError:
+            pass
+    k += i
+
+    # Append and return
+    ref_name = mol[k].properties.pdb_info.Name
+    for i, at in enumerate(mol.atoms[k:], k+1):
+        if at.properties.pdb_info.Name == ref_name:
+            at.properties.anchor = True
+            ret.append(i)
+    return ret
+
+
+def _get_df(core_index, ligand_index):
+    """ Create and return a new quantum dot dataframe.
+
+    :parameter core_index: A multiindex of the cores.
+    :type core_index: |pd.MultiIndex|_
+    :parameter ligand_index: A multiindex of the ligands.
+    :type ligand_index: |pd.MultiIndex|_
+    :return: An empty (*i.e.* filled with -1) dataframe of quantum dots.
+    :rtype: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |np.int64|_)
+    """
+    idx_tups = [(i, j, k, l) for i, j in core_index for k, l in ligand_index]
+    index = pd.MultiIndex.from_tuples(
+            idx_tups,
+            names=['core', 'core anchor', 'ligand smiles', 'ligand anchor']
+    )
+    column_tups = [('hdf5 index', ''), ('ligand count', '')]
+    columns = pd.MultiIndex.from_tuples(column_tups, names=['index', 'sub index'])
+    return pd.DataFrame(-1, index=index, columns=columns)
 
 
 def ligand_to_qd(core, ligand, arg):
@@ -42,11 +130,14 @@ def ligand_to_qd(core, ligand, arg):
     Function that handles quantum dot (qd, i.e. core + all ligands) operations.
     Combine the core and ligands and assign properties to the quantom dot.
 
-    core <plams.Molecule>: The core molecule.
-    ligand <plams.Molecule>: The ligand molecule.
-    arg <dict>: A dictionary containing all (optional) arguments.
-
-    return <plams.Molecule>: The quantum dot (core + n*ligands).
+    :parameter core: A core molecule.
+    :type core: |plams.Molecule|_
+    :parameter ligand: A ligand molecule.
+    :type ligand: |plams.Molecule|_
+    :parameter arg: A settings object containing all (optional) arguments.
+    :type arg: |plams.Settings|_ (superclass: |dict|_)
+    :return: A quantum dot consisting of a core molecule and *n* ligands
+    :rtype: |plams.Molecule|_
     """
     # Define vectors and indices used for rotation and translation the ligands
     vec1 = sanitize_dim_2(ligand.properties.dummies) - np.array(ligand.get_center_of_mass())
@@ -59,22 +150,17 @@ def ligand_to_qd(core, ligand, arg):
     qd = core.copy()
     array_to_qd(ligand, lig_array, mol_other=qd)
 
-    # indices of all the atoms in the core and the ligand heteroatom anchor.
-    qd_indices = [i for i, at in enumerate(qd, 1) if at.properties.pdb_info.ResidueName == 'COR' or
-                  at.properties.anchor]
-
-    # Prepare the QD properties
+    # Set properties
     qd.properties = Settings()
-    qd.properties.indices = qd_indices
+    qd.properties.indices = [i for i, at in enumerate(qd, 1) if
+                             at.properties.pdb_info.ResidueName == 'COR' or at.properties.anchor]
     qd.properties.path = arg.optional.qd.dirname
-    qd.properties.core = core.properties.formula
-    qd.properties.core_anchor = core.properties.anchor
-    qd.properties.ligand = ligand.properties.smiles
-    qd.properties.ligand_anchor = ligand.properties.anchor
-    qd.properties.ligand_count = qd[-1].properties.pdb_info.ResidueNumber - 1
-    qd.properties.name = core.properties.name + '__' + str(qd.properties.ligand_count)
+    qd.properties.name = core.properties.name + '__'
+    qd.properties.name += str(qd[-1].properties.pdb_info.ResidueNumber - 1)
     qd.properties.name += '_' + ligand.properties.name
 
+    # Print and return
+    print(get_time() + qd.properties.name + '\t has been constructed')
     return qd
 
 
@@ -132,20 +218,23 @@ def rot_mol(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=False, s
     xyz_array and mol_other; Atomic coordinates will be extracted if necessary and cast into an
     appropriately shaped array.
 
-    xyz_array <np.ndarray>: A m*n*3 array, a n*3 numpy array or a (nested) iterable consisting of
-        the to be rotated PLAMS atoms.
-    vec1 & vec2 <np.ndarray>: Two n*3 and/or 3 arrays representing one or more vectors.
-        vec1 defines the initial vector(s) and vec2 defines the final vector(s) adopted by the to
-        be rotated molecule(s).
-    atoms_other <None> or <plams.Molecule>: None or a n*3 array, a 3 numpy array, a PLAMS atom or
-        iterable consisting of PLAMS atoms. All molecules will be translated to ensure that the
-        atom with the index idx adopts the same position as mol_other.
-    idx <int>: An atomic index or iterable consisting of multiple atomic indices.
-    bond_length <float>: A float or iterable consisting of floats. After translation from
-        xyz_array[:, idx] to mol_other, xyz_array will be further translated along vec2 by
-        a user-specified bond length.
-    return <np.ndarray>: A m*n*3 array or n*3 array representing xyz coordinates of m rotated
-        molecules, each consisting of n atoms.
+    :parameter xyz_array: An 3d array or list of PLAMS to be rotated PLAMS molecules consisting of
+        *m* molecules with up to *n* atoms.
+    :type xyz_array: *m*n*3* |np.ndarray|_ [|np.float64|_] or *m* |list|_ [|plams.Molecule|_]
+    :parameter vec1: One or multiple vectors representing the initial orientation of **xyz_array**.
+    :type vec1: *m*3* or *3* |np.ndarray|_ [|np.float64|_]
+    :parameter vec1: One or multiple vectors representing the final orientation of **xyz_array**.
+    :type vec2: *m*3* or *3* |np.ndarray|_ [|np.float64|_]
+    :parameter idx: An atomic index or iterable consisting of multiple atomic indices. Translate
+        **xyz_array**[:, **idx**] to **atoms_other**.
+    :type idx: |int|_ or *m* |np.ndarray|_ [|np.int64|_]
+    :parameter atoms_other: A list of PLAMS atoms or a 2d array. Translate
+        **xyz_array**[:, **idx**] to **atoms_other**.
+    :type atoms_other: |None|_, *m* |list|_ [|plams.Atom|_] or *m*3* |np.ndarray|_ [|np.float64|_]
+    :parameter bond_length: The distance(s) between **idx** and **atoms_other**.
+    :type bond_length: |float|_ or *m* |np.ndarray|_ [|np.float64|_]
+    :return: An array with *m* rotated molecules with up to *n* atoms.
+    :rtype: *m*n*3* or *n*3* |np.ndarray|_ [|np.float64|_].
     """
     # Turn all arguments into numpy arrays with appropiate dimensions
     xyz_array = sanitize_dim_3(xyz_array)

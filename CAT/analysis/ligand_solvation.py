@@ -3,68 +3,80 @@
 __all__ = ['init_solv']
 
 import os
+from itertools import product
 from os.path import (join, dirname)
 
 import numpy as np
-import pandas as pd
 
+from scm.plams.core.settings import Settings
 from scm.plams.core.jobrunner import JobRunner
 from scm.plams.core.functions import (init, finish)
 from scm.plams.interfaces.adfsuite.adf import ADFJob
 
+import qmflows
+
 from .crs import CRSJob
 from .. import utils as CAT
-from ..utils import get_time
-from ..data_handling.database import (property_to_database, get_empty_columns)
+from ..utils import (get_time, type_to_string)
+from ..data_handling.CAT_database import Database
 
 
-def init_solv(mol_list, arg, solvent_list=None):
-    """ Initialize the solvation energy calculation. """
+def init_solv(ligand_df, arg, solvent_list=None):
+    """ Initialize the ligand solvation energy calculation.
+    Performs an inplace update of **ligand_df**, creating 2 sets of columns (*E_solv* & *gamma*)
+    to hold all solvation energies and activity coefficients, respectively.
+
+    :parameter ligand_df: A dataframe of ligands.
+    :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index: |int|_, values: |plams.Molecule|_)
+    :parameter arg: A settings object containing all (optional) arguments.
+    :type arg: |plams.Settings|_ (superclass: |dict|_).
+    :parameter solvent_list: A list of paths to the .t21 or .coskf files of solvents. If *None*,
+        use the default .coskf files distributed with CAT (see CAT.data.coskf).
+    :type solvent_list: |None|_ or |list|_ [|str|_].
+    """
+    data = Database(path=arg.optional.database.dirname)
+
     # Prepare the job settings and solvent list
-    job_recipe = arg.optional.ligand.crs
+    j1, j2 = arg.optional.ligand.crs.job1, arg.optional.ligand.crs.job2
+    s1, s2 = arg.optional.ligand.crs.s1, arg.optional.ligand.crs.s2
     if solvent_list is None:
         path = join(join(dirname(dirname(__file__)), 'data'), 'coskf')
         solvent_list = [join(path, solv) for solv in os.listdir(path) if
                         solv not in ('__init__.py', 'README.rst')]
     solvent_list.sort()
 
-    # Prepare the dataframe
-    df = _get_solv_df(solvent_list)
+    # Update the columns of **ligand_df**
+    columns = [i.rsplit('.', 1)[0].rsplit('/', 1)[-1] for i in solvent_list]
+    columns = list(product(('E_solv', 'gamma'), columns))
+    for item in columns:
+        ligand_df[item] = np.nan
 
-    # Check if the calculation has been donealready
-    if 'ligand' not in arg.optional.database.overwrite:
-        previous_entries = get_empty_columns('E_solv', arg, database='ligand')
-        mol_list = [mol for mol in mol_list if
-                    (mol.properties.smiles, mol.properties.anchor) not in previous_entries]
-        if not mol_list:
-            return
+    # Check if the calculation has been done already
+    overwrite = 'ligand' in arg.optional.database.overwrite
+    if not overwrite and 'ligand' in arg.optional.database.read:
+        data.from_csv(ligand_df, database='ligand', get_mol=False)
 
     # Run COSMO-RS
-    init(path=mol_list[0].properties.path, folder='ligand_solvation')
-    for mol in mol_list:
-        coskf = get_surface_charge(mol, job=job_recipe.job1, s=job_recipe.s1)
-        E_solv, gamma = get_solv(mol, solvent_list, coskf, job=job_recipe.job2, s=job_recipe.s2)
-
-        key = mol.properties.smiles, mol.properties.anchor
-        df[key] = None
-        df[key]['E_solv'] = E_solv
-        df[key]['gamma'] = gamma
-    finish()
+    idx = ligand_df[['E_solv', 'gamma']].isna().all(axis='columns')
+    if idx.any():
+        init(path=ligand_df['mol'][0].properties.path, folder='ligand_solvation')
+        for i, mol in ligand_df['mol'][idx].iteritems():
+            coskf = get_surface_charge(mol, job=j1, s=s1)
+            ligand_df.loc[i, 'E_solv'], ligand_df.loc[i, 'gamma'] = get_solv(mol, solvent_list,
+                                                                             coskf, job=j2, s=s2)
+        finish()
+        print('')
 
     # Update the database
     if 'ligand' in arg.optional.database.write:
-        del df[(None, None)]
-        property_to_database(df, arg, database='ligand', prop='cosmo-rs')
-
-
-def _get_solv_df(solvent_list):
-    """ Return an empty dataframe for init_solv(). """
-    index = ['E_solv', 'gamma'], [i.rsplit('.', 1)[0].rsplit('/', 1)[-1] for i in solvent_list]
-    index = [(i, j) for j in index[1] for i in index[0]]
-    index += [('solv settings1', ''), ('solv settings2', '')]
-    idx = pd.MultiIndex.from_tuples(index, names=['index', 'sub index'])
-    columns = pd.MultiIndex.from_tuples([(None, None)], names=['smiles', 'anchor'])
-    return pd.DataFrame(index=idx, columns=columns)
+        value1 = qmflows.singlepoint['specific'][type_to_string(j1)].copy()
+        value1.update(s1)
+        recipe = Settings()
+        recipe['solv 1'] = {'key': j1, 'value': value1}
+        recipe['solv 2'] = {'key': j2, 'value': s2}
+        data.update_csv(ligand_df, database='ligand',
+                        columns=[('settings', 'solv 1'), ('settings', 'solv 2')]+columns,
+                        overwrite=overwrite, job_recipe=recipe)
 
 
 def get_surface_charge(mol, job=None, s=None):
@@ -81,11 +93,11 @@ def get_surface_charge(mol, job=None, s=None):
 
 def get_solv(mol, solvent_list, coskf, job=None, s=None):
     """ Calculate the solvation energy of *mol* in various *solvents*. """
-    # Return 2x None if no coskf is None
+    # Return 2x np.nan if no coskf is None (i.e. the COSMO-surface construction failed)
     if coskf is None:
         return np.nan, np.nan
 
-    # Prepare the job settings
+    # Prepare a list of job settings
     s.input.Compound._h = coskf
     s.ignore_molecule = True
     s_list = []

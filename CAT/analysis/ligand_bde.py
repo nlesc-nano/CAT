@@ -2,121 +2,186 @@
 
 __all__ = ['init_bde']
 
-from itertools import chain, combinations
+from itertools import chain, combinations, product
 
 import numpy as np
-import pandas as pd
 from scipy.spatial.distance import cdist
 
+from scm.plams import PeriodicTable
 from scm.plams.mol.molecule import Molecule
 from scm.plams.mol.atom import Atom
 from scm.plams.core.functions import (init, finish, config)
 from scm.plams.core.settings import Settings
-from scm.plams.interfaces.adfsuite.ams import AMSJob
+
+import qmflows
 
 from .jobs import (job_single_point, job_geometry_opt, job_freq)
-from .. import utils as CAT
-from ..utils import get_time
+from ..utils import (get_time, type_to_string)
 from ..mol_utils import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
-from ..data_handling.database import (property_to_database, get_empty_columns, _anchor_to_idx)
+from ..data_handling.CAT_database import Database
 
 
-def init_bde(mol_list, arg):
+def init_bde(qd_df, arg):
     """ Initialize the bond dissociation energy calculation; involves 4 distinct steps:
-    1.  Take two ligands X and another atom from the core Y (e.g. Cd) and create YX2.
-    2.  Create all n*2*(n-1) possible molecules where YX2 is dissociated.
+    1.  Take *n* ligands (X) and another atom from the core (Y, *e.g.* Cd) and create YX*n*.
+    2.  Given a radius *r*, dissociate all possible YX*n* pairs.
     3.  Calculate dE: the "electronic" component of the bond dissociation energy (BDE).
-    4.  Calculate ddG: the thermal and entropic component of the BDE.
+    4.  (Optional) Calculate ddG: the thermal and entropic component of the BDE.
 
-    mol_list <list> [<plams.Molecule>]: A list of PLAMS molecule.
-    job1 <type> & s1 <Settings>: A type object of a job and its settings; used in step 3.
-    job2 <type> & s2 <Settings>: A type object of a job and its settings; used in step 4.
-    return <pd.DataFrame>: A pandas dataframe with ligand residue numbers, Cd topology and BDEs.
+    :parameter qd_df: A dataframe of quantum dots.
+    :type qd_df: |pd.DataFrame|_ (columns: |str|_, index=|str|_, values=|plams.Molecule|_)
+    :parameter arg: A settings object containing all (optional) arguments.
+    :type arg: |plams.Settings|_ (superclass: |dict|_).
     """
-    # Prepare the job settings
-    job_recipe = arg.optional.qd.dissociate
+    data = Database(arg.optional.database.dirname)
+    overwrite = 'qd' in arg.optional.database.overwrite
 
     # Check if the calculation has been done already
-    if 'qd' not in arg.optional.database.overwrite:
-        empty_columns = get_empty_columns('BDE dE', arg, database='qd')
-        mol_list = [mol for mol in mol_list if
-                    (mol.properties.core, mol.properties.core_anchor,
-                     mol.properties.ligand, mol.properties.ligand_anchor) in empty_columns]
-        if not mol_list:
+    if not overwrite and 'qd' in arg.optional.database.read:
+        with data.open_csv_qd(data.csv_qd, write=False) as db:
+            try:
+                for i in db[['BDE label', 'BDE dE', 'BDE dG', 'BDE ddG']]:
+                    qd_df[i] = np.nan
+            except KeyError:
+                pass
+            data.from_csv(qd_df, database='QD', get_mol=False)
+        qd_df.dropna(axis='columns', how='all', inplace=True)
+
+    # Calculate the BDEs with thermochemical corrections
+    if arg.optional.qd.dissociate.job2 and arg.optional.qd.dissociate.s2:
+        _bde_w_dg(qd_df, arg)
+
+    # Calculate the BDEs without thermochemical corrections
+    else:
+        _bde_wo_dg(qd_df, arg)
+
+
+def _bde_w_dg(qd_df, arg):
+    """ Calculate the BDEs with thermochemical corrections.
+
+    :parameter qd_df: A dataframe of quantum dots.
+    :type qd_df: |pd.DataFrame|_ (columns: |str|_, index=|str|_, values=|plams.Molecule|_)
+    :parameter arg: A settings object containing all (optional) arguments.
+    :type arg: |plams.Settings|_ (superclass: |dict|_).
+    """
+    data = Database(arg.optional.database.dirname)
+    overwrite = 'qd' in arg.optional.database.overwrite
+
+    # Prepare the job settings
+    j1, j2 = arg.optional.qd.dissociate.job1, arg.optional.qd.dissociate.job2
+    s1, s2 = arg.optional.qd.dissociate.s1, arg.optional.qd.dissociate.s2
+
+    try:
+        has_na = qd_df[['BDE dE', 'BDE dG']].isna().all(axis='columns')
+        if not has_na.any():
             return
+    except KeyError:
+        has_na = qd_df.index
 
-    # Prepare the dataframe
-    df = _get_bde_df()
-    for mol in mol_list:
-        # Ready YX2 and the YX2 dissociated quantum dots
-        lig = get_cdx2(mol)
-        core = dissociate_ligand(mol, arg)
+    for i, mol in qd_df['mol'][has_na].iteritems():
+        # Create XYn and all XYn-dissociated quantum dots
+        xyn = get_xy2(mol)
+        mol_wo_xyn = dissociate_ligand(mol, arg)
 
-        # Construct a Series
-        index = [i.properties.df_index for i in core]
-        series = _get_bde_series(index, mol, job_recipe.job2)
+        # Construct new columns for **qd_df**
+        values = [i.properties.df_index for i in mol_wo_xyn]
+        n = len(values)
+        sub_idx = np.arange(n)
+        super_idx = ['BDE label', 'BDE dE', 'BDE ddG', 'BDE dG']
+        idx = list(product(super_idx, sub_idx))
+        for j in idx:
+            if j not in qd_df.index:
+                qd_df[j] = np.nan
 
-        # Fill the series with energies
+        # Prepare slices
+        label_slice = i, idx[0:n]
+        dE_slice = i, idx[n:2*n]
+        ddG_slice = i, idx[2*n:3*n]
+
+        # Run the BDE calculations
         init(path=mol.properties.path, folder='BDE')
         config.default_jobmanager.settings.hashing = None
-        series['BDE dE'] = get_bde_dE(mol, lig, core, job=job_recipe.job1, s=job_recipe.s1)
-        if job_recipe.job2 and job_recipe.s2:
-            series['BDE ddG'] = get_bde_ddG(mol, lig, core, job=job_recipe.job2, s=job_recipe.s2)
-            series['BDE dG'] = series['BDE dE'] + series['BDE ddG']
+        qd_df.loc[label_slice] = values
+        qd_df.loc[dE_slice] = get_bde_dE(mol, xyn, mol_wo_xyn, job=j1, s=s1)
+        qd_df.loc[ddG_slice] = get_bde_ddG(mol, xyn, mol_wo_xyn, job=j2, s=s2)
+        finish()
+    qd_df['BDE dG'] = qd_df['BDE dE'] + qd_df['BDE ddG']
+
+    # Update the database
+    if 'qd' in arg.optional.database.write:
+        value1 = qmflows.singlepoint['specific'][type_to_string(j1)].copy()
+        value1.update(s1)
+        value2 = qmflows.freq['specific'][type_to_string(j2)].copy()
+        value2.update(s2)
+        recipe = Settings()
+        recipe['BDE 1'] = {'key': j1, 'value': value1}
+        recipe['BDE 2'] = {'key': j2, 'value': value2}
+        data.update_csv(qd_df, database='QD', job_recipe=recipe, overwrite=overwrite,
+                        columns=[('settings', 'BDE 1'), ('settings', 'BDE 2')]+idx)
+
+
+def _bde_wo_dg(qd_df, arg):
+    """ Calculate the BDEs without thermochemical corrections.
+
+    :parameter qd_df: A dataframe of quantum dots.
+    :type qd_df: |pd.DataFrame|_ (columns: |str|_, index=|str|_, values=|plams.Molecule|_)
+    :parameter arg: A settings object containing all (optional) arguments.
+    :type arg: |plams.Settings|_ (superclass: |dict|_).
+    """
+    data = Database(arg.optional.database.dirname)
+    overwrite = 'qd' in arg.optional.database.overwrite
+
+    # Prepare the job settings
+    j1 = arg.optional.qd.dissociate.job1
+    s1 = arg.optional.qd.dissociate.s1
+
+    try:
+        has_na = qd_df['BDE dE'].isna().all(axis='columns')
+        if not has_na.any():
+            return
+    except KeyError:
+        has_na = qd_df.index
+
+    for i, mol in qd_df['mol'][has_na].iteritems():
+        # Create XYn and all XYn-dissociated quantum dots
+        xyn = get_xy2(mol)
+        mol_wo_xyn = dissociate_ligand(mol, arg)
+
+        # Construct new columns for **qd_df**
+        values = [i.properties.df_index for i in mol_wo_xyn]
+        n = len(values)
+        sub_idx = np.arange(n)
+        super_idx = ['BDE label', 'BDE dE']
+        idx = list(product(super_idx, sub_idx))
+        for j in idx:
+            if j not in qd_df.index:
+                qd_df[j] = np.nan
+
+        # Prepare slices
+        label_slice = i, idx[0:n]
+        dE_slice = i, idx[n:2*n]
+
+        # Run the BDE calculations
+        init(path=mol.properties.path, folder='BDE')
+        config.default_jobmanager.settings.hashing = None
+        qd_df.loc[label_slice] = values
+        qd_df.loc[dE_slice] = get_bde_dE(mol, xyn, mol_wo_xyn, job=j1, s=s1)
         finish()
 
-        # Update the indices of df
-        for i in series.index:
-            if i not in df.index:
-                df.loc[i, :] = None
-
-        # Update the values of df
-        df[series.name] = series
-
-    # Export the BDE results to the database
-    del df[(None, None, None, None)]
+    # Update the database
     if 'qd' in arg.optional.database.write:
-        property_to_database(df, arg, database='qd', prop='bde')
-
-
-def _get_bde_df():
-    """ Return an empty dataframe for init_bde(). """
-    idx_names = ['index', 'sub index']
-    idx = pd.MultiIndex(levels=[[], []], codes=[[], []], names=idx_names)
-    column_names = ['core', 'core_anchor', 'ligand smiles', 'ligand anchor']
-    columns = pd.MultiIndex.from_tuples([(None, None, None, None)], names=column_names)
-    return pd.DataFrame(index=idx, columns=columns)
-
-
-def _get_bde_series(index, mol, job2=True):
-    """ Return an empty series for the for loop in init_bde(). """
-    name = (mol.properties.core, mol.properties.core_anchor,
-            mol.properties.ligand, mol.properties.ligand_anchor)
-    if job2:
-        super_index = ['BDE dE', 'BDE ddG', 'BDE dG']
-    else:
-        super_index = ['BDE dE']
-    index = [(i, j) for j in index for i in super_index]
-    index.sort()
-    index.append(('BDE settings1', ''))
-    if job2:
-        index.append(('BDE settings2', ''))
-    idx = pd.MultiIndex.from_tuples(index, names=['index', 'sub index'])
-    return pd.Series(None, index=idx, name=name)
+        recipe = Settings()
+        value = qmflows.singlepoint[type_to_string(j1)]
+        value.update(s1)
+        recipe['BDE 1'] = {'key': j1, 'value': value}
+        data.update_csv(qd_df, database='QD', job_recipe=recipe, overwrite=overwrite,
+                        columns=[('settings', 'BDE 1')]+idx)
 
 
 def get_bde_dE(tot, lig, core, job=None, s=None):
     """ Calculate the bond dissociation energy: dE = dE(mopac) + (dG(uff) - dE(uff))
     """
-    # Switch to default settings if no job & s are <None>
-    if job is None and s is None:
-        job = AMSJob
-        s = CAT.get_template('qd.yaml')['MOPAC']
-    elif job is None or s is None:
-        finish()
-        raise TypeError('job & s should neither or both be None')
-
     # Optimize XYn
     lig.job_geometry_opt(job, s, name='BDE_geometry_optimization')
     E_lig = lig.properties.energy.E
@@ -146,14 +211,6 @@ def get_bde_dE(tot, lig, core, job=None, s=None):
 def get_bde_ddG(tot, lig, core, job=None, s=None):
     """ Calculate the bond dissociation energy: dE = dE(mopac) + (dG(uff) - dE(uff))
     """
-    # Switch to default settings if no job & s are <None>
-    if job is None and s is None:
-        job = AMSJob
-        s = CAT.get_template('qd.yaml')['UFF']
-    elif job is None or s is None:
-        finish()
-        raise TypeError('job & s should neither or both be None')
-
     # Optimize XYn
     s.input.ams.Constraints.Atom = lig.properties.indices
     lig.job_freq(job, s, name='BDE_frequency_analysis')
@@ -188,9 +245,17 @@ def get_bde_ddG(tot, lig, core, job=None, s=None):
     return ddG
 
 
-def get_cdx2(mol, ion='Cd'):
-    """ Takes a quantum dot with ligands (X) and an ion (Y) and turns it into YX2.
-    Returns the total energy of YX2 at the MOPAC level of theory. """
+def get_xy2(mol, ion='Cd', lig_count=2):
+    """ Takes a quantum dot with ligands (Y) and an ion (X) and turns it into YXn.
+    Returns a XYn molecule.
+
+    :parameter mol: A PLAMS molecule containing with ligands (Y).
+    :type mol: |plams.Molecule|_
+    :parameter str ion: An atomic symbol (X).
+    :parameter int lig_count: The number of ligand (*n*) in XYn.
+    :return: A new XYn molecule.
+    :rtype: plams.Molecule.
+    """
     def get_anchor(mol):
         """ Return an index and atom if marked with the properties.anchor attribute """
         for i, at in enumerate(mol.atoms):
@@ -198,7 +263,7 @@ def get_cdx2(mol, ion='Cd'):
                 return i, at
 
     def get_ligand(mol):
-        """ Extract a single ligand from *mol*. """
+        """ Extract a single ligand from **mol**. """
         at_list = []
         res = mol.atoms[-1].properties.pdb_info.ResidueNumber
         for at in reversed(mol.atoms):
@@ -215,7 +280,8 @@ def get_cdx2(mol, ion='Cd'):
     lig2 = lig1.copy()
     idx1, anchor1 = get_anchor(lig1)
     idx2, anchor2 = get_anchor(lig2)
-    target = np.array([2.2, 0.0, 0.0])
+    radius = anchor1.radius + PeriodicTable.get_radius(ion)
+    target = np.array([radius, 0.0, 0.0])
     lig1.translate(anchor1.vector_to(target))
     lig2.translate(anchor2.vector_to(-target))
 
@@ -235,7 +301,7 @@ def get_cdx2(mol, ion='Cd'):
     CdX2 = Molecule()
     CdX2.add_atom(Atom(atnum=to_atnum(ion)))
     CdX2.merge_mol([lig1, lig2])
-    CdX2.properties.name = 'YX2'
+    CdX2.properties.name = 'XYn'
     CdX2.properties.path = mol.properties.path
     CdX2.properties.indices = [1, 1 + idx1, 2 + len(lig2) + idx2]
 
@@ -244,6 +310,7 @@ def get_cdx2(mol, ion='Cd'):
 
 def dissociate_ligand(mol, arg):
     """ Create all XYn dissociated quantum dots.
+
     :parameter mol: A PLAMS molecule.
     :type mol: |plams.Molecule|_
     :parameter arg: A settings object containing all (optional) arguments.
@@ -313,6 +380,7 @@ def remove_ligands(mol, combinations_dict, indices, idx_lig):
 def filter_core(xyz_array, idx, topology_dict={6: 'vertice', 7: 'edge', 9: 'face'}, max_dist=5.0):
     """ Find all atoms (**idx**) in **xyz_array** which are exposed to the surface
     and assign a topology to aforementioned atoms based on the number of neighbouring atoms.
+
     :parameter xyz_array: An array with the cartesian coordinates of a molecule with *n* atoms.
     :type xyz_array: *n*3* |np.ndarray|_ [|np.float64|_]
     :parameter idx: An array of atomic indices in **xyz_array**.
@@ -352,6 +420,7 @@ def get_topology(bincount, topology_dict={6: 'vertice', 7: 'edge', 9: 'face'}):
     """ Translate the number of neighbouring atoms (**bincount**) into a list of topologies.
     If a specific number of neighbours (*i*) is absent from **topology_dict** then that particular
     element is set to a generic str(*i*) + '_neighbours'.
+
     :parameter bincount: An array with the number of neighbours per atom for a total of *n* atoms.
     :type bincount: *n* |np.ndarray|_ [|np.int64|_]
     :parameter topology_dict: A dictionary which maps the number of neighbours (per atom) to a
@@ -374,6 +443,7 @@ def get_topology(bincount, topology_dict={6: 'vertice', 7: 'edge', 9: 'face'}):
 def filter_lig_core(xyz_array, idx_lig, idx_core, max_dist=5.0, lig_count=2):
     """ Create and return the indices of all possible ligand/pairs that can be constructed within a
     given radius (**max_dist**).
+
     :parameter xyz_array: An array with the cartesian coordinates of a molecule with *n* atoms.
     :type xyz_array: *n*3* |np.ndarray|_ [|np.float64|_]
     :parameter idx: An array of all ligand anchor atoms (Y).
@@ -397,6 +467,7 @@ def filter_lig_core(xyz_array, idx_lig, idx_core, max_dist=5.0, lig_count=2):
 
 def get_lig_core_combinations(xy, res_list, lig_count=2):
     """ Given an array of indices (**xy**) and a nested list of atoms **res_list**.
+
     :parameter xy: An array with the indices of all *m* core/ligand pairs.
     :type xy: *m*2* |np.ndarray|_ [|np.int64|_]
     :parameter res_list: A list of PLAMS atoms, each nested tuple representing all atoms within

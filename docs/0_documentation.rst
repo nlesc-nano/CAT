@@ -13,3 +13,4 @@ look into the customization of the various jobs.
     4_optional
     5_bde
     6_type_aliases
+    7_database
