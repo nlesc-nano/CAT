@@ -5,6 +5,14 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+0.4.0
+*****
+
+* Introduction of the CAT.Database class
+* Central object of CAT has been changed into a dataframe of
+  molecules rather than lists molecules
+* Updated a number of tests
+
 0.3.3
 *****
 
@@ -22,7 +30,8 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 *****
 
 * Massive overhaul of the CAT database interaction
-* Moved functions related to functiona group recognizition to CAT.attachment.ligand_anchoring.py
+* Moved functions related to functiona group recognizition to
+  CAT.attachment.ligand_anchoring.py
 * Multiple minor bug fixes
 
 [Unreleased]
