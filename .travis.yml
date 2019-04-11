@@ -18,7 +18,7 @@ install:
     - conda info -a
 
     # Install virtual enviroment
-    - conda install -c conda-forge python
+    - conda install -c conda-forge python==3.7
     - conda install -c conda-forge h5py
     - conda install -c conda-forge rdkit
 
