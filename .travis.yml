@@ -23,8 +23,6 @@ install:
     - conda install -c conda-forge rdkit
 
     # Install qmflows package
-    - pip install git+https://github.com/SCM-NV/PLAMS.git@master#egg=plams-1.2 --upgrade
-    - pip install git+https://github.com/SCM-NV/qmflows@master
     - pip install .[test]
 
 script:
