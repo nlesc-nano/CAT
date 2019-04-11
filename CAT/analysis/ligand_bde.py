@@ -353,8 +353,7 @@ def dissociate_ligand(mol, arg):
     # Create and return new molecules
     indices = [at.id for at in res_list[0][:-l_count]]
     indices += (idx_l[:-l_count] + 1).tolist()
-    ret = remove_ligands(mol, combinations_dict, indices, idx_l)
-    return ret
+    return remove_ligands(mol, combinations_dict, indices, idx_l)
 
 
 def remove_ligands(mol, combinations_dict, indices, idx_lig):
@@ -370,7 +369,7 @@ def remove_ligands(mol, combinations_dict, indices, idx_lig):
             mol_tmp.properties.df_index = mol_tmp.properties.core_topology
             mol_tmp.properties.df_index += ''.join([' ' + str(i)
                                                     for i in mol_tmp.properties.lig_residue])
-            delete_idx = sorted([core + 1] + list(chain.from_iterable(lig)), reverse=True)
+            delete_idx = sorted([core] + list(chain.from_iterable(lig)), reverse=True)
             for i in delete_idx:
                 mol_tmp.delete_atom(mol_tmp[i])
             mol_tmp.properties.indices = indices
@@ -457,13 +456,12 @@ def filter_lig_core(xyz_array, idx_lig, idx_core, max_dist=5.0, lig_count=2):
         ligand/core pairs.
     :rtype: *m*2* |np.ndarray|_ [|np.int64|_].
     """
-    dist = cdist(xyz_array[idx_lig], xyz_array[idx_core])
+    dist = cdist(xyz_array[idx_core], xyz_array[idx_lig])
     xy = np.array(np.where(dist <= max_dist))
     bincount = np.bincount(xy[0])
-
     xy = xy[:, [i for i, j in enumerate(xy[0]) if bincount[j] >= lig_count]]
-    xy[1] = idx_core[xy[1]]
-    xy[0] += 1
+    xy[0] = idx_core[xy[0]]
+    xy[1] += 1
     return xy
 
 
@@ -479,12 +477,11 @@ def get_lig_core_combinations(xy, res_list, lig_count=2):
     :return:
     """
     ret = {}
-    for y, x in xy.T:
+    for core, lig in xy.T:
         try:
-            ret[res_list[0][x].id].append([at.id for at in res_list[y]])
+            ret[res_list[0][core].id].append([at.id for at in res_list[lig]])
         except KeyError:
-            ret[res_list[0][x].id] = [[at.id for at in res_list[y]]]
+            ret[res_list[0][core].id] = [[at.id for at in res_list[lig]]]
     for i in ret:
         ret[i] = combinations(ret[i], lig_count)
-
     return ret

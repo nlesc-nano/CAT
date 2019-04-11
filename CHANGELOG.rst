@@ -5,8 +5,15 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+0.3.3
+*****
+
+* Changed qmflows template import syntax (see: https://github.com/SCM-NV/qmflows/pull/132)
+* Changed yaml loader
+
 0.3.2
 *****
+
 * Further (minor) updates and bug fixes to the database interaction
 * Overhaul of the bond dissociation energy (BDE) module
 * Job settings are now stored in the database
