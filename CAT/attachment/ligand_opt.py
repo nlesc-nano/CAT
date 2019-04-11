@@ -55,15 +55,18 @@ def init_ligand_opt(ligand_df, arg):
             message = '\t has been optimized'
 
         # Optimize the ligands
+        lig_new = []
         for i, ligand in ligand_df['mol'][idx].iteritems():
             mol_list = split_mol(ligand)
             for mol in mol_list:
                 mol.set_dihed(180.0)
             ligand_tmp = recombine_mol(mol_list)
             fix_carboxyl(ligand_tmp)
+            lig_new.append(ligand_tmp)
 
             # Print messages
             print(get_time() + ligand.properties.name + message)
+        ligand_df['mol'] = lig_new
         print('')
 
     # Write newly optimized structures to the database
@@ -152,7 +155,7 @@ def split_mol(plams_mol):
             bond_list.remove(bond)
 
     # Add the hydrogen atoms and bonds back to the molecule
-    for atom, bond in zip(h_atoms, h_bonds):
+    for atom, bond in zip(reversed(h_atoms), reversed(h_bonds)):
         plams_mol.add_atom(atom)
         plams_mol.add_bond(bond)
 
@@ -203,16 +206,18 @@ def get_frag_size(self, bond, atom):
     for at in self:
         at._visited = False
 
-    def dfs(at1, ar=np.zeros(2), atom=atom):
+    def dfs(at1, len_at=0, has_atom=False, atom=atom):
         at1._visited = True
-        ar[0] += 1
+        len_at += 1
         if at1 is atom:
-            ar[1] = 1
+            has_atom = True
         for bond in at1.bonds:
             at2 = bond.other_end(at1)
             if not at2._visited:
-                ar += dfs(at2)
-        return ar
+                i, j = dfs(at2)
+                len_at += i
+                has_atom = has_atom or j
+        return len_at, has_atom
 
     bond.atom1._visited = bond.atom2._visited = True
     size1, has_atom1 = dfs(bond.atom1)
