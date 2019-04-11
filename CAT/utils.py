@@ -70,8 +70,7 @@ def get_template(template_name, from_cat_data=True):
     if from_cat_data:
         path = join('data/templates', template_name)
         xs = pkg.resource_string('CAT', path)
+        return Settings(yaml.load(xs.decode(), Loader=yaml.FullLoader))
     else:
         with open(template_name, 'r') as file:
             return Settings(yaml.load(file, Loader=yaml.FullLoader))
-
-    return Settings(yaml.load(xs.decode(), Loader=yaml.FullLoader))

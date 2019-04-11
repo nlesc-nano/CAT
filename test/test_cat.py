@@ -13,7 +13,7 @@ from scm.plams.core.settings import Settings
 from scm.plams.mol.molecule import Molecule
 
 from CAT import Database
-from CAT.base import (prep_input, prep_core, prep_ligand, prep_qd)
+from CAT.base import (prep_input, prep_core, prep_ligand)
 
 
 # prepare input
@@ -165,8 +165,3 @@ def test_prep_ligand_split():
     shutil.rmtree(arg.optional.database.dirname)
     shutil.rmtree(arg.optional.ligand.dirname)
     os.mkdir(arg.optional.ligand.dirname)
-
-
-test_prep_core()
-test_prep_ligand()
-test_prep_ligand_split()

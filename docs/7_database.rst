@@ -10,23 +10,28 @@ A Class designed for the storing, retrieval and updating of results.
     :scale: 35 %
     :align: center
 
-The methods of the Database class can be divided into four categories
+The methods of the Database class can be divided into three categories
 accoring to their functionality:
 
--   Opening the database - these methods load parts of the database from their
-    respective files on the harddrive, storing them as suitable python objects
-    in the Database class:
+-   Opening & closing the database - these methods serve as context managers
+    for loading and unloading parts of the database from the harddrive.
+    These methods should be used in conjunction with |with|_ statements:
 
-    =================  =================  ==================  ==================
-    :meth:`.open_all`  :meth:`.open_csv`  :meth:`.open_yaml`  :meth:`.open_hdf5`
-    =================  =================  ==================  ==================
+    ::
 
--   Closing the database - these methods unload parts of the database from the
-    Database class, storing them as suitable files on the harddrive:
+        import CAT
 
-    ==================  ==================  ===================  ===================
-    :meth:`.close_all`  :meth:`.close_csv`  :meth:`.close_yaml`  :meth:`.close_hdf5`
-    ==================  ==================  ===================  ===================
+        database = CAT.Database()
+        with database.open_csv_lig(db.csv_lig) as db:
+            print('my ligand database')
+        with database.open_yaml(db.yaml) as db:
+            print('my job settings database')
+        with h5py.File(db.hdf5) as db:
+            print('my structure database')
+
+    ======================  =====================  ===================  ==================
+    :class:`.open_csv_lig`  :class:`.open_csv_qd`  :class:`.open_yaml`  :class:`h5py.File`
+    ======================  =====================  ===================  ==================
 
 -   Importing to the database - these methods handle the importing of new data
     from python objects to the Database class:
@@ -76,6 +81,7 @@ Function API
 .. _str: https://docs.python.org/3/library/stdtypes.html#str
 .. _int: https://docs.python.org/3/library/functions.html#int
 .. _None: https://docs.python.org/3.7/library/constants.html#None
+.. _with: https://docs.python.org/3/reference/compound_stmts.html#with
 
 .. |rdkit.Chem.Mol| replace:: *rdkit.Chem.Mol*
 .. |h5py.File| replace:: *h5py.File*
@@ -94,3 +100,4 @@ Function API
 .. |str| replace:: *str*
 .. |int| replace:: *int*
 .. |None| replace:: *None*
+.. |with| replace:: ``with``
