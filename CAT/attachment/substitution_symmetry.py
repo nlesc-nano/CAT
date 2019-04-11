@@ -110,7 +110,15 @@ def supstitution_symmetry(mol):
     
     # If substitution is linear, simple combinations without repetition can be applied
     if len(not_hatoms) <= 2:
-        pass
+        if len(not_hatoms) == 1:
+            print ("One does not simply ask for subsymmetry of one atom!")
+            pass
+        elif len(not_hatoms) == 0:
+            print ("What the hell is happening?!")
+            pass
+        else:
+            atomic_symbols = [at.symbol for at in not_hatoms]
+            mol.properties.subsymmetry = 'linear'
     
     else:
         # Defining tree, four or more substituents and caring about their symbols
@@ -178,7 +186,7 @@ def del_equiv_structures(mols):
 
     mols <plams.Molecule>: A list of PLAMS molecules
         """
-    uniques=[]
+    notuniques=[]
    
     for mol in mols:
         atomic_symbols = supstitution_symmetry(mol)
@@ -188,11 +196,12 @@ def del_equiv_structures(mols):
         # order has two arrays, repeated symbol and number of repetition
         subsymmetry = mol.properties.subsymmetry 
         symbol_combination = subsymm_combinations(atomic_symbols, subsymmetry)
-        uniques.append(symbol_combination)
+        #print ("combos", symbol_combination)
+        notuniques.append(symbol_combination)
 
-    scos = [sorted(sc) for sc in uniques]
+    scos = [sorted(sc) for sc in notuniques]
     u, indices = np.unique(scos, return_index=True, axis=0)
-
+    #print ("unique", u)
     picked_mols = [mols[i] for i in list(indices)]
 
     return picked_mols
@@ -216,7 +225,12 @@ def subsymm_combinations(listy,subsymmetry):
         d = ''.join(swap_neighbours(listy))
         final = []
         final = [a,b,c,d]
-       
+    if subsymmetry == 'linear':
+        a = ''.join(listy)
+        b = ''.join(swap_neighbours(listy))
+        final = []
+        final = [a,b]
+
     return final
 
 
