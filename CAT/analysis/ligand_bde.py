@@ -61,7 +61,7 @@ def _bde_w_dg(qd_df, arg):
     """ Calculate the BDEs with thermochemical corrections.
 
     :parameter qd_df: A dataframe of quantum dots.
-    :type qd_df: |pd.DataFrame|_ (columns: |str|_, index=|str|_, values=|plams.Molecule|_)
+    :type qd_df: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
     :parameter arg: A settings object containing all (optional) arguments.
     :type arg: |plams.Settings|_ (superclass: |dict|_).
     """
@@ -82,7 +82,10 @@ def _bde_w_dg(qd_df, arg):
     for i, mol in qd_df['mol'][has_na].iteritems():
         # Create XYn and all XYn-dissociated quantum dots
         xyn = get_xy2(mol)
-        mol_wo_xyn = dissociate_ligand(mol, arg)
+        if not arg.optional.qd.dissociate.core_index:
+            mol_wo_xyn = dissociate_ligand(mol, arg)
+        else:
+            mol_wo_xyn = dissociate_ligand2(mol, arg)
 
         # Construct new columns for **qd_df**
         values = [i.properties.df_index for i in mol_wo_xyn]
@@ -146,7 +149,10 @@ def _bde_wo_dg(qd_df, arg):
     for i, mol in qd_df['mol'][has_na].iteritems():
         # Create XYn and all XYn-dissociated quantum dots
         xyn = get_xy2(mol)
-        mol_wo_xyn = dissociate_ligand(mol, arg)
+        if not arg.optional.qd.dissociate.core_index:
+            mol_wo_xyn = dissociate_ligand(mol, arg)
+        else:
+            mol_wo_xyn = dissociate_ligand2(mol, arg)
 
         # Construct new columns for **qd_df**
         values = [i.properties.df_index for i in mol_wo_xyn]
@@ -354,6 +360,82 @@ def dissociate_ligand(mol, arg):
     indices = [at.id for at in res_list[0][:-l_count]]
     indices += (idx_l[:-l_count] + 1).tolist()
     return remove_ligands(mol, combinations_dict, indices, idx_l)
+
+
+def dissociate_ligand2(mol, arg):
+    """ Create all XYn dissociated quantum dots.
+
+    :parameter mol: A PLAMS molecule.
+    :type mol: |plams.Molecule|_
+    :parameter arg: A settings object containing all (optional) arguments.
+    :type arg: |plams.Settings|_ (superclass: |dict|_).
+    """
+    # Unpack arguments
+    l_count = arg.optional.qd.dissociate.lig_count
+    cc_dist = arg.optional.qd.dissociate.core_core_dist
+    idx_c_old = np.array(arg.optional.qd.dissociate.core_index) - 1
+    top_dict = arg.optional.qd.dissociate.topology
+
+    # Convert **mol** to an XYZ array
+    mol.set_atoms_id()
+    xyz_array = mol.as_array()
+
+    # Create a nested list of atoms,
+    # each nested element containing all atoms with a given residue number
+    res_list = []
+    for at in mol:
+        try:
+            res_list[at.properties.pdb_info.ResidueNumber - 1].append(at)
+        except IndexError:
+            res_list.append([at])
+
+    # Create a list of all core indices and ligand anchor indices
+    _, topology = filter_core(xyz_array, idx_c_old, top_dict, cc_dist)
+    idx_l = np.array([i for i in mol.properties.indices if
+                      mol[i].properties.pdb_info.ResidueName == 'LIG']) - 1
+
+    # Mark the core atoms with their topologies
+    for i, top in zip(idx_c_old, topology):
+        mol[int(i+1)].properties.topology = top
+
+    # Create a dictionary with core indices as keys and all combinations of 2 ligands as values
+    xy = filter_lig_core2(xyz_array, idx_l, idx_c_old, l_count)
+    combinations_dict = get_lig_core_combinations(xy, res_list, l_count)
+
+    # Create and return new molecules
+    indices = [at.id for at in res_list[0][:-l_count]]
+    indices += (idx_l[:-l_count] + 1).tolist()
+    return remove_ligands(mol, combinations_dict, indices, idx_l)
+
+
+def filter_lig_core2(xyz_array, idx_lig, idx_core, lig_count=2):
+    """ Create and return the indices of all possible ligand/core pairs..
+
+    :parameter xyz_array: An array with the cartesian coordinates of a molecule with *n* atoms.
+    :type xyz_array: *n*3* |np.ndarray|_ [|np.float64|_]
+    :parameter idx: An array of all ligand anchor atoms (Y).
+    :type idx: |np.ndarray|_ [|np.int64|_]
+    :parameter idx: An array of all core atoms (X).
+    :type idx: |np.ndarray|_ [|np.int64|_]
+    :parameter int lig_count: The number of ligand (*n*) in XYn.
+    :return: An array with the indices of all *m* valid (as determined by **max_diist**)
+        ligand/core pairs.
+    :rtype: *m*2* |np.ndarray|_ [|np.int64|_].
+    """
+    dist = cdist(xyz_array[idx_lig], xyz_array[idx_core])
+    xy = []
+    for _ in range(lig_count):
+        xy.append(np.array(np.where(dist == np.nanmin(dist, axis=0))))
+        dist[xy[-1][0], xy[-1][1]] = np.nan
+    xy = np.hstack(xy)
+    xy = xy[[1, 0]]
+    xy = xy[:, xy.argsort(axis=1)[0]]
+
+    bincount = np.bincount(xy[0])
+    xy = xy[:, [i for i, j in enumerate(xy[0]) if bincount[j] >= lig_count]]
+    xy[0] = idx_core[xy[0]]
+    xy[1] += 1
+    return xy
 
 
 def remove_ligands(mol, combinations_dict, indices, idx_lig):

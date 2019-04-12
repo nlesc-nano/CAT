@@ -7,6 +7,7 @@ from os.path import (join, isdir, isfile, exists)
 from itertools import chain
 
 import yaml
+import numpy as np
 from schema import (Schema, Or, And, Use)
 
 from scm.plams.interfaces.adfsuite.adf import ADFJob
@@ -452,6 +453,17 @@ def val_job(job, job1=None, job2=None, s1=None, s2=None):
     return job
 
 
+def val_core_idx(idx):
+    if idx is False or idx is None:
+        return False
+    elif isinstance(idx, (int, np.integer)):
+        return [idx]
+    else:
+        ret = list(idx)
+        assert isinstance(ret[0], (int, np.integer))
+        return sorted(ret)
+
+
 def val_dissociate(dissociate):
     """ Validate the optional.qd.dissociate block in the input file. """
     ret = get_default_dissociate()
@@ -467,13 +479,15 @@ def val_dissociate(dissociate):
     if ret.job1 is False or ret.s1 is False:
         return False
 
+    # Interpret optional arguments
+    ret.core_index = val_core_idx(ret.core_index)
     ret.core_atom = to_atnum(ret.core_atom)
     ret.lig_count = int(ret.lig_count)
     ret.core_core_dist = float(ret.core_core_dist)
     ret.lig_core_dist = float(ret.lig_core_dist)
     assert isinstance(ret.topology, dict)
     for key in ret.topology:
-        assert isinstance(key, int)
+        assert isinstance(key, (int, np.integer))
         assert isinstance(ret.topology[key], str)
 
     # Interpret job1
@@ -510,7 +524,7 @@ def val_dissociate(dissociate):
         ret.job2 = False
     elif isinstance(ret.s2, str):
         if isfile(ret.s2):
-            ret.s2 = CAT.get_template(ret.s2, from_cat_dataj=False)
+            ret.s2 = CAT.get_template(ret.s2, from_cat_data=False)
         else:
             raise FileNotFoundError(get_time() + str(ret.s1) + ' was not found')
 

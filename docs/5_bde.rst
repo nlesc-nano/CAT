@@ -41,6 +41,7 @@ Default Settings
                 lig_count: 2
                 core_core_dist: 5.0
                 lig_core_dist: 5.0
+                core_index: False
                 topology:
                     7: vertice
                     8: edge
@@ -93,6 +94,12 @@ Arguments
     .. image:: _images/BDE_XY2.png
         :scale: 25 %
         :align: center
+
+    |
+
+**qd.dissociate.core_index** |bool|_ or |list|_ [|int|_]= *False*
+
+    Alternative to **qd.dissociate.lig_core_dist** and **qd.dissociate.core_atom**.
 
     |
 
