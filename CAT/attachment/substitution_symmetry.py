@@ -127,8 +127,6 @@ def supstitution_symmetry(mol):
         atomic_symbols = [at.symbol for at in not_hatoms]
         type_of_symetry = np.unique(dataframe.to_numpy().nonzero()[0])
 
-        print ("Dataframe \n", dataframe)
-
         # Assign type of symetry and atomic symbols
         if list(type_of_symetry) == [0, 1, 8, 9]:
             mol.properties.subsymmetry = 'D2h'
@@ -205,8 +203,6 @@ def del_equiv_structures(mols):
     u, indices = np.unique(scos, return_index=True, axis=0)
     #print ("unique", u)
     picked_mols = [mols[i] for i in list(indices)]
-
-    print ("Molecule properties: \n", mol.properties)
 
     return picked_mols
 
