@@ -50,7 +50,6 @@ di = substitution(input_ligands, mono)
 di_unique = del_equiv_structures(di)
 tri = substitution(input_ligands, di)
 tetra = substitution(input_ligands, tri)
-
 tetra_unique = del_equiv_structures(tetra)
 
 # Combine and flatten all new molecules into a generator
