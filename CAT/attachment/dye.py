@@ -8,12 +8,31 @@ import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
 
+from rdkit import Chem, AllChem
+
 from scm.plams import Molecule, Settings, Atom
 from scm.plams.tools.geometry import rotation_matrix
+from scm.plams.interfaces.molecule.rdkit import to_rdmol
 
 from .ligand_attach import rot_mol
+from ..qd_functions import from_rdmol
 
 
+def uff_constrained_opt(mol, constrain=[]):
+    """ Perform a constrained UFF optimization on a PLAMS molecule.
+    
+    :parameter mol: A PLAMS molecule.
+    :parameter constrain: A list of indices of to-be frozen atoms.
+    """
+    # Chem.SanitizeMol(rdkit_mol)
+    rdkit_mol = to_rdmol(mol)
+    ff = AllChem.UFFGetMoleculeForceField(rdkit_mol, ignoreInterfragInteractions=False)
+    for f in constrain:
+        ff.AddFixedPoint(f)
+    ff.Minimize()
+    mol.from_rdmol(rdkit_mol)
+    
+    
 def connect_ligands_to_core(lig_dict, core):
     """ Attaches multiple ligands to multiple copies of a single core.
     Returns a list of cores with attached ligands, each with the properties.min_distance attribute
