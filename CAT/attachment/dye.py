@@ -8,13 +8,32 @@ import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
 
-from scm.plams import Molecule, Settings, Atom
+from rdkit.Chem import AllChem
+
+from scm.plams import Molecule, Settings, Atom, Bond
 from scm.plams.tools.geometry import rotation_matrix
+from scm.plams.interfaces.molecule.rdkit import to_rdmol
 
 from .ligand_attach import rot_mol
+from ..qd_functions import from_rdmol
+
+def uff_constrained_opt(mol, constrain=[]):
+    """ Perform a constrained UFF optimization on a PLAMS molecule.
+        
+        :parameter mol: A PLAMS molecule.
+        :parameter constrain: A list of indices of to-be frozen atoms.
+        """
+    # Chem.SanitizeMol(rdkit_mol)
+    rdkit_mol = to_rdmol(mol)
+    ff = AllChem.UFFGetMoleculeForceField(rdkit_mol, ignoreInterfragInteractions=False)
+    for f in constrain:
+        ff.AddFixedPoint(f)
+    ff.Minimize()
+    mol.from_rdmol(rdkit_mol)
+    return mol
 
 
-def connect_ligands_to_core(lig_dict, core):
+def connect_ligands_to_core(lig_dict, core, user_min_dist):
     """ Attaches multiple ligands to multiple copies of a single core.
     Returns a list of cores with attached ligands, each with the properties.min_distance attribute
     containing the smallest distance between ligand and core.
@@ -57,7 +76,17 @@ def connect_ligands_to_core(lig_dict, core):
         lig_cp += core_cp
         lig_cp.properties.name = core.properties.name + "_" + lig.properties.name
         lig_cp.properties.min_distance = min_dist
+
+        if user_min_dist > min_dist:
+            print ("Geometry was optimized with UFF for: \n %s min distace = %f" %(lig_cp.properties.name, min_dist))
+            lig_cp.guess_bonds()
+            h_gonne = len(lig_cp.properties.coords_h_atom) - len(lig_cp.properties.coords_h)
+            frozen = list(range(len(lig_cp)-core.properties.core_len+h_gonne, len(lig_cp)))
+            lig_cp = uff_constrained_opt(lig_cp, constrain=frozen)
+            lig_cp.properties.min_distance = 5
+        
         ret.append(lig_cp)
+
 
     return ret
 
@@ -93,6 +122,7 @@ def bob_core(mol):
     # Read the comment in the second line of the xyz file
     comment = mol.properties.comment
     comment = comment.split()
+    mol.properties.core_len = len(mol)
 
     idx = np.array(comment, dtype=int)
     at_h = [mol[int(i)] for i in idx]
@@ -106,7 +136,7 @@ def bob_core(mol):
     mol.properties.coords_h_atom = at_h
     mol.properties.coords_other_atom = at_other
     mol.properties.coords_other_arrays = [np.array(i.coords) for i in at_other]
-
+    mol.guess_bonds()
 
 def bob_ligand(mol):
     """
@@ -126,10 +156,10 @@ def bob_ligand(mol):
 
     mol.delete_atom(at)
     mol.properties.idx_other = mol.atoms.index(at_other)
+    mol.guess_bonds()
 
 
-
-def substitution(input_ligands, input_cores, rep=False):
+def substitution(input_ligands, input_cores,min_dist, rep=False):
     """
     To every list of cores one type of ligand is added.
     Mono_subs contaions of key = name of molecule, value = (coordinates of new molecule,
@@ -139,7 +169,7 @@ def substitution(input_ligands, input_cores, rep=False):
     lig_vec = np.array([lig.properties.vec for lig in input_ligands])
     lig_dict = {'lig_list': input_ligands, 'lig_idx': lig_idx, 'lig_vec': lig_vec}
 
-    ret = (connect_ligands_to_core(lig_dict, core) for core in input_cores)
+    ret = (connect_ligands_to_core(lig_dict, core, min_dist) for core in input_cores)
 
     return list(chain.from_iterable(ret))
 
