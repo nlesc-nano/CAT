@@ -5,17 +5,17 @@ __all__ = ['bob_ligand', 'bob_core', 'substitution', 'multi_substitution']
 from itertools import chain
 
 import numpy as np
-import pandas as pd
+
 from scipy.spatial.distance import cdist
 
 from rdkit.Chem import AllChem
 
-from scm.plams import Molecule, Settings, Atom, Bond
-from scm.plams.tools.geometry import rotation_matrix
+from scm.plams import Molecule, Settings
+
 from scm.plams.interfaces.molecule.rdkit import to_rdmol
 
 from .ligand_attach import rot_mol
-from ..qd_functions import from_rdmol
+
 
 def uff_constrained_opt(mol, constrain=[]):
     """ Perform a constrained UFF optimization on a PLAMS molecule.
@@ -46,6 +46,7 @@ def connect_ligands_to_core(lig_dict, core, user_min_dist):
     lig_list = lig_dict['lig_list']
     lig_idx = lig_dict['lig_idx']
     lig_vec = lig_dict['lig_vec']
+    lig_IDs = lig_dict['lig_ID']
 
     # Return if core.properties.vec has been exhausted
     try:
@@ -59,18 +60,27 @@ def connect_ligands_to_core(lig_dict, core, user_min_dist):
     # Allign the ligands with the core; perform the ration check
     lig_array, min_dist_array = rot_mol(lig_list, lig_vec, core_vec, **kwarg)
 
+    # Reading list of ligands that are already attached to the core
+    old_ligID = core.properties.ligID
+
     # Combine the rotated ligands and core into new molecules
     ret = []
-    for lig, xyz, min_dist in zip(lig_list, lig_array, min_dist_array):
+    for lig, xyz, min_dist, ligID in zip(lig_list, lig_array, min_dist_array, lig_IDs):
         # Copy and manipulate ligand
         lig_cp = lig.copy()
+        lig_cp.guess_bonds()
         lig_cp.from_array(xyz)
         lig_cp.properties = Settings()
+
+        # Adding new ligand to the list
+        new_ligID = str(old_ligID) + str(ligID)
 
         # Copy and manipulate core
         core_h = core.properties.the_h
         core_cp = core.copy()
+        core_cp.guess_bonds()
         core_cp.delete_atom(core_cp.closest_atom(core_h))
+        core_cp.properties.ligID = new_ligID
 
         # Merge core and ligand
         lig_cp += core_cp
@@ -78,12 +88,21 @@ def connect_ligands_to_core(lig_dict, core, user_min_dist):
         lig_cp.properties.min_distance = min_dist
 
         if user_min_dist > min_dist:
-            print ("Geometry was optimized with UFF for: \n %s min distace = %f" %(lig_cp.properties.name, min_dist))
-            lig_cp.guess_bonds()
-            h_gonne = len(lig_cp.properties.coords_h_atom) - len(lig_cp.properties.coords_h)
-            frozen = list(range(len(lig_cp)-core.properties.core_len+h_gonne, len(lig_cp)))
-            lig_cp = uff_constrained_opt(lig_cp, constrain=frozen)
-            lig_cp.properties.min_distance = 5
+           # UFF for molecule with frozen core
+            the_h = lig_cp.closest_atom(lig_cp.properties.the_h)        
+            core_other = lig_cp.closest_atom(lig_cp.properties.coords_other_arrays[len(new_ligID)-1])
+            lig_cp.add_bond(the_h, core_other)
+            
+            h_gone = len(lig_cp.properties.coords_h_atom) - len(lig_cp.properties.coords_h)
+            frozen_ind_rdkit = list(range(len(lig_cp)-core.properties.core_len + h_gone, len(lig_cp))) # list rdkit standards, counts from 0
+            lig_cp = uff_constrained_opt(lig_cp, constrain=frozen_ind_rdkit[:-1])
+            
+            # Distance between core and ligands
+            frozen_ind_plams = (np.array(frozen_ind_rdkit)+1).tolist()
+            frozen_atoms = np.array([lig_cp[c].coords for c in frozen_ind_plams])            
+            only_ligands = np.array([lig_cp[l].coords for l in range(1,len(lig_cp)+1) if l not in frozen_ind_plams])
+            min_dist = np.nanmin(cdist(only_ligands, frozen_atoms))
+            lig_cp.properties.min_distance = min_dist
         
         ret.append(lig_cp)
 
@@ -138,25 +157,33 @@ def bob_core(mol):
     mol.properties.coords_other_arrays = [np.array(i.coords) for i in at_other]
     mol.guess_bonds()
 
-def bob_ligand(mol):
+
+def bob_ligand(mols):
     """
     Marks a PLAMS molecule with the .properties.h & .properties.other attributes.
     mol <plams.Molecule>: An input molecule with the plams_mol.properties.comment attribute.
     """
-    # Read the comment in the second line of the xyz file
-    comment = mol.properties.comment
+    ligID = list(range(len(mols)))
+    
+    for mol, id in zip(mols, ligID):
+        mol.properties.ligID = id
+        mol.guess_bonds()
 
-    # Set an attirbute with indices and vectors
-    mol.properties.vec = np.empty(3)
 
-    # Fill the vector array, delete the marked atom in the ligand .xyz file
-    at = mol[int(comment)]
-    at_other = at.bonds[0].other_end(at)
-    mol.properties.vec = np.array(at.coords) - np.array(at_other.coords)
-
-    mol.delete_atom(at)
-    mol.properties.idx_other = mol.atoms.index(at_other)
-    mol.guess_bonds()
+        # Read the comment in the second line of the xyz file
+        comment = mol.properties.comment
+    
+        # Set an attirbute with indices and vectors
+        mol.properties.vec = np.empty(3)
+    
+        # Fill the vector array, delete the marked atom in the ligand .xyz file
+        at = mol[int(comment)]
+        at_other = at.bonds[0].other_end(at)
+        mol.properties.vec = np.array(at.coords) - np.array(at_other.coords)
+    
+        mol.delete_atom(at)
+        mol.properties.idx_other = mol.atoms.index(at_other)
+        mol.guess_bonds()
 
 
 def substitution(input_ligands, input_cores,min_dist, rep=False):
@@ -167,10 +194,9 @@ def substitution(input_ligands, input_cores,min_dist, rep=False):
     """
     lig_idx = np.array([lig.properties.idx_other for lig in input_ligands])
     lig_vec = np.array([lig.properties.vec for lig in input_ligands])
-    lig_dict = {'lig_list': input_ligands, 'lig_idx': lig_idx, 'lig_vec': lig_vec}
-
+    lig_ID = [lig.properties.ligID for lig in input_ligands]
+    lig_dict = {'lig_list': input_ligands, 'lig_idx': lig_idx, 'lig_vec': lig_vec, 'lig_ID' : lig_ID}
     ret = (connect_ligands_to_core(lig_dict, core, min_dist) for core in input_cores)
-
     return list(chain.from_iterable(ret))
 
 
