@@ -21,12 +21,12 @@ COSMO-RS activity coefficient:
 COSMO-ADF:
     description: The solvation block for COSMO(crs)-ADF calculations
     input:
-        fragments: gas
+        fragments:
+            gas: null
         solvation:
             surf: Delley
             solv: 'name=CRS cav0=0.0 cav1=0.0'
-            charged:
-                method: Conj corr
+            charged: 'method=Conj corr'
             c-mat: Exact
             radii:
                 H: 1.35

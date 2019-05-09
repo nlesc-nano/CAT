@@ -5,6 +5,11 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+0.4.1
+*****
+* COSMO-RS calculations now allow for COSMO-surface construction at the DFT level
+
+
 0.4.0
 *****
 
@@ -13,11 +18,13 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
   molecules rather than lists molecules
 * Updated a number of tests
 
+
 0.3.3
 *****
 
 * Changed qmflows template import syntax (see: https://github.com/SCM-NV/qmflows/pull/132)
 * Changed yaml loader
+
 
 0.3.2
 *****
@@ -26,6 +33,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * Overhaul of the bond dissociation energy (BDE) module
 * Job settings are now stored in the database
 
+
 0.3.0
 *****
 
@@ -33,6 +41,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * Moved functions related to functiona group recognizition to
   CAT.attachment.ligand_anchoring.py
 * Multiple minor bug fixes
+
 
 [Unreleased]
 ************
