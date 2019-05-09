@@ -214,15 +214,20 @@ def sanitize_optional(arg_dict):
     arg.optional.qd.activation_strain = val_bool(arg.optional.qd.activation_strain)
 
     # Prepares COSMO-RS default settings
-    crs = CAT.get_template('qd.yaml')['COSMO-RS activity coefficient']
-    crs.update(CAT.get_template('crs.yaml')['MOPAC PM6'])
+    s2 = CAT.get_template('qd.yaml')['COSMO-RS activity coefficient']
+    if 'adf' in arg.optional.ligand['cosmo-rs'].job1 or 'ADF' in arg.optional.ligand['cosmo-rs'].job1:
+        s1 = Settings()
+        s2.update(CAT.get_template('crs.yaml')['ADF combi2005'])
+    else:
+        s1 = CAT.get_template('qd.yaml')['COSMO-MOPAC']
+        s2.update(CAT.get_template('crs.yaml')['MOPAC PM6'])
 
     # Validate arguments containing job recipes
     arg.optional.ligand.crs = val_job(arg.optional.ligand['cosmo-rs'],
                                       job1=AMSJob,
                                       job2=CRSJob,
-                                      s1=CAT.get_template('qd.yaml')['COSMO-MOPAC'],
-                                      s2=crs)
+                                      s1=s1,
+                                      s2=s2)
     del arg.optional.ligand['cosmo-rs']
 
     arg.optional.qd.optimize = val_job(arg.optional.qd.optimize,
@@ -433,23 +438,21 @@ def val_job(job, job1=None, job2=None, s1=None, s2=None):
 
     # Assign proper default settings
     str_to_def = {'job1': job1, 'job2': job2, 's1': s1, 's2': s2}
-    for key in job:
-        if job[key] is None or 'None':
-            job[key] = str_to_def[key]
-        if not job[key]:
-            job[key] = False
-        elif isinstance(job[key], str):
+    for k, v in job.items():
+        if v is True:
+            job[k] = str_to_def[k]
+        elif not v:
+            job[k] = False
+        elif isinstance(v, str):
             try:
-                job[key] = str_to_class[job[key].lower()]
+                job[k] = str_to_class[v.lower()]
             except KeyError:
-                raise KeyError(get_time() + 'No Job-derived object exists for the string:', job[key]
+                raise KeyError(get_time() + 'No Job-derived object exists for the string:', v
                                + ', please provide the actual <Job> object instead of <str>')
-        elif isinstance(job[key], type):
+        elif isinstance(v, (type, dict)):
             pass
-        elif isinstance(job[key], dict):
-            job[key] = Settings(job[key])
         else:
-            raise TypeError(get_time() + str(type(job[key])), 'is an unspported object type')
+            raise TypeError(get_time() + str(type(v)), 'is an unspported object type')
     return job
 
 

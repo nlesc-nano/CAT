@@ -35,13 +35,16 @@ def init_solv(ligand_df, arg, solvent_list=None):
     :type solvent_list: |None|_ or |list|_ [|str|_].
     """
     data = Database(path=arg.optional.database.dirname)
+    path = ligand_df['mol'][0].properties.path
+    j1 = arg.optional.ligand.crs.job1
+    j2 = arg.optional.ligand.crs.job2
+    s1 = arg.optional.ligand.crs.s1
+    s2 = arg.optional.ligand.crs.s2
 
     # Prepare the job settings and solvent list
-    j1, j2 = arg.optional.ligand.crs.job1, arg.optional.ligand.crs.job2
-    s1, s2 = arg.optional.ligand.crs.s1, arg.optional.ligand.crs.s2
     if solvent_list is None:
-        path = join(join(dirname(dirname(__file__)), 'data'), 'coskf')
-        solvent_list = [join(path, solv) for solv in os.listdir(path) if
+        coskf_path = join(join(dirname(dirname(__file__)), 'data'), 'coskf')
+        solvent_list = [join(coskf_path, solv) for solv in os.listdir(coskf_path) if
                         solv not in ('__init__.py', 'README.rst')]
     solvent_list.sort()
 
@@ -59,11 +62,11 @@ def init_solv(ligand_df, arg, solvent_list=None):
     # Run COSMO-RS
     idx = ligand_df[['E_solv', 'gamma']].isna().all(axis='columns')
     if idx.any():
-        init(path=ligand_df['mol'][0].properties.path, folder='ligand_solvation')
+        init(path=path, folder='ligand_solvation')
         for i, mol in ligand_df['mol'][idx].iteritems():
             coskf = get_surface_charge(mol, job=j1, s=s1)
-            ligand_df.loc[i, 'E_solv'], ligand_df.loc[i, 'gamma'] = get_solv(mol, solvent_list,
-                                                                             coskf, job=j2, s=s2)
+            e_and_gamma = get_solv(mol, solvent_list, coskf, job=j2, s=s2)
+            ligand_df.loc[i, 'E_solv'], ligand_df.loc[i, 'gamma'] = e_and_gamma
         finish()
         print('')
 
@@ -133,15 +136,13 @@ def get_surface_charge_adf(mol, job, s):
     """ Perform a gas-phase ADF single point and return settings for a
     COSMO-ADF single point, using the previous gas-phase calculation as moleculair fragment. """
     s.input.allpoints = ''
-    s2 = s.copy()
-    del s2.input.solvation
-
+    s.input.charge = sum([at.properties.charge for at in mol])
     results = mol.job_single_point(job, s, ret_results=True)
-    coskf = results[get_coskf(results)]
+    coskf = get_coskf(results)
 
     for at in mol:
         at.properties.adf.fragment = 'gas'
-    s.update(CAT.get_template('qd.json')['COSMO-ADF'])
+    s.update(CAT.get_template('qd.yaml')['COSMO-ADF'])
     s.input.fragments.gas = coskf
 
     return s
