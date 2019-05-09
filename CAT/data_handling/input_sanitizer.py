@@ -215,10 +215,15 @@ def sanitize_optional(arg_dict):
 
     # Prepares COSMO-RS default settings
     s2 = CAT.get_template('qd.yaml')['COSMO-RS activity coefficient']
-    if 'adf' in arg.optional.ligand['cosmo-rs'].job1 or 'ADF' in arg.optional.ligand['cosmo-rs'].job1:
-        s1 = Settings()
-        s2.update(CAT.get_template('crs.yaml')['ADF combi2005'])
-    else:
+    try:
+        j1 = arg.optional.ligand['cosmo-rs'].job1
+        if 'adf' in j1 or 'ADF' in j1:
+            s1 = Settings()
+            s2.update(CAT.get_template('crs.yaml')['ADF combi2005'])
+        else:
+            s1 = CAT.get_template('qd.yaml')['COSMO-MOPAC']
+            s2.update(CAT.get_template('crs.yaml')['MOPAC PM6'])
+    except AttributeError:
         s1 = CAT.get_template('qd.yaml')['COSMO-MOPAC']
         s2.update(CAT.get_template('crs.yaml')['MOPAC PM6'])
 
