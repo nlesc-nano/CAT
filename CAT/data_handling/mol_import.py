@@ -179,23 +179,26 @@ def set_prop_atom(atom, alphabet, residue_name, elements_dict):
         atom.properties.pdb_info.IsHeteroAtom = True
 
     # Sets the formal atomic charge
-    if not atom.properties.charge:
-        if atom.symbol in elements_dict:
-            total_bonds = int(sum([bond.order for bond in atom.bonds]))
-            default_charge = elements_dict[atom.symbol]
-            sign = int(-1 * default_charge / abs(default_charge))
-            atom.properties.charge = default_charge + sign*total_bonds
+    if atom.properties.charge:
+        return
 
-            # Update formal atomic charges for hypervalent atoms
-            if total_bonds > abs(default_charge):
-                if total_bonds is abs(default_charge) + 2:
-                    atom.properties.charge += sign*2
-                elif total_bonds is abs(default_charge) + 4:
-                    atom.properties.charge += sign*4
-                elif total_bonds >= abs(default_charge) + 6:
-                    atom.properties.charge += sign*6
-        else:
-            atom.properties.charge = 0
+    if atom.symbol in elements_dict:
+        total_bonds = int(sum([bond.order for bond in atom.bonds]))
+        default_charge = elements_dict[atom.symbol]
+        sign = int(-1 * default_charge / abs(default_charge))
+        atom.properties.charge = default_charge + sign*total_bonds
+
+        # Update formal atomic charges for hypervalent atoms
+        abs_charge = abs(default_charge)
+        if total_bonds > abs_charge:
+            if total_bonds is abs_charge + 2:
+                atom.properties.charge -= sign*2
+            elif total_bonds is abs_charge + 4:
+                atom.properties.charge -= sign*4
+            elif total_bonds >= abs_charge + 6:
+                atom.properties.charge -= sign*6
+    else:
+        atom.properties.charge = 0
 
 
 def set_prop_dict():
