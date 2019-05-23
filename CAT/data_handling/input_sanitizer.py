@@ -431,8 +431,8 @@ def val_job(job, job1=None, job2=None, s1=None, s2=None):
     if isinstance(job, bool):
         if job is False:
             return job
-        job = {'job1': None, 's1': None,
-               'job2': None, 's2': None}
+        job = {'job1': True, 's1': True,
+               'job2': True, 's2': True}
 
     # Validate the object types of the various elements
     schema = Schema({'job1': Or(None, Job, str),
