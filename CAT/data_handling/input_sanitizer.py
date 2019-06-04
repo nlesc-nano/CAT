@@ -462,7 +462,7 @@ def val_job(job, job1=None, job2=None, s1=None, s2=None):
 
 
 def val_core_idx(idx):
-    if idx is False or idx is None:
+    if not idx:
         return False
     elif isinstance(idx, (int, np.integer)):
         return [idx]
