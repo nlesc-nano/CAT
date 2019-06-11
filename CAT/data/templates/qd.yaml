@@ -48,7 +48,6 @@ COSMO-MOPAC:
     input:
         mopac:
             model: PM7
-            mozyme: Yes
             solvation:
                 enabled: Yes
                 solvent:
@@ -63,7 +62,6 @@ MOPAC:
     input:
         mopac:
             model: PM7
-            mozyme: Yes
         ams:
             system:
                 charge: 0
