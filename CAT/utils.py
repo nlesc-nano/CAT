@@ -1,4 +1,4 @@
-""" A module with miscellaneous functions. """
+"""A module with miscellaneous functions."""
 
 __all__ = ['check_sys_var', 'dict_concatenate', 'get_time', 'get_template']
 
@@ -19,7 +19,7 @@ from scm.plams.interfaces.thirdparty.gamess import GamessJob
 
 
 def type_to_string(job):
-    """ Turn a <type> object into a <str> object. """
+    """Turn a :class:`type` instance into a string."""
     job_dict = {ADFJob: 'adf', AMSJob: 'ams', DiracJob: 'dirac',
                 Cp2kJob: 'cp2k', GamessJob: 'gamess', ORCAJob: 'orca'}
     try:
@@ -30,13 +30,25 @@ def type_to_string(job):
 
 
 def get_time():
-    """ Returns the current time as string. """
-    return '[' + time.strftime('%H:%M:%S') + '] '
+    """Return the current time as string."""
+    return '[{}]'.format(time.strftime('%H:%M:%S'))
 
 
 def check_sys_var():
-    """
-    Check if all ADF environment variables are set and if the 2018 version of ADF is installed.
+    """Validate all ADF environment variables.
+
+    Raises
+    ------
+    EnvironmentError
+        Raised if one or more of the following environment variables are absent:
+        * ``'ADFBIN'``
+        * ``'ADFHOME'``
+        * ``'ADFRESOURCES'``
+        * ``'SCMLICENSE'``
+
+    ImportError
+        Raised if an ADF version prior to 2019 is found.
+
     """
     sys_var = ['ADFBIN', 'ADFHOME', 'ADFRESOURCES', 'SCMLICENSE']
     sys_var_exists = [item in os.environ for item in sys_var]
@@ -54,19 +66,15 @@ def check_sys_var():
 
 
 def dict_concatenate(dic):
-    """
-    Concatenates a list of dictionaries.
-    """
-    concact_dic = {}
+    """Concatenates a list of dictionaries."""
+    ret = {}
     for item in dic:
-        concact_dic.update(item)
-    return concact_dic
+        ret.update(item)
+    return ret
 
 
 def get_template(template_name, from_cat_data=True):
-    """
-    Grab a yaml template and return it as Settings object.
-    """
+    """Grab a yaml template and return it as Settings object."""
     if from_cat_data:
         path = join('data/templates', template_name)
         xs = pkg.resource_string('CAT', path)
