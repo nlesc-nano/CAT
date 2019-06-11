@@ -310,6 +310,7 @@ def get_xy2(mol, ion='Cd', lig_count=2):
     CdX2.properties.name = 'XYn'
     CdX2.properties.path = mol.properties.path
     CdX2.properties.indices = [1, 1 + idx1, 2 + len(lig2) + idx2]
+    CdX2[1].properties.charge = 0 - sum([at.properties.charge for at in CdX2.atoms[1:]])
 
     return CdX2
 

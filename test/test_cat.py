@@ -86,6 +86,8 @@ def test_prep_ligand():
     """ Test the :func:`CAT.base.prep_ligand` function with **split** = *True*. """
     arg = ARG.copy()
     lig_df = LIGAND_DF.copy()
+    if os.path.isdir(arg.optional.database.dirname):
+        shutil.rmtree(arg.optional.database.dirname)
     os.mkdir(arg.optional.database.dirname)
     data = Database(path=arg.optional.database.dirname)
 
@@ -128,6 +130,8 @@ def test_prep_ligand_split():
     """ Test the :func:`CAT.base.prep_ligand` function with **split** = *False*. """
     arg = ARG.copy()
     lig_df = LIGAND_DF.copy()
+    if os.path.isdir(arg.optional.database.dirname):
+        shutil.rmtree(arg.optional.database.dirname)
     os.mkdir(arg.optional.database.dirname)
     data = Database(path=arg.optional.database.dirname)
 

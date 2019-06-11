@@ -51,8 +51,9 @@ def job_single_point(self, job, settings, name='Single_point', ret_results=False
     s.update(settings)
     if job == AMSJob:
         s.input.ams.system.bondorders._1 = adf_connectivity(self)
-        s.input.ams.system.charge = sum([at.properties.charge for at in self if
-                                         'charge' in at.properties])
+        if not self.properties.charge and 'uff' not in s.input:
+            s.input.ams.system.charge = sum([at.properties.charge for at in self if
+                                             'charge' in at.properties])
 
     # Run the job; extract energies
     my_job = job(molecule=self, settings=s, name=name)
@@ -86,8 +87,9 @@ def job_geometry_opt(self, job, settings, name='Geometry_optimization', ret_resu
     s.update(settings)
     if job == AMSJob:
         s.input.ams.system.bondorders._1 = adf_connectivity(self)
-        s.input.ams.system.charge = sum([at.properties.charge for at in self if
-                                         'charge' in at.properties])
+        if not self.properties.charge and 'uff' not in s.input:
+            s.input.ams.system.charge = sum([at.properties.charge for at in self if
+                                             'charge' in at.properties])
 
     # Run the job; extract geometries and energies
     my_job = job(molecule=self, settings=s, name=name)
@@ -129,8 +131,9 @@ def job_freq(self, job, settings, name='Frequency_analysis', opt=True, ret_resul
     s.update(settings)
     if job == AMSJob:
         s.input.ams.system.bondorders._1 = adf_connectivity(self)
-        s.input.ams.system.charge = sum([at.properties.charge for at in self if
-                                         'charge' in at.properties])
+        if not self.properties.charge and 'uff' not in s.input:
+            s.input.ams.system.charge = sum([at.properties.charge for at in self if
+                                             'charge' in at.properties])
 
     # Run the job; extract geometries and (Gibbs free) energies
     my_job = job(molecule=self, settings=s, name=name)
@@ -144,12 +147,12 @@ def job_freq(self, job, settings, name='Frequency_analysis', opt=True, ret_resul
                                             results.get_energy(unit='kcal/mol'))
     except TypeError:
         self.properties.frequencies = np.nan
-        self.properties.energy = np.nan
+        self.properties.energy = {'E': np.nan, 'H': np.nan, 'S': np.nan, 'G': np.nan}
         print(get_time() + 'WARNING: Failed to retrieve results of ' + results.job.name)
     if not isinstance(self.properties.frequencies, np.ndarray):
         self.properties.frequencies = np.nan
     if not self.properties.energy or self.properties.energy is None:
-        self.properties.energy = np.nan
+        self.properties.energy = {'E': np.nan, 'H': np.nan, 'S': np.nan, 'G': np.nan}
 
     # Return results
     if ret_results:
