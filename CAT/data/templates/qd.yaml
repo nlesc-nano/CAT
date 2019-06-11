@@ -8,6 +8,7 @@ UFF:
                 bondorders:
                     _1: null
                 charge: 0
+
 COSMO-RS activity coefficient:
     description: COSMO-RS activity coefficient calculation; parameters not included!
     input:
@@ -18,6 +19,7 @@ COSMO-RS activity coefficient:
         compound:
             _h: null
             Frac1: 1.0
+
 COSMO-ADF:
     description: The solvation block for COSMO(crs)-ADF calculations
     input:
@@ -40,23 +42,28 @@ COSMO-ADF:
                 Cl: 2.05
                 Br: 2.16
                 I: 2.32
+
 COSMO-MOPAC:
     description: COSMO(crs)-MOPAC single point with PM7 parameters
     input:
         mopac:
             model: PM7
-            mozyme: 'Yes'
-            solvation: COSMO-CRS
+            mozyme: Yes
+            solvation:
+                enabled: Yes
+                solvent:
+                    name: CRS
         ams:
             Task: SinglePoint
             system:
                 charge: 0
+
 MOPAC:
     description: MOPAC with PM7 parameters
     input:
         mopac:
             model: PM7
-            mozyme: 'Yes'
+            mozyme: Yes
         ams:
             system:
                 charge: 0

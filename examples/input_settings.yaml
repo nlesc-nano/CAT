@@ -1,11 +1,12 @@
-path: None
+path: /Users/bvanbeek/Documents/CdSe/Week_5
 
 input_cores:
     - Cd68Se55.xyz:
         guess_bonds: False
 
 input_ligands:
-    - OC
+    - CO
+    # - FragranceDB2.txt
 
 optional:
     database:
@@ -13,7 +14,7 @@ optional:
         read: True
         write: True
         overwrite: False
-        mol_format: [xyz, pdb]
+        mol_format: [pdb]
         mongodb: False
 
     core:
@@ -22,13 +23,11 @@ optional:
 
     ligand:
         dirname: ligand
-        functional_groups: None
         optimize: True
         split: True
-        cosmo-rs: False
+        cosmo-rs: True
 
     qd:
         dirname: QD
         optimize: False
-        activation_strain: False
         dissociate: False

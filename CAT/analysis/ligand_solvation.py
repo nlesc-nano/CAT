@@ -89,6 +89,7 @@ def get_surface_charge(mol, job=None, s=None):
     if job is ADFJob:
         s = get_surface_charge_adf(mol, job, s)
 
+    s.runscript.post = '$ADFBIN/cosmo2kf "mopac.cos" "mopac.coskf"'
     results = mol.job_single_point(job, s, ret_results=True)
     results.wait()
     return get_coskf(results)

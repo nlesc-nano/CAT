@@ -99,7 +99,7 @@ def test_prep_ligand():
     # Check the molecules in the dataframe
     lig_list = ret['mol'].values.tolist()
     with data.open_csv_lig(data.csv_lig) as db:
-        assert [6, 9, 12, 15] == [len(lig) for lig in lig_list]
+        assert [6, 9, 12, 15] == sorted([len(lig) for lig in lig_list])
         for lig in lig_list:
             assert isinstance(lig, Molecule)
             assert 'O' in lig.properties.anchor
@@ -140,7 +140,7 @@ def test_prep_ligand_split():
     # Check the molecules in the dataframe
     lig_list = ret['mol'].values.tolist()
     with data.open_csv_lig(data.csv_lig) as db:
-        assert [5, 8, 11, 14] == [len(lig) for lig in lig_list]
+        assert [5, 8, 11, 14] == sorted([len(lig) for lig in lig_list])
         for lig in lig_list:
             assert isinstance(lig, Molecule)
             assert 'O' in lig.properties.anchor

@@ -31,6 +31,7 @@ def init_qd_construction(ligand_df, core_df, arg):
 
     # Attempt to pull structures from the database
     qd_df = _get_df(core_df.index, ligand_df.index)
+    qd_df.sort_index(inplace=True)
     if 'qd' in arg.optional.database.read:
         mol_series1 = data.from_csv(qd_df, database='QD', inplace=False)
         for i, mol in mol_series1.iteritems():
@@ -45,8 +46,9 @@ def init_qd_construction(ligand_df, core_df, arg):
 
     # Identify and create the to be constructed quantum dots
     idx = qd_df['hdf5 index'] < 0
-    mol_list = [ligand_to_qd(core_df['mol'][(i, j)], ligand_df['mol'][(k, l)], arg) for
-                i, j, k, l in qd_df.index[idx]]
+    mol_list = [ligand_to_qd(core_df.at[(i, j), ('mol', '')],
+                             ligand_df.at[(k, l), ('mol', '')],
+                             arg) for i, j, k, l in qd_df.index[idx]]
     mol_series2 = pd.Series(mol_list, index=qd_df.index[idx], name=('mol', ''), dtype=object)
     print('')
 

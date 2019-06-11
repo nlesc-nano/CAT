@@ -70,6 +70,16 @@ def init_ligand_opt(ligand_df, arg):
             ligand_df['mol'] = lig_new
         print('')
 
+    # Remove duplicate ligands and sort
+    if ligand_df.index.duplicated().any():
+        idx_name = ligand_df.index.names
+        ligand_df.reset_index(inplace=True)
+        i, j = idx_name
+        ligand_df.drop_duplicates(subset=((i, ''), (j, '')), inplace=True)
+        ligand_df.set_index(idx_name, inplace=True)
+        ligand_df.index.names = idx_name
+    ligand_df.sort_index(inplace=True)
+
     # Write newly optimized structures to the database
     if 'ligand' in arg.optional.database.write and arg.optional.ligand.optimize:
         recipe = Settings()

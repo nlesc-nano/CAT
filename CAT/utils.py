@@ -47,8 +47,8 @@ def check_sys_var():
     if False in sys_var_exists:
         raise EnvironmentError(get_time() + 'One or more ADF environment variables have '
                                'not been set, aborting ADF job.')
-    if '2018' not in os.environ['ADFHOME']:
-        error = get_time() + 'No ADF version 2018 detected in ' + os.environ['ADFHOME']
+    if '2019' not in os.environ['ADFHOME']:
+        error = get_time() + 'No ADF/2019 detected in ' + os.environ['ADFHOME']
         error += ', aborting ADF job.'
         raise ImportError(error)
 

@@ -4,7 +4,6 @@ __all__ = ['init_ligand_anchoring']
 
 from itertools import chain
 
-import numpy as np
 import pandas as pd
 
 import scm.plams.interfaces.molecule.rdkit as molkit
@@ -129,14 +128,12 @@ def substructure_split(ligand, idx, split=True):
     at2 = lig[idx[-1] + 1]
 
     if split:
-        if len(lig.separate()) == 1:
-            lig.delete_atom(at2)
-        else:
-            mol1, mol2 = lig.separate_mod()
-            if at1 in mol1:
-                lig = mol1
-            else:
-                lig = mol2
+        lig.delete_atom(at2)
+        mol_list = lig.separate_mod()
+        for mol in mol_list:
+            if at1 in mol:
+                lig = mol
+                break
 
         # Check if the ligand heteroatom has a charge assigned, assigns a charge if not
         if not at1.properties.charge or at1.properties.charge == 0:
@@ -152,5 +149,6 @@ def substructure_split(ligand, idx, split=True):
     smiles = Chem.MolToSmiles(rdmol)
     lig.properties.smiles = Chem.CanonSmiles(smiles)
     lig.properties.name = santize_smiles(lig.properties.smiles) + '@' + lig.properties.anchor
+    lig.properties.path = ligand.properties.path
 
     return lig

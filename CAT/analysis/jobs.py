@@ -51,6 +51,8 @@ def job_single_point(self, job, settings, name='Single_point', ret_results=False
     s.update(settings)
     if job == AMSJob:
         s.input.ams.system.bondorders._1 = adf_connectivity(self)
+        s.input.ams.system.charge = sum([at.properties.charge for at in self if
+                                         'charge' in at.properties])
 
     # Run the job; extract energies
     my_job = job(molecule=self, settings=s, name=name)
@@ -84,6 +86,8 @@ def job_geometry_opt(self, job, settings, name='Geometry_optimization', ret_resu
     s.update(settings)
     if job == AMSJob:
         s.input.ams.system.bondorders._1 = adf_connectivity(self)
+        s.input.ams.system.charge = sum([at.properties.charge for at in self if
+                                         'charge' in at.properties])
 
     # Run the job; extract geometries and energies
     my_job = job(molecule=self, settings=s, name=name)
@@ -125,6 +129,8 @@ def job_freq(self, job, settings, name='Frequency_analysis', opt=True, ret_resul
     s.update(settings)
     if job == AMSJob:
         s.input.ams.system.bondorders._1 = adf_connectivity(self)
+        s.input.ams.system.charge = sum([at.properties.charge for at in self if
+                                         'charge' in at.properties])
 
     # Run the job; extract geometries and (Gibbs free) energies
     my_job = job(molecule=self, settings=s, name=name)

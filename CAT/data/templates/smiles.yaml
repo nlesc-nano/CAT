@@ -7,33 +7,21 @@ split:
     amide_anion:
         -   'N(C)[H]'
         -   'N(c)[H]'
-        -   '[N-]C.[+]'
-        -   '[N-]c.[+]'
     phosphide_anion:
         -   'P(C)[H]'
         -   'P(c)[H]'
-        -   '[P-]C.[+]'
-        -   '[P-]c.[+]'
     phosphorus_oxide_anion:
         -   'O(P)[H]'
         -   'O(p)[H]'
-        -   '[O-]P.[+]'
-        -   '[O-]p.[+]'
     alkoxide_anion:
         -   'O(C)[H]'
         -   'O(c)[H]'
-        -   '[O-]C.[+]'
-        -   '[O-]c.[+]'
     sulfide_anion:
         -   'S(C)[H]'
         -   'S(c)[H]'
-        -   '[S-]C.[+]'
-        -   '[S-]c.[+]'
     sulfoxide_anion:
         -   'O(S)[H]'
         -   'O(s)[H]'
-        -   '[O-]S.[+]'
-        -   '[O-]s.[+]'
 no_split:
     ammonium_cation:
         -   '[N+]C'
