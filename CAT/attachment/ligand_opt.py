@@ -67,7 +67,7 @@ def init_ligand_opt(ligand_df, arg):
             # Print messages
             print(get_time() + ligand.properties.name + message)
         if lig_new:
-            ligand_df['mol'] = lig_new
+            ligand_df.loc[idx, 'mol'] = lig_new
         print('')
 
     # Remove duplicate ligands and sort
@@ -84,7 +84,6 @@ def init_ligand_opt(ligand_df, arg):
     if 'ligand' in arg.optional.database.write and arg.optional.ligand.optimize:
         recipe = Settings()
         recipe['1'] = {'key': 'RDKit_' + rdkit.__version__, 'value': 'UFF'}
-        overwrite = 'ligand' in arg.optional
         columns = [('formula', ''), ('hdf5 index', ''), ('settings', '1')]
         database.update_csv(ligand_df, columns=columns,
                             job_recipe=recipe, database='ligand', overwrite=overwrite)
