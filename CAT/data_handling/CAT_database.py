@@ -275,13 +275,13 @@ def even_index(df1: pd.DataFrame,
     # Figure out if ``df1.index`` is a subset of ``df2.index``
     bool_ar = df2.index.isin(df1.index)
     if bool_ar.all():
-        return df2
+        return df1
 
     # Make ``df1.index`` a subset of ``df2.index``
-    nan_row = get_nan_row(df2)
+    nan_row = get_nan_row(df1)
     idx = df2.index[~bool_ar]
     df_tmp = pd.DataFrame(len(idx) * [nan_row], index=idx, columns=df1.columns)
-    return df2.append(df_tmp, copy=False, sort=True)
+    return df1.append(df_tmp, sort=True)
 
 
 class Database():
@@ -416,11 +416,22 @@ class Database():
                 self.df.to_csv(self.path)
             self.df = None
 
-    class DF(object):
+    class DF(dict):
         """A mutable container for holding dataframes."""
 
         def __init__(self, df: pd.DataFrame) -> None:
-            object.__setattr__(self, 'df', df)
+            super().__setitem__('df', df)
+
+        def __getattribute__(self, key):
+            df = super().__getitem__('df')
+            if key == 'df':
+                return df
+            elif key == 'update_df':
+                return super().__getattribute__('update_df')
+            return pd.DataFrame.__getattribute__(df, key)
+
+        def __setattr__(self, key, value):
+            self.df.__setattr__(key, value)
 
         def __getitem__(self, key):
             return self.df[key]
@@ -428,24 +439,11 @@ class Database():
         def __setitem__(self, key, value):
             self.df[key] = value
 
-        def __getattr__(self, key):
-            if key == 'df':
-                return object.__getattribute__(self, key)
-            return getattr(self.df, key)
-
-        def __setattr__(self, key, value):
-            if key == 'df':
-                return object.__setattr__(self, key, value)
-            setattr(self.df, key, value)
-
-        def __str__(self):
-            str(self.df)
-
-        def __repr__(self):
-            repr(self.df)
-
         def __iter__(self):
             return iter(self.df)
+
+        def update_df(self, df):
+            super().__setattr__('df', df)
 
     """ #################################  Updating the database ############################## """
 
@@ -479,7 +477,7 @@ class Database():
 
         with open_csv(path, write=True) as db:
             # Update **db.index**
-            db.df = even_index(df, db)
+            db.update_df(even_index(db, df))
 
             # Filter columns
             if not columns:
