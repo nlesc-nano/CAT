@@ -49,8 +49,8 @@ def mol_to_file(mol_list, path=None, overwrite=False, mol_format=['xyz', 'pdb'])
             mol_path = join(path, mol.properties.name)
             if 'pdb' in mol_format and not isfile(mol_path + '.pdb'):
                 molkit.writepdb(mol, mol_path + '.pdb')
-            if 'xyz' in mol_format and not isfile(path + '.xyz'):
-                mol.write(path + '.xyz')
+            if 'xyz' in mol_format and not isfile(mol_path + '.xyz'):
+                mol.write(mol_path + '.xyz')
 
 
 def get_nan_row(df):
