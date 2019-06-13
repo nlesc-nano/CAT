@@ -5,8 +5,16 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+0.4.2
+*****
+
+* Numerous bug fixes
+* A couple of code-style changes
+
+
 0.4.1
 *****
+
 * COSMO-RS calculations now allow for COSMO-surface construction at the DFT level
 
 

@@ -7,7 +7,7 @@
    :target: https://www.python.org
 
 #######################################
-Compound Attachment/Analysis Tool 0.4.1
+Compound Attachment/Analysis Tool 0.4.2
 #######################################
 
 **CAT** is a collection of tools designed for the construction,
