@@ -25,7 +25,7 @@ optional:
         dirname: ligand
         optimize: True
         split: True
-        cosmo-rs: True
+        cosmo-rs: False
 
     qd:
         dirname: QD

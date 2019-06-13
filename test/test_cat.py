@@ -18,7 +18,7 @@ from CAT.base import (prep_input, prep_core, prep_ligand)
 # prepare input
 ARG = Settings(yaml.load(
     """
-    path: /Users/basvanbeek/Documents/GitHub/CAT/test
+    path: test
 
     input_cores:
         - Cd68Se55.xyz:
