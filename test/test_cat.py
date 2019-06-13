@@ -1,4 +1,4 @@
-""" A module for CAT-related tests. """
+"""A module for CAT-related tests."""
 
 import contextlib
 import io
@@ -6,7 +6,6 @@ import os
 import shutil
 
 import yaml
-import pytest
 import pandas as pd
 
 from scm.plams.core.settings import Settings

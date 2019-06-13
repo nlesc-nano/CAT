@@ -96,10 +96,10 @@ def _get_indices(mol, index):
             break
         except ValueError:
             pass
-    k += i
+    k += i - 1
 
     # Append and return
-    ref_name = mol[k].properties.pdb_info.Name
+    ref_name = mol[k+1].properties.pdb_info.Name
     for i, at in enumerate(mol.atoms[k:], k+1):
         if at.properties.pdb_info.Name == ref_name:
             at.properties.anchor = True

@@ -31,7 +31,7 @@ def type_to_string(job):
 
 def get_time():
     """Return the current time as string."""
-    return '[{}]'.format(time.strftime('%H:%M:%S'))
+    return '[{}] '.format(time.strftime('%H:%M:%S'))
 
 
 def check_sys_var():

@@ -50,17 +50,15 @@ def sanitize_path(arg):
     elif isinstance(arg.path, str):
         if arg.path.lower() in ('none', '.', 'pwd', '$pwd', 'cwd'):
             arg.path = os.getcwd()
-        else:
-            if not os.path.exists(arg.path):
-                raise FileNotFoundError(get_time() + 'path ' + arg.path + ' not found')
-            elif os.path.isfile(arg.path):
-                raise TypeError(get_time() + 'path ' + arg.path + ' is a file, not a directory')
+        elif not os.path.exists(arg.path):
+            raise FileNotFoundError(get_time() + "path '{}' not found".format(arg.path))
+        elif os.path.isfile(arg.path):
+            raise OSError(get_time() + "path '{}' is a file, not a directory".format(arg.path))
         return arg
 
     else:
-        error = 'arg.path should be None or a string, ' + str(type(arg.path))
-        error += ' is not a valid type'
-        raise TypeError(error)
+        error = "arg.path should be None or a string, '{}' is not a valid type"
+        raise TypeError(error.format(arg.path.__class__.__name__))
 
 
 """ ##########################  Sanitize input_ligands & input_cores  ######################## """
@@ -99,16 +97,19 @@ def get_mol_defaults(mol_list, path=None, core=False):
         tmp.path = path
         tmp.is_core = core
 
-        if isinstance(mol, dict):
-            for key1 in mol:
-                tmp.mol = key1
-                for key2 in mol[key1]:
-                    try:
-                        tmp[key2] = key_dict[key2](mol[key1][key2])
-                    except KeyError:
-                        raise KeyError(str(key2) + ' is not a valid argument for ' + str(key1))
-                    if key2 == 'guess_bonds':
-                        tmp.tmp_guess = True
+        if not isinstance(mol, dict):
+            ret.append(tmp)
+            continue
+
+        for k1, v1 in mol.items():
+            tmp.mol = k1
+            for k2, v2 in v1.items():
+                try:
+                    tmp[k2] = key_dict[k2](v2)
+                except KeyError:
+                    raise KeyError("'{}' is not a valid argument for '{}'".format(str(k2), str(k1)))
+                if k2 == 'guess_bonds':
+                    tmp.tmp_guess = True
 
         ret.append(tmp)
     return ret

@@ -254,6 +254,36 @@ def _create_yaml(path, name='job_settings.yaml'):
     return path
 
 
+def even_index(df1: pd.DataFrame,
+               df2: pd.DataFrame) -> pd.DataFrame:
+    """Ensure that ``df2.index`` is a subset of ``df1.index``.
+
+    Parameters
+    ----------
+    df1 : |pd.DataFrame|_
+        A DataFrame whose index is to-be a superset of ``df2.index``.
+
+    df2 : |pd.DataFrame|_
+        A DataFrame whose index is to-be a subset of ``df1.index``.
+
+    Returns
+    -------
+    |pd.DataFrame|_
+        A new
+
+    """
+    # Figure out if ``df1.index`` is a subset of ``df2.index``
+    bool_ar = df2.index.isin(df1.index)
+    if bool_ar.all():
+        return df1
+
+    # Make ``df1.index`` a subset of ``df2.index``
+    nan_row = get_nan_row(df1)
+    idx = df2.index[~bool_ar]
+    df_tmp = pd.DataFrame(len(idx) * [nan_row], index=idx, columns=df1.columns)
+    return df1.append(df_tmp, sort=True)
+
+
 class Database():
     """ The Database class.
 
@@ -298,6 +328,7 @@ class Database():
         :param bool write: Whether or not the database file should be updated after
             closing **self**.
         """
+
         def __init__(self, path=None, write=True):
             self.path = path or getcwd()
             self.write = write
@@ -330,6 +361,7 @@ class Database():
         :param bool write: Whether or not the database file should be updated after
             closing **self**.
         """
+
         def __init__(self, path=None, write=True):
             self.path = path or getcwd()
             self.write = write
@@ -338,7 +370,9 @@ class Database():
         def __enter__(self):
             # Open the .csv file
             dtype = {'hdf5 index': int, 'formula': str, 'settings': str}
-            self.df = pd.read_csv(self.path, index_col=[0, 1], header=[0, 1], dtype=dtype)
+            self.df = Database.DF(
+                pd.read_csv(self.path, index_col=[0, 1], header=[0, 1], dtype=dtype)
+            )
 
             # Fix the columns
             idx_tups = [(i, '') if 'Unnamed' in j else (i, j) for i, j in self.df.columns]
@@ -358,6 +392,7 @@ class Database():
         :param bool write: Whether or not the database file should be updated after
             closing **self**.
         """
+
         def __init__(self, path=None, write=True):
             self.path = path or getcwd()
             self.write = write
@@ -365,8 +400,10 @@ class Database():
 
         def __enter__(self):
             # Open the .csv file
-            dtype = {'hdf5 index': int, 'ligand count': np.int64, 'settings': str}
-            self.df = pd.read_csv(self.path, index_col=[0, 1, 2, 3], header=[0, 1], dtype=dtype)
+            dtype = {'hdf5 index': int, 'ligand count': int, 'settings': str}
+            self.df = Database.DF(
+                pd.read_csv(self.path, index_col=[0, 1, 2, 3], header=[0, 1], dtype=dtype)
+            )
 
             # Fix the columns
             idx_tups = [(i, '') if 'Unnamed' in j else (i, j) for i, j in self.df.columns]
@@ -378,6 +415,43 @@ class Database():
             if self.write:
                 self.df.to_csv(self.path)
             self.df = None
+
+    class DF(dict):
+        """A mutable container for holding dataframes."""
+
+        def __init__(self, df: pd.DataFrame) -> None:
+            super().__init__()
+            super().__setitem__('df', df)
+
+        def __getattribute__(self, key):
+            if key == 'update_df' or (key.startswith('__') and key.endswith('__')):
+                return super().__getattribute__(key)
+            return self['df'].__getattribute__(key)
+
+        def __setattr__(self, key, value):
+            self['df'].__setattr__(key, value)
+
+        def __setitem__(self, key, value):
+            if key == 'df' and not isinstance(value, pd.DataFrame):
+                try:
+                    value = value['df']
+                    if not isinstance(value, pd.DataFrame):
+                        raise KeyError
+                    super().__setitem__('df', value)
+                except KeyError:
+                    err = ("Instance of 'pandas.DataFrame' or 'CAT.Database.DF' expected;"
+                           " observed type: '{}'")
+                    raise TypeError(err.format(value.__class__.__name__))
+            elif key == 'df':
+                super().__setitem__('df', value)
+            else:
+                self['df'].__setitem__(key, value)
+
+        def __getitem__(self, key):
+            df = super().__getitem__('df')
+            if key == 'df':
+                return df
+            return df.__getitem__(key)
 
     """ #################################  Updating the database ############################## """
 
@@ -406,30 +480,26 @@ class Database():
         # Update **self.yaml**
         if job_recipe is not None:
             job_settings = self.update_yaml(job_recipe)
-            for key in job_settings:
-                df[('settings', key)] = job_settings[key]
+            for key, value in job_settings.items():
+                df[('settings', key)] = value
 
         with open_csv(path, write=True) as db:
             # Update **db.index**
-            nan_row = get_nan_row(db)
-            for i in df.index:
-                if i not in db.index:
-                    db.at[i, :] = nan_row
-            db['hdf5 index'] = db['hdf5 index'].astype(int, copy=False)  # Fix the data type
+            db['df'] = even_index(db['df'], df)
 
             # Filter columns
             if not columns:
                 df_columns = df.columns
             else:
-                df_columns = columns + [i for i in df.columns if i[0] == 'settings']
+                df_columns = pd.Index(columns + [i for i in df.columns if i[0] == 'settings'])
 
             # Update **db.columns**
-            for i in df_columns:
-                if i not in db.columns:
-                    try:
-                        db[i] = np.array((None), dtype=df[i].dtype)
-                    except TypeError:  # e.g. if csv[i] consists of the datatype np.int64
-                        db[i] = -1
+            bool_ar = df_columns.isin(db.columns)
+            for i in df_columns[~bool_ar]:
+                try:
+                    db[i] = np.array((None), dtype=df[i].dtype)
+                except TypeError:  # e.g. if csv[i] consists of the datatype np.int64
+                    db[i] = -1
 
             # Update **self.hdf5**; returns a new series of indices
             hdf5_series = self.update_hdf5(df, database=database, overwrite=overwrite)
@@ -536,7 +606,7 @@ class Database():
 
         # Update the *hdf5 index* column in **df**
         with open_csv(path, write=False) as db:
-            df.update(db, overwrite=True)
+            df.update(db['df'], overwrite=True)
             df['hdf5 index'] = df['hdf5 index'].astype(int, copy=False)
 
         # **df** has been updated and **get_mol** = *False*
