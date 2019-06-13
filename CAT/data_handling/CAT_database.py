@@ -50,7 +50,7 @@ def mol_to_file(mol_list, path=None, overwrite=False, mol_format=['xyz', 'pdb'])
             if 'pdb' in mol_format and not isfile(mol_path + '.pdb'):
                 molkit.writepdb(mol, mol_path + '.pdb')
             if 'xyz' in mol_format and not isfile(path + '.xyz'):
-                mol.write(path + '.xyz')
+                mol.write(mol_path + '.xyz')
 
 
 def get_nan_row(df):
@@ -400,7 +400,7 @@ class Database():
 
         def __enter__(self):
             # Open the .csv file
-            dtype = {'hdf5 index': int, 'ligand count': np.int64, 'settings': str}
+            dtype = {'hdf5 index': int, 'ligand count': int, 'settings': str}
             self.df = Database.DF(
                 pd.read_csv(self.path, index_col=[0, 1, 2, 3], header=[0, 1], dtype=dtype)
             )
@@ -420,30 +420,38 @@ class Database():
         """A mutable container for holding dataframes."""
 
         def __init__(self, df: pd.DataFrame) -> None:
+            super().__init__()
             super().__setitem__('df', df)
 
         def __getattribute__(self, key):
+            if key == 'update_df' or (key.startswith('__') and key.endswith('__')):
+                return super().__getattribute__(key)
+            return self['df'].__getattribute__(key)
+
+        def __setattr__(self, key, value):
+            self['df'].__setattr__(key, value)
+
+        def __setitem__(self, key, value):
+            if key == 'df' and not isinstance(value, pd.DataFrame):
+                try:
+                    value = value['df']
+                    if not isinstance(value, pd.DataFrame):
+                        raise KeyError
+                    super().__setitem__('df', value)
+                except KeyError:
+                    err = ("Instance of 'pandas.DataFrame' or 'CAT.Database.DF' expected;"
+                           " observed type: '{}'")
+                    raise TypeError(err.format(value.__class__.__name__))
+            elif key == 'df':
+                super().__setitem__('df', value)
+            else:
+                self['df'].__setitem__(key, value)
+
+        def __getitem__(self, key):
             df = super().__getitem__('df')
             if key == 'df':
                 return df
-            elif key == 'update_df':
-                return super().__getattribute__('update_df')
-            return pd.DataFrame.__getattribute__(df, key)
-
-        def __setattr__(self, key, value):
-            self.df.__setattr__(key, value)
-
-        def __getitem__(self, key):
-            return self.df[key]
-
-        def __setitem__(self, key, value):
-            self.df[key] = value
-
-        def __iter__(self):
-            return iter(self.df)
-
-        def update_df(self, df):
-            super().__setattr__('df', df)
+            return df.__getitem__(key)
 
     """ #################################  Updating the database ############################## """
 
@@ -472,12 +480,12 @@ class Database():
         # Update **self.yaml**
         if job_recipe is not None:
             job_settings = self.update_yaml(job_recipe)
-            for key in job_settings:
-                df[('settings', key)] = job_settings[key]
+            for key, value in job_settings.items():
+                df[('settings', key)] = value
 
         with open_csv(path, write=True) as db:
             # Update **db.index**
-            db.update_df(even_index(db, df))
+            db['df'] = even_index(db['df'], df)
 
             # Filter columns
             if not columns:
@@ -598,7 +606,7 @@ class Database():
 
         # Update the *hdf5 index* column in **df**
         with open_csv(path, write=False) as db:
-            df.update(db.df, overwrite=True)
+            df.update(db['df'], overwrite=True)
             df['hdf5 index'] = df['hdf5 index'].astype(int, copy=False)
 
         # **df** has been updated and **get_mol** = *False*

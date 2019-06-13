@@ -67,9 +67,33 @@ def init_ligand_opt(ligand_df, arg):
             # Print messages
             print(get_time() + ligand.properties.name + message)
         if lig_new:
-            ligand_df.loc[idx, 'mol'] = lig_new
+            if len(lig_new) == 1:  # pd.DataFrame.loc has serious issues when assigning 1 molecue
+                idx, _ = next(ligand_df[idx].iterrows())
+                ligand_df.at[idx, ('mol', '')] = lig_new[0]
+            else:
+                ligand_df.loc[idx, 'mol'] = lig_new
         print('')
 
+    remove_duplicates(ligand_df)
+
+    # Write newly optimized structures to the database
+    if 'ligand' in arg.optional.database.write and arg.optional.ligand.optimize:
+        recipe = Settings()
+        recipe['1'] = {'key': 'RDKit_' + rdkit.__version__, 'value': 'UFF'}
+        columns = [('formula', ''), ('hdf5 index', ''), ('settings', '1')]
+        database.update_csv(
+            ligand_df, columns=columns, job_recipe=recipe, database='ligand', overwrite=overwrite
+        )
+        path = arg.optional.ligand.dirname
+        mol_to_file(ligand_df['mol'], path, overwrite, arg.optional.database.mol_format)
+
+
+def remove_duplicates(ligand_df):
+    """Remove duplicate rows from a dataframe.
+
+    Duplicates are identified based on their index.
+    Performs an inplace update of **ligand_df**.
+    """
     # Remove duplicate ligands and sort
     if ligand_df.index.duplicated().any():
         idx_name = ligand_df.index.names
@@ -79,16 +103,6 @@ def init_ligand_opt(ligand_df, arg):
         ligand_df.set_index(idx_name, inplace=True)
         ligand_df.index.names = idx_name
     ligand_df.sort_index(inplace=True)
-
-    # Write newly optimized structures to the database
-    if 'ligand' in arg.optional.database.write and arg.optional.ligand.optimize:
-        recipe = Settings()
-        recipe['1'] = {'key': 'RDKit_' + rdkit.__version__, 'value': 'UFF'}
-        columns = [('formula', ''), ('hdf5 index', ''), ('settings', '1')]
-        database.update_csv(ligand_df, columns=columns,
-                            job_recipe=recipe, database='ligand', overwrite=overwrite)
-        path = arg.optional.ligand.dirname
-        mol_to_file(ligand_df['mol'], path, overwrite, arg.optional.database.mol_format)
 
 
 @add_to_class(Molecule)

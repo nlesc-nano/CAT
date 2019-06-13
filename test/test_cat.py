@@ -1,4 +1,4 @@
-""" A module for CAT-related tests. """
+"""A module for CAT-related tests."""
 
 import contextlib
 import io
@@ -6,7 +6,6 @@ import os
 import shutil
 
 import yaml
-import pytest
 import pandas as pd
 
 from scm.plams.core.settings import Settings
@@ -19,7 +18,7 @@ from CAT.base import (prep_input, prep_core, prep_ligand)
 # prepare input
 ARG = Settings(yaml.load(
     """
-    path: test
+    path: /Users/basvanbeek/Documents/GitHub/CAT/test
 
     input_cores:
         - Cd68Se55.xyz:
