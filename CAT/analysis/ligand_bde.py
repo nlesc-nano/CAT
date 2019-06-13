@@ -7,7 +7,7 @@ from itertools import chain, combinations, product
 import numpy as np
 from scipy.spatial.distance import cdist
 
-from scm.plams import PeriodicTable
+from scm.plams import PeriodicTable, AMSJob
 from scm.plams.mol.molecule import Molecule
 from scm.plams.mol.atom import Atom
 from scm.plams.core.functions import (init, finish, config)
@@ -189,7 +189,12 @@ def get_bde_dE(tot, lig, core, job=None, s=None):
     """ Calculate the bond dissociation energy: dE = dE(mopac) + (dG(uff) - dE(uff))
     """
     # Optimize XYn
-    lig.job_geometry_opt(job, s, name='BDE_geometry_optimization')
+    if job == AMSJob:
+        s_cp = s.copy()
+        s_cp.input.ams.GeometryOptimization.coordinatetype = 'Cartesian'
+        lig.job_geometry_opt(job, s_cp, name='BDE_geometry_optimization')
+    else:
+        lig.job_geometry_opt(job, s, name='BDE_geometry_optimization')
     E_lig = lig.properties.energy.E
     if E_lig is np.nan:
         print(get_time() + 'WARNING: The BDE XYn geometry optimization failed, skipping further \
