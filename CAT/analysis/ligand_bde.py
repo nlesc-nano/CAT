@@ -564,12 +564,10 @@ def get_lig_core_combinations(xy, res_list, lig_count=2):
     :parameter int lig_count: The number of ligand (*n*) in XYn.
     :return:
     """
-    ret = {}
+    dict_ = {}
     for core, lig in xy.T:
         try:
-            ret[res_list[0][core].id].append([at.id for at in res_list[lig]])
+            dict_[res_list[0][core].id].append([at.id for at in res_list[lig]])
         except KeyError:
-            ret[res_list[0][core].id] = [[at.id for at in res_list[lig]]]
-    for i in ret:
-        ret[i] = combinations(ret[i], lig_count)
-    return ret
+            dict_[res_list[0][core].id] = [[at.id for at in res_list[lig]]]
+    return {k: combinations(v, lig_count) for k, v in dict_.items()}
