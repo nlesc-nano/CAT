@@ -129,7 +129,7 @@ def get_solv(mol, solvent_list, coskf, job=None, s=None):
             E_solv.append(np.nan)
             Gamma.append(np.nan)
 
-    # Return the solvation energies and activity coefficients as dict
+    # Return the solvation energies and activity coefficients as two lists
     return E_solv, Gamma
 
 

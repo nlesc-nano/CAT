@@ -386,11 +386,12 @@ class Database():
             self.df = None
 
     class open_csv_qd():
-        """ Context manager for opening and closing the quantum dot database.
+        """Context manager for opening and closing the quantum dot database.
 
         :param str path: The path+filename to the database component.
         :param bool write: Whether or not the database file should be updated after
             closing **self**.
+
         """
 
         def __init__(self, path=None, write=True):
@@ -417,7 +418,16 @@ class Database():
             self.df = None
 
     class DF(dict):
-        """A mutable container for holding dataframes."""
+        """A mutable container for holding dataframes.
+
+        A subclass of :class:`dict` containing a single key (``"df"``) and value
+        (a Pandas DataFrame).
+        Calling an item or attribute of :class:`.DF` will call said method on the
+        underlaying DataFrame (``self["df"]``).
+        An exception to this is the ``"df"`` key, which will get/set the DataFrame
+        instead.
+
+        """
 
         def __init__(self, df: pd.DataFrame) -> None:
             super().__init__()
@@ -449,7 +459,7 @@ class Database():
 
         def __getitem__(self, key):
             df = super().__getitem__('df')
-            if key == 'df':
+            if isinstance(key, str) and key == 'df':
                 return df
             return df.__getitem__(key)
 

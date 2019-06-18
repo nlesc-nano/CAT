@@ -1,4 +1,4 @@
-path: /Users/basvanbeek/Documents/CdSe/Week_5
+path: /Users/bvanbeek/Documents/CdSe/Week_5
 
 input_cores:
     - Cd68Se55.xyz:
@@ -6,6 +6,9 @@ input_cores:
 
 input_ligands:
     - CO
+    - CCO
+    - CCCO
+    - CCCCO
     # - FragranceDB2.txt
 
 optional:
