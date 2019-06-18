@@ -2,6 +2,8 @@
 
 __all__ = ['init_qd_opt']
 
+import pandas as pd
+
 from scm.plams.core.settings import Settings
 from scm.plams.core.functions import (init, finish)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
@@ -27,7 +29,7 @@ def init_qd_opt(qd_df, arg):
     job_recipe = arg.optional.qd.optimize
     overwrite = 'qd' in arg.optional.database.overwrite
     if overwrite:
-        idx = qd_df['hdf5 index']
+        idx = pd.Series(True, index=qd_df.index, name='mol')
         message = '\t has been (re-)optimized'
     else:
         idx = qd_df['hdf5 index'] < 0
