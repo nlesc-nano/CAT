@@ -17,7 +17,6 @@ from ..data_handling.database_functions import mol_to_file
 
 def init_qd_construction(ligand_df, core_df, arg):
     """ Initialize the quantum dot construction.
-
     :parameter ligand_df: A dataframe of ligands.
     :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
     :parameter core_df: A dataframe of cores.
@@ -43,7 +42,6 @@ def init_qd_construction(ligand_df, core_df, arg):
             mol.properties.name += str(mol[-1].properties.pdb_info.ResidueNumber - 1)
             mol.properties.name += '_' + ligand_df.at[(i[2:4]), ('mol', '')].properties.name
             print(get_time() + mol.properties.name + '\t has been pulled from the database')
-        print('')
 
     # Identify and create the to be constructed quantum dots
     idx = qd_df['hdf5 index'] < 0
@@ -51,7 +49,6 @@ def init_qd_construction(ligand_df, core_df, arg):
                              ligand_df.at[(k, l), ('mol', '')],
                              arg) for i, j, k, l in qd_df.index[idx]]
     mol_series2 = pd.Series(mol_list, index=qd_df.index[idx], name=('mol', ''), dtype=object)
-    print('')
 
     # Update the *mol* column in qd_df with 1 or 2 series of quantum dots
     try:
@@ -60,11 +57,10 @@ def init_qd_construction(ligand_df, core_df, arg):
         qd_df['mol'] = mol_series2
 
     # Export the resulting geometries back to the database
-    if 'qd' in arg.optional.database.write and not arg.optional.qd.optimize:
-        recipe = Settings()
-        recipe['1'] = {'key': 'None', 'value': 'None'}
-        data.update_csv(qd_df, columns=['hdf5 index', 'ligand count'],
-                        job_recipe=recipe, database='QD')
+    if 'qd' in arg.optional.database.write:
+        data.update_csv(qd_df,
+                        columns=['hdf5 index'],
+                        database='QD_no_opt')
         path = arg.optional.qd.dirname
         mol_to_file(qd_df['mol'], path, overwrite, arg.optional.database.mol_format)
     return qd_df
@@ -123,7 +119,7 @@ def _get_df(core_index, ligand_index):
             idx_tups,
             names=['core', 'core anchor', 'ligand smiles', 'ligand anchor']
     )
-    column_tups = [('hdf5 index', ''), ('ligand count', '')]
+    column_tups = [('hdf5 index', '')]
     columns = pd.MultiIndex.from_tuples(column_tups, names=['index', 'sub index'])
     return pd.DataFrame(-1, index=index, columns=columns)
 

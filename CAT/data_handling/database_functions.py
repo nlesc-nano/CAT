@@ -221,12 +221,12 @@ def _create_hdf5(path, name='structures.hdf5'):
     :return: The absolute path to the pdb structure database.
     :rtype: |str|_
     """
-    # Define arguments
+    # Define arguments for 2D datasets
     path = join(path, name)
-    dataset_names = 'core', 'ligand', 'QD'
+    dataset_names = ('core', 'core_no_opt', 'ligand', 'ligand_no_opt', 'QD', 'QD_no_opt', )
     kwarg = {'chunks': True, 'maxshape': (None, None), 'compression': 'gzip'}
 
-    # Create new datasets
+    # Create new 2D datasets
     with h5py.File(path, 'a') as f:
         for name in dataset_names:
             if name not in f:

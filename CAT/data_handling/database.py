@@ -135,7 +135,7 @@ class Database():
 
         def __enter__(self):
             # Open the .csv file
-            dtype = {'hdf5 index': int, 'ligand count': int, 'settings': str}
+            dtype = {'hdf5 index': int, 'settings': str}
             self.df = Database.DF(
                 pd.read_csv(self.path, index_col=[0, 1, 2, 3], header=[0, 1], dtype=dtype)
             )
@@ -214,10 +214,10 @@ class Database():
         :type job_recipe: |None|_ or |plams.Settings|_ (superclass: |dict|_)
         """
         # Operate on either the ligand or quantum dot database
-        if database == 'ligand':
+        if database in ('ligand', 'ligand_no_opt'):
             path = self.csv_lig
             open_csv = self.open_csv_lig
-        elif database == 'QD':
+        elif database in ('QD', 'QD_no_opt'):
             path = self.csv_qd
             open_csv = self.open_csv_qd
 
@@ -313,6 +313,7 @@ class Database():
                 f[database].shape = k, pdb_array.shape[1]
                 f[database][i:k] = pdb_array
                 ret = pd.Series(np.arange(i, k), index=new.index, name=('hdf5 index', ''))
+                df.update(ret, overwrite=True)
             else:
                 ret = pd.Series(name=('hdf5 index', ''), dtype=int)
 
@@ -424,6 +425,7 @@ class Database():
             index = index.tolist()
 
         # Open the database and pull entries
+
         with h5py.File(self.hdf5, 'r') as f:
             pdb_array = f[database][index]
 
