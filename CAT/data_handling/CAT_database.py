@@ -584,7 +584,12 @@ class Database():
 
             # If **overwrite** is *True*
             if overwrite and old.any():
-                f[database][old] = as_pdb_array(df['mol'][old.index], min_size=j)
+                ar = as_pdb_array(df['mol'][old.index], min_size=j)
+
+                # Ensure that the hdf5 indices are sorted
+                idx = np.argsort(old)
+                old = old[idx]
+                f[database][old] = ar[idx]
 
         return ret
 
