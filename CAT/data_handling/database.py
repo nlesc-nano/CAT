@@ -3,6 +3,8 @@
 __all__ = ['Database']
 
 from os import getcwd
+from time import sleep
+from typing import Optional
 
 import yaml
 import h5py
@@ -135,7 +137,7 @@ class Database():
 
         def __enter__(self):
             # Open the .csv file
-            dtype = {'hdf5 index': int, 'ligand count': int, 'settings': str}
+            dtype = {'hdf5 index': int, 'settings': str}
             self.df = Database.DF(
                 pd.read_csv(self.path, index_col=[0, 1, 2, 3], header=[0, 1], dtype=dtype)
             )
@@ -214,10 +216,10 @@ class Database():
         :type job_recipe: |None|_ or |plams.Settings|_ (superclass: |dict|_)
         """
         # Operate on either the ligand or quantum dot database
-        if database == 'ligand':
+        if database in ('ligand', 'ligand_no_opt'):
             path = self.csv_lig
             open_csv = self.open_csv_lig
-        elif database == 'QD':
+        elif database in ('QD', 'QD_no_opt'):
             path = self.csv_qd
             open_csv = self.open_csv_qd
 
@@ -235,18 +237,24 @@ class Database():
             if not columns:
                 df_columns = df.columns
             else:
-                df_columns = pd.Index(columns + [i for i in df.columns if i[0] == 'settings'])
+                df_columns = pd.Index(columns)
 
             # Update **db.columns**
             bool_ar = df_columns.isin(db.columns)
             for i in df_columns[~bool_ar]:
+                if 'job_settings' in i[0]:
+                    self._update_hdf5_settings(df, i[0], overwrite)
+                    del df[i]
+                    idx = columns.index(i)
+                    columns.pop(idx)
+                    continue
                 try:
                     db[i] = np.array((None), dtype=df[i].dtype)
                 except TypeError:  # e.g. if csv[i] consists of the datatype np.int64
                     db[i] = -1
 
             # Update **self.hdf5**; returns a new series of indices
-            hdf5_series = self.update_hdf5(df, database=database, overwrite=overwrite)
+            hdf5_series = self.update_hdf5(df, database, overwrite)
 
             # Update **db.values**
             db.update(df[columns], overwrite=overwrite)
@@ -302,6 +310,7 @@ class Database():
         old = df['hdf5 index'][df['hdf5 index'] != -1]
 
         # Add new entries to the database
+        self.hdf5_availability()
         with h5py.File(self.hdf5, 'r+') as f:
             i, j = f[database].shape
 
@@ -312,6 +321,7 @@ class Database():
                 k = i + pdb_array.shape[0]
                 f[database].shape = k, pdb_array.shape[1]
                 f[database][i:k] = pdb_array
+
                 ret = pd.Series(np.arange(i, k), index=new.index, name=('hdf5 index', ''))
             else:
                 ret = pd.Series(name=('hdf5 index', ''), dtype=int)
@@ -321,9 +331,59 @@ class Database():
                 ar = as_pdb_array(df['mol'][old.index], min_size=j)
 
                 # Ensure that the hdf5 indices are sorted
+                # import pdb; pdb.set_trace()
                 idx = np.argsort(old)
                 old = old[idx]
                 f[database][old] = ar[idx]
+
+        return ret
+
+    def _update_hdf5_settings(self, df, column, overwrite=False):
+        # Identify new and preexisting entries
+        new = df['hdf5 index'][df['hdf5 index'] == -1]
+        old = df['hdf5 index'][df['hdf5 index'] != -1]
+
+        # Add new entries to the database
+        self.hdf5_availability()
+        with h5py.File(self.hdf5, 'r+') as f:
+            i, j, k = f[column].shape
+
+            if new.any():
+                job_ar = self._read_inp(df[column][new.index], j, k)
+
+                # Reshape and update **self.hdf5**
+                k = i + job_ar.shape[0]
+
+                f[column].shape = k, job_ar.shape[1], job_ar.shape[2]
+                f[column][i:k] = job_ar
+
+            if overwrite and old.any():
+                job_ar = self._read_inp(df[column][old.index], j, k)
+
+                # Ensure that the hdf5 indices are sorted
+                idx = np.argsort(old)
+                old = old[idx]
+                f[column][old] = job_ar[idx]
+
+    @staticmethod
+    def _read_inp(job_paths, ax2=0, ax3=0):
+        ax1 = len(job_paths)
+
+        list_ = []
+        for i in job_paths:
+            ax2 = max(ax2, len(i))
+            tmp = []
+            for j in i:
+                with open(j, 'r') as f:
+                    item = f.readlines()
+                    tmp.append(item)
+                    ax3 = max(ax3, len(item))
+            list_.append(tmp)
+
+        ret = np.zeros((ax1, ax2, ax3), dtype='S100')
+        for i, j in enumerate(list_):
+            for k, v in enumerate(j):
+                ret[i, k:len(j), :len(v)] = v
 
         return ret
 
@@ -424,8 +484,49 @@ class Database():
             index = index.tolist()
 
         # Open the database and pull entries
+        self.hdf5_availability()
         with h5py.File(self.hdf5, 'r') as f:
             pdb_array = f[database][index]
 
         # Return a list of RDKit or PLAMS molecules
         return [from_pdb_array(mol, rdmol=rdmol) for mol in pdb_array]
+
+    def hdf5_availability(self, timeout: float = 5.0,
+                          max_attempts: Optional[int] = None) -> None:
+        """Check if a .hdf5 file is opened by another process; return once it is not.
+
+        If two processes attempt to simultaneously open a single hdf5 file then
+        h5py will raise an :class:`OSError`.
+        The purpose of this function is ensure that a .hdf5 is actually closed,
+        thus allowing :func:`to_hdf5` to safely access **filename** without the risk of raising
+        an :class:`OSError`.
+
+        Parameters
+        ----------
+        filename : str
+            The path+filename of the hdf5 file.
+        timeout : float
+            Time timeout, in seconds, between subsequent attempts of opening **filename**.
+        max_attempts : int
+            Optional: The maximum number attempts for opening **filename**.
+            If the maximum number of attempts is exceeded, raise an ``OSError``.
+
+        Raises
+        ------
+        OSError
+            Raised if **max_attempts** is exceded.
+
+        """
+        warning = "OSWarning: '{}' is currently unavailable; repeating attempt in {:.0f} seconds"
+        i = max_attempts or np.inf
+
+        while i:
+            try:
+                with h5py.File(self.hdf5, 'r+', libver='latest') as _:
+                    return None  # the .hdf5 file can safely be opened
+            except OSError as ex:  # the .hdf5 file cannot be safely opened yet
+                print((warning).format(self.hdf5, timeout))
+                error = ex
+                sleep(timeout)
+            i -= 1
+        raise error

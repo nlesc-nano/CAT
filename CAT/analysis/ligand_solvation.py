@@ -69,7 +69,10 @@ def init_solv(ligand_df, arg, solvent_list=None):
             e_and_gamma = get_solv(mol, solvent_list, coskf, job=j2, s=s2)
             ligand_df.loc[i, 'E_solv'], ligand_df.loc[i, 'gamma'] = e_and_gamma
         finish()
-        print('')
+
+    ligand_df['job_settings_crs'] = [mol.properties.pop('job_path') for mol in ligand_df['mol']]
+    for mol in ligand_df['mol']:
+        mol.properties.job_path = []
 
     # Update the database
     if 'ligand' in arg.optional.database.write:
@@ -78,9 +81,13 @@ def init_solv(ligand_df, arg, solvent_list=None):
         recipe = Settings()
         recipe['solv 1'] = {'key': j1, 'value': value1}
         recipe['solv 2'] = {'key': j2, 'value': s2}
-        data.update_csv(ligand_df, database='ligand',
-                        columns=[('settings', 'solv 1'), ('settings', 'solv 2')]+columns,
-                        overwrite=overwrite, job_recipe=recipe)
+        data.update_csv(
+            ligand_df, database='ligand',
+            columns=[('settings', 'solv 1'), ('settings', 'solv 2'),
+                     ('job_settings_crs', '')]+columns,
+            overwrite=overwrite,
+            job_recipe=recipe
+        )
 
 
 def get_surface_charge(mol, job=None, s=None):
@@ -114,7 +121,7 @@ def get_solv(mol, solvent_list, coskf, job=None, s=None, keep_files=True):
 
     # Run the job
     jobs = [CRSJob(settings=s, name=s.name) for s in s_list]
-    results = [job.run(jobrunner=JobRunner(parallel=True)) for job in jobs]
+    results = [j.run(jobrunner=JobRunner(parallel=True)) for j in jobs]
 
     # Extract solvation energies and activity coefficients
     E_solv = []
@@ -136,6 +143,10 @@ def get_solv(mol, solvent_list, coskf, job=None, s=None, keep_files=True):
         shutil.rmtree(mopac)
         for job in jobs:
             shutil.rmtree(job.path)
+
+    if 'job_path' not in mol.properties:
+        mol.properties.job_path = []
+    mol.properties.job_path += [join(j.path, j.name + '.in') for j in jobs]
 
     # Return the solvation energies and activity coefficients as dict
     return E_solv, Gamma

@@ -39,11 +39,11 @@ def init_qd_construction(ligand_df, core_df, arg):
             mol.properties = Settings()
             mol.properties.indices = _get_indices(mol, i)
             mol.properties.path = arg.optional.qd.dirname
+            mol.properties.job_path = []
             mol.properties.name = core_df.at[(i[0:2]), ('mol', '')].properties.name + '__'
             mol.properties.name += str(mol[-1].properties.pdb_info.ResidueNumber - 1)
             mol.properties.name += '_' + ligand_df.at[(i[2:4]), ('mol', '')].properties.name
             print(get_time() + mol.properties.name + '\t has been pulled from the database')
-        print('')
 
     # Identify and create the to be constructed quantum dots
     idx = qd_df['hdf5 index'] < 0
@@ -51,7 +51,6 @@ def init_qd_construction(ligand_df, core_df, arg):
                              ligand_df.at[(k, l), ('mol', '')],
                              arg) for i, j, k, l in qd_df.index[idx]]
     mol_series2 = pd.Series(mol_list, index=qd_df.index[idx], name=('mol', ''), dtype=object)
-    print('')
 
     # Update the *mol* column in qd_df with 1 or 2 series of quantum dots
     try:
@@ -60,11 +59,10 @@ def init_qd_construction(ligand_df, core_df, arg):
         qd_df['mol'] = mol_series2
 
     # Export the resulting geometries back to the database
-    if 'qd' in arg.optional.database.write and not arg.optional.qd.optimize:
-        recipe = Settings()
-        recipe['1'] = {'key': 'None', 'value': 'None'}
-        data.update_csv(qd_df, columns=['hdf5 index', 'ligand count'],
-                        job_recipe=recipe, database='QD')
+    if 'qd' in arg.optional.database.write:
+        data.update_csv(qd_df,
+                        columns=['hdf5 index', 'ligand count'],
+                        database='QD_no_opt')
         path = arg.optional.qd.dirname
         mol_to_file(qd_df['mol'], path, overwrite, arg.optional.database.mol_format)
     return qd_df
@@ -161,6 +159,7 @@ def ligand_to_qd(core, ligand, arg):
     qd.properties.name = core.properties.name + '__'
     qd.properties.name += str(qd[-1].properties.pdb_info.ResidueNumber - 1)
     qd.properties.name += '_' + ligand.properties.name
+    qd.properties.job_path = []
 
     # Print and return
     print(get_time() + qd.properties.name + '\t has been constructed')

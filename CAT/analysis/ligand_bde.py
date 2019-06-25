@@ -121,7 +121,7 @@ def _bde_w_dg(qd_df, arg):
             'database': 'QD',
             'job_recipe': get_recipe(j1, s1, j2, s2),
             'overwrite': overwrite,
-            'columns': [('settings', 'BDE 1'), ('settings', 'BDE 2')]
+            'columns': [('settings', 'BDE 1'), ('settings', 'BDE 2')],
         }
         kwarg['columns'] += [(i, j) for i, j in qd_df.columns if i in column_tup]
         data.update_csv(qd_df, **kwarg)

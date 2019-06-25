@@ -35,6 +35,9 @@ def mol_to_file(mol_list, path=None, overwrite=False, mol_format=['xyz', 'pdb'])
     path = path or getcwd()
     assert isdir(path)
 
+    if not mol_format:
+        return None
+
     if overwrite:  # Export molecules while allowing for file overriding
         for mol in mol_list:
             mol_path = join(path, mol.properties.name)
@@ -73,9 +76,9 @@ def get_nan_row(df):
         return [dtype_dict[df[i].dtype] for i in df]
     else:
         ret = []
-        for i in df:
+        for _, value in df.items():
             try:
-                j = dtype_dict[df[i].dtype]
+                j = dtype_dict[value.dtype]
             except KeyError:  # dtype is neither int, float nor object
                 j = None
             ret.append(j)
@@ -203,7 +206,7 @@ def _create_csv_qd(path):
             [('-', '-', '-', '-')],
             names=['core', 'core anchor', 'ligand smiles', 'ligand anchor']
     )
-    columns_tups = [('hdf5 index', ''), ('ligand count', ''), ('settings', 1), ('settings', 2)]
+    columns_tups = [('hdf5 index', ''), ('settings', 1), ('settings', 2)]
     columns = pd.MultiIndex.from_tuples(columns_tups, names=['index', 'sub index'])
     df = pd.DataFrame(None, index=idx, columns=columns)
     df['hdf5 index'] = -1
@@ -221,16 +224,26 @@ def _create_hdf5(path, name='structures.hdf5'):
     :return: The absolute path to the pdb structure database.
     :rtype: |str|_
     """
-    # Define arguments
+    # Define arguments for 2D datasets
     path = join(path, name)
-    dataset_names = 'core', 'ligand', 'QD'
+    dataset_names = ('core', 'core_no_opt', 'ligand', 'ligand_no_opt', 'QD', 'QD_no_opt', )
     kwarg = {'chunks': True, 'maxshape': (None, None), 'compression': 'gzip'}
 
-    # Create new datasets
+    # Create new 2D datasets
     with h5py.File(path, 'a') as f:
         for name in dataset_names:
             if name not in f:
                 f.create_dataset(name=name, data=np.empty((0, 1), dtype='S80'), **kwarg)
+
+    # Define arguments for 3D datasets
+    dataset_names_3d = ('job_settings_crs', 'job_settings_QD_opt', 'job_settings_BDE')
+    kwarg_3d = {'chunks': True, 'maxshape': (None, None, None), 'compression': 'gzip'}
+
+    # Create new 3D datasets
+    with h5py.File(path, 'a') as f:
+        for name in dataset_names_3d:
+            if name not in f:
+                f.create_dataset(name=name, data=np.empty((0, 1, 1), dtype='S100'), **kwarg_3d)
 
     return path
 

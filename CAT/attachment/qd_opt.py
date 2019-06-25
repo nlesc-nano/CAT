@@ -43,19 +43,24 @@ def init_qd_opt(qd_df, arg):
             qd_opt(mol, job_recipe)
             print(get_time() + mol.properties.name + message)
         finish()
-        print('')
+
+    qd_df['job_settings_QD_opt'] = [mol.properties.pop('job_path') for mol in qd_df['mol']]
+    for mol in qd_df['mol']:
+        mol.properties.job_path = []
 
     # Export the geometries to the database
     if 'qd' in arg.optional.database.write:
-        value1 = qmflows.geometry['specific'][type_to_string(job_recipe.job1)].copy()
-        value1.update(job_recipe.s1)
-        value2 = qmflows.geometry['specific'][type_to_string(job_recipe.job2)].copy()
-        value2.update(job_recipe.s2)
-        recipe = Settings()
-        recipe['1'] = {'key': job_recipe.job1, 'value': value1}
-        recipe['2'] = {'key': job_recipe.job2, 'value': value2}
+        v1 = qmflows.geometry['specific'][type_to_string(job_recipe.job1)].copy()
+        v1.update(job_recipe.s1)
+        v2 = qmflows.geometry['specific'][type_to_string(job_recipe.job2)].copy()
+        v2.update(job_recipe.s2)
 
-        columns = [('hdf5 index', ''), ('settings', '1'), ('settings', '2')]
+        recipe = Settings()
+        recipe['1'] = {'key': job_recipe.job1, 'value': v1}
+        recipe['2'] = {'key': job_recipe.job2, 'value': v2}
+
+        columns = [('hdf5 index', ''), ('settings', '1'), ('settings', '2'), ('job_settings_QD_opt', '')]
+        #
         database = Database(path=arg.optional.database.dirname)
         database.update_csv(qd_df, columns=columns, job_recipe=recipe, database='QD')
         path = arg.optional.qd.dirname

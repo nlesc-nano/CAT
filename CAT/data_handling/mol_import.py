@@ -168,6 +168,7 @@ def set_mol_prop(mol, mol_dict):
 
     mol.properties.dummies = mol_dict.indices
     mol.properties.path = mol_dict.path
+    mol.properties.job_path = []
 
     # Prepare a generator of letters for pdb_info.Name
     alphabet = itertools.combinations(ascii_letters, 2)

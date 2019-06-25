@@ -7,6 +7,9 @@ input_cores:
 input_ligands:
     - CO
     - CCO
+    - CCCO
+    - CCCCO
+    - CCCCCO
     # - FragranceDB2.txt
 
 optional:
@@ -14,7 +17,7 @@ optional:
         dirname: database
         read: True
         write: True
-        overwrite: False
+        overwrite: True
         mol_format: [pdb]
         mongodb: False
 
@@ -31,7 +34,4 @@ optional:
     qd:
         dirname: QD
         optimize: True
-        dissociate:
-            core_index: [60, 62, 64, 71, 74, 78]
-            job1: True
-            job2: False
+        dissociate: False
