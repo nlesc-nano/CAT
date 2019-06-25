@@ -16,7 +16,8 @@ from .attachment import (
 )
 
 from .data_handling import (
-    Database, mol_to_file,
+    Database,
+    mol_to_file,
     read_mol, set_mol_prop,
     sanitize_optional, sanitize_input_mol, sanitize_path
 )
@@ -31,7 +32,8 @@ __all__ = [
 
     'init_qd_opt', 'init_ligand_opt', 'init_qd_construction', 'init_ligand_anchoring',
 
-    'Database', 'mol_to_file',
+    'Database',
+    'mol_to_file',
     'read_mol', 'set_mol_prop',
     'sanitize_optional', 'sanitize_input_mol', 'sanitize_path',
 

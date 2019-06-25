@@ -8,8 +8,7 @@ from scm.plams.tools.units import Units
 
 
 def get_entropy(mol, freqs, T=298.15):
-    """
-    Calculate the translational, vibrational and rotational entropy.
+    """Calculate the translational, vibrational and rotational entropy.
     All units and constants are in SI units.
 
     mol <plams.Molecule>: A PLAMS molecule.
@@ -49,8 +48,7 @@ def get_entropy(mol, freqs, T=298.15):
 
 
 def get_thermo(mol, freqs, E, T=298.15, export=['E', 'H', 'S', 'G'], unit='kcal/mol'):
-    """
-    Extract and return Gibbs free energies, entropies and/or enthalpies from an AMS KF file.
+    """Extract and return Gibbs free energies, entropies and/or enthalpies from an AMS KF file.
     All vibrational frequencies smaller than 100 cm**-1 are set to 100 cm**-1.
 
     mol <plams.Molecule>: A PLAMS molecule.

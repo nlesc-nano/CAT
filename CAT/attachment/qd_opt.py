@@ -13,7 +13,8 @@ import qmflows
 from ..utils import (get_time, type_to_string)
 from ..mol_utils import (fix_carboxyl, fix_h)
 from ..analysis.jobs import job_geometry_opt
-from ..data_handling.CAT_database import (Database, mol_to_file)
+from ..data_handling.database import Database
+from ..data_handling.database_functions import mol_to_file
 
 
 def init_qd_opt(qd_df, arg):

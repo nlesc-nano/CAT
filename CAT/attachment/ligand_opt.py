@@ -20,8 +20,9 @@ import rdkit
 from rdkit.Chem import AllChem
 
 from .ligand_attach import (rot_mol_angle, sanitize_dim_2)
-from ..data_handling.CAT_database import Database, mol_to_file
-from ..utils import (get_time, type_to_string)
+from ..data_handling.database import Database
+from ..data_handling.database_functions import mol_to_file
+from ..utils import get_time
 from ..mol_utils import (to_symbol, fix_carboxyl, get_bond_index,
                          from_mol_other, from_rdmol, separate_mod)
 

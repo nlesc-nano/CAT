@@ -50,19 +50,19 @@ accoring to their functionality:
 Class API
 ~~~~~~~~~
 
-.. autoclass:: CAT.data_handling.CAT_database.Database
+.. autoclass:: CAT.data_handling.database.Database
     :members:
 
 Function API
 ~~~~~~~~~~~~
 
-.. autofunction:: CAT.data_handling.CAT_database.mol_to_file
+.. autofunction:: CAT.data_handling.database_functions.mol_to_file
 
-.. autofunction:: CAT.data_handling.CAT_database.as_pdb_array
+.. autofunction:: CAT.data_handling.database_functions.as_pdb_array
 
-.. autofunction:: CAT.data_handling.CAT_database.from_pdb_array
+.. autofunction:: CAT.data_handling.database_functions.from_pdb_array
 
-.. autofunction:: CAT.data_handling.CAT_database.sanitize_yaml_settings
+.. autofunction:: CAT.data_handling.database_functions.sanitize_yaml_settings
 
 .. _rdkit.Chem.Mol: http://rdkit.org/docs/source/rdkit.Chem.rdchem.html#rdkit.Chem.rdchem.Mol
 .. _h5py.File: http://docs.h5py.org/en/stable/high/file.html
