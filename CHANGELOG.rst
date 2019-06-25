@@ -5,6 +5,14 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+0.4.3
+*****
+
+* Improved interaction between the database and BDE module
+* Cleaned up BDE module
+* HDF5 indices are now always sorted when itneraction with the database
+
+
 0.4.2
 *****
 
