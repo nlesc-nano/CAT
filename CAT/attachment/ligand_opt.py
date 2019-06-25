@@ -3,7 +3,9 @@
 __all__ = ['init_ligand_opt']
 
 import itertools
+
 import numpy as np
+import pandas as pd
 
 from scm.plams.mol.molecule import Molecule
 from scm.plams.mol.atom import Atom
@@ -48,7 +50,7 @@ def init_ligand_opt(ligand_df, arg):
     if arg.optional.ligand.optimize:
         # Identify the to be optimized ligands
         if overwrite:
-            idx = ligand_df.index
+            idx = pd.Series(True, index=ligand_df.index, name='mol')
             message = '\t has been (re-)optimized'
         else:
             idx = ligand_df['hdf5 index'] < 0
@@ -56,7 +58,7 @@ def init_ligand_opt(ligand_df, arg):
 
         # Optimize the ligands
         lig_new = []
-        for i, ligand in ligand_df['mol'][idx].iteritems():
+        for ligand in ligand_df['mol'][idx]:
             mol_list = split_mol(ligand)
             for mol in mol_list:
                 mol.set_dihed(180.0)

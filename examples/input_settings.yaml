@@ -1,4 +1,4 @@
-path: /Users/basvanbeek/Documents/CdSe/Week_5
+path: /Users/bvanbeek/Documents/CdSe/Week_5
 
 input_cores:
     - Cd68Se55.xyz:
@@ -13,7 +13,7 @@ optional:
         dirname: database
         read: True
         write: True
-        overwrite: False
+        overwrite: True
         mol_format: [pdb]
         mongodb: False
 

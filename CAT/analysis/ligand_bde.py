@@ -40,11 +40,10 @@ def init_bde(qd_df, arg):
     # Check if the calculation has been done already
     if not overwrite and 'qd' in arg.optional.database.read:
         with data.open_csv_qd(data.csv_qd, write=False) as db:
-            try:
-                for i in db[['BDE label', 'BDE dE', 'BDE dG', 'BDE ddG']]:
-                    qd_df[i] = np.nan
-            except KeyError:
-                pass
+            key_ar = np.array(['BDE label', 'BDE dE', 'BDE dG', 'BDE ddG'])
+            bool_ar = np.isin(key_ar, db.columns.levels[0])
+            for i in db[key_ar[bool_ar]]:
+                qd_df[i] = np.nan
             data.from_csv(qd_df, database='QD', get_mol=False)
         qd_df.dropna(axis='columns', how='all', inplace=True)
 
@@ -67,11 +66,12 @@ def _bde_w_dg(qd_df, arg):
     """
     data = Database(arg.optional.database.dirname)
     overwrite = 'qd' in arg.optional.database.overwrite
-
-    # Prepare the job settings
     j1, j2 = arg.optional.qd.dissociate.job1, arg.optional.qd.dissociate.job2
     s1, s2 = arg.optional.qd.dissociate.s1, arg.optional.qd.dissociate.s2
+    ion = arg.optional.qd.dissociate.core_atom
+    lig_count = arg.optional.qd.dissociate.lig_count
 
+    # Identify previously calculated results
     try:
         has_na = qd_df[['BDE dE', 'BDE dG']].isna().all(axis='columns')
         if not has_na.any():
@@ -79,49 +79,52 @@ def _bde_w_dg(qd_df, arg):
     except KeyError:
         has_na = qd_df.index
 
-    for i, mol in qd_df['mol'][has_na].iteritems():
+    for idx, mol in qd_df['mol'][has_na].iteritems():
         # Create XYn and all XYn-dissociated quantum dots
-        xyn = get_xy2(mol)
+        xyn = get_xy2(mol, ion, lig_count)
         if not arg.optional.qd.dissociate.core_index:
             mol_wo_xyn = dissociate_ligand(mol, arg)
         else:
             mol_wo_xyn = dissociate_ligand2(mol, arg)
 
         # Construct new columns for **qd_df**
-        values = [i.properties.df_index for i in mol_wo_xyn]
-        n = len(values)
-        sub_idx = np.arange(n)
-        super_idx = ['BDE label', 'BDE dE', 'BDE ddG', 'BDE dG']
-        idx = list(product(super_idx, sub_idx))
-        for j in idx:
-            if j not in qd_df.index:
-                qd_df[j] = np.nan
+        labels = [m.properties.df_index for m in mol_wo_xyn]
+        sub_idx = np.arange(len(labels)).astype(str, copy=False)
+        try:
+            n = qd_df['BDE label'].shape[1]
+        except KeyError:
+            n = 0
+        if len(labels) > n:
+            for i in sub_idx[n:]:
+                qd_df[('BDE label', i)] = qd_df[('BDE dE', i)] = qd_df[('BDE ddG', i)] = np.nan
 
         # Prepare slices
-        label_slice = i, idx[0:n]
-        dE_slice = i, idx[n:2*n]
-        ddG_slice = i, idx[2*n:3*n]
+        label_slice = idx, list(product(['BDE label'], sub_idx))
+        dE_slice = idx, list(product(['BDE dE'], sub_idx))
+        ddG_slice = idx, list(product(['BDE ddG'], sub_idx))
 
         # Run the BDE calculations
         init(path=mol.properties.path, folder='BDE')
         config.default_jobmanager.settings.hashing = None
-        qd_df.loc[label_slice] = values
+        qd_df.loc[label_slice] = labels
         qd_df.loc[dE_slice] = get_bde_dE(mol, xyn, mol_wo_xyn, job=j1, s=s1)
         qd_df.loc[ddG_slice] = get_bde_ddG(mol, xyn, mol_wo_xyn, job=j2, s=s2)
         finish()
+
     qd_df['BDE dG'] = qd_df['BDE dE'] + qd_df['BDE ddG']
 
     # Update the database
     if 'qd' in arg.optional.database.write:
-        value1 = qmflows.singlepoint['specific'][type_to_string(j1)].copy()
-        value1.update(s1)
-        value2 = qmflows.freq['specific'][type_to_string(j2)].copy()
-        value2.update(s2)
-        recipe = Settings()
-        recipe['BDE 1'] = {'key': j1, 'value': value1}
-        recipe['BDE 2'] = {'key': j2, 'value': value2}
-        data.update_csv(qd_df, database='QD', job_recipe=recipe, overwrite=overwrite,
-                        columns=[('settings', 'BDE 1'), ('settings', 'BDE 2')]+idx)
+        qd_df.sort_index(axis='columns', inplace=True)
+        column_tup = ('BDE label', 'BDE dE', 'BDE ddG', 'BDE dG')
+        kwarg = {
+            'database': 'QD',
+            'job_recipe': get_recipe(j1, s1, j2, s2),
+            'overwrite': overwrite,
+            'columns': [('settings', 'BDE 1'), ('settings', 'BDE 2')]
+        }
+        kwarg['columns'] += [(i, j) for i, j in qd_df.columns if i in column_tup]
+        data.update_csv(qd_df, **kwarg)
 
 
 def _bde_wo_dg(qd_df, arg):
@@ -132,13 +135,15 @@ def _bde_wo_dg(qd_df, arg):
     :parameter arg: A settings object containing all (optional) arguments.
     :type arg: |plams.Settings|_ (superclass: |dict|_).
     """
+    # Unpack arguments
     data = Database(arg.optional.database.dirname)
     overwrite = 'qd' in arg.optional.database.overwrite
-
-    # Prepare the job settings
     j1 = arg.optional.qd.dissociate.job1
     s1 = arg.optional.qd.dissociate.s1
+    ion = arg.optional.qd.dissociate.core_atom
+    lig_count = arg.optional.qd.dissociate.lig_count
 
+    # Identify previously calculated results
     try:
         has_na = qd_df['BDE dE'].isna().all(axis='columns')
         if not has_na.any():
@@ -146,48 +151,67 @@ def _bde_wo_dg(qd_df, arg):
     except KeyError:
         has_na = qd_df.index
 
-    for i, mol in qd_df['mol'][has_na].iteritems():
+    for idx, mol in qd_df['mol'][has_na].iteritems():
         # Create XYn and all XYn-dissociated quantum dots
-        xyn = get_xy2(mol)
+        xyn = get_xy2(mol, ion, lig_count)
         if not arg.optional.qd.dissociate.core_index:
             mol_wo_xyn = dissociate_ligand(mol, arg)
         else:
             mol_wo_xyn = dissociate_ligand2(mol, arg)
 
         # Construct new columns for **qd_df**
-        values = [i.properties.df_index for i in mol_wo_xyn]
-        n = len(values)
-        sub_idx = np.arange(n)
-        super_idx = ['BDE label', 'BDE dE']
-        idx = list(product(super_idx, sub_idx))
-        for j in idx:
-            if j not in qd_df.index:
-                qd_df[j] = np.nan
+        labels = [m.properties.df_index for m in mol_wo_xyn]
+        sub_idx = np.arange(len(labels)).astype(str, copy=False)
+        try:
+            n = qd_df['BDE label'].shape[1]
+        except KeyError:
+            n = 0
+        if len(labels) > n:
+            for i in sub_idx[n:]:
+                qd_df[('BDE label', i)] = qd_df[('BDE dE', i)] = np.nan
 
         # Prepare slices
-        label_slice = i, idx[0:n]
-        dE_slice = i, idx[n:2*n]
+        label_slice = idx, list(product(['BDE label'], sub_idx))
+        dE_slice = idx, list(product(['BDE dE'], sub_idx))
 
         # Run the BDE calculations
         init(path=mol.properties.path, folder='BDE')
         config.default_jobmanager.settings.hashing = None
-        qd_df.loc[label_slice] = values
+        qd_df.loc[label_slice] = labels
         qd_df.loc[dE_slice] = get_bde_dE(mol, xyn, mol_wo_xyn, job=j1, s=s1)
         finish()
 
     # Update the database
     if 'qd' in arg.optional.database.write:
-        recipe = Settings()
-        value = qmflows.singlepoint[type_to_string(j1)]
-        value.update(s1)
-        recipe['BDE 1'] = {'key': j1, 'value': value}
-        data.update_csv(qd_df, database='QD', job_recipe=recipe, overwrite=overwrite,
-                        columns=[('settings', 'BDE 1')]+idx)
+        qd_df.sort_index(axis='columns', inplace=True)
+        column_tup = ('BDE label', 'BDE dE')
+        kwarg = {
+            'database': 'QD',
+            'job_recipe': get_recipe(j1, s1),
+            'overwrite': overwrite,
+            'columns': [('settings', 'BDE 1')]
+        }
+        kwarg['columns'] += [(i, j) for i, j in qd_df.columns if i in column_tup]
+        data.update_csv(qd_df, **kwarg)
+
+
+def get_recipe(job1, s1, job2=None, s2=None):
+    """Return the a dictionary with job types and job settings."""
+    ret = Settings()
+    value1 = qmflows.singlepoint['specific'][type_to_string(job1)].copy()
+    value1.update(s1)
+    ret['BDE 1'] = {'key': job1, 'value': value1}
+
+    if job2 is not None and s2 is not None:
+        value2 = qmflows.freq['specific'][type_to_string(job2)].copy()
+        value2.update(s2)
+        ret['BDE 2'] = {'key': job2, 'value': value2}
+
+    return ret
 
 
 def get_bde_dE(tot, lig, core, job=None, s=None):
-    """ Calculate the bond dissociation energy: dE = dE(mopac) + (dG(uff) - dE(uff))
-    """
+    """Calculate the bond dissociation energy: dE = dE(mopac) + (dG(uff) - dE(uff))."""
     # Optimize XYn
     if job == AMSJob:
         s_cp = s.copy()
@@ -283,7 +307,7 @@ def get_xy2(mol, ion='Cd', lig_count=2):
             else:
                 ret = Molecule()
                 ret.atoms = at_list
-                ret.bonds = set(chain.from_iterable(at.bonds for at in at_list))
+                ret.bonds = list(set(chain.from_iterable(at.bonds for at in at_list)))
                 return ret.copy()
 
     # Translate the ligands to their final position
@@ -291,6 +315,14 @@ def get_xy2(mol, ion='Cd', lig_count=2):
     lig2 = lig1.copy()
     idx1, anchor1 = get_anchor(lig1)
     idx2, anchor2 = get_anchor(lig2)
+
+    # Return a the ligand without the ion
+    if ion is None:
+        lig1.properties.name = 'XYn'
+        lig1.properties.path = mol.properties.path
+        lig1.properties.indices = [idx1]
+        return lig1
+
     radius = anchor1.radius + PeriodicTable.get_radius(ion)
     target = np.array([radius, 0.0, 0.0])
     lig1.translate(anchor1.vector_to(target))
@@ -450,13 +482,14 @@ def remove_ligands(mol, combinations_dict, indices, idx_lig):
     for core in combinations_dict:
         for lig in combinations_dict[core]:
             mol_tmp = mol.copy()
+
             mol_tmp.properties = Settings()
             mol_tmp.properties.core_topology = str(mol[core].properties.topology) + '_' + str(core)
             mol_tmp.properties.lig_residue = sorted([mol[i[0]].properties.pdb_info.ResidueNumber
                                                      for i in lig])
             mol_tmp.properties.df_index = mol_tmp.properties.core_topology
-            mol_tmp.properties.df_index += ''.join([' ' + str(i)
-                                                    for i in mol_tmp.properties.lig_residue])
+            mol_tmp.properties.df_index += ' '.join(str(i) for i in mol_tmp.properties.lig_residue)
+
             delete_idx = sorted([core] + list(chain.from_iterable(lig)), reverse=True)
             for i in delete_idx:
                 mol_tmp.delete_atom(mol_tmp[i])
