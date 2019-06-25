@@ -3,6 +3,7 @@
 __all__ = ['init_solv']
 
 import os
+import shutil
 from itertools import product
 from os.path import (join, dirname)
 
@@ -95,7 +96,7 @@ def get_surface_charge(mol, job=None, s=None):
     return get_coskf(results)
 
 
-def get_solv(mol, solvent_list, coskf, job=None, s=None):
+def get_solv(mol, solvent_list, coskf, job=None, s=None, keep_files=True):
     """ Calculate the solvation energy of *mol* in various *solvents*. """
     # Return 2x np.nan if no coskf is None (i.e. the COSMO-surface construction failed)
     if coskf is None:
@@ -129,7 +130,14 @@ def get_solv(mol, solvent_list, coskf, job=None, s=None):
             E_solv.append(np.nan)
             Gamma.append(np.nan)
 
-    # Return the solvation energies and activity coefficients as two lists
+    # Delete all mopac and cosmo-rs files if keep_files=False
+    if not keep_files:
+        mopac = dirname(s.input.Compound._h)
+        shutil.rmtree(mopac)
+        for job in jobs:
+            shutil.rmtree(job.path)
+
+    # Return the solvation energies and activity coefficients as dict
     return E_solv, Gamma
 
 
