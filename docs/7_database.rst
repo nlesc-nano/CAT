@@ -47,6 +47,32 @@ accoring to their functionality:
     :meth:`.from_csv`  :meth:`.from_hdf5`
     =================  ==================
 
+Index
+~~~~~
+
+.. currentmodule:: CAT.data_handling.database.Database
+.. autosummary::
+
+    open_yaml
+    open_csv_lig
+    open_csv_qd
+    DF
+    update_csv
+    update_yaml
+    update_hdf5
+    from_csv
+    from_hdf5
+
+
+.. currentmodule:: CAT.data_handling.database_functions
+.. autosummary::
+
+    mol_to_file
+    as_pdb_array
+    from_pdb_array
+    sanitize_yaml_settings
+
+
 Class API
 ~~~~~~~~~
 
