@@ -71,7 +71,13 @@ def get_nan_row(df):
     :return: A list of non-esque objects, one for each column in **df**.
     :rtype: |list|_ [|int|_, |float|_ and/or |None|_]
     """
-    dtype_dict = {np.dtype('int64'): -1, np.dtype('float64'): np.nan, np.dtype('O'): None}
+    dtype_dict = {
+        np.dtype('int64'): -1,
+        np.dtype('float64'): np.nan,
+        np.dtype('O'): None,
+        np.dtype('bool'): False
+    }
+
     if not isinstance(df.index, pd.MultiIndex):
         return [dtype_dict[df[i].dtype] for i in df]
     else:
@@ -188,12 +194,17 @@ def _create_csv_lig(path):
     :param str path: The path to the database.
     """
     idx = pd.MultiIndex.from_tuples([('-', '-')], names=['smiles', 'anchor'])
-    columns_tups = [('hdf5 index', ''), ('formula', ''), ('settings', 1)]
-    columns = pd.MultiIndex.from_tuples(columns_tups, names=['index', 'sub index'])
+
+    columns = pd.MultiIndex.from_tuples(
+        [('hdf5 index', ''), ('formula', ''), ('opt', ''), ('settings', 1)],
+        names=['index', 'sub index']
+    )
+
     df = pd.DataFrame(None, index=idx, columns=columns)
     df['hdf5 index'] = -1
     df['formula'] = 'str'
     df['settings'] = 'str'
+    df['opt'] = False
     df.to_csv(path)
 
 
@@ -203,15 +214,20 @@ def _create_csv_qd(path):
     :param str path: The path to the database.
     """
     idx = pd.MultiIndex.from_tuples(
-            [('-', '-', '-', '-')],
-            names=['core', 'core anchor', 'ligand smiles', 'ligand anchor']
+        [('-', '-', '-', '-')],
+        names=['core', 'core anchor', 'ligand smiles', 'ligand anchor']
     )
-    columns_tups = [('hdf5 index', ''), ('settings', 1), ('settings', 2)]
-    columns = pd.MultiIndex.from_tuples(columns_tups, names=['index', 'sub index'])
+
+    columns = pd.MultiIndex.from_tuples(
+        [('hdf5 index', ''), ('ligand count', ''), ('opt', ''), ('settings', 1), ('settings', 2)],
+        names=['index', 'sub index']
+    )
+
     df = pd.DataFrame(None, index=idx, columns=columns)
     df['hdf5 index'] = -1
     df['ligand count'] = -1
     df['settings'] = 'str'
+    df['opt'] = False
     df.to_csv(path)
 
 

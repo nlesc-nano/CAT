@@ -105,7 +105,7 @@ class Database():
 
         def __enter__(self):
             # Open the .csv file
-            dtype = {'hdf5 index': int, 'formula': str, 'settings': str}
+            dtype = {'hdf5 index': int, 'formula': str, 'settings': str, 'opt': bool}
             self.df = Database.DF(
                 pd.read_csv(self.path, index_col=[0, 1], header=[0, 1], dtype=dtype)
             )
@@ -137,7 +137,7 @@ class Database():
 
         def __enter__(self):
             # Open the .csv file
-            dtype = {'hdf5 index': int, 'settings': str}
+            dtype = {'hdf5 index': int, 'settings': str, 'opt': bool}
             self.df = Database.DF(
                 pd.read_csv(self.path, index_col=[0, 1, 2, 3], header=[0, 1], dtype=dtype)
             )
@@ -201,7 +201,8 @@ class Database():
 
     """ #################################  Updating the database ############################## """
 
-    def update_csv(self, df, database='ligand', columns=None, overwrite=False, job_recipe=None):
+    def update_csv(self, df, database='ligand', columns=None, overwrite=False, job_recipe=None,
+                   opt=False):
         """ Update **self.csv_lig** or **self.csv_qd** with
         (potentially) new user provided settings.
 
@@ -254,11 +255,13 @@ class Database():
                     db[i] = -1
 
             # Update **self.hdf5**; returns a new series of indices
-            hdf5_series = self.update_hdf5(df, database, overwrite)
+            hdf5_series = self.update_hdf5(df, database=database, overwrite=overwrite, opt=opt)
 
             # Update **db.values**
             db.update(df[columns], overwrite=overwrite)
             db.update(hdf5_series, overwrite=True)
+            if opt:
+                db.update(df[('opt', '')], overwrite=True)
 
     def update_yaml(self, job_recipe):
         """ Update **self.yaml** with (potentially) new user provided settings.
@@ -294,7 +297,7 @@ class Database():
                     ret[item] = key + ' ' + str(len(db[key]) - 1)
         return ret
 
-    def update_hdf5(self, df, database='ligand', overwrite=False):
+    def update_hdf5(self, df, database='ligand', overwrite=False, opt=False):
         """ Export molecules (see the *mol* column in **df**) to the structure database.
         Returns a series with the **self.hdf5** indices of all new entries.
 
@@ -306,8 +309,12 @@ class Database():
         :rtype: |pd.Series|_ (index: |str|_, values: |np.int64|_)
         """
         # Identify new and preexisting entries
-        new = df['hdf5 index'][df['hdf5 index'] == -1]
-        old = df['hdf5 index'][df['hdf5 index'] != -1]
+        if opt:
+            new = df['hdf5 index'][df['opt'] == False]  # noqa
+            old = df['hdf5 index'][df['opt'] == True]  # noqa
+        else:
+            new = df['hdf5 index'][df['hdf5 index'] == -1]
+            old = df['hdf5 index'][df['hdf5 index'] >= 0]
 
         # Add new entries to the database
         self.hdf5_availability()
@@ -323,6 +330,9 @@ class Database():
                 f[database][i:k] = pdb_array
 
                 ret = pd.Series(np.arange(i, k), index=new.index, name=('hdf5 index', ''))
+                df.update(ret, overwrite=True)
+                if opt:
+                    df.loc[new.index, ('opt', '')] = True
             else:
                 ret = pd.Series(name=('hdf5 index', ''), dtype=int)
 
@@ -335,6 +345,8 @@ class Database():
                 idx = np.argsort(old)
                 old = old[idx]
                 f[database][old] = ar[idx]
+                if opt:
+                    df.loc[idx.index, ('opt', '')] = True
 
         return ret
 
@@ -443,7 +455,7 @@ class Database():
         """
         # Sort and find all valid HDF5 indices
         df.sort_values(by=['hdf5 index'], inplace=True)
-        df_slice = df['hdf5 index'] >= 0
+        df_slice = df['opt'] == True  # noqa
         idx = df['hdf5 index'][df_slice].values
 
         # If no HDF5 indices are availble in **df** then abort the function
