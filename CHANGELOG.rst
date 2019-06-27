@@ -8,7 +8,8 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 0.4.5
 *****
 
-* All raw input scripts are now stored in the structures.hdf5 file.
+* All raw input scripts are now stored in the structures.hdf5 file
+  (see: https://github.com/nlesc-nano/CAT/issues/36).
 
 
 0.4.4
