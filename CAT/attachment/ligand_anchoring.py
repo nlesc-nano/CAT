@@ -54,13 +54,14 @@ def _get_df(mol_list):
     # Create the dataframe index and columns
     idx_tuples = [(mol.properties.smiles, mol.properties.anchor) for mol in mol_list]
     idx = pd.MultiIndex.from_tuples(idx_tuples, names=['smiles', 'anchor'])
-    columns_tuples = [('mol', ''), ('formula', ''), ('hdf5 index', '')]
+    columns_tuples = [('mol', ''), ('formula', ''), ('hdf5 index', ''), ('opt', '')]
     columns = pd.MultiIndex.from_tuples(columns_tuples, names=['index', 'sub index'])
 
     # Create, fill and return the dataframe
     df = pd.DataFrame(-1, index=idx, columns=columns)
     df['mol'] = mol_list
     df['formula'] = [lig.get_formula() for lig in df['mol']]
+    df['opt'] = False
     return df
 
 

@@ -33,7 +33,7 @@ def init_qd_opt(qd_df, arg):
         idx = pd.Series(True, index=qd_df.index, name='mol')
         message = '\t has been (re-)optimized'
     else:
-        idx = qd_df['hdf5 index'] < 0
+        idx = qd_df['opt'] == False  # noqa
         message = '\t has been optimized'
 
     # Optimize the geometries
@@ -47,19 +47,29 @@ def init_qd_opt(qd_df, arg):
 
     # Export the geometries to the database
     if 'qd' in arg.optional.database.write:
-        value1 = qmflows.geometry['specific'][type_to_string(job_recipe.job1)].copy()
-        value1.update(job_recipe.s1)
-        value2 = qmflows.geometry['specific'][type_to_string(job_recipe.job2)].copy()
-        value2.update(job_recipe.s2)
-        recipe = Settings()
-        recipe['1'] = {'key': job_recipe.job1, 'value': value1}
-        recipe['2'] = {'key': job_recipe.job2, 'value': value2}
+        _qd_to_db(qd_df, arg)
 
-        columns = [('hdf5 index', ''), ('settings', '1'), ('settings', '2')]
-        database = Database(path=arg.optional.database.dirname)
-        database.update_csv(qd_df, columns=columns, job_recipe=recipe, database='QD')
-        path = arg.optional.qd.dirname
-        mol_to_file(qd_df['mol'], path, overwrite, arg.optional.database.mol_format)
+
+def _qd_to_db(qd_df, arg):
+    """Export quantum dot optimziation results to the database."""
+    job_recipe = arg.optional.qd.optimize
+    overwrite = 'qd' in arg.optional.database.overwrite
+
+    v1 = qmflows.geometry['specific'][type_to_string(job_recipe.job1)].copy()
+    v1.update(job_recipe.s1)
+    v2 = qmflows.geometry['specific'][type_to_string(job_recipe.job2)].copy()
+    v2.update(job_recipe.s2)
+    recipe = Settings({
+        '1': {'key': job_recipe.job1, 'value': v1},
+        '2': {'key': job_recipe.job2, 'value': v2}
+    })
+
+    columns = [('hdf5 index', ''), ('settings', '1'), ('settings', '2')]
+    database = Database(path=arg.optional.database.dirname)
+    database.update_csv(qd_df, columns=columns, job_recipe=recipe, database='QD', opt=True)
+    path = arg.optional.qd.dirname
+
+    mol_to_file(qd_df['mol'], path, overwrite, arg.optional.database.mol_format)
 
 
 def qd_opt(mol, job_recipe):

@@ -35,16 +35,19 @@ def init_ligand_opt(ligand_df, arg):
     :parameter arg: A settings object containing all (optional) arguments.
     :type arg: |plams.Settings|_ (superclass: |dict|_).
     """
+
+
     database = Database(arg.optional.database.dirname)
     overwrite = 'ligand' in arg.optional.database.overwrite
 
     # Searches for matches between the input ligand and the database; imports the structure
     if 'ligand' in arg.optional.database.read:
         database.from_csv(ligand_df, database='ligand')
-        for i, mol in zip(ligand_df['hdf5 index'], ligand_df['mol']):
+        for i, mol in zip(ligand_df['opt'], ligand_df['mol']):
             if i == -1:
                 continue
             print(get_time() + '{}\t has been pulled from the database'.format(mol.properties.name))
+    ligand_df['opt'] = ligand_df['opt'].astype(bool, copy=False)
 
     if 'ligand' in arg.optional.database.write:
         _ligand_to_db(ligand_df, arg, database, opt=False)
@@ -56,7 +59,7 @@ def init_ligand_opt(ligand_df, arg):
             idx = pd.Series(True, index=ligand_df.index, name='mol')
             message = '{}\t has been (re-)optimized'
         else:
-            idx = ligand_df['hdf5 index'] < 0
+            idx = np.invert(ligand_df['opt'])
             message = '{}\t has been optimized'
 
         # Optimize the ligands
@@ -78,6 +81,7 @@ def init_ligand_opt(ligand_df, arg):
             else:
                 ligand_df.loc[idx, 'mol'] = lig_new
 
+    print()
     remove_duplicates(ligand_df)
 
     # Write newly optimized structures to the database
@@ -90,13 +94,16 @@ def _ligand_to_db(ligand_df, arg, database, opt=True):
     overwrite = 'ligand' in arg.optional.database.overwrite
     path = arg.optional.ligand.dirname
 
-    kwarg = {'database': 'ligand', 'overwrite': overwrite}
+    kwarg = {'overwrite': overwrite}
     if opt:
         kwarg['job_recipe'] = Settings({'1': {'key': 'RDKit_' + rdkit.__version__, 'value': 'UFF'}})
         kwarg['columns'] = [('formula', ''), ('hdf5 index', ''), ('settings', '1')]
+        kwarg['database'] = 'ligand'
+        kwarg['opt'] = True
         mol_to_file(ligand_df['mol'], path, overwrite, arg.optional.database.mol_format)
     else:
         kwarg['columns'] = [('formula', ''), ('hdf5 index', '')]
+        kwarg['database'] = 'ligand_no_opt'
 
     database.update_csv(ligand_df, **kwarg)
 
