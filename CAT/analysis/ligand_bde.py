@@ -5,6 +5,7 @@ __all__ = ['init_bde']
 from itertools import chain, combinations, product
 
 import numpy as np
+import pandas as pd
 from scipy.spatial.distance import cdist
 
 from scm.plams import PeriodicTable, AMSJob
@@ -64,8 +65,6 @@ def _bde_w_dg(qd_df, arg):
     :parameter arg: A settings object containing all (optional) arguments.
     :type arg: |plams.Settings|_ (superclass: |dict|_).
     """
-    data = Database(arg.optional.database.dirname)
-    overwrite = 'qd' in arg.optional.database.overwrite
     j1, j2 = arg.optional.qd.dissociate.job1, arg.optional.qd.dissociate.job2
     s1, s2 = arg.optional.qd.dissociate.s1, arg.optional.qd.dissociate.s2
     ion = arg.optional.qd.dissociate.core_atom
@@ -77,7 +76,7 @@ def _bde_w_dg(qd_df, arg):
         if not has_na.any():
             return
     except KeyError:
-        has_na = qd_df.index
+        has_na = pd.Series(True, index=qd_df.index)
 
     for idx, mol in qd_df['mol'][has_na].iteritems():
         # Create XYn and all XYn-dissociated quantum dots
@@ -106,25 +105,29 @@ def _bde_w_dg(qd_df, arg):
         # Run the BDE calculations
         init(path=mol.properties.path, folder='BDE')
         config.default_jobmanager.settings.hashing = None
+        mol.properties.job_path = []
         qd_df.loc[label_slice] = labels
         qd_df.loc[dE_slice] = get_bde_dE(mol, xyn, mol_wo_xyn, job=j1, s=s1)
         qd_df.loc[ddG_slice] = get_bde_ddG(mol, xyn, mol_wo_xyn, job=j2, s=s2)
+        mol.properties.job_path += xyn.properties.pop('job_path')
+        for m in mol_wo_xyn:
+            mol.properties.job_path += m.properties.pop('job_path')
         finish()
 
     qd_df['BDE dG'] = qd_df['BDE dE'] + qd_df['BDE ddG']
 
+    job_settings = []
+    for mol in qd_df['mol']:
+        try:
+            job_settings.append(mol.properties.pop('job_path'))
+        except KeyError:
+            job_settings.append([])
+    qd_df[('job_settings_BDE', '')] = job_settings
+
     # Update the database
     if 'qd' in arg.optional.database.write:
-        qd_df.sort_index(axis='columns', inplace=True)
-        column_tup = ('BDE label', 'BDE dE', 'BDE ddG', 'BDE dG')
-        kwarg = {
-            'database': 'QD',
-            'job_recipe': get_recipe(j1, s1, j2, s2),
-            'overwrite': overwrite,
-            'columns': [('settings', 'BDE 1'), ('settings', 'BDE 2')]
-        }
-        kwarg['columns'] += [(i, j) for i, j in qd_df.columns if i in column_tup]
-        data.update_csv(qd_df, **kwarg)
+        with pd.option_context('mode.chained_assignment', None):
+            _qd_to_db(qd_df, arg, has_na, with_dg=True)
 
 
 def _bde_wo_dg(qd_df, arg):
@@ -136,8 +139,6 @@ def _bde_wo_dg(qd_df, arg):
     :type arg: |plams.Settings|_ (superclass: |dict|_).
     """
     # Unpack arguments
-    data = Database(arg.optional.database.dirname)
-    overwrite = 'qd' in arg.optional.database.overwrite
     j1 = arg.optional.qd.dissociate.job1
     s1 = arg.optional.qd.dissociate.s1
     ion = arg.optional.qd.dissociate.core_atom
@@ -149,7 +150,7 @@ def _bde_wo_dg(qd_df, arg):
         if not has_na.any():
             return
     except KeyError:
-        has_na = qd_df.index
+        has_na = pd.Series(True, index=qd_df.index)
 
     for idx, mol in qd_df['mol'][has_na].iteritems():
         # Create XYn and all XYn-dissociated quantum dots
@@ -177,22 +178,49 @@ def _bde_wo_dg(qd_df, arg):
         # Run the BDE calculations
         init(path=mol.properties.path, folder='BDE')
         config.default_jobmanager.settings.hashing = None
+        mol.properties.job_path = []
         qd_df.loc[label_slice] = labels
         qd_df.loc[dE_slice] = get_bde_dE(mol, xyn, mol_wo_xyn, job=j1, s=s1)
+        mol.properties.job_path += xyn.properties.pop('job_path')
+        for m in mol_wo_xyn:
+            mol.properties.job_path += m.properties.pop('job_path')
         finish()
+
+    job_settings = []
+    for mol in qd_df['mol']:
+        try:
+            job_settings.append(mol.properties.pop('job_path'))
+        except KeyError:
+            job_settings.append([])
+    qd_df[('job_settings_BDE', '')] = job_settings
 
     # Update the database
     if 'qd' in arg.optional.database.write:
-        qd_df.sort_index(axis='columns', inplace=True)
+        with pd.option_context('mode.chained_assignment', None):
+            _qd_to_db(qd_df, arg, has_na, with_dg=False)
+
+
+def _qd_to_db(qd_df, arg, idx, with_dg=True):
+    data = Database(arg.optional.database.dirname)
+    overwrite = 'qd' in arg.optional.database.overwrite
+    j1 = arg.optional.qd.dissociate.job1
+    s1 = arg.optional.qd.dissociate.s1
+
+    qd_df.sort_index(axis='columns', inplace=True)
+    kwarg = {'database': 'QD', 'overwrite': overwrite}
+    if with_dg:
+        j2 = arg.optional.qd.dissociate.job2
+        s2 = arg.optional.qd.dissociate.s2
+        kwarg['job_recipe'] = get_recipe(j1, s1, j2, s2)
+        kwarg['columns'] = [('job_settings_BDE', ''), ('settings', 'BDE 1'), ('settings', 'BDE 2')]
+        column_tup = ('BDE label', 'BDE dE', 'BDE ddG', 'BDE dG')
+    else:
+        kwarg['job_recipe'] = get_recipe(j1, s1)
+        kwarg['columns'] = [('job_settings_BDE', ''), ('settings', 'BDE 1')]
         column_tup = ('BDE label', 'BDE dE')
-        kwarg = {
-            'database': 'QD',
-            'job_recipe': get_recipe(j1, s1),
-            'overwrite': overwrite,
-            'columns': [('settings', 'BDE 1')]
-        }
-        kwarg['columns'] += [(i, j) for i, j in qd_df.columns if i in column_tup]
-        data.update_csv(qd_df, **kwarg)
+    kwarg['columns'] += [(i, j) for i, j in qd_df.columns if i in column_tup]
+
+    data.update_csv(qd_df[idx], **kwarg)
 
 
 def get_recipe(job1, s1, job2=None, s2=None):
@@ -219,6 +247,7 @@ def get_bde_dE(tot, lig, core, job=None, s=None):
         lig.job_geometry_opt(job, s_cp, name='BDE_geometry_optimization')
     else:
         lig.job_geometry_opt(job, s, name='BDE_geometry_optimization')
+
     E_lig = lig.properties.energy.E
     if E_lig is np.nan:
         print(get_time() + 'WARNING: The BDE XYn geometry optimization failed, skipping further \
@@ -348,6 +377,7 @@ def get_xy2(mol, ion='Cd', lig_count=2):
     CdX2.properties.path = mol.properties.path
     CdX2.properties.indices = [1, 1 + idx1, 2 + len(lig2) + idx2]
     CdX2[1].properties.charge = 0 - sum([at.properties.charge for at in CdX2.atoms[1:]])
+    CdX2.properties.job_path = []
 
     return CdX2
 
@@ -494,6 +524,7 @@ def remove_ligands(mol, combinations_dict, indices, idx_lig):
             for i in delete_idx:
                 mol_tmp.delete_atom(mol_tmp[i])
             mol_tmp.properties.indices = indices
+            mol_tmp.properties.job_path = []
             ret.append(mol_tmp)
     return ret
 

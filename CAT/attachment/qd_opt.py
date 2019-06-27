@@ -40,17 +40,30 @@ def init_qd_opt(qd_df, arg):
     if idx.any():
         init(path=arg.optional.qd.dirname, folder='QD_optimize')
         for mol in qd_df['mol'][idx]:
+            mol.properties.job_path = []
             qd_opt(mol, job_recipe)
             print(get_time() + mol.properties.name + message)
         finish()
-        print('')
+
+        job_settings = []
+        for mol in qd_df['mol']:
+            try:
+                job_settings.append(mol.properties.pop('job_path'))
+            except KeyError:
+                job_settings.append([])
+        qd_df[('job_settings_QD_opt', '')] = job_settings
+        print()
+    else:  # No new molecules, move along
+        return None
 
     # Export the geometries to the database
     if 'qd' in arg.optional.database.write:
-        _qd_to_db(qd_df, arg)
+        with pd.option_context('mode.chained_assignment', None):
+            _qd_to_db(qd_df, arg, idx)
+    return None
 
 
-def _qd_to_db(qd_df, arg):
+def _qd_to_db(qd_df, arg, idx):
     """Export quantum dot optimziation results to the database."""
     job_recipe = arg.optional.qd.optimize
     overwrite = 'qd' in arg.optional.database.overwrite
@@ -64,11 +77,18 @@ def _qd_to_db(qd_df, arg):
         '2': {'key': job_recipe.job2, 'value': v2}
     })
 
-    columns = [('hdf5 index', ''), ('settings', '1'), ('settings', '2')]
+    columns = [('hdf5 index', ''), ('job_settings_QD_opt', ''),
+               ('settings', '1'), ('settings', '2')]
     database = Database(path=arg.optional.database.dirname)
-    database.update_csv(qd_df, columns=columns, job_recipe=recipe, database='QD', opt=True)
-    path = arg.optional.qd.dirname
+    database.update_csv(
+        qd_df[idx],
+        columns=columns,
+        job_recipe=recipe,
+        database='QD',
+        opt=True
+    )
 
+    path = arg.optional.qd.dirname
     mol_to_file(qd_df['mol'], path, overwrite, arg.optional.database.mol_format)
 
 

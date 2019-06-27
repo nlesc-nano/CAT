@@ -67,6 +67,9 @@ def job_single_point(self, job, settings, name='Single_point', ret_results=False
     if not self.properties.energy.E or self.properties.energy.E is None:
         self.properties.energy.E = np.nan
 
+    inp_name = join(my_job.path, my_job.name + '.in')
+    self.properties.job_path.append(inp_name)
+
     # Return results
     if ret_results:
         return results
@@ -104,6 +107,9 @@ def job_geometry_opt(self, job, settings, name='Geometry_optimization', ret_resu
         print(get_time() + 'WARNING: Failed to retrieve results of ' + results.job.name)
     if not self.properties.energy.E or self.properties.energy.E is None:
         self.properties.energy.E = np.nan
+
+    inp_name = join(my_job.path, my_job.name + '.in')
+    self.properties.job_path.append(inp_name)
 
     # Return results
     if ret_results:
@@ -149,10 +155,14 @@ def job_freq(self, job, settings, name='Frequency_analysis', opt=True, ret_resul
         self.properties.frequencies = np.nan
         self.properties.energy = {'E': np.nan, 'H': np.nan, 'S': np.nan, 'G': np.nan}
         print(get_time() + 'WARNING: Failed to retrieve results of ' + results.job.name)
+
     if not isinstance(self.properties.frequencies, np.ndarray):
         self.properties.frequencies = np.nan
     if not self.properties.energy or self.properties.energy is None:
         self.properties.energy = {'E': np.nan, 'H': np.nan, 'S': np.nan, 'G': np.nan}
+
+    inp_name = join(my_job.path, my_job.name + '.in')
+    self.properties.job_path.append(inp_name)
 
     # Return results
     if ret_results:

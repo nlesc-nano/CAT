@@ -3,6 +3,9 @@
 __all__ = ['Database']
 
 from os import getcwd
+from time import sleep
+from typing import Optional
+from itertools import count
 
 import yaml
 import h5py
@@ -236,11 +239,17 @@ class Database():
             if not columns:
                 df_columns = df.columns
             else:
-                df_columns = pd.Index(columns + [i for i in df.columns if i[0] == 'settings'])
+                df_columns = pd.Index(columns)
 
             # Update **db.columns**
             bool_ar = df_columns.isin(db.columns)
             for i in df_columns[~bool_ar]:
+                if 'job_settings' in i[0]:
+                    self._update_hdf5_settings(df, i[0])
+                    del df[i]
+                    idx = columns.index(i)
+                    columns.pop(idx)
+                    continue
                 try:
                     db[i] = np.array((None), dtype=df[i].dtype)
                 except TypeError:  # e.g. if csv[i] consists of the datatype np.int64
@@ -309,6 +318,7 @@ class Database():
             old = df['hdf5 index'][df['hdf5 index'] >= 0]
 
         # Add new entries to the database
+        self.hdf5_availability()
         with h5py.File(self.hdf5, 'r+') as f:
             i, j = f[database].shape
 
@@ -319,6 +329,7 @@ class Database():
                 k = i + pdb_array.shape[0]
                 f[database].shape = k, pdb_array.shape[1]
                 f[database][i:k] = pdb_array
+
                 ret = pd.Series(np.arange(i, k), index=new.index, name=('hdf5 index', ''))
                 df.update(ret, overwrite=True)
                 if opt:
@@ -331,6 +342,7 @@ class Database():
                 ar = as_pdb_array(df['mol'][old.index], min_size=j)
 
                 # Ensure that the hdf5 indices are sorted
+                # import pdb; pdb.set_trace()
                 idx = np.argsort(old)
                 old = old[idx]
                 f[database][old] = ar[idx]
@@ -338,6 +350,54 @@ class Database():
                     df.loc[idx.index, ('opt', '')] = True
 
         return ret
+
+    def _update_hdf5_settings(self, df, column):
+        # Add new entries to the database
+        self.hdf5_availability()
+        with h5py.File(self.hdf5, 'r+') as f:
+            i, j, k = f[column].shape
+
+            # Create a 3D array of input files
+            try:
+                job_ar = self._read_inp(df[column], j, k)
+            except ValueError:  # df[column] consists of empty lists
+                return None
+
+            # Reshape **self.hdf5**
+            k = max(i, 1 + int(df['hdf5 index'].max()))
+            f[column].shape = k, job_ar.shape[1], job_ar.shape[2]
+
+            # Update the hdf5 dataset
+            idx = df['hdf5 index'].astype(int, copy=False)
+            idx_argsort = np.argsort(idx)
+            f[column][idx[idx_argsort]] = job_ar[idx_argsort]
+        return None
+
+    @staticmethod
+    def _read_inp(job_paths, ax2=0, ax3=0):
+        """Convert all files in **job_paths** (nested sequence of filenames) into a 3D array."""
+        # Determine the minimum size of the to-be returned 3D array
+        line_count = [[Database._get_line_count(j) for j in i] for i in job_paths]
+        ax1 = len(line_count)
+        ax2 = max(ax2, max(len(i) for i in line_count))
+        ax3 = max(ax3, max(j for i in line_count for j in i))
+
+        # Create and return a padded 3D array of strings
+        ret = np.zeros((ax1, ax2, ax3), dtype='S120')
+        for i, list1, list2 in zip(count(), line_count, job_paths):
+            for j, k, filename in zip(count(), list1, list2):
+                ret[i, j, :k] = np.loadtxt(filename, dtype='S120', comments=None, delimiter='\n')
+        return ret
+
+    @staticmethod
+    def _get_line_count(filename):
+        """Return the total number of lines in **filename**."""
+        substract = 0
+        with open(filename, 'r') as f:
+            for i, j in enumerate(f, 1):
+                if j == '\n':
+                    substract += 1
+        return i - substract
 
     """ ########################  Pulling results from the database ########################### """
 
@@ -436,9 +496,49 @@ class Database():
             index = index.tolist()
 
         # Open the database and pull entries
-
+        self.hdf5_availability()
         with h5py.File(self.hdf5, 'r') as f:
             pdb_array = f[database][index]
 
         # Return a list of RDKit or PLAMS molecules
         return [from_pdb_array(mol, rdmol=rdmol) for mol in pdb_array]
+
+    def hdf5_availability(self, timeout: float = 5.0,
+                          max_attempts: Optional[int] = None) -> None:
+        """Check if a .hdf5 file is opened by another process; return once it is not.
+
+        If two processes attempt to simultaneously open a single hdf5 file then
+        h5py will raise an :class:`OSError`.
+        The purpose of this function is ensure that a .hdf5 is actually closed,
+        thus allowing :func:`to_hdf5` to safely access **filename** without the risk of raising
+        an :class:`OSError`.
+
+        Parameters
+        ----------
+        filename : str
+            The path+filename of the hdf5 file.
+        timeout : float
+            Time timeout, in seconds, between subsequent attempts of opening **filename**.
+        max_attempts : int
+            Optional: The maximum number attempts for opening **filename**.
+            If the maximum number of attempts is exceeded, raise an ``OSError``.
+
+        Raises
+        ------
+        OSError
+            Raised if **max_attempts** is exceded.
+
+        """
+        warning = "OSWarning: '{}' is currently unavailable; repeating attempt in {:.0f} seconds"
+        i = max_attempts or np.inf
+
+        while i:
+            try:
+                with h5py.File(self.hdf5, 'r+', libver='latest') as _:
+                    return None  # the .hdf5 file can safely be opened
+            except OSError as ex:  # the .hdf5 file cannot be safely opened yet
+                print((warning).format(self.hdf5, timeout))
+                error = ex
+                sleep(timeout)
+            i -= 1
+        raise error

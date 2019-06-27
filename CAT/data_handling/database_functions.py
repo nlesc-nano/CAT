@@ -1,4 +1,4 @@
-""" A module which holds the Database class. """
+"""A module for holding functions related to the Database class."""
 
 __all__ = ['mol_to_file']
 
@@ -34,6 +34,9 @@ def mol_to_file(mol_list, path=None, overwrite=False, mol_format=['xyz', 'pdb'])
     # Set the export path
     path = path or getcwd()
     assert isdir(path)
+
+    if not mol_format:
+        return None
 
     if overwrite:  # Export molecules while allowing for file overriding
         for mol in mol_list:
@@ -79,9 +82,9 @@ def get_nan_row(df):
         return [dtype_dict[df[i].dtype] for i in df]
     else:
         ret = []
-        for i in df:
+        for _, value in df.items():
             try:
-                j = dtype_dict[df[i].dtype]
+                j = dtype_dict[value.dtype]
             except KeyError:  # dtype is neither int, float nor object
                 j = None
             ret.append(j)
@@ -247,6 +250,16 @@ def _create_hdf5(path, name='structures.hdf5'):
         for name in dataset_names:
             if name not in f:
                 f.create_dataset(name=name, data=np.empty((0, 1), dtype='S80'), **kwarg)
+
+    # Define arguments for 3D datasets
+    dataset_names_3d = ('job_settings_crs', 'job_settings_QD_opt', 'job_settings_BDE')
+    kwarg_3d = {'chunks': True, 'maxshape': (None, None, None), 'compression': 'gzip'}
+
+    # Create new 3D datasets
+    with h5py.File(path, 'a') as f:
+        for name in dataset_names_3d:
+            if name not in f:
+                f.create_dataset(name=name, data=np.empty((0, 1, 1), dtype='S120'), **kwarg_3d)
 
     return path
 

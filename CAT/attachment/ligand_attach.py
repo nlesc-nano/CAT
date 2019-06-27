@@ -38,6 +38,7 @@ def init_qd_construction(ligand_df, core_df, arg):
             mol.properties = Settings()
             mol.properties.indices = _get_indices(mol, i)
             mol.properties.path = arg.optional.qd.dirname
+            mol.properties.job_path = []
             mol.properties.name = core_df.at[(i[0:2]), ('mol', '')].properties.name + '__'
             mol.properties.name += str(mol[-1].properties.pdb_info.ResidueNumber - 1)
             mol.properties.name += '_' + ligand_df.at[(i[2:4]), ('mol', '')].properties.name
@@ -161,6 +162,7 @@ def ligand_to_qd(core, ligand, arg):
     qd.properties.name = core.properties.name + '__'
     qd.properties.name += str(qd[-1].properties.pdb_info.ResidueNumber - 1)
     qd.properties.name += '_' + ligand.properties.name
+    qd.properties.job_path = []
 
     # Print and return
     print(get_time() + qd.properties.name + '\t has been constructed')
