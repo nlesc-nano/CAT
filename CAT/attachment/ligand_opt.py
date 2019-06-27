@@ -35,8 +35,6 @@ def init_ligand_opt(ligand_df, arg):
     :parameter arg: A settings object containing all (optional) arguments.
     :type arg: |plams.Settings|_ (superclass: |dict|_).
     """
-
-
     database = Database(arg.optional.database.dirname)
     overwrite = 'ligand' in arg.optional.database.overwrite
 
