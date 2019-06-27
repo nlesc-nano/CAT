@@ -1,4 +1,4 @@
-path: /Users/bvanbeek/Documents/CdSe/Week_5
+path: /Users/basvanbeek/Documents/CdSe/Week_5
 
 input_cores:
     - Cd68Se55.xyz:
@@ -6,6 +6,7 @@ input_cores:
 
 input_ligands:
     - CO
+    - CCO
     # - FragranceDB2.txt
 
 optional:
@@ -13,7 +14,7 @@ optional:
         dirname: database
         read: True
         write: True
-        overwrite: True
+        overwrite: False
         mol_format: [pdb]
         mongodb: False
 

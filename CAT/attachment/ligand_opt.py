@@ -20,8 +20,9 @@ import rdkit
 from rdkit.Chem import AllChem
 
 from .ligand_attach import (rot_mol_angle, sanitize_dim_2)
-from ..data_handling.CAT_database import Database, mol_to_file
-from ..utils import (get_time, type_to_string)
+from ..data_handling.database import Database
+from ..data_handling.database_functions import mol_to_file
+from ..utils import get_time
 from ..mol_utils import (to_symbol, fix_carboxyl, get_bond_index,
                          from_mol_other, from_rdmol, separate_mod)
 
@@ -29,7 +30,6 @@ from ..mol_utils import (to_symbol, fix_carboxyl, get_bond_index,
 def init_ligand_opt(ligand_df, arg):
     """ Initialize the ligand optimization procedure.
     Performs an inplace update of **ligand_df**.
-
     :parameter ligand_df: A dataframe of valid ligands.
     :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index=|int|_, values=|plams.Molecule|_)
     :parameter arg: A settings object containing all (optional) arguments.
@@ -41,20 +41,24 @@ def init_ligand_opt(ligand_df, arg):
     # Searches for matches between the input ligand and the database; imports the structure
     if 'ligand' in arg.optional.database.read:
         database.from_csv(ligand_df, database='ligand')
-        for i, mol in zip(ligand_df['hdf5 index'], ligand_df['mol']):
-            if i >= 0:
-                print(get_time() + mol.properties.name + '\t has been pulled from the database')
-        print('')
+        for i, mol in zip(ligand_df['opt'], ligand_df['mol']):
+            if i == -1:
+                continue
+            print(get_time() + '{}\t has been pulled from the database'.format(mol.properties.name))
+    ligand_df['opt'] = ligand_df['opt'].astype(bool, copy=False)
+
+    if 'ligand' in arg.optional.database.write:
+        _ligand_to_db(ligand_df, arg, database, opt=False)
 
     # Optimize all new ligands
     if arg.optional.ligand.optimize:
         # Identify the to be optimized ligands
         if overwrite:
             idx = pd.Series(True, index=ligand_df.index, name='mol')
-            message = '\t has been (re-)optimized'
+            message = '{}\t has been (re-)optimized'
         else:
-            idx = ligand_df['hdf5 index'] < 0
-            message = '\t has been optimized'
+            idx = np.invert(ligand_df['opt'])
+            message = '{}\t has been optimized'
 
         # Optimize the ligands
         lig_new = []
@@ -67,27 +71,39 @@ def init_ligand_opt(ligand_df, arg):
             lig_new.append(ligand_tmp)
 
             # Print messages
-            print(get_time() + ligand.properties.name + message)
+            print(get_time() + message.format(ligand.properties.name))
         if lig_new:
             if len(lig_new) == 1:  # pd.DataFrame.loc has serious issues when assigning 1 molecue
                 idx, _ = next(ligand_df[idx].iterrows())
                 ligand_df.at[idx, ('mol', '')] = lig_new[0]
             else:
                 ligand_df.loc[idx, 'mol'] = lig_new
-        print('')
 
+    print()
     remove_duplicates(ligand_df)
 
     # Write newly optimized structures to the database
     if 'ligand' in arg.optional.database.write and arg.optional.ligand.optimize:
-        recipe = Settings()
-        recipe['1'] = {'key': 'RDKit_' + rdkit.__version__, 'value': 'UFF'}
-        columns = [('formula', ''), ('hdf5 index', ''), ('settings', '1')]
-        database.update_csv(
-            ligand_df, columns=columns, job_recipe=recipe, database='ligand', overwrite=overwrite
-        )
-        path = arg.optional.ligand.dirname
+        _ligand_to_db(ligand_df, arg, database)
+
+
+def _ligand_to_db(ligand_df, arg, database, opt=True):
+    """Export ligand optimziation results to the database"""
+    overwrite = 'ligand' in arg.optional.database.overwrite
+    path = arg.optional.ligand.dirname
+
+    kwarg = {'overwrite': overwrite}
+    if opt:
+        kwarg['job_recipe'] = Settings({'1': {'key': 'RDKit_' + rdkit.__version__, 'value': 'UFF'}})
+        kwarg['columns'] = [('formula', ''), ('hdf5 index', ''), ('settings', '1')]
+        kwarg['database'] = 'ligand'
+        kwarg['opt'] = True
         mol_to_file(ligand_df['mol'], path, overwrite, arg.optional.database.mol_format)
+    else:
+        kwarg['columns'] = [('formula', ''), ('hdf5 index', '')]
+        kwarg['database'] = 'ligand_no_opt'
+
+    database.update_csv(ligand_df, **kwarg)
 
 
 def remove_duplicates(ligand_df):

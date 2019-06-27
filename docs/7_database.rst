@@ -47,22 +47,48 @@ accoring to their functionality:
     :meth:`.from_csv`  :meth:`.from_hdf5`
     =================  ==================
 
+Index
+~~~~~
+
+.. currentmodule:: CAT.data_handling.database.Database
+.. autosummary::
+
+    open_yaml
+    open_csv_lig
+    open_csv_qd
+    DF
+    update_csv
+    update_yaml
+    update_hdf5
+    from_csv
+    from_hdf5
+
+
+.. currentmodule:: CAT.data_handling.database_functions
+.. autosummary::
+
+    mol_to_file
+    as_pdb_array
+    from_pdb_array
+    sanitize_yaml_settings
+
+
 Class API
 ~~~~~~~~~
 
-.. autoclass:: CAT.data_handling.CAT_database.Database
+.. autoclass:: CAT.data_handling.database.Database
     :members:
 
 Function API
 ~~~~~~~~~~~~
 
-.. autofunction:: CAT.data_handling.CAT_database.mol_to_file
+.. autofunction:: CAT.data_handling.database_functions.mol_to_file
 
-.. autofunction:: CAT.data_handling.CAT_database.as_pdb_array
+.. autofunction:: CAT.data_handling.database_functions.as_pdb_array
 
-.. autofunction:: CAT.data_handling.CAT_database.from_pdb_array
+.. autofunction:: CAT.data_handling.database_functions.from_pdb_array
 
-.. autofunction:: CAT.data_handling.CAT_database.sanitize_yaml_settings
+.. autofunction:: CAT.data_handling.database_functions.sanitize_yaml_settings
 
 .. _rdkit.Chem.Mol: http://rdkit.org/docs/source/rdkit.Chem.rdchem.html#rdkit.Chem.rdchem.Mol
 .. _h5py.File: http://docs.h5py.org/en/stable/high/file.html

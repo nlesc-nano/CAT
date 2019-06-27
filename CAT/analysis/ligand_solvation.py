@@ -19,7 +19,7 @@ import qmflows
 from .crs import CRSJob
 from .. import utils as CAT
 from ..utils import (get_time, type_to_string)
-from ..data_handling.CAT_database import Database
+from ..data_handling.database import Database
 
 
 def init_solv(ligand_df, arg, solvent_list=None):

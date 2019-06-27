@@ -4,7 +4,6 @@ __all__ = ['prep']
 
 import time
 
-import numpy as np
 import pandas as pd
 
 from scm.plams.mol.atom import Atom
@@ -86,9 +85,9 @@ def prep_input(arg):
 
     # Store the molecules in dataframes
     columns = pd.MultiIndex.from_tuples([('mol', '')], names=['index', 'sub index'])
-    ligand_df = pd.DataFrame(index=np.arange(len(lig_list)), columns=columns)
+    ligand_df = pd.DataFrame(index=pd.RangeIndex(len(lig_list)), columns=columns.copy())
     ligand_df['mol'] = lig_list
-    core_df = pd.DataFrame(index=np.arange(len(core_list)), columns=columns)
+    core_df = pd.DataFrame(index=pd.RangeIndex(len(core_list)), columns=columns.copy())
     core_df['mol'] = core_list
 
     return ligand_df, core_df
