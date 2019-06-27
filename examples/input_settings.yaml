@@ -7,9 +7,6 @@ input_cores:
 input_ligands:
     - CO
     - CCO
-    - CCCO
-    - CCCCO
-    - CCCCCO
     # - FragranceDB2.txt
 
 optional:
@@ -29,9 +26,12 @@ optional:
         dirname: ligand
         optimize: True
         split: True
-        cosmo-rs: False
+        cosmo-rs: True
 
     qd:
         dirname: QD
         optimize: True
-        dissociate: False
+        dissociate:
+            core_index: [60, 62, 64, 71, 74, 78]
+            job1: True
+            job2: False

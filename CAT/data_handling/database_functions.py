@@ -1,4 +1,4 @@
-""" A module which holds the Database class. """
+"""A module for holding functions related to the Database class."""
 
 __all__ = ['mol_to_file']
 
@@ -259,7 +259,7 @@ def _create_hdf5(path, name='structures.hdf5'):
     with h5py.File(path, 'a') as f:
         for name in dataset_names_3d:
             if name not in f:
-                f.create_dataset(name=name, data=np.empty((0, 1, 1), dtype='S100'), **kwarg_3d)
+                f.create_dataset(name=name, data=np.empty((0, 1, 1), dtype='S120'), **kwarg_3d)
 
     return path
 

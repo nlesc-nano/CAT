@@ -2,6 +2,12 @@
 data_handling
 #############
 
+~~~~~~~~~~~~~~~~~~~~~~
+database_functions.py_
+~~~~~~~~~~~~~~~~~~~~~~
+
+A module for holding functions related to the Database class.
+
 ~~~~~~~~~~~~
 database.py_
 ~~~~~~~~~~~~
@@ -27,6 +33,7 @@ input_parser.py_
 
 A module designed for parsing the input .yaml file.
 
+.. _database_functions.py: https://github.com/BvB93/CAT/tree/master/CAT/data_handling/database_functions.py
 .. _database.py: https://github.com/BvB93/CAT/tree/master/CAT/data_handling/database.py
 .. _mol_import.py: https://github.com/BvB93/CAT/tree/master/CAT/data_handling/mol_import.py
 .. _input_sanitizer.py: https://github.com/BvB93/CAT/tree/master/CAT/data_handling/input_sanitizer.py

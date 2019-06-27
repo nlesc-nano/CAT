@@ -8,6 +8,7 @@ from itertools import product
 from os.path import (join, dirname)
 
 import numpy as np
+import pandas as pd
 
 from scm.plams.core.settings import Settings
 from scm.plams.core.jobrunner import JobRunner
@@ -65,29 +66,51 @@ def init_solv(ligand_df, arg, solvent_list=None):
     if idx.any():
         init(path=path, folder='ligand_solvation')
         for i, mol in ligand_df['mol'][idx].iteritems():
+            mol.properties.job_path = []
             coskf = get_surface_charge(mol, job=j1, s=s1)
             e_and_gamma = get_solv(mol, solvent_list, coskf, job=j2, s=s2)
             ligand_df.loc[i, 'E_solv'], ligand_df.loc[i, 'gamma'] = e_and_gamma
         finish()
 
-    ligand_df['job_settings_crs'] = [mol.properties.pop('job_path') for mol in ligand_df['mol']]
-    for mol in ligand_df['mol']:
-        mol.properties.job_path = []
+        job_settings = []
+        for mol in ligand_df['mol']:
+            try:
+                job_settings.append(mol.properties.pop('job_path'))
+            except KeyError:
+                job_settings.append([])
+        ligand_df[('job_settings_crs', '')] = job_settings
+    else:
+        return None  # No new molecules here; move along
 
     # Update the database
     if 'ligand' in arg.optional.database.write:
-        value1 = qmflows.singlepoint['specific'][type_to_string(j1)].copy()
-        value1.update(s1)
-        recipe = Settings()
-        recipe['solv 1'] = {'key': j1, 'value': value1}
-        recipe['solv 2'] = {'key': j2, 'value': s2}
-        data.update_csv(
-            ligand_df, database='ligand',
-            columns=[('settings', 'solv 1'), ('settings', 'solv 2'),
-                     ('job_settings_crs', '')]+columns,
-            overwrite=overwrite,
-            job_recipe=recipe
-        )
+        with pd.option_context('mode.chained_assignment', None):
+            _ligand_to_db(ligand_df, arg, idx, columns)
+    return None
+
+
+def _ligand_to_db(ligand_df, arg, idx, columns):
+    data = Database(path=arg.optional.database.dirname)
+    overwrite = 'ligand' in arg.optional.database.overwrite
+    j1 = arg.optional.ligand.crs.job1
+    j2 = arg.optional.ligand.crs.job2
+    s1 = arg.optional.ligand.crs.s1
+    s2 = arg.optional.ligand.crs.s2
+
+    value1 = qmflows.singlepoint['specific'][type_to_string(j1)].copy()
+    value1.update(s1)
+    recipe = Settings()
+    recipe['solv 1'] = {'key': j1, 'value': value1}
+    recipe['solv 2'] = {'key': j2, 'value': s2}
+
+    data.update_csv(
+        ligand_df.loc[idx],
+        database='ligand',
+        columns=[('settings', 'solv 1'), ('settings', 'solv 2'),
+                 ('job_settings_crs', '')]+columns,
+        overwrite=overwrite,
+        job_recipe=recipe
+    )
 
 
 def get_surface_charge(mol, job=None, s=None):
