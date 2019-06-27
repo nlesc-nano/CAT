@@ -5,6 +5,15 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+0.5.0
+*****
+
+* CAT has been split into 3 seperate packages:
+  * `CAT <https://github.com/nlesc-nano/CAT/>`_: A collection of tools designed for the automatic construction of chemical compounds.
+  * `nano-CAT <https://github.com/nlesc-nano/nano-CAT/>`_: A collection of tools for the analysis of nanocrystals.
+  * `data-CAT <https://github.com/nlesc-nano/data-CAT/>`_: A databasing framework for the Compound Attachment Tools package (`CAT <https://github.com/nlesc-nano/CAT/>`_).
+
+
 0.4.5
 *****
 
