@@ -5,6 +5,14 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+0.4.6
+*****
+
+* Added an interface between MongoDB_ and the CAT.Database_ class.
+
+.. _MongoDB: https://www.mongodb.com/
+.. MongoDB:: https://www.mongodb.com/
+
 0.4.5
 *****
 
