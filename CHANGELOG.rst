@@ -11,7 +11,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * Added an interface between MongoDB_ and the CAT.Database_ class.
 
 .. _MongoDB: https://www.mongodb.com/
-.. MongoDB:: https://www.mongodb.com/
+.. _CAT.Database: https://cat.readthedocs.io/en/latest/7_database.html
 
 0.4.5
 *****
