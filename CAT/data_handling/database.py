@@ -38,7 +38,8 @@ class Database():
                     * **hdf5** (|str|_) – Path and filename of the .hdf5 file containing all \
                     structures (as partiallize de-serialized .pdb files).
 
-                    * **mongodb** (|None|_) – *None*.
+                    * **mongodb** (|None|_ or |dict|_) – Optional: A dictionary with keyword
+                    arguments for `pymongo.MongoClient <http://api.mongodb.com/python/current/api/pymongo/mongo_client.html>`_.  # noqa
     """
 
     def __init__(self, path=None,
