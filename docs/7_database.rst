@@ -36,9 +36,9 @@ accoring to their functionality:
 -   Importing to the database - these methods handle the importing of new data
     from python objects to the Database class:
 
-    ===================  ====================  ====================
-    :meth:`.update_csv`  :meth:`.update_yaml`  :meth:`.update_hdf5`
-    ===================  ====================  ====================
+    ===================  ====================  ====================  =======================
+    :meth:`.update_csv`  :meth:`.update_yaml`  :meth:`.update_hdf5`  :meth:`.update_mongodb`
+    ===================  ====================  ====================  =======================
 
 -   Exporting from the database - these methods handle the exporting of data
     from the Database class to other python objects or remote locations:
@@ -57,6 +57,7 @@ Index
     open_csv_lig
     open_csv_qd
     DF
+    update_mongodb
     update_csv
     update_yaml
     update_hdf5
