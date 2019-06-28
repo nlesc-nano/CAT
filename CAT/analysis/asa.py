@@ -10,7 +10,7 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 import rdkit
 from rdkit.Chem import AllChem
 
-from ..data_handling.database import Database
+from data_CAT import Database
 
 
 def init_asa(qd_df, arg):

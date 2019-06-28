@@ -50,7 +50,7 @@ accoring to their functionality:
 Index
 ~~~~~
 
-.. currentmodule:: CAT.data_handling.database.Database
+.. currentmodule:: data_CAT.data_handling.database.Database
 .. autosummary::
 
     open_yaml
@@ -64,7 +64,7 @@ Index
     from_hdf5
 
 
-.. currentmodule:: CAT.data_handling.database_functions
+.. currentmodule:: data_CAT.data_handling.database_functions
 .. autosummary::
 
     mol_to_file
@@ -76,19 +76,19 @@ Index
 Class API
 ~~~~~~~~~
 
-.. autoclass:: CAT.data_handling.database.Database
+.. autoclass:: data_CAT.data_handling.database.Database
     :members:
 
 Function API
 ~~~~~~~~~~~~
 
-.. autofunction:: CAT.data_handling.database_functions.mol_to_file
+.. autofunction:: data_CAT.data_handling.database_functions.mol_to_file
 
-.. autofunction:: CAT.data_handling.database_functions.as_pdb_array
+.. autofunction:: data_CAT.data_handling.database_functions.as_pdb_array
 
-.. autofunction:: CAT.data_handling.database_functions.from_pdb_array
+.. autofunction:: data_CAT.data_handling.database_functions.from_pdb_array
 
-.. autofunction:: CAT.data_handling.database_functions.sanitize_yaml_settings
+.. autofunction:: data_CAT.data_handling.database_functions.sanitize_yaml_settings
 
 .. _rdkit.Chem.Mol: http://rdkit.org/docs/source/rdkit.Chem.rdchem.html#rdkit.Chem.rdchem.Mol
 .. _h5py.File: http://docs.h5py.org/en/stable/high/file.html

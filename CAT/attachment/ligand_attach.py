@@ -9,10 +9,10 @@ from scipy.spatial.distance import cdist
 from scm.plams.mol.molecule import Molecule
 from scm.plams.core.settings import Settings
 
+from data_CAT import (Database, mol_to_file)
+
 from ..utils import get_time
 from ..mol_utils import (merge_mol, get_atom_index)
-from ..data_handling.database import Database
-from ..data_handling.database_functions import mol_to_file
 
 
 def init_qd_construction(ligand_df, core_df, arg):

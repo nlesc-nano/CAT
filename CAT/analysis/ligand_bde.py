@@ -15,12 +15,13 @@ from scm.plams.core.functions import (init, finish, config)
 from scm.plams.core.settings import Settings
 
 import qmflows
+from data_CAT import Database
 
 from .jobs import (job_single_point, job_geometry_opt, job_freq)
 from ..utils import (get_time, type_to_string)
 from ..mol_utils import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
-from ..data_handling.database import Database
+
 
 
 def init_bde(qd_df, arg):

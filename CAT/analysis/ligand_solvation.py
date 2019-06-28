@@ -16,11 +16,12 @@ from scm.plams.core.functions import (init, finish)
 from scm.plams.interfaces.adfsuite.adf import ADFJob
 
 import qmflows
+from data_CAT import Database
 
 from .crs import CRSJob
 from .. import utils as CAT
 from ..utils import (get_time, type_to_string)
-from ..data_handling.database import Database
+
 
 
 def init_solv(ligand_df, arg, solvent_list=None):
