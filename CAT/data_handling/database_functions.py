@@ -52,6 +52,7 @@ def even_index(df1: pd.DataFrame,
 
 
 def get_unflattend(input_dict: dict) -> zip:
+    """Flatten a dictionary and return a :class:`zip` instance consisting of keys and values."""
     def _unflatten(input_dict_: dict) -> dict:
         """ """
         ret = Settings()
@@ -67,6 +68,7 @@ def get_unflattend(input_dict: dict) -> zip:
 
 
 def df_to_mongo_dict(df: pd.DataFrame) -> List[dict]:
+    """Convert a dataframe into a dictionary suitable for MongoDB."""
     keys, ret = get_unflattend(df.T.to_dict())
     idx_names = df.index.names
 
