@@ -216,8 +216,8 @@ class Database():
 
     """ #################################  Updating the database ############################## """
 
-    def df_to_mongo(self, database: str = 'ligand',
-                    overwrite: bool = False) -> None:
+    def update_mongodb(self, database: str = 'ligand',
+                       overwrite: bool = False) -> None:
         """Export ligand or qd results to the MongoDB database.
 
         Parameters
