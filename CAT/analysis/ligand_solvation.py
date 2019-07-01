@@ -49,11 +49,10 @@ def init_solv(ligand_df: PropertiesDataFrame,
 
     """
     # Unpack arguments
-    properties = ligand_df.properties
-    overwrite = 'ligand' in properties.optional.database.overwrite
-    read = 'ligand' in properties.optional.database.read
-    write = 'ligand' in properties.optional.database.write
-    data = Database(path=properties.optional.database.dirname)
+    overwrite = 'ligand' in ligand_df.properties.optional.database.overwrite
+    read = 'ligand' in ligand_df.properties.optional.database.read
+    write = 'ligand' in ligand_df.properties.optional.database.write
+    data = Database(path=ligand_df.properties.optional.database.dirname)
 
     # Prepare the job settings and solvent list
     solvent_list = get_solvent_list(solvent_list)
@@ -95,7 +94,11 @@ def start_crs_jobs(ligand_df: PropertiesDataFrame,
     init(path=path, folder='ligand_solvation')
     for i, mol in ligand_df[MOL][idx].iteritems():
         mol.properties.job_path = []
+
+        # Calculate the COSMO surface
         coskf = get_surface_charge(mol, job=j1, s=s1)
+
+        # Perform the actual COSMO-RS calculation
         e_and_gamma = get_solv(mol, solvent_list, coskf, job=j2, s=s2)
         ligand_df.loc[i, 'E_solv'], ligand_df.loc[i, 'gamma'] = e_and_gamma
     finish()
