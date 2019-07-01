@@ -80,17 +80,8 @@ def init_ligand_opt(ligand_df: PropertiesDataFrame) -> None:
             message = '{}\t has been optimized'
 
         # Optimize the ligands
-        lig_new = []
-        for ligand in ligand_df[MOL][idx]:
-            mol_list = split_mol(ligand)
-            for mol in mol_list:
-                mol.set_dihed(180.0)
-            ligand_tmp = recombine_mol(mol_list)
-            fix_carboxyl(ligand_tmp)
-            lig_new.append(ligand_tmp)
+        lig_new = start_ligand_jobs(ligand_df, idx, message)
 
-            # Print messages
-            print(get_time() + message.format(ligand.properties.name))
         if lig_new:
             if len(lig_new) == 1:  # pd.DataFrame.loc has serious issues when assigning 1 molecue
                 idx, _ = next(ligand_df[idx].iterrows())
@@ -106,25 +97,43 @@ def init_ligand_opt(ligand_df: PropertiesDataFrame) -> None:
         _ligand_to_db(ligand_df, database)
 
 
+def start_ligand_jobs(ligand_df: PropertiesDataFrame,
+                      idx: pd.Series,
+                      message: str) -> List[Molecule]:
+    """Loop over all molecules in ``ligand_df.loc[idx]`` and perform geometry optimizations."""
+    lig_new = []
+    for ligand in ligand_df[MOL][idx]:
+        mol_list = split_mol(ligand)
+        for mol in mol_list:
+            mol.set_dihed(180.0)
+        ligand_tmp = recombine_mol(mol_list)
+        fix_carboxyl(ligand_tmp)
+        lig_new.append(ligand_tmp)
+
+        # Print messages
+        print(get_time() + message.format(ligand.properties.name))
+    return lig_new
+
+
 def _ligand_to_db(ligand_df: PropertiesDataFrame,
                   database: Database,
                   opt: bool = True):
-    """Export ligand optimziation results to the database"""
+    """Export ligand optimziation results to the database."""
     # Extract arguments
     overwrite = DATA_CAT and 'ligand' in ligand_df.properties.optional.database.overwrite
     path = ligand_df.properties.optional.ligand.dirname
     mol_format = ligand_df.properties.optional.database.mol_format
 
-    kwarg = {'overwrite': overwrite}
+    kwargs = {'overwrite': overwrite}
     if opt:
-        kwarg['job_recipe'] = Settings({'1': {'key': 'RDKit_' + rdkit.__version__, 'value': 'UFF'}})
-        kwarg['columns'] = [FORMULA, HDF5_INDEX, SETTINGS1]
-        kwarg['database'] = 'ligand'
-        kwarg['opt'] = True
+        kwargs['job_recipe'] = Settings({'1': {'key': 'RDKit_' + rdkit.__version__, 'value': 'UFF'}})
+        kwargs['columns'] = [FORMULA, HDF5_INDEX, SETTINGS1]
+        kwargs['database'] = 'ligand'
+        kwargs['opt'] = True
         mol_to_file(ligand_df[MOL], path, overwrite, mol_format)
     else:
-        kwarg['columns'] = [FORMULA, HDF5_INDEX]
-        kwarg['database'] = 'ligand_no_opt'
+        kwargs['columns'] = [FORMULA, HDF5_INDEX]
+        kwargs['database'] = 'ligand_no_opt'
 
     database.update_csv(ligand_df, **kwarg)
 

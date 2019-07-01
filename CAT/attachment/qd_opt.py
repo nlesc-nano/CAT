@@ -1,5 +1,7 @@
 """A module designed for optimizing the combined ligand & core."""
 
+from typing import List
+
 import pandas as pd
 
 from scm.plams import (Molecule, Settings)
@@ -31,7 +33,7 @@ SETTINGS2 = ('settings', '2')
 
 
 def init_qd_opt(qd_df: PropertiesDataFrame) -> None:
-    """Initialized the quantum dot (constrained) geometry optimization.
+    """Initialize the quantum dot (constrained) geometry optimization.
 
     performs an inplace update of the *mol* column in **qd_df**.
 
@@ -45,8 +47,6 @@ def init_qd_opt(qd_df: PropertiesDataFrame) -> None:
     properties = qd_df.properties
     write = DATA_CAT and 'qd' in properties.optional.database.write
     overwrite = DATA_CAT and 'qd' in properties.optional.database.overwrite
-    job_recipe = properties.optional.qd.optimize
-    path = properties.optional.qd.dirname
 
     # Prepare slices
     if overwrite and DATA_CAT:
@@ -58,20 +58,8 @@ def init_qd_opt(qd_df: PropertiesDataFrame) -> None:
 
     # Optimize the geometries
     if idx.any():
-        init(path=path, folder='QD_optimize')
-        for mol in qd_df[MOL][idx]:
-            mol.properties.job_path = []
-            qd_opt(mol, job_recipe)
-            print(get_time() + mol.properties.name + message)
-        finish()
-
-        job_settings = []
-        for mol in qd_df[MOL]:
-            try:
-                job_settings.append(mol.properties.pop('job_path'))
-            except KeyError:
-                job_settings.append([])
-        qd_df[JOB_SETTINGS_QD_OPT] = job_settings
+        start_qd_opt(qd_df, idx, message)
+        qd_df[JOB_SETTINGS_QD_OPT] = get_job_settings(qd_df)
         print()
     else:  # No new molecules, move along
         return None
@@ -81,6 +69,34 @@ def init_qd_opt(qd_df: PropertiesDataFrame) -> None:
         with pd.option_context('mode.chained_assignment', None):
             _qd_to_db(qd_df, idx)
     return None
+
+
+def start_qd_opt(qd_df: PropertiesDataFrame,
+                 idx: pd.Series,
+                 message: str) -> None:
+    """Loop over all molecules in ``qd_df.loc[idx]`` and perform geometry optimizations."""
+    # Extract arguments
+    path = qd_df.properties.optional.qd.dirname
+    job_recipe = qd_df.properties.optional.qd.optimize
+
+    # Perform the main optimization loop
+    init(path=path, folder='QD_optimize')
+    for mol in qd_df[MOL][idx]:
+        mol.properties.job_path = []
+        qd_opt(mol, job_recipe)
+        print(get_time() + mol.properties.name + message)
+    finish()
+
+
+def get_job_settings(qd_df: PropertiesDataFrame) -> List[str]:
+    """Create a nested list of input files for each molecule in **ligand_df**."""
+    job_settings = []
+    for mol in qd_df[MOL]:
+        try:
+            job_settings.append(mol.properties.pop('job_path'))
+        except KeyError:
+            job_settings.append([])
+    return job_settings
 
 
 def _qd_to_db(qd_df: PropertiesDataFrame,
