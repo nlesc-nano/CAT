@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 
+import argparse
 from os import getcwd
 from os.path import (join, exists)
+from typing import (Optional, List)
 
-import argparse
 import yaml
 
 from scm.plams.core.settings import Settings
 import CAT
 
 
-def extract_args(args):
-    """ Extract and return all arguments. """
+def extract_args(args: Optional[List[str]] = None) -> Settings:
+    """Extract and return all arguments."""
     input_file = args.YAML[0]
     if exists(input_file):
         pass
@@ -25,7 +26,7 @@ def extract_args(args):
         return Settings(yaml.load(file, Loader=yaml.FullLoader))
 
 
-def main(args=None):
+def main(args: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(
             prog='CAT',
             usage='init_cat my_settings_file.yaml',
@@ -41,6 +42,4 @@ def main(args=None):
     )
 
     args = parser.parse_args(args)
-    args = extract_args(args)
-
-    CAT.base.prep(args)
+    CAT.base.prep(extract_args(args))

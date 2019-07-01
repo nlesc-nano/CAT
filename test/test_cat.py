@@ -16,7 +16,7 @@ from CAT.base import (prep_input, prep_core, prep_ligand)
 
 
 # prepare input
-ARG = Settings(yaml.load(
+ARG: Settings = Settings(yaml.load(
     """
     path: test
 
@@ -61,13 +61,12 @@ LIGAND_DF, CORE_DF = prep_input(ARG)
 shutil.rmtree(ARG.optional.database.dirname)
 
 
-def test_prep_core():
-    """ Test the :func:`CAT.base.prep_core` function. """
-    arg = ARG.copy()
+def test_prep_core() -> None:
+    """Test the :func:`CAT.base.prep_core` function."""
     core_df = CORE_DF.copy()
 
     # Check the dataframe
-    ret = prep_core(core_df, arg)
+    ret = prep_core(core_df)
     assert isinstance(ret, pd.DataFrame)
     assert ret.shape == core_df.shape
     assert 'mol' in ret.columns
@@ -81,8 +80,8 @@ def test_prep_core():
     assert len(set([at.symbol for at in core.properties.dummies])) == 1
 
 
-def test_prep_ligand():
-    """ Test the :func:`CAT.base.prep_ligand` function with **split** = *True*. """
+def test_prep_ligand() -> None:
+    """Test the :func:`CAT.base.prep_ligand` function with **split** = *True*."""
     arg = ARG.copy()
     lig_df = LIGAND_DF.copy()
     if os.path.isdir(arg.optional.database.dirname):
@@ -92,7 +91,7 @@ def test_prep_ligand():
 
     # Check while splite=False
     arg.optional.ligand.split = False
-    ret = prep_ligand(lig_df, arg)
+    ret = prep_ligand(lig_df)
     assert isinstance(ret, pd.DataFrame)
     assert 'mol' in ret.columns
     assert ret['mol'].shape[0] == lig_df.shape[0]
@@ -125,8 +124,8 @@ def test_prep_ligand():
     os.mkdir(arg.optional.ligand.dirname)
 
 
-def test_prep_ligand_split():
-    """ Test the :func:`CAT.base.prep_ligand` function with **split** = *False*. """
+def test_prep_ligand_split() -> None:
+    """Test the :func:`CAT.base.prep_ligand` function with **split** = *False*."""
     arg = ARG.copy()
     lig_df = LIGAND_DF.copy()
     if os.path.isdir(arg.optional.database.dirname):
@@ -135,7 +134,7 @@ def test_prep_ligand_split():
     data = Database(path=arg.optional.database.dirname)
 
     # Check the dataframe
-    ret = prep_ligand(lig_df, arg)
+    ret = prep_ligand(lig_df)
     assert isinstance(ret, pd.DataFrame)
     assert 'mol' in ret.columns
     assert ret['mol'].shape[0] == lig_df.shape[0]

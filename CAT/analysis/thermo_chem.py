@@ -1,21 +1,39 @@
-""" A module related to calculating thermochemical properties. """
+"""A module related to calculating thermochemical properties."""
 
-__all__ = ['get_thermo', 'get_entropy']
+from typing import (Sequence, Union, Dict)
 
 import numpy as np
 
+from scm.plams import Molecule
 from scm.plams.tools.units import Units
 
+__all__ = ['get_thermo', 'get_entropy']
 
-def get_entropy(mol, freqs, T=298.15):
+
+def get_entropy(mol: Molecule,
+                freqs: Sequence[float],
+                T: float = 298.15) -> np.ndarray:
     """Calculate the translational, vibrational and rotational entropy.
+
     All units and constants are in SI units.
 
-    mol <plams.Molecule>: A PLAMS molecule.
-    freqs <np.ndarray>: An iterable consisting of vibrational frequencies in units of s**-1.
-    T <float>: The temperature in Kelvin
-    Return <np.ndarray>: A numpy array containing the translational, rotational and
-        vibrational contributions to the entropy
+    Parameters
+    ----------
+    mol : |plams.Molecule|_
+        A PLAMS molecule.
+
+    freqs : |np.ndarray|_ [|np.float64|_]
+        An iterable consisting of vibrational frequencies in units of s**-1.
+
+    T : float
+        The temperature in Kelvin.
+
+    Returns
+    -------
+    |np.ndarray|_ [|np.float64|_]:
+        A numpy array containing the translational, rotational and
+        vibrational contributions to the entropy.
+
     """
     if not isinstance(freqs, np.ndarray):
         freqs = np.array(freqs)
@@ -47,22 +65,46 @@ def get_entropy(mol, freqs, T=298.15):
     return R * np.array([S_trans, S_rot, S_vib])
 
 
-def get_thermo(mol, freqs, E, T=298.15, export=['E', 'H', 'S', 'G'], unit='kcal/mol'):
+def get_thermo(mol: Molecule,
+               freqs: Sequence[float],
+               E: float,
+               T: float = 298.15,
+               export: Sequence[str] = ('E', 'H', 'S', 'G'),
+               unit: str = 'kcal/mol') -> Union[float, Dict[str, float]]:
     """Extract and return Gibbs free energies, entropies and/or enthalpies from an AMS KF file.
+
     All vibrational frequencies smaller than 100 cm**-1 are set to 100 cm**-1.
 
-    mol <plams.Molecule>: A PLAMS molecule.
-    freqs <np.array>: An iterable consisting of vibrational frequencies in units of cm**-1.
-    E <float>: The eletronic energy in kcal/mol.
-    T <float>: The temperature in Kelvin
-    export <list>[<str>]: An iterable containing strings of the to be exported energies:
-        'E': Electronic energy
-        'U': Interal energy (E + U_nuc)
-        'H': Enthalpy (U + pV)
-        'S': Entropy
-        'G': Gibbs free energy (H - T*S)
-    unit <str>: The unit of the to be returned energies.
-    Return <float> or <dict>[<float>]: An energy or dictionary of energies
+    Parameters
+    ----------
+    mol : |plams.Molecule|_
+        A PLAMS molecule.
+
+    freqs : |np.ndarray|_ [|np.float64|_]
+        An iterable consisting of vibrational frequencies in units of s**-1.
+
+    E : float
+        The eletronic energy in kcal/mol.
+
+    T : float
+        The temperature in Kelvin.
+
+    export : |tuple|_ [|str|_]:
+        An iterable containing strings of the to be exported energies:
+        * ``'E'``: Electronic energy
+        * ``'U'``: Interal energy (:math:`E + U_{nuc}`)
+        * ``'H'``: Enthalpy (:math:`U + pV`)
+        * ``'S'``: Entropy
+        * ``'G'``: Gibbs free energy (:math:`H - T*S`)
+
+    unit : str
+        The unit of the to be returned energies.
+
+    Returns
+    -------
+    |float|_ or |dict|_ [|str|_, |float|_]:
+        An energy or dictionary of energies.
+
     """
     # Get frequencies; set all frequencies smaller than 100 cm**-1 to 100 cm**-1
     freqs = np.array(freqs)

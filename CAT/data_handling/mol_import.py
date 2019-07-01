@@ -1,13 +1,12 @@
-""" A module related to the importing of molecules. """
-
-__all__ = ['read_mol', 'set_mol_prop']
+"""A module related to the importing of molecules."""
 
 import os
 import itertools
 from typing import Dict
 from string import ascii_letters
+from typing import (Iterable, List, Callable)
 
-from scm.plams.mol.molecule import Molecule
+from scm.plams import (Molecule, Atom)
 from scm.plams.core.errors import PlamsError
 import scm.plams.interfaces.molecule.rdkit as molkit
 
@@ -16,11 +15,24 @@ from rdkit import Chem
 from ..utils import get_time
 from ..data_handling.input_sanitizer import (sanitize_mol_type, get_mol_defaults)
 
+__all__ = ['read_mol', 'set_mol_prop']
 
-def read_mol(input_mol):
-    """
-    Checks the filetypes of the input molecules, sets their properties and
-    returns a list of plams molecules.
+
+def read_mol(input_mol: Iterable[dict]) -> List[Molecule]:
+    """Checks the filetypes of the input molecules.
+
+    Sets the molecules' properties and returns a list of plams molecules.
+
+    Parameters
+    ----------
+    input_mol : |list|_ [|dict|_]
+        An iterable consisting of dictionaries with input settings per mol.
+
+    Returns
+    -------
+    |plams.Molecule|_
+        A list of plams Molecules.
+
     """
     # Creates a dictionary of file extensions
     extension_dict = {
@@ -61,56 +73,56 @@ def read_mol(input_mol):
     return mol_list
 
 
-def read_mol_xyz(mol):
-    """ Read an .xyz file """
+def read_mol_xyz(mol: str) -> Molecule:
+    """Read an .xyz file."""
     try:
         return Molecule(mol.mol, inputformat='xyz')
     except (Exception, PlamsError) as ex:
         print_exception(read_mol_xyz.__code__, ex, mol.mol)
 
 
-def read_mol_pdb(mol):
-    """ Read a .pdb file """
+def read_mol_pdb(mol: str) -> Molecule:
+    """Read a .pdb file."""
     try:
         return molkit.readpdb(mol.mol)
     except (Exception, PlamsError) as ex:
         print_exception(read_mol_pdb.__code__, ex, mol.mol)
 
 
-def read_mol_mol(mol, mol_dict):
-    """ Read a .mol file """
+def read_mol_mol(mol: str) -> Molecule:
+    """Read a .mol file."""
     try:
         return molkit.from_rdmol(Chem.MolFromMolFile(mol.mol, removeHs=False))
     except (Exception, PlamsError) as ex:
         print_exception(read_mol_mol.__code__, ex, mol.mol)
 
 
-def read_mol_smiles(mol):
-    """ Read a SMILES string """
+def read_mol_smiles(mol: str) -> Molecule:
+    """Read a SMILES string."""
     try:
         return molkit.from_smiles(mol.mol)
     except (Exception, PlamsError) as ex:
         print_exception(read_mol_smiles.__code__, ex, mol.mol)
 
 
-def read_mol_plams(mol):
-    """ Read a PLAMS molecule """
+def read_mol_plams(mol: Molecule) -> Molecule:
+    """Read a PLAMS molecule."""
     try:
         return mol.mol
     except (Exception, PlamsError) as ex:
         print_exception(read_mol_plams.__code__, ex, mol.mol)
 
 
-def read_mol_rdkit(mol):
-    """ Read a RDKit molecule """
+def read_mol_rdkit(mol: Chem.Mol) -> Molecule:
+    """Read a RDKit molecule."""
     try:
         return molkit.from_rdmol(mol.mol)
     except (Exception, PlamsError) as ex:
         print_exception(read_mol_rdkit.__code__, ex, mol.mol)
 
 
-def read_mol_folder(mol):
-    """ Read all files (.xyz, .pdb, .mol, .txt or further subfolders) within a folder """
+def read_mol_folder(mol: str) -> Molecule:
+    """Read all files (.xyz, .pdb, .mol, .txt or further subfolders) within a folder."""
     try:
         file_list = [file for file in os.listdir(mol.mol)]
         input_mol = get_mol_defaults(file_list, path=mol.path, core=mol.is_core)
@@ -120,7 +132,7 @@ def read_mol_folder(mol):
         print_exception(read_mol_folder.__code__, ex, mol.mol)
 
 
-def read_mol_txt(mol):
+def read_mol_txt(mol: dict) -> Molecule:
     """Read a plain text file containing one or more SMILES strings."""
     try:
         with open(mol.mol, 'r') as file:
@@ -133,7 +145,7 @@ def read_mol_txt(mol):
         print_exception(read_mol_txt.__code__, ex, mol.mol)
 
 
-def get_charge_dict():
+def get_charge_dict() -> Dict[str, int]:
     """Create a dictionary of elements and their formal atomic charge."""
     # Create a list of atomic charges and elements
     charges = (1, 2, -3, -2, -1, 2)
@@ -157,7 +169,8 @@ def get_charge_dict():
 charge_dict: Dict[str, int] = get_charge_dict()
 
 
-def set_mol_prop(mol, mol_dict):
+def set_mol_prop(mol: Molecule,
+                 mol_dict: dict) -> None:
     """Set molecular and atomic properties."""
     if mol_dict.is_core:
         residue_name = 'COR'
@@ -182,7 +195,9 @@ def set_mol_prop(mol, mol_dict):
         mol.properties.smiles = Chem.CanonSmiles(tmp)
 
 
-def set_atom_prop(atom, i, residue_name):
+def set_atom_prop(atom: Atom,
+                  i: str,
+                  residue_name: str) -> None:
     """Set atomic properties."""
     symbol = '{:4}'.format(atom.symbol + ''.join(i))
 
@@ -220,7 +235,9 @@ def set_atom_prop(atom, i, residue_name):
             atom.properties.charge = 0
 
 
-def print_exception(func, ex, name):
+def print_exception(func: Callable,
+                    ex: Exception,
+                    name: str) -> list:
     """Manages the printing of exceptions upon failing to import a molecule."""
     extension_dict = {'read_mol_xyz': '.xyz file', 'read_mol_pdb': '.pdb file',
                       'read_mol_mol': '.mol file', 'read_mol_smiles': 'SMILES string',

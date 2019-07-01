@@ -12,6 +12,9 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
   * `CAT <https://github.com/nlesc-nano/CAT/>`_: A collection of tools designed for the automatic construction of chemical compounds.
   * `nano-CAT <https://github.com/nlesc-nano/nano-CAT/>`_: A collection of tools for the analysis of nanocrystals.
   * `data-CAT <https://github.com/nlesc-nano/data-CAT/>`_: A databasing framework for the Compound Attachment Tools package (`CAT <https://github.com/nlesc-nano/CAT/>`_).
+* Docstrings have been changed into NumPy style.
+* Added typehints.
+* Added the :class:`.PropertiesDataFrame` class.
 
 
 0.4.5

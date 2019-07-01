@@ -1,1 +1,1 @@
-""" Various tests. """
+"""Various tests."""

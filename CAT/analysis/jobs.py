@@ -1,13 +1,11 @@
-""" A module designed for running Jobs. """
-
-__all__ = ['job_single_point', 'job_geometry_opt', 'job_freq']
+"""A module designed for running Jobs."""
 
 from os.path import join
+from typing import (Optional, Callable)
 
 import numpy as np
 
-from scm.plams.mol.molecule import Molecule
-from scm.plams.core.settings import Settings
+from scm.plams import (Molecule, Settings, Results)
 from scm.plams.core.functions import add_to_class
 from scm.plams.tools.units import Units
 
@@ -20,9 +18,11 @@ from .thermo_chem import get_thermo
 from ..utils import (get_time, type_to_string)
 from ..mol_utils import (adf_connectivity, from_mol_other)
 
+__all__ = ['job_single_point', 'job_geometry_opt', 'job_freq']
+
 
 @add_to_class(Cp2kResults)
-def get_main_molecule(self):
+def get_main_molecule(self) -> Optional[Molecule]:
     for file in self.files:
         if '.xyz' in file:
             return Molecule(join(self.job.path, file))
@@ -30,20 +30,40 @@ def get_main_molecule(self):
 
 
 @add_to_class(Cp2kResults)
-def get_energy(self, index=0, unit='Hartree'):
+def get_energy(self, index: int = 0,
+               unit: str = 'Hartree') -> float:
     """Returns last occurence of 'Total energy:' in the output."""
     energy = self._get_energy_type('Total', index=index)
     return Units.convert(energy, 'Hartree', unit)
 
 
 @add_to_class(Molecule)
-def job_single_point(self, job, settings, name='Single_point', ret_results=False):
-    """ Function for running an arbritrary <Job>, extracting total energies.
+def job_single_point(self, job: Callable,
+                     settings: Settings,
+                     name: str = 'Single_point',
+                     ret_results: bool = False) -> Optional[Results]:
+    """Function for running an arbritrary jobs, extracting total energies.
 
-    mol <plams.Molecule>: A PLAMS molecule.
-    job <type>: A type object of a class derived from <Job>, e.g. AMSJob or Cp2kJob.
-    settings <Settings>: The settings for *job*.
-    name <str>: The name of *job*.
+    Paramaters
+    ----------
+    job : |Callable|_
+        A type Callable of a class derived from :class:`Job`, e.g. :class:`AMSJob`
+        or :class:`Cp2kJob`.
+
+    settings : |plams.Settings|_
+        The settings for **job**.
+
+    name : str
+        The name of **job**.
+
+    ret_results : bool
+        Whether or not the :class:`Results` instance should be returned or not.
+
+    Returns
+    -------
+    |plams.Results|_
+        Optional: If ``ret_results=True` return the :class:`Results` instance produced by this job.
+
     """
     # Grab the default settings for a specific job and update them with user provided settings
     s = Settings()
@@ -73,16 +93,36 @@ def job_single_point(self, job, settings, name='Single_point', ret_results=False
     # Return results
     if ret_results:
         return results
+    return None
 
 
 @add_to_class(Molecule)
-def job_geometry_opt(self, job, settings, name='Geometry_optimization', ret_results=False):
-    """ Function for running an arbritrary <Job>, extracting total energies and final geometries.
+def job_geometry_opt(self, job: Callable,
+                     settings: Settings,
+                     name: str = 'Geometry_optimization',
+                     ret_results: bool = False) -> Optional[Results]:
+    """Function for running an arbritrary jobs, extracting total energies and final geometries.
 
-    mol <plams.Molecule>: A PLAMS molecule.
-    job <type>: A type object of a class derived from <Job>, e.g. AMSJob or Cp2kJob.
-    settings <Settings>: The settings for *job*.
-    name <str>: The name of *job*.
+    Paramaters
+    ----------
+    job : |Callable|_
+        A type Callable of a class derived from :class:`Job`, e.g. :class:`AMSJob`
+        or :class:`Cp2kJob`.
+
+    settings : |plams.Settings|_
+        The settings for **job**.
+
+    name : str
+        The name of **job**.
+
+    ret_results : bool
+        Whether or not the :class:`Results` instance should be returned or not.
+
+    Returns
+    -------
+    |plams.Results|_
+        Optional: If ``ret_results=True` return the :class:`Results` instance produced by this job.
+
     """
     # Grab the default settings for a specific job and update them with user provided settings
     s = Settings()
@@ -114,18 +154,40 @@ def job_geometry_opt(self, job, settings, name='Geometry_optimization', ret_resu
     # Return results
     if ret_results:
         return results
+    return None
 
 
 @add_to_class(Molecule)
 def job_freq(self, job, settings, name='Frequency_analysis', opt=True, ret_results=False):
-    """ Function for running an arbritrary <Job>, extracting total energies, final geometries and
+    """ Function for running an arbritrary Jobs
+
+    Extracts total energies, final geometries and
     thermochemical quantities derived from vibrational frequencies.
 
-    mol <plams.Molecule>: A PLAMS molecule.
-    job <type>: A type object of a class derived from <Job>, e.g. AMSJob or Cp2kJob.
-    settings <Settings>: The settings for *job*.
-    name <str>: The name of *job*.
-    opt <bool>: Preceed the frequency analysis with a geometry optimization.
+    Paramaters
+    ----------
+    job : |Callable|_
+        A type Callable of a class derived from :class:`Job`, e.g. :class:`AMSJob`
+        or :class:`Cp2kJob`.
+
+    settings : |plams.Settings|_
+        The settings for **job**.
+
+    name : str
+        The name of **job**.
+
+    opt : bool
+        Perform a geometry optimization (see :func:`.job_geometry_opt`) before calculating
+        frequencies.
+
+    ret_results : bool
+        Whether or not the :class:`Results` instance should be returned or not.
+
+    Returns
+    -------
+    |plams.Results|_
+        Optional: If ``ret_results=True` return the :class:`Results` instance produced by this job.
+
     """
     # Preceed the frequency analysis with a geometry optimization
     if opt:
@@ -167,3 +229,4 @@ def job_freq(self, job, settings, name='Frequency_analysis', opt=True, ret_resul
     # Return results
     if ret_results:
         return results
+    return None

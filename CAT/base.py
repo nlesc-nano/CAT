@@ -1,13 +1,14 @@
-""" A module handling the interaction with all other modules, functioning as recipe. """
-
-__all__ = ['prep']
+"""A module handling the interaction with all other modules, functioning as recipe."""
 
 import time
+from typing import (Optional, Tuple)
 
 import pandas as pd
 
-from scm.plams.mol.atom import Atom
+from scm.plams import (Atom, Settings)
 from scm.plams.core.errors import MoleculeError
+
+from .properties_dataframe import PropertiesDataFrame
 
 from .utils import (check_sys_var, get_time)
 
@@ -23,16 +24,33 @@ from .attachment.ligand_opt import init_ligand_opt
 from .attachment.ligand_attach import init_qd_construction
 from .attachment.ligand_anchoring import init_ligand_anchoring
 
+__all__ = ['prep']
 
-def prep(arg, return_mol=True):
-    """ function that handles all tasks related to prep_core, prep_ligand and prep_qd.
+# Aliases for pd.MultiIndex columns
+MOL = ('mol', '')
 
-    :parameter arg: A settings object containing all (optional) arguments.
-    :type arg: |plams.Settings|_
-    :parameter bool return_mol: If qd_df, core_df & ligand_df should be returned or not.
-    :return: If ``return=True``, return a dataframe with quantum dots, cores and ligands.
-        Molecules are stored in the *mol* column.
-    :rtype: |pd.DataFrame|_ (columns: |str|_, index: |int|_, values: |plams.Molecule|_)
+
+def prep(arg: Settings,
+         return_mol: bool = True) -> Optional[Tuple[PropertiesDataFrame]]:
+    """Function that handles all tasks related to the three prep functions.
+
+    * :func:`.prep_core`
+    * :func:`.prep_ligand`
+    * :func:`.prep_qd`
+
+    Parameters
+    ----------
+    arg : |plams.Settings|_
+        A settings object containing all (optional) arguments.
+
+    return_mol : bool
+        If qd_df, core_df & ligand_df should be returned or not.
+
+    Returns
+    -------
+    |CAT.PropertiesDataFrame|_
+        Optional: If ``return_mol=True`` return the three QD, core and ligand dataframes.
+
     """
     # The start
     time_start = time.time()
@@ -42,13 +60,13 @@ def prep(arg, return_mol=True):
     ligand_df, core_df = prep_input(arg)
 
     # Adds the indices of the core dummy atoms to core.properties.core
-    core_df = prep_core(core_df, arg)
+    core_df = prep_core(core_df)
 
     # Optimize the ligands, find functional groups, calculate properties and read/write the results
-    ligand_df = prep_ligand(ligand_df, arg)
+    ligand_df = prep_ligand(ligand_df)
 
     # Combine the cores and ligands; analyze the resulting quantum dots
-    qd_df = prep_qd(ligand_df, core_df, arg)
+    qd_df = prep_qd(ligand_df, core_df)
 
     # The End
     message = get_time() + 'Total elapsed time:\t\t' + '%.4f' % (time.time() - time_start) + ' sec'
@@ -56,15 +74,22 @@ def prep(arg, return_mol=True):
 
     if return_mol:
         return qd_df, core_df, ligand_df
+    return None
 
 
-def prep_input(arg):
-    """ Interpret and extract the input settings. Returns a list of ligands and a list of cores.
+def prep_input(arg: Settings) -> Tuple[PropertiesDataFrame, PropertiesDataFrame]:
+    """Interpret and extract the input settings. Returns a list of ligands and a list of cores.
 
-    :parameter arg: A settings object containing all (optional) arguments.
-    :type arg: |plams.Settings|_
-    :return: A dataframe of ligands and a dataframe of cores.
-    :rtype: |pd.DataFrame|_ (columns: |str|_, index: |int|_, values: |plams.Molecule|_)
+    Parameters
+    ----------
+    |plams.Settings|_
+        A settings object containing all (optional) arguments.
+
+    Returns
+    -------
+    |tuple|_ [|CAT.PropertiesDataFrame|_]
+        A tuple containing the ligand and core dataframe.
+
     """
     # Interpret arguments
     arg.update(sanitize_path(arg))
@@ -84,31 +109,42 @@ def prep_input(arg):
         raise MoleculeError('No valid input cores were found, aborting run')
 
     # Store the molecules in dataframes
-    columns = pd.MultiIndex.from_tuples([('mol', '')], names=['index', 'sub index'])
-    ligand_df = pd.DataFrame(index=pd.RangeIndex(len(lig_list)), columns=columns.copy())
-    ligand_df['mol'] = lig_list
-    core_df = pd.DataFrame(index=pd.RangeIndex(len(core_list)), columns=columns.copy())
-    core_df['mol'] = core_list
+    columns = pd.MultiIndex.from_tuples([MOL], names=['index', 'sub index'])
+
+    ligand_df = PropertiesDataFrame(index=pd.RangeIndex(len(lig_list)),
+                                    columns=columns.copy(),
+                                    properties=arg)
+    core_df = PropertiesDataFrame(index=pd.RangeIndex(len(core_list)),
+                                  columns=columns.copy(),
+                                  properties=arg)
+
+    ligand_df[MOL] = lig_list
+    core_df[MOL] = core_list
 
     return ligand_df, core_df
 
 
-def prep_core(core_df, arg):
-    """ Function that handles the identification and marking of all core dummy atoms.
+def prep_core(core_df: PropertiesDataFrame) -> PropertiesDataFrame:
+    """Function that handles the identification and marking of all core dummy atoms.
 
-    :parameter core_df: A dataframe of core molecules. Molecules are stored in the *mol* column.
-    :type core_df: |pd.DataFrame|_ (columns: |str|_, index: |int|_, values: |plams.Molecule|_)
-    :parameter arg: A settings object containing all (optional) arguments.
-    :type arg: |plams.Settings|_ (superclass: |dict|_)
-    :return: A dataframe of cores with all dummy/anchor atoms removed.
-    :rtype: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
+    Parameters
+    ----------
+    core_df : |CAT.PropertiesDataFrame|_
+        A dataframe of core molecules. Molecules are stored in the *mol* column.
+
+    Returns
+    -------
+    |CAT.PropertiesDataFrame|_
+        A dataframe of cores with all dummy/anchor atoms removed.
+
     """
+    # Unpack arguments
+    dummy = core_df.properties.optional.core.dummy
+
     formula_list = []
     anchor_list = []
-
-    for i, core in enumerate(core_df['mol']):
+    for i, core in enumerate(core_df[MOL]):
         # Checks the if the dummy is a string (atomic symbol) or integer (atomic number)
-        dummy = arg.optional.core.dummy
         formula_list.append(core.get_formula())
 
         # Returns the indices and Atoms of all dummy atom ligand placeholders in the core
@@ -133,75 +169,98 @@ def prep_core(core_df, arg):
     idx_tuples = list(zip(formula_list, anchor_list))
     idx = pd.MultiIndex.from_tuples(idx_tuples, names=['formula', 'anchor'])
     ret = core_df.reindex(idx)
-    ret['mol'] = core_df['mol'].values
+    ret[MOL] = core_df[MOL].values
     return ret
 
 
-def prep_ligand(ligand_df, arg):
-    """ Function that handles all ligand operations:
-        - Ligand function group identification
-        - Ligand geometry optimization
-        - Ligand COSMO-RS calculations
+def prep_ligand(ligand_df: PropertiesDataFrame) -> PropertiesDataFrame:
+    """Function that handles all ligand operations.
 
-    :parameter ligand_df: A dataframe of ligand molecules. Molecules are stored in the *mol* column.
-    :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index: |int|_, values: |plams.Molecule|_)
-    :parameter arg: A settings object containing all (optional) arguments.
-    :type arg: |plams.Settings|_ (superclass: |dict|_)
+    * Ligand function group identification
+    * Ligand geometry optimization
+    * Ligand COSMO-RS calculations
+
+    Parameters
+    ----------
+    ligand_df : |CAT.PropertiesDataFrame|_
+        A dataframe of ligand molecules. Molecules are stored in the *mol* column.
+
+    Returns
+    -------
+    |CAT.PropertiesDataFrame|_
+        A new dataframe containing only valid ligands.
+
     """
+    # Unpack arguments
+    optimize = ligand_df.properties.optional.ligand.optimize
+    crs = ligand_df.properties.optional.ligand.crs
+
     # Identify functional groups within the ligand.
-    ligand_df = init_ligand_anchoring(ligand_df, arg)
+    ligand_df = init_ligand_anchoring(ligand_df)
 
     # Check if any valid functional groups were found
-    if not ligand_df['mol'].any():
+    if not ligand_df[MOL].any():
         raise MoleculeError('No valid functional groups found in any of the ligands, aborting run')
 
     # Optimize the ligands
-    if arg.optional.ligand.optimize:
-        init_ligand_opt(ligand_df, arg)
+    if optimize:
+        init_ligand_opt(ligand_df)
 
     # Perform a COSMO-RS calculation on the ligands
-    if arg.optional.ligand.crs:
+    if crs:
         check_sys_var()
-        init_solv(ligand_df, arg)
+        init_solv(ligand_df)
 
     return ligand_df
 
 
-def prep_qd(ligand_df, core_df, arg):
-    """ Function that handles all quantum dot (qd, i.e. core + all ligands) operations:
-        - Constructing the quantum dots
-        - Optimizing the quantum dots
-        - Peforming activation strain analyses
-        - Dissociating ligands on the quantum dot surface
+def prep_qd(ligand_df: PropertiesDataFrame,
+            core_df: PropertiesDataFrame) -> PropertiesDataFrame:
+    """Function that handles all quantum dot (qd, i.e. core + all ligands) operations.
 
-    :parameter ligand_df: A dataframe of ligand molecules. Molecules are stored in the *mol* column.
-    :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index: |int|_, values: |plams.Molecule|_)
-    :parameter core_df: A dataframe of core molecules. Molecules are stored in the *mol* column.
-    :type core_df: |pd.DataFrame|_ (columns: |str|_, index: |int|_, values: |plams.Molecule|_)
-    :parameter arg: A settings object containing all (optional) arguments.
-    :type arg: |plams.Settings|_ (superclass: |dict|_)
-    :return: A dataframe of quantum dots molecules. Molecules are stored in the *mol* column.
-    :rtype: |pd.DataFrame|_ (columns: |str|_, index: |int|_, values: |plams.Molecule|_)
+    * Constructing the quantum dots
+    * Optimizing the quantum dots
+    * Peforming activation strain analyses
+    * Dissociating ligands on the quantum dot surface
+
+    Parameters
+    ----------
+    ligand_df : |CAT.PropertiesDataFrame|_
+        A dataframe of ligand molecules. Molecules are stored in the *mol* column.
+
+    core_df : |CAT.PropertiesDataFrame|_
+        A dataframe of core molecules. Molecules are stored in the *mol* column.
+
+    Returns
+    -------
+    |CAT.PropertiesDataFrame|_
+        A dataframe of quantum dots molecules. Molecules are stored in the *mol* column.
+
     """
+    # Unpack arguments
+    optimize = ligand_df.properties.arg.optional.qd.optimize
+    dissociate = ligand_df.properties.arg.optional.qd.dissociate
+    activation_strain = ligand_df.properties.optional.qd.activation_strain
+
     # Construct the quantum dots
-    qd_df = init_qd_construction(ligand_df, core_df, arg)
-    if not qd_df['mol'].any():
+    qd_df = init_qd_construction(ligand_df, core_df)
+    if not qd_df[MOL].any():
         raise MoleculeError('No valid quantum dots found, aborting')
 
     # Optimize the qd with the core frozen
-    if arg.optional.qd.optimize:
+    if optimize:
         check_sys_var()
-        init_qd_opt(qd_df, arg)
+        init_qd_opt(qd_df)
 
     # Calculate the interaction between ligands on the quantum dot surface
-    if arg.optional.qd.activation_strain:
+    if activation_strain:
         print(get_time() + 'calculating ligand distortion and inter-ligand interaction')
-        init_asa(qd_df, arg)
+        init_asa(qd_df)
 
     # Calculate the interaction between ligands on the quantum dot surface upon removal of CdX2
-    if arg.optional.qd.dissociate:
+    if dissociate:
         # Start the BDE calculation
         print(get_time() + 'calculating ligand dissociation energy')
-        init_bde(qd_df, arg)
+        init_bde(qd_df)
 
     return qd_df

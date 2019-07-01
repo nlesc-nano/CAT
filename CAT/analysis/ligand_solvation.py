@@ -1,16 +1,15 @@
-""" A module designed for calculating solvation energies. """
-
-__all__ = ['init_solv']
+"""A module designed for calculating solvation energies."""
 
 import os
 import shutil
 from itertools import product
 from os.path import (join, dirname)
+from typing import (Optional, Sequence, Callable, Container, Tuple, List)
 
 import numpy as np
 import pandas as pd
 
-from scm.plams.core.settings import Settings
+from scm.plams import (Settings, Molecule, Results)
 from scm.plams.core.jobrunner import JobRunner
 from scm.plams.core.functions import (init, finish)
 from scm.plams.interfaces.adfsuite.adf import ADFJob
@@ -21,28 +20,46 @@ from data_CAT import Database
 from .crs import CRSJob
 from .. import utils as CAT
 from ..utils import (get_time, type_to_string)
+from ..properties_dataframe import PropertiesDataFrame
+
+__all__ = ['init_solv']
+
+# Aliases for pd.MultiIndex columns
+MOL = ('mol', '')
+JOB_SETTINGS_CRS = ('job_settings_crs', '')
+SETTINGS1 = ('settings', 'solv 1')
+SETTINGS2 = ('settings', 'solv 2')
 
 
+def init_solv(ligand_df: PropertiesDataFrame,
+              solvent_list: Optional[Sequence[str]] = None) -> None:
+    """Initialize the ligand solvation energy calculation.
 
-def init_solv(ligand_df, arg, solvent_list=None):
-    """ Initialize the ligand solvation energy calculation.
     Performs an inplace update of **ligand_df**, creating 2 sets of columns (*E_solv* & *gamma*)
     to hold all solvation energies and activity coefficients, respectively.
 
-    :parameter ligand_df: A dataframe of ligands.
-    :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index: |int|_, values: |plams.Molecule|_)
-    :parameter arg: A settings object containing all (optional) arguments.
-    :type arg: |plams.Settings|_ (superclass: |dict|_).
-    :parameter solvent_list: A list of paths to the .t21 or .coskf files of solvents. If *None*,
-        use the default .coskf files distributed with CAT (see CAT.data.coskf).
-    :type solvent_list: |None|_ or |list|_ [|str|_].
+    Parameters
+    ----------
+    ligand_df : |CAT.PropertiesDataFrame|_
+        A dataframe of ligands.
+
+    solvent_list : |list|_ [|str|_]
+        Optional: A list of paths to the .t21 or .coskf files of solvents.
+        If ``None``, use the default .coskf files distributed with CAT (see :mod:`CAT.data.coskf`).
+
     """
-    data = Database(path=arg.optional.database.dirname)
+    # Unpack arguments
+    properties = ligand_df.properties
     path = ligand_df['mol'][0].properties.path
-    j1 = arg.optional.ligand.crs.job1
-    j2 = arg.optional.ligand.crs.job2
-    s1 = arg.optional.ligand.crs.s1
-    s2 = arg.optional.ligand.crs.s2
+    overwrite = 'ligand' in properties.optional.database.overwrite
+    read = 'ligand' in properties.optional.database.read
+    write = 'ligand' in properties.optional.database.write
+    j1 = properties.optional.ligand.crs.job1
+    j2 = properties.optional.ligand.crs.job2
+    s1 = properties.optional.ligand.crs.s1
+    s2 = properties.optional.ligand.crs.s2
+
+    data = Database(path=properties.optional.database.dirname)
 
     # Prepare the job settings and solvent list
     if solvent_list is None:
@@ -58,15 +75,14 @@ def init_solv(ligand_df, arg, solvent_list=None):
         ligand_df[item] = np.nan
 
     # Check if the calculation has been done already
-    overwrite = 'ligand' in arg.optional.database.overwrite
-    if not overwrite and 'ligand' in arg.optional.database.read:
+    if not overwrite and read:
         data.from_csv(ligand_df, database='ligand', get_mol=False)
 
     # Run COSMO-RS
     idx = ligand_df[['E_solv', 'gamma']].isna().all(axis='columns')
     if idx.any():
         init(path=path, folder='ligand_solvation')
-        for i, mol in ligand_df['mol'][idx].iteritems():
+        for i, mol in ligand_df[MOL][idx].iteritems():
             mol.properties.job_path = []
             coskf = get_surface_charge(mol, job=j1, s=s1)
             e_and_gamma = get_solv(mol, solvent_list, coskf, job=j2, s=s2)
@@ -79,24 +95,27 @@ def init_solv(ligand_df, arg, solvent_list=None):
                 job_settings.append(mol.properties.pop('job_path'))
             except KeyError:
                 job_settings.append([])
-        ligand_df[('job_settings_crs', '')] = job_settings
+        ligand_df[JOB_SETTINGS_CRS] = job_settings
     else:
         return None  # No new molecules here; move along
 
     # Update the database
-    if 'ligand' in arg.optional.database.write:
+    if write:
         with pd.option_context('mode.chained_assignment', None):
-            _ligand_to_db(ligand_df, arg, idx, columns)
+            _ligand_to_db(ligand_df, idx, columns)
     return None
 
 
-def _ligand_to_db(ligand_df, arg, idx, columns):
-    data = Database(path=arg.optional.database.dirname)
-    overwrite = 'ligand' in arg.optional.database.overwrite
-    j1 = arg.optional.ligand.crs.job1
-    j2 = arg.optional.ligand.crs.job2
-    s1 = arg.optional.ligand.crs.s1
-    s2 = arg.optional.ligand.crs.s2
+def _ligand_to_db(ligand_df: PropertiesDataFrame,
+                  idx: pd.Series,
+                  columns: Sequence) -> None:
+    """Export all COSMO-RS results to the database."""
+    data = Database(path=ligand_df.properties.optional.database.dirname)
+    overwrite = 'ligand' in ligand_df.properties.optional.database.overwrite
+    j1 = ligand_df.properties.optional.ligand.crs.job1
+    j2 = ligand_df.properties.optional.ligand.crs.job2
+    s1 = ligand_df.properties.optional.ligand.crs.s1
+    s2 = ligand_df.properties.optional.ligand.crs.s2
 
     value1 = qmflows.singlepoint['specific'][type_to_string(j1)].copy()
     value1.update(s1)
@@ -107,15 +126,35 @@ def _ligand_to_db(ligand_df, arg, idx, columns):
     data.update_csv(
         ligand_df.loc[idx],
         database='ligand',
-        columns=[('settings', 'solv 1'), ('settings', 'solv 2'),
-                 ('job_settings_crs', '')]+columns,
+        columns=[SETTINGS1, SETTINGS2, JOB_SETTINGS_CRS]+columns,
         overwrite=overwrite,
         job_recipe=recipe
     )
 
 
-def get_surface_charge(mol, job=None, s=None):
-    """ Construct the COSMO surface of the *mol*. """
+def get_surface_charge(mol: Molecule,
+                       job: Callable,
+                       s: Settings) -> Optional[str]:
+    """Construct the COSMO surface of the **mol**.
+
+    Parameters
+    ----------
+    mol : |plams.Molecule|_
+        A PLAMS Molecule.
+
+    job : |Callable|_
+        A type Callable of a class derived from :class:`Job`, e.g. :class:`AMSJob`
+        or :class:`Cp2kJob`.
+
+    s : |plams.Settings|_
+        The settings for **job**.
+
+    Returns
+    -------
+    |plams.Settings|_
+        Optional: The path+filename of a file containing COSMO surface charges.
+
+    """
     # Special procedure for ADF jobs
     # Use the gas-phase electronic structure as a fragment for the COSMO single point
     if job is ADFJob:
@@ -127,8 +166,38 @@ def get_surface_charge(mol, job=None, s=None):
     return get_coskf(results)
 
 
-def get_solv(mol, solvent_list, coskf, job=None, s=None, keep_files=True):
-    """ Calculate the solvation energy of *mol* in various *solvents*. """
+def get_solv(mol: Molecule,
+             solvent_list: Sequence[str],
+             coskf: str,
+             job: Callable,
+             s: Settings,
+             keep_files: bool = True) -> Tuple[List[float], List[float]]:
+    """Calculate the solvation energy of *mol* in various *solvents*.
+
+    Parameters
+    ----------
+    mol : |plams.Molecule|_
+        A PLAMS Molecule.
+
+    solvent_list : |List|_ [|str|_]
+        A list of solvent molecules (*i.e.* .coskf files).
+
+    coskf : str
+        The path+filename of the .coskf file of **mol**.
+
+    job : |Callable|_
+        A type Callable of a class derived from :class:`Job`, e.g. :class:`AMSJob`
+        or :class:`Cp2kJob`.
+
+    s : |plams.Settings|_
+        The settings for **job**.
+
+    Returns
+    -------
+    |list|_ [|float|_] & |list|_ [|float|_]
+        A list of solvation energies and gammas.
+
+    """
     # Return 2x np.nan if no coskf is None (i.e. the COSMO-surface construction failed)
     if coskf is None:
         return np.nan, np.nan
@@ -176,9 +245,31 @@ def get_solv(mol, solvent_list, coskf, job=None, s=None, keep_files=True):
     return E_solv, Gamma
 
 
-def get_surface_charge_adf(mol, job, s):
-    """ Perform a gas-phase ADF single point and return settings for a
-    COSMO-ADF single point, using the previous gas-phase calculation as moleculair fragment. """
+def get_surface_charge_adf(mol: Molecule,
+                           job: Callable,
+                           s: Settings) -> Settings:
+    """Perform a gas-phase ADF single point and return settings for a COSMO-ADF single point.
+
+    The previous gas-phase calculation as moleculair fragment.
+
+    Parameters
+    ----------
+    mol : |plams.Molecule|_
+        A PLAMS Molecule.
+
+    job : |Callable|_
+        A type Callable of a class derived from :class:`Job`, e.g. :class:`AMSJob`
+        or :class:`Cp2kJob`.
+
+    s : |plams.Settings|_
+        The settings for **job**.
+
+    Returns
+    -------
+    |plams.Settings|_
+        A new Settings intance, constructed from **s**, suitable for DFT COSMO-RS calculations.
+
+    """
     s.input.allpoints = ''
     s.input.charge = sum([at.properties.charge for at in mol])
     results = mol.job_single_point(job, s, ret_results=True)
@@ -192,8 +283,23 @@ def get_surface_charge_adf(mol, job, s):
     return s
 
 
-def get_coskf(results, extensions=['.coskf', '.t21']):
-    """ Return the file in results containing the COSMO surface. """
+def get_coskf(results: Results,
+              extensions: Container[str] = ['.coskf', '.t21']) -> Optional[str]:
+    """Return the file in **results** containing the COSMO surface.
+
+    Parameters
+    ----------
+    results : |plams.Results|_
+        A Results instance.
+
+    extensions : |list|_ [|str|_]
+        Valid filetypes which can contain COSMO surfaces.
+
+    Returns
+    -------
+        Optional: The path+filename of a file containing COSMO surface charges.
+
+    """
     for file in results.files:
         for ext in extensions:
             if ext in file:

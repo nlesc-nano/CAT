@@ -1,8 +1,5 @@
-""" A collection of tools designed for the construction,
-and subsequent analysis, of various chemical compounds. """
-
-__author__ = "Bas van Beek"
-__email__ = 'b.f.van.beek@vu.nl'
+"""A collection of tools designed for the construction,
+and subsequent analysis, of various chemical compounds."""
 
 from .__version__ import __version__
 
@@ -23,6 +20,10 @@ from .data_handling import (
 from .base import prep
 
 from .utils import get_template
+
+__version__ = __version__
+__author__ = "Bas van Beek"
+__email__ = 'b.f.van.beek@vu.nl'
 
 __all__ = [
     'init_asa', 'CRSJob', 'CRSResults', 'job_single_point', 'job_geometry_opt', 'job_freq',

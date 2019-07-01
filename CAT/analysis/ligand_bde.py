@@ -1,8 +1,7 @@
-""" A module designed for the calculation of Bond Dissociation Energies (BDE). """
-
-__all__ = ['init_bde']
+"""A module designed for the calculation of Bond Dissociation Energies (BDE)."""
 
 from itertools import chain, combinations, product
+from typing import (Callable, Optional, Iterable, Tuple, Sequence, Dict, List)
 
 import numpy as np
 import pandas as pd
@@ -21,26 +20,41 @@ from .jobs import (job_single_point, job_geometry_opt, job_freq)
 from ..utils import (get_time, type_to_string)
 from ..mol_utils import (to_atnum, merge_mol)
 from ..attachment.ligand_attach import rot_mol_angle
+from ..properties_dataframe import PropertiesDataFrame
+
+__all__ = ['init_bde']
+
+# Aliases for pd.MultiIndex columns
+MOL = ('mol', '')
+JOB_SETTINGS_BDE = ('job_settings_BDE', '')
+SETTINGS1 = ('settings', 'BDE 1')
+SETTINGS2 = ('settings', 'BDE 2')
 
 
+def init_bde(qd_df: PropertiesDataFrame) -> None:
+    """ Initialize the bond dissociation energy calculation; involves 4 distinct steps.
 
-def init_bde(qd_df, arg):
-    """ Initialize the bond dissociation energy calculation; involves 4 distinct steps:
-    1.  Take *n* ligands (X) and another atom from the core (Y, *e.g.* Cd) and create YX*n*.
-    2.  Given a radius *r*, dissociate all possible YX*n* pairs.
-    3.  Calculate dE: the "electronic" component of the bond dissociation energy (BDE).
-    4.  (Optional) Calculate ddG: the thermal and entropic component of the BDE.
+    * Take :math:`n` ligands (X) and another atom from the core (Y, *e.g.* Cd) and create YX*n*.
+    * Given a radius :math:`r`, dissociate all possible YX*n* pairs.
+    * Calculate dE: the "electronic" component of the bond dissociation energy (BDE).
+    * (Optional) Calculate ddG: the thermal and entropic component of the BDE.
 
-    :parameter qd_df: A dataframe of quantum dots.
-    :type qd_df: |pd.DataFrame|_ (columns: |str|_, index=|str|_, values=|plams.Molecule|_)
-    :parameter arg: A settings object containing all (optional) arguments.
-    :type arg: |plams.Settings|_ (superclass: |dict|_).
+    Parameters
+    ----------
+    qd_df : |CAT.PropertiesDataFrame|_
+        A dataframe of quantum dots.
+
     """
-    data = Database(arg.optional.database.dirname)
-    overwrite = 'qd' in arg.optional.database.overwrite
+    # Unpack arguments
+    path = qd_df.properties.optional.database.dirname
+    overwrite = 'qd' in qd_df.properties.optional.database.overwrite
+    read = 'qd' in qd_df.properties.optional.database.read
+    job2 = qd_df.properties.optional.qd.dissociate.job2
+    s2 = qd_df.properties.optional.qd.dissociate.s2
 
     # Check if the calculation has been done already
-    if not overwrite and 'qd' in arg.optional.database.read:
+    if not overwrite and read:
+        data = Database(path)
         with data.open_csv_qd(data.csv_qd, write=False) as db:
             key_ar = np.array(['BDE label', 'BDE dE', 'BDE dG', 'BDE ddG'])
             bool_ar = np.isin(key_ar, db.columns.levels[0])
@@ -50,26 +64,33 @@ def init_bde(qd_df, arg):
         qd_df.dropna(axis='columns', how='all', inplace=True)
 
     # Calculate the BDEs with thermochemical corrections
-    if arg.optional.qd.dissociate.job2 and arg.optional.qd.dissociate.s2:
-        _bde_w_dg(qd_df, arg)
+    if job2 and s2:
+        _bde_w_dg(qd_df)
 
     # Calculate the BDEs without thermochemical corrections
     else:
-        _bde_wo_dg(qd_df, arg)
+        _bde_wo_dg(qd_df)
 
 
-def _bde_w_dg(qd_df, arg):
-    """ Calculate the BDEs with thermochemical corrections.
+def _bde_w_dg(qd_df: PropertiesDataFrame) -> None:
+    """Calculate the BDEs with thermochemical corrections.
 
-    :parameter qd_df: A dataframe of quantum dots.
-    :type qd_df: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
-    :parameter arg: A settings object containing all (optional) arguments.
-    :type arg: |plams.Settings|_ (superclass: |dict|_).
+    Parameters
+    ----------
+    qd_df : |CAT.PropertiesDataFrame|_
+        A dataframe of quantum dots.
+
     """
-    j1, j2 = arg.optional.qd.dissociate.job1, arg.optional.qd.dissociate.job2
-    s1, s2 = arg.optional.qd.dissociate.s1, arg.optional.qd.dissociate.s2
-    ion = arg.optional.qd.dissociate.core_atom
-    lig_count = arg.optional.qd.dissociate.lig_count
+    # Unpack arguments
+    properties = qd_df.properties
+    job1 = properties.optional.qd.dissociate.job1
+    job2 = properties.optional.qd.dissociate.job2
+    s1 = properties.optional.qd.dissociate.s1
+    s2 = properties.optional.qd.dissociate.s2
+    ion = properties.optional.qd.dissociate.core_atom
+    lig_count = properties.optional.qd.dissociate.lig_count
+    core_index = properties.optional.qd.dissociate.core_index
+    write = 'qd' in properties.optional.database.write
 
     # Identify previously calculated results
     try:
@@ -79,13 +100,13 @@ def _bde_w_dg(qd_df, arg):
     except KeyError:
         has_na = pd.Series(True, index=qd_df.index)
 
-    for idx, mol in qd_df['mol'][has_na].iteritems():
+    for idx, mol in qd_df[MOL][has_na].iteritems():
         # Create XYn and all XYn-dissociated quantum dots
         xyn = get_xy2(mol, ion, lig_count)
-        if not arg.optional.qd.dissociate.core_index:
-            mol_wo_xyn = dissociate_ligand(mol, arg)
+        if not core_index:
+            mol_wo_xyn = dissociate_ligand(mol, properties)
         else:
-            mol_wo_xyn = dissociate_ligand2(mol, arg)
+            mol_wo_xyn = dissociate_ligand2(mol, properties)
 
         # Construct new columns for **qd_df**
         labels = [m.properties.df_index for m in mol_wo_xyn]
@@ -108,8 +129,8 @@ def _bde_w_dg(qd_df, arg):
         config.default_jobmanager.settings.hashing = None
         mol.properties.job_path = []
         qd_df.loc[label_slice] = labels
-        qd_df.loc[dE_slice] = get_bde_dE(mol, xyn, mol_wo_xyn, job=j1, s=s1)
-        qd_df.loc[ddG_slice] = get_bde_ddG(mol, xyn, mol_wo_xyn, job=j2, s=s2)
+        qd_df.loc[dE_slice] = get_bde_dE(mol, xyn, mol_wo_xyn, job=job1, s=s1)
+        qd_df.loc[ddG_slice] = get_bde_ddG(mol, xyn, mol_wo_xyn, job=job2, s=s2)
         mol.properties.job_path += xyn.properties.pop('job_path')
         for m in mol_wo_xyn:
             mol.properties.job_path += m.properties.pop('job_path')
@@ -118,32 +139,36 @@ def _bde_w_dg(qd_df, arg):
     qd_df['BDE dG'] = qd_df['BDE dE'] + qd_df['BDE ddG']
 
     job_settings = []
-    for mol in qd_df['mol']:
+    for mol in qd_df[MOL]:
         try:
             job_settings.append(mol.properties.pop('job_path'))
         except KeyError:
             job_settings.append([])
-    qd_df[('job_settings_BDE', '')] = job_settings
+    qd_df[JOB_SETTINGS_BDE] = job_settings
 
     # Update the database
-    if 'qd' in arg.optional.database.write:
+    if write:
         with pd.option_context('mode.chained_assignment', None):
-            _qd_to_db(qd_df, arg, has_na, with_dg=True)
+            _qd_to_db(qd_df, has_na, with_dg=True)
 
 
-def _bde_wo_dg(qd_df, arg):
+def _bde_wo_dg(qd_df: PropertiesDataFrame) -> None:
     """ Calculate the BDEs without thermochemical corrections.
 
-    :parameter qd_df: A dataframe of quantum dots.
-    :type qd_df: |pd.DataFrame|_ (columns: |str|_, index=|str|_, values=|plams.Molecule|_)
-    :parameter arg: A settings object containing all (optional) arguments.
-    :type arg: |plams.Settings|_ (superclass: |dict|_).
+    Parameters
+    ----------
+    qd_df : |CAT.PropertiesDataFrame|_
+        A dataframe of quantum dots.
+
     """
     # Unpack arguments
-    j1 = arg.optional.qd.dissociate.job1
-    s1 = arg.optional.qd.dissociate.s1
-    ion = arg.optional.qd.dissociate.core_atom
-    lig_count = arg.optional.qd.dissociate.lig_count
+    properties = qd_df.properties
+    job1 = properties.optional.qd.dissociate.job1
+    s1 = properties.optional.qd.dissociate.s1
+    ion = properties.optional.qd.dissociate.core_atom
+    lig_count = properties.optional.qd.dissociate.lig_count
+    core_index = properties.optional.qd.dissociate.core_index
+    write = 'qd' in properties.optional.database.write
 
     # Identify previously calculated results
     try:
@@ -153,13 +178,13 @@ def _bde_wo_dg(qd_df, arg):
     except KeyError:
         has_na = pd.Series(True, index=qd_df.index)
 
-    for idx, mol in qd_df['mol'][has_na].iteritems():
+    for idx, mol in qd_df[MOL][has_na].iteritems():
         # Create XYn and all XYn-dissociated quantum dots
         xyn = get_xy2(mol, ion, lig_count)
-        if not arg.optional.qd.dissociate.core_index:
-            mol_wo_xyn = dissociate_ligand(mol, arg)
+        if not core_index:
+            mol_wo_xyn = dissociate_ligand(mol)
         else:
-            mol_wo_xyn = dissociate_ligand2(mol, arg)
+            mol_wo_xyn = dissociate_ligand2(mol)
 
         # Construct new columns for **qd_df**
         labels = [m.properties.df_index for m in mol_wo_xyn]
@@ -181,50 +206,58 @@ def _bde_wo_dg(qd_df, arg):
         config.default_jobmanager.settings.hashing = None
         mol.properties.job_path = []
         qd_df.loc[label_slice] = labels
-        qd_df.loc[dE_slice] = get_bde_dE(mol, xyn, mol_wo_xyn, job=j1, s=s1)
+        qd_df.loc[dE_slice] = get_bde_dE(mol, xyn, mol_wo_xyn, job=job1, s=s1)
         mol.properties.job_path += xyn.properties.pop('job_path')
         for m in mol_wo_xyn:
             mol.properties.job_path += m.properties.pop('job_path')
         finish()
 
     job_settings = []
-    for mol in qd_df['mol']:
+    for mol in qd_df[MOL]:
         try:
             job_settings.append(mol.properties.pop('job_path'))
         except KeyError:
             job_settings.append([])
-    qd_df[('job_settings_BDE', '')] = job_settings
+    qd_df[JOB_SETTINGS_BDE] = job_settings
 
     # Update the database
-    if 'qd' in arg.optional.database.write:
+    if write:
         with pd.option_context('mode.chained_assignment', None):
-            _qd_to_db(qd_df, arg, has_na, with_dg=False)
+            _qd_to_db(qd_df, has_na, with_dg=False)
 
 
-def _qd_to_db(qd_df, arg, idx, with_dg=True):
-    data = Database(arg.optional.database.dirname)
-    overwrite = 'qd' in arg.optional.database.overwrite
-    j1 = arg.optional.qd.dissociate.job1
-    s1 = arg.optional.qd.dissociate.s1
+def _qd_to_db(qd_df: PropertiesDataFrame,
+              idx: pd.Series,
+              with_dg: bool = True) -> None:
+    # Unpack arguments
+    path = qd_df.properties.optional.database.dirname
+    overwrite = 'qd' in qd_df.properties.optional.database.overwrite
+    j1 = qd_df.properties.optional.qd.dissociate.job1
+    s1 = qd_df.properties.optional.qd.dissociate.s1
+
+    data = Database(path)
 
     qd_df.sort_index(axis='columns', inplace=True)
     kwarg = {'database': 'QD', 'overwrite': overwrite}
     if with_dg:
-        j2 = arg.optional.qd.dissociate.job2
-        s2 = arg.optional.qd.dissociate.s2
+        j2 = qd_df.properties.optional.qd.dissociate.job2
+        s2 = qd_df.properties.optional.qd.dissociate.s2
         kwarg['job_recipe'] = get_recipe(j1, s1, j2, s2)
-        kwarg['columns'] = [('job_settings_BDE', ''), ('settings', 'BDE 1'), ('settings', 'BDE 2')]
+        kwarg['columns'] = [JOB_SETTINGS_BDE, SETTINGS1, SETTINGS2]
         column_tup = ('BDE label', 'BDE dE', 'BDE ddG', 'BDE dG')
     else:
         kwarg['job_recipe'] = get_recipe(j1, s1)
-        kwarg['columns'] = [('job_settings_BDE', ''), ('settings', 'BDE 1')]
+        kwarg['columns'] = [JOB_SETTINGS_BDE, SETTINGS1]
         column_tup = ('BDE label', 'BDE dE')
     kwarg['columns'] += [(i, j) for i, j in qd_df.columns if i in column_tup]
 
     data.update_csv(qd_df[idx], **kwarg)
 
 
-def get_recipe(job1, s1, job2=None, s2=None):
+def get_recipe(job1: Callable,
+               s1: Settings,
+               job2: Optional[Callable] = None,
+               s2: Optional[Callable] = None) -> Settings:
     """Return the a dictionary with job types and job settings."""
     ret = Settings()
     value1 = qmflows.singlepoint['specific'][type_to_string(job1)].copy()
@@ -239,7 +272,11 @@ def get_recipe(job1, s1, job2=None, s2=None):
     return ret
 
 
-def get_bde_dE(tot, lig, core, job=None, s=None):
+def get_bde_dE(tot: Molecule,
+               lig: Molecule,
+               core: Iterable[Molecule],
+               job: Callable,
+               s: Settings) -> np.ndarray:
     """Calculate the bond dissociation energy: dE = dE(mopac) + (dG(uff) - dE(uff))."""
     # Optimize XYn
     if job == AMSJob:
@@ -273,9 +310,12 @@ def get_bde_dE(tot, lig, core, job=None, s=None):
     return dE
 
 
-def get_bde_ddG(tot, lig, core, job=None, s=None):
-    """ Calculate the bond dissociation energy: dE = dE(mopac) + (dG(uff) - dE(uff))
-    """
+def get_bde_ddG(tot: Molecule,
+                lig: Molecule,
+                core: Iterable[Molecule],
+                job: Callable,
+                s: Settings) -> np.ndarray:
+    """Calculate the bond dissociation energy: dE = dE(mopac) + (dG(uff) - dE(uff))."""
     # Optimize XYn
     s.input.ams.Constraints.Atom = lig.properties.indices
     lig.job_freq(job, s, name='BDE_frequency_analysis')
@@ -310,25 +350,36 @@ def get_bde_ddG(tot, lig, core, job=None, s=None):
     return ddG
 
 
-def get_xy2(mol, ion='Cd', lig_count=2):
-    """ Takes a quantum dot with ligands (Y) and an ion (X) and turns it into YXn.
-    Returns a XYn molecule.
+def get_xy2(mol: Molecule,
+            ion: str = 'Cd',
+            lig_count: int = 2) -> Molecule:
+    """Takes a quantum dot with ligands (Y) and an ion (X) and turns it into YXn.
 
-    :parameter mol: A PLAMS molecule containing with ligands (Y).
-    :type mol: |plams.Molecule|_
-    :parameter str ion: An atomic symbol (X).
-    :parameter int lig_count: The number of ligand (*n*) in XYn.
-    :return: A new XYn molecule.
-    :rtype: plams.Molecule.
+    Parameters
+    ----------
+    mol : |plams.Molecule|_
+        A PLAMS molecule containing with ligands (Y).
+
+    ion : str
+        An atomic symbol (X).
+
+    lig_count : int
+        The number of ligand (*n*) in XYn.
+
+    Returns
+    -------
+    plams.Molecule:
+        A new XYn molecule.
+
     """
-    def get_anchor(mol):
-        """ Return an index and atom if marked with the properties.anchor attribute """
+    def get_anchor(mol: Molecule) -> Tuple[int, Atom]:
+        """Return an index and atom if marked with the properties.anchor attribute."""
         for i, at in enumerate(mol.atoms):
             if at.properties.anchor:
                 return i, at
 
-    def get_ligand(mol):
-        """ Extract a single ligand from **mol**. """
+    def get_ligand(mol: Molecule) -> Molecule:
+        """Extract a single ligand from **mol**."""
         at_list = []
         res = mol.atoms[-1].properties.pdb_info.ResidueNumber
         for at in reversed(mol.atoms):
@@ -383,13 +434,23 @@ def get_xy2(mol, ion='Cd', lig_count=2):
     return CdX2
 
 
-def dissociate_ligand(mol, arg):
-    """ Create all XYn dissociated quantum dots.
+def dissociate_ligand(mol: Molecule,
+                      arg: Settings) -> List[Molecule]:
+    """Create all XYn dissociated quantum dots.
 
-    :parameter mol: A PLAMS molecule.
-    :type mol: |plams.Molecule|_
-    :parameter arg: A settings object containing all (optional) arguments.
-    :type arg: |plams.Settings|_ (superclass: |dict|_).
+    Parameter
+    ---------
+    mol : |plams.Molecule|_
+        A PLAMS molecule.
+
+    arg: |plams.Settings|_
+        A settings object containing all (optional) arguments.
+
+    Returns
+    -------
+    |list|_ [|plams.Molecule|_]
+        A list of XYn dissociated quantum dots.
+
     """
     # Unpack arguments
     atnum = arg.optional.qd.dissociate.core_atom
@@ -428,16 +489,26 @@ def dissociate_ligand(mol, arg):
     # Create and return new molecules
     indices = [at.id for at in res_list[0][:-l_count]]
     indices += (idx_l[:-l_count] + 1).tolist()
-    return remove_ligands(mol, combinations_dict, indices, idx_l)
+    return remove_ligands(mol, combinations_dict, indices)
 
 
-def dissociate_ligand2(mol, arg):
-    """ Create all XYn dissociated quantum dots.
+def dissociate_ligand2(mol: Molecule,
+                       arg: Settings) -> List[Molecule]:
+    """Create all XYn dissociated quantum dots.
 
-    :parameter mol: A PLAMS molecule.
-    :type mol: |plams.Molecule|_
-    :parameter arg: A settings object containing all (optional) arguments.
-    :type arg: |plams.Settings|_ (superclass: |dict|_).
+    Parameter
+    ---------
+    mol : |plams.Molecule|_
+        A PLAMS molecule.
+
+    arg: |plams.Settings|_
+        A settings object containing all (optional) arguments.
+
+    Returns
+    -------
+    |list|_ [|plams.Molecule|_]
+        A list of XYn dissociated quantum dots.
+
     """
     # Unpack arguments
     l_count = arg.optional.qd.dissociate.lig_count
@@ -474,22 +545,37 @@ def dissociate_ligand2(mol, arg):
     # Create and return new molecules
     indices = [at.id for at in res_list[0][:-l_count]]
     indices += (idx_l[:-l_count] + 1).tolist()
-    return remove_ligands(mol, combinations_dict, indices, idx_l)
+    return remove_ligands(mol, combinations_dict, indices)
 
 
-def filter_lig_core2(xyz_array, idx_lig, idx_core, lig_count=2):
-    """ Create and return the indices of all possible ligand/core pairs..
+def filter_lig_core2(xyz_array: np.ndarray,
+                     idx_lig: Sequence[int],
+                     idx_core: Sequence[int],
+                     lig_count: int = 2) -> np.ndarray:
+    """Create and return the indices of all possible ligand/core pairs.
 
-    :parameter xyz_array: An array with the cartesian coordinates of a molecule with *n* atoms.
-    :type xyz_array: *n*3* |np.ndarray|_ [|np.float64|_]
-    :parameter idx: An array of all ligand anchor atoms (Y).
-    :type idx: |np.ndarray|_ [|np.int64|_]
-    :parameter idx: An array of all core atoms (X).
-    :type idx: |np.ndarray|_ [|np.int64|_]
-    :parameter int lig_count: The number of ligand (*n*) in XYn.
-    :return: An array with the indices of all *m* valid (as determined by **max_diist**)
-        ligand/core pairs.
-    :rtype: *m*2* |np.ndarray|_ [|np.int64|_].
+    Parameters
+    ----------
+    xyz_array : :math:`n*3` |np.ndarray|_ [|np.float64|_]
+        An array with the cartesian coordinates of a molecule with *n* atoms.
+
+    idx_lig : |np.ndarray|_ [|np.int64|_]
+        An array of all ligand anchor atoms (Y).
+
+    idx_core : |np.ndarray|_ [|np.int64|_]
+        An array of all core atoms (X).
+
+    max_dist : float
+        The maximum distance for considering XYn pairs.
+
+    lig_count : int
+        The number of ligand (*n*) in XYn.
+
+    Returns
+    -------
+    :math:`m*2` |np.ndarray|_ [|np.int64|_]
+        An array with the indices of all :math:`m` valid  ligand/core pairs.
+
     """
     dist = cdist(xyz_array[idx_lig], xyz_array[idx_core])
     xy = []
@@ -507,7 +593,9 @@ def filter_lig_core2(xyz_array, idx_lig, idx_core, lig_count=2):
     return xy
 
 
-def remove_ligands(mol, combinations_dict, indices, idx_lig):
+def remove_ligands(mol: Molecule,
+                   combinations_dict: dict,
+                   indices: Sequence[int]) -> List[Molecule]:
     """ """
     ret = []
     for core in combinations_dict:
@@ -530,22 +618,34 @@ def remove_ligands(mol, combinations_dict, indices, idx_lig):
     return ret
 
 
-def filter_core(xyz_array, idx, topology_dict={6: 'vertice', 7: 'edge', 9: 'face'}, max_dist=5.0):
-    """ Find all atoms (**idx**) in **xyz_array** which are exposed to the surface
-    and assign a topology to aforementioned atoms based on the number of neighbouring atoms.
+def filter_core(xyz_array: np.ndarray,
+                idx: np.ndarray,
+                topology_dict: Dict[int, str] = {6: 'vertice', 7: 'edge', 9: 'face'},
+                max_dist: float = 5.0) -> Tuple[np.ndarray, np.ndarray]:
+    """Find all atoms (**idx**) in **xyz_array** which are exposed to the surface.
 
-    :parameter xyz_array: An array with the cartesian coordinates of a molecule with *n* atoms.
-    :type xyz_array: *n*3* |np.ndarray|_ [|np.float64|_]
-    :parameter idx: An array of atomic indices in **xyz_array**.
-    :type idx: |np.ndarray|_ [|np.int64|_]
-    :parameter topology_dict: A dictionary which maps the number of neighbours (per atom) to a
-        user-specified topology.
-    :type topology_dict: |dict|_ (keys: |int|_)
-    :parameter float max_dist: The radius (Angstrom) for determining if an atom counts as a
-        neighbour or not.
-    :return: The indices of all atoms in **xyz_array[idx]** exposed to the surface and
+    A topology is assigned to aforementioned atoms based on the number of neighbouring atoms.
+
+    Parameters
+    ----------
+    xyz_array : :math:`n*3` |np.ndarray|_ [|np.float64|_]
+        An array with the cartesian coordinates of a molecule with :math:`n` atoms.
+
+    idx : |np.ndarray|_ [|np.int64|_]
+        An array of atomic indices in **xyz_array**.
+
+    topology_dict : |dict|_ [|int|_, |str|_]
+        A dictionary which maps the number of neighbours (per atom) to a user-specified topology.
+
+    max_dist : float
+        The radius (Angstrom) for determining if an atom counts as a neighbour or not.
+
+    Returns
+    -------
+    |np.ndarray|_ [|np.int64|_] and |np.ndarray|_ [|np.int64|_]
+        The indices of all atoms in **xyz_array[idx]** exposed to the surface and
         the topology of atoms in **xyz_array[idx]**.
-    :rtype: |np.ndarray|_ [|np.int64|_] and |np.ndarray|_ [|np.int64|_]
+
     """
     # Create a distance matrix and find all elements with a distance smaller than **max_dist**
     dist = cdist(xyz_array[idx], xyz_array[idx])
@@ -569,18 +669,26 @@ def filter_core(xyz_array, idx, topology_dict={6: 'vertice', 7: 'edge', 9: 'face
     return idx[np.where(vec_length > 0.5)[0]], get_topology(bincount, topology_dict)
 
 
-def get_topology(bincount, topology_dict={6: 'vertice', 7: 'edge', 9: 'face'}):
-    """ Translate the number of neighbouring atoms (**bincount**) into a list of topologies.
+def get_topology(bincount: Iterable[int],
+                 topology_dict: Dict[int, str] = {6: 'vertice', 7: 'edge', 9: 'face'}) -> List[str]:
+    """Translate the number of neighbouring atoms (**bincount**) into a list of topologies.
+
     If a specific number of neighbours (*i*) is absent from **topology_dict** then that particular
     element is set to a generic str(*i*) + '_neighbours'.
 
-    :parameter bincount: An array with the number of neighbours per atom for a total of *n* atoms.
-    :type bincount: *n* |np.ndarray|_ [|np.int64|_]
-    :parameter topology_dict: A dictionary which maps the number of neighbours (per atom) to a
-        user-specified topology.
-    :type topology_dict: |dict|_ (keys: |int|_)
-    :return: A list of topologies for all *n* atoms in **bincount**.
-    :rtype: *n* |list|_.
+    Parameters
+    ----------
+    bincount : :math:`n` |np.ndarray|_ [|np.int64|_]
+        An array with the number of neighbours per atom for a total of :math:`n` atoms.
+
+    topology_dict : |dict|_ [|int|_, |str|_]
+        A dictionary which maps the number of neighbours (per atom) to a user-specified topology.
+
+    Returns
+    -------
+    :math:`n` |list|_
+        A list of topologies for all :math:`n` atoms in **bincount**.
+
     """
     if isinstance(topology_dict, Settings):
         topology_dict = topology_dict.as_dict()
@@ -593,21 +701,38 @@ def get_topology(bincount, topology_dict={6: 'vertice', 7: 'edge', 9: 'face'}):
     return ret
 
 
-def filter_lig_core(xyz_array, idx_lig, idx_core, max_dist=5.0, lig_count=2):
-    """ Create and return the indices of all possible ligand/pairs that can be constructed within a
-    given radius (**max_dist**).
+def filter_lig_core(xyz_array: np.ndarray,
+                    idx_lig: Sequence[int],
+                    idx_core: Sequence[int],
+                    max_dist: float = 5.0,
+                    lig_count: int = 2) -> np.ndarray:
+    """Create and return the indices of all possible ligand/core atom pairs.
 
-    :parameter xyz_array: An array with the cartesian coordinates of a molecule with *n* atoms.
-    :type xyz_array: *n*3* |np.ndarray|_ [|np.float64|_]
-    :parameter idx: An array of all ligand anchor atoms (Y).
-    :type idx: |np.ndarray|_ [|np.int64|_]
-    :parameter idx: An array of all core atoms (X).
-    :type idx: |np.ndarray|_ [|np.int64|_]
-    :parameter float max_dist: The maximum distance for considering XYn pairs.
-    :parameter int lig_count: The number of ligand (*n*) in XYn.
-    :return: An array with the indices of all *m* valid (as determined by **max_diist**)
+    Ligand/core atom pair construction is limited to a given radius (**max_dist**).
+
+    Parameters
+    ----------
+    xyz_array : :math:`n*3` |np.ndarray|_ [|np.float64|_]
+        An array with the cartesian coordinates of a molecule with *n* atoms.
+
+    idx_lig : |np.ndarray|_ [|np.int64|_]
+        An array of all ligand anchor atoms (Y).
+
+    idx_core : |np.ndarray|_ [|np.int64|_]
+        An array of all core atoms (X).
+
+    max_dist : float
+        The maximum distance for considering XYn pairs.
+
+    lig_count : int
+        The number of ligand (*n*) in XYn.
+
+    Returns
+    -------
+    :math:`m*2` |np.ndarray|_ [|np.int64|_]
+        An array with the indices of all :math:`m` valid (as determined by **max_diist**)
         ligand/core pairs.
-    :rtype: *m*2* |np.ndarray|_ [|np.int64|_].
+
     """
     dist = cdist(xyz_array[idx_core], xyz_array[idx_lig])
     xy = np.array(np.where(dist <= max_dist))
@@ -618,16 +743,27 @@ def filter_lig_core(xyz_array, idx_lig, idx_core, max_dist=5.0, lig_count=2):
     return xy
 
 
-def get_lig_core_combinations(xy, res_list, lig_count=2):
-    """ Given an array of indices (**xy**) and a nested list of atoms **res_list**.
+def get_lig_core_combinations(xy: np.ndarray,
+                              res_list: Sequence[Sequence[Atom]],
+                              lig_count: int = 2) -> dict:
+    """Given an array of indices (**xy**) and a nested list of atoms **res_list**.
 
-    :parameter xy: An array with the indices of all *m* core/ligand pairs.
-    :type xy: *m*2* |np.ndarray|_ [|np.int64|_]
-    :parameter res_list: A list of PLAMS atoms, each nested tuple representing all atoms within
-        a given residue.
-    :type res_list: |list|_ [|tuple|_ [|plams.Atom|_]]
-    :parameter int lig_count: The number of ligand (*n*) in XYn.
-    :return:
+    Parameters
+    ----------
+    xy : :math:`m*2` |np.ndarray|_ [|np.int64|_]
+        An array with the indices of all *m* core/ligand pairs.
+
+    res_list : |list|_ [|tuple|_ [|plams.Atom|_]]
+        A list of PLAMS atoms, each nested tuple representing all atoms within a given residue.
+
+    lig_count : int
+        The number of ligand (*n*) in XYn.
+
+    Returns
+    -------
+    |dict|_
+        A dictionary with core/ligand combinations.
+
     """
     dict_ = {}
     for core, lig in xy.T:

@@ -1,10 +1,9 @@
-""" A module designed for sanitizing and interpreting the input file. """
-
-__all__ = ['sanitize_optional', 'sanitize_input_mol', 'sanitize_path']
+"""A module designed for sanitizing and interpreting the input file."""
 
 import os
 from os.path import (join, isdir, isfile, exists)
 from itertools import chain
+from typing import (Optional, Sequence, Callable, Dict, Tuple, Union, List)
 
 import yaml
 import numpy as np
@@ -38,12 +37,14 @@ from ..utils import get_time
 from ..mol_utils import to_atnum
 from ..analysis.crs import CRSJob
 
+__all__ = ['sanitize_optional', 'sanitize_input_mol', 'sanitize_path']
+
 
 """ ###################################  Sanitize path  ####################################### """
 
 
-def sanitize_path(arg):
-    """ Sanitize and return the settings of arg.path. """
+def sanitize_path(arg: Settings) -> Settings:
+    """Sanitize and return the settings of arg.path."""
     if arg.path is None:
         arg.path = os.getcwd()
         return arg
@@ -64,8 +65,8 @@ def sanitize_path(arg):
 """ ##########################  Sanitize input_ligands & input_cores  ######################## """
 
 
-def sanitize_input_mol(arg):
-    """ Sanitize and return the settings of arg.input_cores & arg.input_ligands. """
+def sanitize_input_mol(arg: Settings) -> Settings:
+    """Sanitize and return the settings of arg.input_cores & arg.input_ligands."""
     core_path = arg.optional.core.dirname
     arg.input_cores = get_mol_defaults(arg.input_cores, path=core_path, core=True)
     arg.input_cores = sanitize_mol_type(arg.input_cores)
@@ -77,8 +78,10 @@ def sanitize_input_mol(arg):
     return arg
 
 
-def get_mol_defaults(mol_list, path=None, core=False):
-    """ Prepare the default input settings for a molecule. """
+def get_mol_defaults(mol_list: Sequence[Molecule],
+                     path: Optional[str] = None,
+                     core: bool = False):
+    """Prepare the default input settings for a molecule."""
     key_dict = {
         'guess_bonds': val_bool,
         'is_core': val_bool,
@@ -115,7 +118,7 @@ def get_mol_defaults(mol_list, path=None, core=False):
     return ret
 
 
-def sanitize_mol_type(input_mol):
+def sanitize_mol_type(input_mol: Settings) -> Settings:
     """ Sanitize and return the (file) type of the input molecule (SMILES, .xyz, dir, etc...). """
     for mol in input_mol:
         # Figure out the (file) type and mol name
@@ -154,8 +157,8 @@ def sanitize_mol_type(input_mol):
     return input_mol
 
 
-def get_default_input_mol():
-    """ Return the default settings of arg.input_cores & arg.input_ligands. """
+def get_default_input_mol() -> Settings:
+    """Return the default settings of arg.input_cores & arg.input_ligands."""
     ret = yaml.load("""
         mol: None
         name: None
@@ -175,8 +178,8 @@ def get_default_input_mol():
     return Settings(ret)
 
 
-def santize_smiles(string):
-    """ Sanitize a SMILES string: turn it into a valid filename. """
+def santize_smiles(string: str) -> str:
+    """Sanitize a SMILES string: turn it into a valid filename."""
     name = string.replace('(', '[').replace(')', ']')
     cis_trans = [item for item in string if item == '/' or item == '\\']
     if cis_trans:
@@ -192,8 +195,8 @@ def santize_smiles(string):
 """ ####################################  Sanitize optional  ################################## """
 
 
-def sanitize_optional(arg_dict):
-    """ Sanitize and return the settings of arg.optional. """
+def sanitize_optional(arg_dict: Settings) -> Settings:
+    """Sanitize and return the settings of arg.optional."""
     arg = get_default_optional()
     arg.update(arg_dict)
 
@@ -248,7 +251,7 @@ def sanitize_optional(arg_dict):
     return arg
 
 
-def get_default_optional():
+def get_default_optional() -> Settings:
     """ Return the default settings of arg.optional. """
     ret = yaml.load("""
         optional:
@@ -280,7 +283,7 @@ def get_default_optional():
     return Settings(ret)
 
 
-def get_default_dissociate():
+def get_default_dissociate() -> Settings:
     """ Return the default settings of arg.optional. """
     ret = yaml.load("""
         core_atom: Cd
@@ -301,7 +304,7 @@ def get_default_dissociate():
     return Settings(ret)
 
 
-str_to_class = {
+str_to_class: Dict[str, Callable] = {
     'adf': ADFJob, 'adfjob': ADFJob,
     'ams': AMSJob, 'amsjob': AMSJob,
     'uff': UFFJob, 'uffjob': UFFJob,
@@ -318,8 +321,9 @@ str_to_class = {
 }
 
 
-def val_format(arg, ref):
-    """ Validate database.mol_format & database_format. """
+def val_format(arg: Settings,
+               ref: Settings) -> Settings:
+    """Validate database.mol_format & database_format."""
     schema = Schema(Or(
             And(None, Use(bool)),
             And(bool, lambda n: n is False),
@@ -342,9 +346,10 @@ def val_format(arg, ref):
     return ret
 
 
-def val_data(arg):
-    """ Validate the input arguments for database.read, write and overwrite.
-    Returns *False* or tuple with *ligand*, *core* and/or *qd*.
+def val_data(arg: Settings) -> Settings:
+    """Validate the input arguments for database.read, write and overwrite.
+
+    Returns ``False`` or tuple with *ligand*, *core* and/or *qd*.
     """
     ref = ('ligand', 'core', 'qd')
 
@@ -378,32 +383,39 @@ def val_data(arg):
 
 
 def val_type(file_type):
-    """ Validate a the fle type, returns a <str> or <None>. """
+    """Validate a the fle type, returns a :class:`str` or ``None``."""
     return Schema(Or(str, None, Molecule, Chem.rdchem.Mol)).validate(file_type)
 
 
-def val_int(integer):
-    """ Validate a positive integer; returns an <int>. """
+def val_int(integer: int) -> int:
+    """Validate a positive integer; returns an :class:`int`."""
     schema = Schema(And([int], lambda n: n >= 0))
     return schema.validate(integer)
 
 
-def val_string(string):
-    """ Validate a string; returns a <str>. """
+def val_string(string: str) -> str:
+    """Validate a string; returns a :class:`str`. """
     return Schema(str).validate(string)
 
 
-def val_indices(indices):
-    """ Validate an iterable consisting if integers; returns a <tuple> consisting of 3 <str>. """
+def val_indices(indices: Optional[Sequence[int]]) -> Tuple[int]:
+    """Validate an iterable consisting if integers.
+
+    Returns a :class:`tuple` consisting of three integers.
+    """
     if indices is None:
         return tuple()
     schema = Schema(And([int], Use(tuple), lambda n: [i >= 0 for i in n]))
     return schema.validate(list(indices))
 
 
-def val_dir_names(dirname, path):
-    """ Validate a str; returns a str.
-    Creates a directory at path/dirname if it does not yet exist. """
+def val_dir_names(dirname: str,
+                  path: str) -> str:
+    """Validate a str; returns a str.
+
+    Creates a directory at path/dirname if it does not yet exist.
+
+    """
     ret = join(path, Schema(str).validate(dirname))
     if not exists(ret):
         os.makedirs(ret)
@@ -412,21 +424,32 @@ def val_dir_names(dirname, path):
     return ret
 
 
-def val_atnum(atnum):
-    """ Validate an atomic number or symbol; returns an atomic number <int>. """
+def val_atnum(atnum: Union[str, int]) -> int:
+    """Validate an atomic number or symbol.
+
+    Returns an atomic number.
+
+    """
     at_gen = chain.from_iterable([[i, j[0]] for i, j in enumerate(PeriodicTable.data)])
     schema = Schema(And(Or(int, str), lambda n: n in at_gen, Use(to_atnum)))
     return schema.validate(atnum)
 
 
-def val_bool(my_bool):
-    """ Validate a boolean; returns a <bool>. """
+def val_bool(my_bool: bool) -> bool:
+    """Validate a boolean."""
     return Schema(bool).validate(my_bool)
 
 
-def val_job(job, job1=None, job2=None, s1=None, s2=None):
-    """ Validate a job recipe.
-    Returns a dictionary: {'job1': <Job>, 'job2': <Job>, 's1': <Settings>, 's2': <Settings>}. """
+def val_job(job: Settings,
+            job1: Optional[Callable] = None,
+            job2: Optional[Callable] = None,
+            s1: Optional[Settings] = None,
+            s2: Optional[Settings] = None) -> Settings:
+    """Validate a job recipe.
+
+    Returns a dictionary: ``{'job1': <Job>, 'job2': <Job>, 's1': <Settings>, 's2': <Settings>}``.
+
+    """
     # Validate the object type
     Schema(Or(bool, dict)).is_valid(job)
     if isinstance(job, bool):
@@ -462,7 +485,7 @@ def val_job(job, job1=None, job2=None, s1=None, s2=None):
     return job
 
 
-def val_core_idx(idx):
+def val_core_idx(idx: Optional[int, Sequence[int]]) -> Union[bool, List[int]]:
     if not idx:
         return False
     elif isinstance(idx, (int, np.integer)):
@@ -473,8 +496,8 @@ def val_core_idx(idx):
         return sorted(ret)
 
 
-def val_dissociate(dissociate):
-    """ Validate the optional.qd.dissociate block in the input file. """
+def val_dissociate(dissociate: Settings) -> Settings:
+    """Validate the optional.qd.dissociate block in the input file."""
     ret = get_default_dissociate()
     if dissociate is True:
         dissociate = Settings()

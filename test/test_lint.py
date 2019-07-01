@@ -1,11 +1,11 @@
-""" Lint tests """
+"""Lint tests."""
 import os
 import textwrap
 
 import pycodestyle  # formerly known as pep8
 
 
-def test_pep8_conformance():
+def test_pep8_conformance() -> None:
     """Test that we conform to PEP-8."""
     check_paths = ['CAT', 'test']
     exclude_paths = []

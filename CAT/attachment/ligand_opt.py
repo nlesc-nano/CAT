@@ -1,14 +1,12 @@
-""" A module designed for optimizing the geometry of ligands. """
-
-__all__ = ['init_ligand_opt']
+"""A module designed for optimizing the geometry of ligands."""
 
 import itertools
+from typing import (Union, Sequence, List, Tuple)
 
 import numpy as np
 import pandas as pd
 
-from scm.plams.mol.molecule import Molecule
-from scm.plams.mol.atom import Atom
+from scm.plams import (Molecule, Atom, Bond)
 from scm.plams.core.errors import MoleculeError
 from scm.plams.core.settings import Settings
 from scm.plams.core.functions import add_to_class
@@ -22,46 +20,63 @@ from data_CAT import (Database, mol_to_file)
 
 from .ligand_attach import (rot_mol_angle, sanitize_dim_2)
 from ..utils import get_time
+from ..properties_dataframe import PropertiesDataFrame
 from ..mol_utils import (to_symbol, fix_carboxyl, get_bond_index,
                          from_mol_other, from_rdmol, separate_mod)
 
+__all__ = ['init_ligand_opt']
 
-def init_ligand_opt(ligand_df, arg):
-    """ Initialize the ligand optimization procedure.
+# Aliases for pd.MultiIndex columns
+MOL = ('mol', '')
+OPT = ('opt', '')
+FORMULA = ('formula', '')
+HDF5_INDEX = ('hdf5 index', '')
+SETTINGS1 = ('settings', '1')
+
+
+def init_ligand_opt(ligand_df: PropertiesDataFrame) -> None:
+    """Initialize the ligand optimization procedure.
+
     Performs an inplace update of **ligand_df**.
-    :parameter ligand_df: A dataframe of valid ligands.
-    :type ligand_df: |pd.DataFrame|_ (columns: |str|_, index=|int|_, values=|plams.Molecule|_)
-    :parameter arg: A settings object containing all (optional) arguments.
-    :type arg: |plams.Settings|_ (superclass: |dict|_).
+
+    Parameters
+    ----------
+    ligand_df : |CAT.PropertiesDataFrame|_
+        A dataframe of valid ligands.
+
     """
-    database = Database(arg.optional.database.dirname)
-    overwrite = 'ligand' in arg.optional.database.overwrite
+    properties = ligand_df.properties
+    database = Database(properties.optional.database.dirname)
+    overwrite = 'ligand' in properties.optional.database.overwrite
+    read = 'ligand' in properties.optional.database.read
+    write = 'ligand' in properties.optional.database.write
+    optimize = properties.optional.ligand.optimize
 
     # Searches for matches between the input ligand and the database; imports the structure
-    if 'ligand' in arg.optional.database.read:
+    if read:
         database.from_csv(ligand_df, database='ligand')
-        for i, mol in zip(ligand_df['opt'], ligand_df['mol']):
+        for i, mol in zip(ligand_df[OPT], ligand_df[MOL]):
             if i == -1:
                 continue
             print(get_time() + '{}\t has been pulled from the database'.format(mol.properties.name))
-    ligand_df['opt'] = ligand_df['opt'].astype(bool, copy=False)
+    ligand_df[OPT] = ligand_df[OPT].astype(bool, copy=False)
 
-    if 'ligand' in arg.optional.database.write:
-        _ligand_to_db(ligand_df, arg, database, opt=False)
+    if write:
+        _ligand_to_db(ligand_df, database, opt=False)
 
     # Optimize all new ligands
-    if arg.optional.ligand.optimize:
+    if optimize:
         # Identify the to be optimized ligands
         if overwrite:
             idx = pd.Series(True, index=ligand_df.index, name='mol')
             message = '{}\t has been (re-)optimized'
         else:
-            idx = np.invert(ligand_df['opt'])
+            idx = np.invert(ligand_df[OPT])
             message = '{}\t has been optimized'
 
         # Optimize the ligands
         lig_new = []
-        for ligand in ligand_df['mol'][idx]:
+        for ligand in ligand_df[MOL][idx]:
             mol_list = split_mol(ligand)
             for mol in mol_list:
                 mol.set_dihed(180.0)
@@ -74,70 +89,81 @@ def init_ligand_opt(ligand_df, arg):
         if lig_new:
             if len(lig_new) == 1:  # pd.DataFrame.loc has serious issues when assigning 1 molecue
                 idx, _ = next(ligand_df[idx].iterrows())
-                ligand_df.at[idx, ('mol', '')] = lig_new[0]
+                ligand_df.at[idx, MOL] = lig_new[0]
             else:
-                ligand_df.loc[idx, 'mol'] = lig_new
+                ligand_df.loc[idx, MOL] = lig_new
 
     print()
     remove_duplicates(ligand_df)
 
     # Write newly optimized structures to the database
-    if 'ligand' in arg.optional.database.write and arg.optional.ligand.optimize:
-        _ligand_to_db(ligand_df, arg, database)
+    if write and optimize:
+        _ligand_to_db(ligand_df, database)
 
 
-def _ligand_to_db(ligand_df, arg, database, opt=True):
+def _ligand_to_db(ligand_df: PropertiesDataFrame,
+                  database: Database,
+                  opt: bool = True):
     """Export ligand optimziation results to the database"""
-    overwrite = 'ligand' in arg.optional.database.overwrite
-    path = arg.optional.ligand.dirname
+    # Extract arguments
+    overwrite = 'ligand' in ligand_df.properties.optional.database.overwrite
+    path = ligand_df.properties.optional.ligand.dirname
+    mol_format = ligand_df.properties.optional.database.mol_format
 
     kwarg = {'overwrite': overwrite}
     if opt:
         kwarg['job_recipe'] = Settings({'1': {'key': 'RDKit_' + rdkit.__version__, 'value': 'UFF'}})
-        kwarg['columns'] = [('formula', ''), ('hdf5 index', ''), ('settings', '1')]
+        kwarg['columns'] = [FORMULA, HDF5_INDEX, SETTINGS1]
         kwarg['database'] = 'ligand'
         kwarg['opt'] = True
-        mol_to_file(ligand_df['mol'], path, overwrite, arg.optional.database.mol_format)
+        mol_to_file(ligand_df[MOL], path, overwrite, mol_format)
     else:
-        kwarg['columns'] = [('formula', ''), ('hdf5 index', '')]
+        kwarg['columns'] = [FORMULA, HDF5_INDEX]
         kwarg['database'] = 'ligand_no_opt'
 
     database.update_csv(ligand_df, **kwarg)
 
 
-def remove_duplicates(ligand_df):
+def remove_duplicates(df: pd.DataFrame) -> None:
     """Remove duplicate rows from a dataframe.
 
     Duplicates are identified based on their index.
     Performs an inplace update of **ligand_df**.
     """
     # Remove duplicate ligands and sort
-    if ligand_df.index.duplicated().any():
-        idx_name = ligand_df.index.names
-        ligand_df.reset_index(inplace=True)
+    if df.index.duplicated().any():
+        idx_name = df.index.names
+        df.reset_index(inplace=True)
         i, j = idx_name
-        ligand_df.drop_duplicates(subset=((i, ''), (j, '')), inplace=True)
-        ligand_df.set_index(idx_name, inplace=True)
-        ligand_df.index.names = idx_name
-    ligand_df.sort_index(inplace=True)
+        df.drop_duplicates(subset=((i, ''), (j, '')), inplace=True)
+        df.set_index(idx_name, inplace=True)
+        df.index.names = idx_name
+    df.sort_index(inplace=True)
 
 
 @add_to_class(Molecule)
-def split_bond(self, bond, atom_type='H', bond_length=1.1):
-    """ Delete a bond and cap the resulting fragments.
+def split_bond(self, bond: Sequence[Atom],
+               atom_type: Union[str, int] = 'H') -> None:
+    """Delete a bond and cap the resulting fragments.
+
     A link to the two atoms previously defining the bond & the two capping atoms is stored under
-        self.properties.mark in a list of 4-tuples.
+    self.properties.mark in a list of 4-tuples.
     Performs in inplace update of **self**.
 
-    :parameter bond: A PLAMS bond.
-    :type:  |plams.Bond|_
-    :parameter atom_type: The atomic symbol or number of the two to be created capping atoms.
-    :type atom_type: |str|_ or |int|_
-    :parameter float bond_length: The length of the two new bonds in angstrom.
+    Parameters
+    ----------
+    bond : |plams.Bond|_
+        A PLAMS bond.
+
+    atom_type : |str|_ or |int|_
+        The atomic symbol or number of the two to be created capping atoms.
+
     """
     atom_type = to_symbol(atom_type)
     at1, at2 = bond.atom1, bond.atom2
     at3, at4 = Atom(symbol=atom_type, coords=at1.coords), Atom(symbol=atom_type, coords=at2.coords)
+    bond_length = at3.radius + at2.radius
+
     self.add_atom(at3, adjacent=[at2])
     self.add_atom(at4, adjacent=[at1])
     self.bonds[-1].resize(at1, bond_length)
@@ -150,31 +176,49 @@ def split_bond(self, bond, atom_type='H', bond_length=1.1):
 
 
 @add_to_class(Molecule)
-def neighbors_mod(self, atom, exclude=1):
+def neighbors_mod(self, atom: Atom,
+                  exclude: Union[int, str] = 1) -> List[Atom]:
     """ A modified PLAMS function: Allows the exlucison of specific elements from the return list.
-    Return a list of neighbors of **atom** within the molecule. Atoms with
-    **atom** has to belong to the molecule. Returned list follows the same order as the
-    **atom.bond** attribute.
 
-    :parameter atom: The plams atom whose nieghbours will be returned.
-    :type atom: |plams.Atom|_
-    :parameter int exclude: Exclude all neighbours with a specific atomic number.
-    :return: A list of all neighbours of **atom**.
-    :rtype: |list|_ [|plams.Atom|_].
+    Return a list of neighbors of **atom** within the molecule.
+    Atoms with **atom** has to belong to the molecule.
+    Returned list follows the same order as the **atom.bond** attribute.
+
+    Parameters
+    ----------
+    atom : |plams.Atom|_
+        The plams atom whose neighbours will be returned.
+
+    exclude : |str|_ or |int|_
+        Exclude all neighbours with a specific atomic number or symbol.
+
+    Returns
+    -------
+    |list|_ [|plams.Atom|_]
+        A list of all neighbours of **atom**.
+
     """
+    exclude = to_symbol(exclude)
     if atom.mol != self:
         raise MoleculeError('neighbors: passed atom should belong to the molecule')
     return [b.other_end(atom) for b in atom.bonds if b.other_end(atom).atnum != exclude]
 
 
-def split_mol(plams_mol):
-    """ Split a molecule into multiple smaller fragments,
-    one fragment for every branch within **plams_mol**.
+def split_mol(plams_mol: Molecule) -> List[Molecule]:
+    """Split a molecule into multiple smaller fragments.
 
-    :parameter plams_mol: The input molecule with the properties.dummies attribute.
-    :type plams_mol: |plams.Molecule|_
-    :return: A list of one or more plams molecules.
-    :rtype: |list|_ [|plams.Molecule|_]
+    One fragment is created for every branch within **plams_mol**.
+
+    Parameters
+    ----------
+    plams_mol : |plams.Molecule|_
+        The input molecule with the properties.dummies attribute.
+
+    Returns
+    -------
+    |list|_ [|plams.Molecule|_]
+        A list of one or more plams molecules.
+
     """
     # Temporary remove hydrogen atoms
     h_atoms = []
@@ -200,7 +244,7 @@ def split_mol(plams_mol):
         plams_mol.add_atom(atom)
         plams_mol.add_bond(bond)
 
-    atom_list = list(itertools.chain.from_iterable((bond.atom1, bond.atom2) for bond in bond_list))
+    atom_list = itertools.chain.from_iterable((bond.atom1, bond.atom2) for bond in bond_list)
     atom_set = {atom for atom in atom_list if atom_list.count(atom) >= 3}
     atom_dict = {atom: [bond for bond in atom.bonds if bond in bond_list] for atom in atom_set}
 
@@ -224,16 +268,24 @@ def split_mol(plams_mol):
 
 
 @add_to_class(Molecule)
-def get_frag_size(self, bond, atom):
-    """ Return the size of a moleculair fragment containing **atom** if **self** was split into two
+def get_frag_size(self, bond: Bond,
+                  atom: Atom) -> int:
+    """Return the size of the fragment containing **atom** if **self** was split into two
     molecules by the breaking of **bond**.
 
-    :parameter bond: A PLAMS bond.
-    :type bond: |plams.Bond|_
-    :parameter atom: A PLAMS atom. The size of the fragment containg this atom will be returned.
-    :type atom: |plams.Atom|_
-    :return: The number of atoms in the fragment containing **atom**.
-    :rtype: |int|_.
+    Parameters
+    ----------
+    bond : |plams.Bond|_
+        A PLAMS bond.
+
+    atom : |plams.Atom|_
+        A PLAMS atom. The size of the fragment containg this atom will be returned.
+
+    Returns
+    -------
+    |int|_
+        The number of atoms in the fragment containing **atom**.
+
     """
     if bond not in self.bonds:
         error = 'get_frag_size: The argument bond should be of type plams.Bond and be part'
@@ -254,10 +306,11 @@ def get_frag_size(self, bond, atom):
             has_atom = True
         for bond in at1.bonds:
             at2 = bond.other_end(at1)
-            if not at2._visited:
-                i, j = dfs(at2)
-                len_at += i
-                has_atom = has_atom or j
+            if at2._visited:
+                continue
+            i, j = dfs(at2)
+            len_at += i
+            has_atom = has_atom or j
         return len_at, has_atom
 
     bond.atom1._visited = bond.atom2._visited = True
@@ -271,15 +324,22 @@ def get_frag_size(self, bond, atom):
     return size2
 
 
-def recombine_mol(mol_list):
-    """ Recombine a list of molecules into a single molecule.
+def recombine_mol(mol_list: Sequence[Molecule]) -> Molecule:
+    """Recombine a list of molecules into a single molecule.
+
     A list of 4-tuples of plams.Atoms will be read from mol_list[0].properties.mark.
     A bond will be created between tuple[0] & tuple[2]; tuple[1] and tuple[3] will be deleted.
 
-    :parameter mol_list: A list of on or more plams molecules with the properties.mark atribute.
-    :type: |list|_ [|plams.Molecule|_]
-    :return: The (re-)merged PLAMS molecule.
-    :rtype: |plams.Molecule|_.
+    Parameters
+    ----------
+    mol_list : |list|_ [|plams.Molecule|_]
+        A list of on or more plams molecules with the properties.mark atribute.
+
+    Returns
+    -------
+    |plams.Molecule|_
+        The (re-)merged PLAMS molecule.
+
     """
     if len(mol_list) == 1:
         return mol_list[0]
@@ -309,14 +369,23 @@ def recombine_mol(mol_list):
     return mol1
 
 
-def get_dihed(atoms, unit='degree'):
-    """ Returns the dihedral angle defined by four atoms.
+def get_dihed(atoms: Tuple[Atom, Atom, Atom, Atom],
+              unit: str = 'degree') -> float:
+    """Returns the dihedral angle defined by four atoms.
 
-    :parameter atoms: An iterable consisting of 4 PLAMS atoms
-    :type atoms: 4 |tuple|_ [|plams.atoms|_]
-    :parameter str unit: The output unit.
-    :return: A dihedral angle in **unit**.
-    :rtype: |float|_.
+    Parameters
+    ----------
+    atoms : |tuple|_ [|plams.atoms|_]
+        An iterable consisting of 4 PLAMS atoms
+
+    unit : str
+        The output unit.
+
+    Returns
+    -------
+    |float|_
+        A dihedral angle expressed in **unit**.
+
     """
     vec1 = -np.array(atoms[0].vector_to(atoms[1]))
     vec2 = np.array(atoms[1].vector_to(atoms[2]))
@@ -331,14 +400,24 @@ def get_dihed(atoms, unit='degree'):
 
 
 @add_to_class(Molecule)
-def set_dihed(self, angle, opt=True, unit='degree'):
-    """ Change a dihedral angle into a specific value.
+def set_dihed(self, angle: float,
+              opt: bool = True,
+              unit: str = 'degree') -> None:
+    """Change a dihedral angle into a specific value.
+
     Performs an inplace update of **self**.
 
-    :parameter float angle: The desired dihedral angle.
-    :parameter bool opt: Whether or not the dihedral adjustment should be followed up by an
-        RDKit UFF optimization.
-    :parameter str unit: The input unit.
+    Parameters
+    ----------
+    angle : float
+        The desired dihedral angle.
+
+    opt : bool
+        Whether or not the dihedral adjustment should be followed up by an RDKit UFF optimization.
+
+    unit : str
+        The input unit.
+
     """
     angle = Units.convert(angle, unit, 'degree')
     bond_list = [bond for bond in self.bonds if bond.atom1.atnum != 1 and bond.atom2.atnum != 1

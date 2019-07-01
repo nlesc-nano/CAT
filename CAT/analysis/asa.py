@@ -1,8 +1,7 @@
-""" A module related to performing activation strain analyses. """
-
-__all__ = ['init_asa']
+"""A module related to performing activation strain analyses."""
 
 import numpy as np
+import pandas as pd
 
 from scm.plams.core.settings import Settings
 import scm.plams.interfaces.molecule.rdkit as molkit
@@ -12,42 +11,69 @@ from rdkit.Chem import AllChem
 
 from data_CAT import Database
 
+from ..properties_dataframe import PropertiesDataFrame
 
-def init_asa(qd_df, arg):
-    """ Initialize the activation-strain analyses (RDKit UFF level) on the ligands in the
-    absence of the core.
+__all__ = ['init_asa']
 
-    :parameter qd_df: A dataframe of quantum dots.
-    :type qd_df: |pd.DataFrame|_ (columns: |str|_, index=|int|_, values=|plams.Molecule|_)
+# Aliases for pd.MultiIndex columns
+MOL = ('mol', '')
+ASA_INT = ('ASA', 'E_int')
+ASA_STRAIN = ('ASA', 'E_strain')
+ASA_E = ('ASA', 'E')
+SETTINGS1 = ('settings', 'ASA 1')
+
+
+def init_asa(qd_df: PropertiesDataFrame) -> None:
+    """Initialize the activation-strain analyses (ASA).
+
+    The ASA (RDKit UFF level) is conducted on the ligands in the absence of the core.
+
+    Parameters
+    ----------
+    |CAT.PropertiesDataFrame|_
+        A dataframe of quantum dots.
+
     """
-    data = Database(arg.optional.database.dirname)
-    overwrite = 'qd' in arg.optional.database.overwrite
+    # Unpack arguments
+    overwrite = 'qd' in qd_df.properties.optional.database.overwrite
+    write = 'qd' in qd_df.properties.optional.database.write
+    data = Database(qd_df.properties.optional.database.dirname)
 
     # Prepare columns
-    columns = [('ASA', 'E_int'), ('ASA', 'E_strain'), ('ASA', 'E')]
+    columns = [ASA_INT, ASA_STRAIN, ASA_E]
     for i in columns:
         qd_df[i] = np.nan
 
     # Fill columns
-    qd_df['ASA'] = get_asa_energy(qd_df['mol'])
+    qd_df['ASA'] = get_asa_energy(qd_df[MOL])
 
     # Calculate E_int, E_strain and E
-    if 'qd' in arg.optional.database.write:
+    if write:
         recipe = Settings()
         recipe['ASA 1'] = {'key': 'RDKit_' + rdkit.__version__, 'value': 'UFF'}
-        data.update_csv(qd_df, columns=[('settings', 'ASA 1')]+columns,
-                        job_recipe=recipe, database='QD', overwrite=overwrite)
+        data.update_csv(qd_df,
+                        columns=[SETTINGS1]+columns,
+                        job_recipe=recipe,
+                        database='QD',
+                        overwrite=overwrite)
 
 
-def get_asa_energy(mol_series):
-    """ Calculate the interaction, strain and total energy in the framework of the
-    activation-strain analysis (ASA).
+def get_asa_energy(mol_series: pd.Series) -> np.ndarray:
+    """Perform an activation strain analyses (ASA).
+
+    The ASA calculates the interaction, strain and total energy.
     The ASA is performed on all ligands in the absence of the core at the UFF level (RDKit).
 
-    :parameter mol_series: A series of PLAMS molecules.
-    :type mol_series: |pd.Series|_ (index=|str|_, values: |plams.Molecule|_)
-    :return: An array containing E_int, E_strain and E for all *n* molecules in **mol_series**.
-    :rtype: *n*3* |np.ndarray|_ [|np.float64|_]
+    Parameters
+    ----------
+    mol_series : |pd.Series|_
+        A series of PLAMS molecules.
+
+    Returns
+    -------
+    :math:`n*3` |np.ndarray|_ [|np.float64|_]
+        An array containing E_int, E_strain and E for all *n* molecules in **mol_series**.
+
     """
     ret = np.zeros((len(mol_series), 4))
 

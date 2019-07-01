@@ -1,9 +1,11 @@
-""" An example input file. """
+"""An example input file."""
 
 from os.path import (dirname, join)
+
 import yaml
+from scm.plams import Settings
+
 import CAT
-from scm.plams.core.settings import Settings
 
 
 yaml_path = join(dirname(__file__), 'input_settings.yaml')
