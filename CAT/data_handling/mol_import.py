@@ -2,9 +2,8 @@
 
 import os
 import itertools
-from typing import Dict
 from string import ascii_letters
-from typing import (Iterable, List, Callable, Sequence)
+from typing import (Dict, Iterable, List, Callable, Sequence)
 
 from scm.plams import (Molecule, Atom, Settings)
 from scm.plams.core.errors import PlamsError
