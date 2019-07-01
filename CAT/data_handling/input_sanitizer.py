@@ -35,7 +35,10 @@ from .. import utils as CAT
 
 from ..utils import get_time
 from ..mol_utils import to_atnum
-from ..analysis.crs import CRSJob
+try:
+    from nano_CAT.analysis.crs import CRSJob
+except ImportError:
+    CRSJob = Job
 
 __all__ = ['sanitize_optional', 'sanitize_input_mol', 'sanitize_path']
 

@@ -9,11 +9,15 @@ from scipy.spatial.distance import cdist
 from scm.plams.mol.molecule import Molecule
 from scm.plams.core.settings import Settings
 
-from data_CAT import (Database, mol_to_file)
-
 from ..properties_dataframe import PropertiesDataFrame
 from ..utils import get_time
 from ..mol_utils import (merge_mol, get_atom_index)
+
+try:
+    from data_CAT import (Database, mol_to_file)
+    DATA_CAT = True
+except ImportError:
+    DATA_CAT = False
 
 __all__ = ['init_qd_construction']
 
@@ -43,9 +47,9 @@ def init_qd_construction(ligand_df: PropertiesDataFrame,
     """
     # Extract arguments
     properties = ligand_df.properties
-    overwrite = 'qd' in properties.optional.database.overwrite
-    write = 'qd' in properties.optional.database.write
-    read = 'qd' in properties.optional.database.read
+    overwrite = DATA_CAT and 'qd' in properties.optional.database.overwrite
+    write = DATA_CAT and 'qd' in properties.optional.database.write
+    read = DATA_CAT and 'qd' in properties.optional.database.read
     path = properties.optional.qd.dirname
     mol_format = properties.optional.database.mol_format
 

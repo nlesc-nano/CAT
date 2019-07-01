@@ -24,7 +24,7 @@ HDF5_INDEX = ('hdf5 index', '')
 OPT = ('opt', '')
 
 
-def init_ligand_anchoring(ligand_df: PropertiesDataFrame):
+def init_ligand_anchoring(ligand_df: PropertiesDataFrame) -> PropertiesDataFrame:
     """Initialize the ligand functional group searcher.
 
     Parameters

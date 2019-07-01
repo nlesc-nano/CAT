@@ -4,9 +4,9 @@ import os
 import itertools
 from typing import Dict
 from string import ascii_letters
-from typing import (Iterable, List, Callable)
+from typing import (Iterable, List, Callable, Sequence)
 
-from scm.plams import (Molecule, Atom)
+from scm.plams import (Molecule, Atom, Settings)
 from scm.plams.core.errors import PlamsError
 import scm.plams.interfaces.molecule.rdkit as molkit
 
@@ -18,14 +18,14 @@ from ..data_handling.input_sanitizer import (sanitize_mol_type, get_mol_defaults
 __all__ = ['read_mol', 'set_mol_prop']
 
 
-def read_mol(input_mol: Iterable[dict]) -> List[Molecule]:
+def read_mol(input_mol: Iterable[Settings]) -> List[Molecule]:
     """Checks the filetypes of the input molecules.
 
     Sets the molecules' properties and returns a list of plams molecules.
 
     Parameters
     ----------
-    input_mol : |list|_ [|dict|_]
+    input_mol : |list|_ [|Settings|_]
         An iterable consisting of dictionaries with input settings per mol.
 
     Returns
@@ -73,7 +73,7 @@ def read_mol(input_mol: Iterable[dict]) -> List[Molecule]:
     return mol_list
 
 
-def read_mol_xyz(mol: str) -> Molecule:
+def read_mol_xyz(mol: Settings) -> Molecule:
     """Read an .xyz file."""
     try:
         return Molecule(mol.mol, inputformat='xyz')
@@ -81,7 +81,7 @@ def read_mol_xyz(mol: str) -> Molecule:
         print_exception(read_mol_xyz.__code__, ex, mol.mol)
 
 
-def read_mol_pdb(mol: str) -> Molecule:
+def read_mol_pdb(mol: Settings) -> Molecule:
     """Read a .pdb file."""
     try:
         return molkit.readpdb(mol.mol)
@@ -89,7 +89,7 @@ def read_mol_pdb(mol: str) -> Molecule:
         print_exception(read_mol_pdb.__code__, ex, mol.mol)
 
 
-def read_mol_mol(mol: str) -> Molecule:
+def read_mol_mol(mol: Settings) -> Molecule:
     """Read a .mol file."""
     try:
         return molkit.from_rdmol(Chem.MolFromMolFile(mol.mol, removeHs=False))
@@ -97,7 +97,7 @@ def read_mol_mol(mol: str) -> Molecule:
         print_exception(read_mol_mol.__code__, ex, mol.mol)
 
 
-def read_mol_smiles(mol: str) -> Molecule:
+def read_mol_smiles(mol: Settings) -> Molecule:
     """Read a SMILES string."""
     try:
         return molkit.from_smiles(mol.mol)
@@ -105,7 +105,7 @@ def read_mol_smiles(mol: str) -> Molecule:
         print_exception(read_mol_smiles.__code__, ex, mol.mol)
 
 
-def read_mol_plams(mol: Molecule) -> Molecule:
+def read_mol_plams(mol: Settings) -> Molecule:
     """Read a PLAMS molecule."""
     try:
         return mol.mol
@@ -113,7 +113,7 @@ def read_mol_plams(mol: Molecule) -> Molecule:
         print_exception(read_mol_plams.__code__, ex, mol.mol)
 
 
-def read_mol_rdkit(mol: Chem.Mol) -> Molecule:
+def read_mol_rdkit(mol: Settings) -> Molecule:
     """Read a RDKit molecule."""
     try:
         return molkit.from_rdmol(mol.mol)
@@ -121,7 +121,7 @@ def read_mol_rdkit(mol: Chem.Mol) -> Molecule:
         print_exception(read_mol_rdkit.__code__, ex, mol.mol)
 
 
-def read_mol_folder(mol: str) -> Molecule:
+def read_mol_folder(mol: Settings) -> Molecule:
     """Read all files (.xyz, .pdb, .mol, .txt or further subfolders) within a folder."""
     try:
         file_list = [file for file in os.listdir(mol.mol)]
@@ -132,7 +132,7 @@ def read_mol_folder(mol: str) -> Molecule:
         print_exception(read_mol_folder.__code__, ex, mol.mol)
 
 
-def read_mol_txt(mol: dict) -> Molecule:
+def read_mol_txt(mol: Settings) -> Molecule:
     """Read a plain text file containing one or more SMILES strings."""
     try:
         with open(mol.mol, 'r') as file:
@@ -170,7 +170,7 @@ charge_dict: Dict[str, int] = get_charge_dict()
 
 
 def set_mol_prop(mol: Molecule,
-                 mol_dict: dict) -> None:
+                 mol_dict: Settings) -> None:
     """Set molecular and atomic properties."""
     if mol_dict.is_core:
         residue_name = 'COR'
@@ -196,7 +196,7 @@ def set_mol_prop(mol: Molecule,
 
 
 def set_atom_prop(atom: Atom,
-                  i: str,
+                  i: Sequence[str],
                   residue_name: str) -> None:
     """Set atomic properties."""
     symbol = '{:4}'.format(atom.symbol + ''.join(i))

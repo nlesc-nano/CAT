@@ -7,12 +7,17 @@ from scm.plams.core.functions import (init, finish)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 
 import qmflows
-from data_CAT import (Database, mol_to_file)
 
 from ..properties_dataframe import PropertiesDataFrame
 from ..utils import (get_time, type_to_string)
 from ..mol_utils import (fix_carboxyl, fix_h)
 from ..analysis.jobs import job_geometry_opt
+
+try:
+    from data_CAT import (Database, mol_to_file)
+    DATA_CAT = True
+except ImportError:
+    DATA_CAT = False
 
 __all__ = ['init_qd_opt']
 
@@ -38,13 +43,13 @@ def init_qd_opt(qd_df: PropertiesDataFrame) -> None:
     """
     # Extract arguments
     properties = qd_df.properties
-    write = 'qd' in properties.optional.database.write
+    write = DATA_CAT and 'qd' in properties.optional.database.write
+    overwrite = DATA_CAT and 'qd' in properties.optional.database.overwrite
     job_recipe = properties.optional.qd.optimize
-    overwrite = 'qd' in properties.optional.database.overwrite
     path = properties.optional.qd.dirname
 
     # Prepare slices
-    if overwrite:
+    if overwrite and DATA_CAT:
         idx = pd.Series(True, index=qd_df.index, name='mol')
         message = '\t has been (re-)optimized'
     else:
@@ -72,7 +77,7 @@ def init_qd_opt(qd_df: PropertiesDataFrame) -> None:
         return None
 
     # Export the geometries to the database
-    if write:
+    if write and DATA_CAT:
         with pd.option_context('mode.chained_assignment', None):
             _qd_to_db(qd_df, idx)
     return None
@@ -94,7 +99,7 @@ def _qd_to_db(qd_df: PropertiesDataFrame,
     # Extract arguments
     properties = qd_df.properties
     job_recipe = properties.optional.qd.optimize
-    overwrite = 'qd' in properties.optional.database.overwrite
+    overwrite = DATA_CAT and 'qd' in properties.optional.database.overwrite
     mol_format = properties.optional.database.mol_format
     path = properties.optional.qd.dirname
 

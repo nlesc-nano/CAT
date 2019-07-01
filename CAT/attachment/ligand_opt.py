@@ -16,13 +16,18 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 
 import rdkit
 from rdkit.Chem import AllChem
-from data_CAT import (Database, mol_to_file)
 
 from .ligand_attach import (rot_mol_angle, sanitize_dim_2)
 from ..utils import get_time
 from ..properties_dataframe import PropertiesDataFrame
 from ..mol_utils import (to_symbol, fix_carboxyl, get_bond_index,
                          from_mol_other, from_rdmol, separate_mod)
+
+try:
+    from data_CAT import (Database, mol_to_file)
+    DATA_CAT = True
+except ImportError:
+    DATA_CAT = False
 
 __all__ = ['init_ligand_opt']
 
@@ -47,9 +52,9 @@ def init_ligand_opt(ligand_df: PropertiesDataFrame) -> None:
     """
     properties = ligand_df.properties
     database = Database(properties.optional.database.dirname)
-    overwrite = 'ligand' in properties.optional.database.overwrite
-    read = 'ligand' in properties.optional.database.read
-    write = 'ligand' in properties.optional.database.write
+    overwrite = DATA_CAT and 'ligand' in properties.optional.database.overwrite
+    read = DATA_CAT and 'ligand' in properties.optional.database.read
+    write = DATA_CAT and 'ligand' in properties.optional.database.write
     optimize = properties.optional.ligand.optimize
 
     # Searches for matches between the input ligand and the database; imports the structure
@@ -106,7 +111,7 @@ def _ligand_to_db(ligand_df: PropertiesDataFrame,
                   opt: bool = True):
     """Export ligand optimziation results to the database"""
     # Extract arguments
-    overwrite = 'ligand' in ligand_df.properties.optional.database.overwrite
+    overwrite = DATA_CAT and 'ligand' in ligand_df.properties.optional.database.overwrite
     path = ligand_df.properties.optional.ligand.dirname
     mol_format = ligand_df.properties.optional.database.mol_format
 

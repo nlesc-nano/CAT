@@ -12,10 +12,6 @@ from .properties_dataframe import PropertiesDataFrame
 
 from .utils import (check_sys_var, get_time)
 
-from .analysis.asa import init_asa
-from .analysis.ligand_bde import init_bde
-from .analysis.ligand_solvation import init_solv
-
 from .data_handling.mol_import import read_mol
 from .data_handling.input_sanitizer import (sanitize_path, sanitize_input_mol, sanitize_optional)
 
@@ -23,6 +19,14 @@ from .attachment.qd_opt import init_qd_opt
 from .attachment.ligand_opt import init_ligand_opt
 from .attachment.ligand_attach import init_qd_construction
 from .attachment.ligand_anchoring import init_ligand_anchoring
+
+try:
+    from nano_CAT.analysis.asa import init_asa
+    from nano_CAT.analysis.ligand_bde import init_bde
+    from nano_CAT.analysis.ligand_solvation import init_solv
+    NANO_CAT = True
+except ImportError:
+    NANO_CAT = False
 
 __all__ = ['prep']
 
@@ -208,6 +212,8 @@ def prep_ligand(ligand_df: PropertiesDataFrame) -> PropertiesDataFrame:
 
     # Perform a COSMO-RS calculation on the ligands
     if crs:
+        if not NANO_CAT:
+            raise ImportError("Ligand COSMO-RS calculations require the nano-CAT package")
         check_sys_var()
         init_solv(ligand_df)
 
@@ -254,11 +260,17 @@ def prep_qd(ligand_df: PropertiesDataFrame,
 
     # Calculate the interaction between ligands on the quantum dot surface
     if activation_strain:
+        if not NANO_CAT:
+            err = "Quantum dot activation-strain calculations require the nano-CAT package"
+            raise ImportError(err)
         print(get_time() + 'calculating ligand distortion and inter-ligand interaction')
         init_asa(qd_df)
 
     # Calculate the interaction between ligands on the quantum dot surface upon removal of CdX2
     if dissociate:
+        if not NANO_CAT:
+            err = "Quantum dot ligand dissociation calculations require the nano-CAT package"
+            raise ImportError(err)
         # Start the BDE calculation
         print(get_time() + 'calculating ligand dissociation energy')
         init_bde(qd_df)
