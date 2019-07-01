@@ -86,6 +86,6 @@ setup(
     ],
     extras_require={
         'test': ['pytest', 'pytest-cov', 'pytest-mock', 'nbsphinx', 'pycodestyle'],
-        'doc': ['sphinx', 'sphinx_rtd_theme', 'nbsphinx']
+        'doc': ['sphinx', 'sphinx_rtd_theme', 'sphinx-autodoc-typehints']
     }
 )
