@@ -1,7 +1,7 @@
 """A module designed for optimizing the geometry of ligands."""
 
 import itertools
-from typing import (Union, Sequence, List, Tuple)
+from typing import (Union, Sequence, List, Tuple, Dict Any)
 
 import numpy as np
 import pandas as pd
@@ -124,7 +124,7 @@ def _ligand_to_db(ligand_df: PropertiesDataFrame,
     path = ligand_df.properties.optional.ligand.dirname
     mol_format = ligand_df.properties.optional.database.mol_format
 
-    kwargs = {'overwrite': overwrite}
+    kwargs: Dict[str, Any] = {'overwrite': overwrite}
     if opt:
         kwargs['job_recipe'] = Settings({'1': {'key': 'RDKit_' + rdkit.__version__, 'value': 'UFF'}})
         kwargs['columns'] = [FORMULA, HDF5_INDEX, SETTINGS1]
@@ -135,7 +135,7 @@ def _ligand_to_db(ligand_df: PropertiesDataFrame,
         kwargs['columns'] = [FORMULA, HDF5_INDEX]
         kwargs['database'] = 'ligand_no_opt'
 
-    database.update_csv(ligand_df, **kwarg)
+    database.update_csv(ligand_df, **kwargs)
 
 
 def remove_duplicates(df: pd.DataFrame) -> None:
@@ -192,7 +192,7 @@ def split_bond(self, bond: Sequence[Atom],
 @add_to_class(Molecule)
 def neighbors_mod(self, atom: Atom,
                   exclude: Union[int, str] = 1) -> List[Atom]:
-    """ A modified PLAMS function: Allows the exlucison of specific elements from the return list.
+    """A modified PLAMS function: Allows the exlucison of specific elements from the return list.
 
     Return a list of neighbors of **atom** within the molecule.
     Atoms with **atom** has to belong to the molecule.
@@ -329,7 +329,7 @@ def get_frag_size(self, bond: Bond,
 
     bond.atom1._visited = bond.atom2._visited = True
     size1, has_atom1 = dfs(bond.atom1)
-    size2, has_atom2 = dfs(bond.atom2)
+    size2, _ = dfs(bond.atom2)
     for at in self.atoms:
         del at._visited
 
@@ -385,7 +385,7 @@ def recombine_mol(mol_list: Sequence[Molecule]) -> Molecule:
 
 def get_dihed(atoms: Tuple[Atom, Atom, Atom, Atom],
               unit: str = 'degree') -> float:
-    """Returns the dihedral angle defined by four atoms.
+    """Return the dihedral angle defined by four atoms.
 
     Parameters
     ----------
@@ -419,7 +419,7 @@ def set_dihed(self, angle: float,
               unit: str = 'degree') -> None:
     """Change a dihedral angle into a specific value.
 
-    Performs an inplace update of **self**.
+    Performs an inplace update of this instance.
 
     Parameters
     ----------
