@@ -91,7 +91,7 @@ def prep_input(arg: Settings) -> Tuple[PropertiesDataFrame, PropertiesDataFrame]
 
     Returns
     -------
-    |tuple|_ [|CAT.PropertiesDataFrame|_]
+    |tuple|_ [|CAT.PropertiesDataFrame|_, |CAT.PropertiesDataFrame|_]
         A tuple containing the ligand and core dataframe.
 
     """
@@ -147,7 +147,7 @@ def prep_core(core_df: PropertiesDataFrame) -> PropertiesDataFrame:
 
     formula_list = []
     anchor_list = []
-    for i, core in enumerate(core_df[MOL]):
+    for core in core_df[MOL]:
         # Checks the if the dummy is a string (atomic symbol) or integer (atomic number)
         formula_list.append(core.get_formula())
 
@@ -212,8 +212,7 @@ def prep_ligand(ligand_df: PropertiesDataFrame) -> PropertiesDataFrame:
 
     # Perform a COSMO-RS calculation on the ligands
     if crs:
-        if not NANO_CAT:
-            raise ImportError("Ligand COSMO-RS calculations require the nano-CAT package")
+        val_nano_cat("Ligand COSMO-RS calculations require the nano-CAT package")
         check_sys_var()
         init_solv(ligand_df)
 
@@ -260,19 +259,22 @@ def prep_qd(ligand_df: PropertiesDataFrame,
 
     # Calculate the interaction between ligands on the quantum dot surface
     if activation_strain:
-        if not NANO_CAT:
-            err = "Quantum dot activation-strain calculations require the nano-CAT package"
-            raise ImportError(err)
+        val_nano_cat("Quantum dot activation-strain calculations require the nano-CAT package")
         print(get_time() + 'calculating ligand distortion and inter-ligand interaction')
         init_asa(qd_df)
 
     # Calculate the interaction between ligands on the quantum dot surface upon removal of CdX2
     if dissociate:
-        if not NANO_CAT:
-            err = "Quantum dot ligand dissociation calculations require the nano-CAT package"
-            raise ImportError(err)
+        val_nano_cat("Quantum dot ligand dissociation calculations require the nano-CAT package")
         # Start the BDE calculation
         print(get_time() + 'calculating ligand dissociation energy')
         init_bde(qd_df)
 
     return qd_df
+
+
+def val_nano_cat(error_message: Optional[str] = None) -> None:
+    """Raise an an :exc:`ImportError` if the module-level constant ``NANO_CAT`` is ``False``."""
+    error_message = error_message or ''
+    if not NANO_CAT:
+        raise ImportError(error_message)
