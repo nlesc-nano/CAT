@@ -86,9 +86,10 @@ def connect_ligands_to_core(lig_dict, core, user_min_dist):
         lig_cp += core_cp
         lig_cp.properties.name = core.properties.name + "_" + lig.properties.name
         lig_cp.properties.min_distance = min_dist
-
+        
+        # If the minimal distance cirteria is not fulfilled ligands possitions are optimised with UFF
         if user_min_dist > min_dist:
-           # UFF for molecule with frozen core
+           # UFF for molecule with frozen core, only ligands coordinates are effected
             the_h = lig_cp.closest_atom(lig_cp.properties.the_h)        
             core_other = lig_cp.closest_atom(lig_cp.properties.coords_other_arrays[len(new_ligID)-1])
             lig_cp.add_bond(the_h, core_other)
@@ -97,7 +98,7 @@ def connect_ligands_to_core(lig_dict, core, user_min_dist):
             frozen_ind_rdkit = list(range(len(lig_cp)-core.properties.core_len + h_gone, len(lig_cp))) # list rdkit standards, counts from 0
             lig_cp = uff_constrained_opt(lig_cp, constrain=frozen_ind_rdkit[:-1])
             
-            # Distance between core and ligands
+            # New distance between core and ligands
             frozen_ind_plams = (np.array(frozen_ind_rdkit)+1).tolist()
             frozen_atoms = np.array([lig_cp[c].coords for c in frozen_ind_plams])            
             only_ligands = np.array([lig_cp[l].coords for l in range(1,len(lig_cp)+1) if l not in frozen_ind_plams])
@@ -135,7 +136,7 @@ def get_args(core, lig_list, lig_idx):
 
 def bob_core(mol):
     """
-    Marks a PLAMS molecule with the .properties.h & .properties.other attributes.
+    Reads molecule's comment and marks a PLAMS molecule with the .properties.h & .properties.other attributes.
     mol <plams.Molecule>: An input molecule with the plams_mol.properties.comment attribute.
     """
     # Read the comment in the second line of the xyz file
@@ -160,7 +161,7 @@ def bob_core(mol):
 
 def bob_ligand(mols):
     """
-    Marks a PLAMS molecule with the .properties.h & .properties.other attributes.
+    Reads molecule's comment and marks a PLAMS molecule with the .properties.h & .properties.other attributes.
     mol <plams.Molecule>: An input molecule with the plams_mol.properties.comment attribute.
     """
     ligID = list(range(len(mols)))
@@ -195,6 +196,7 @@ def substitution(input_ligands, input_cores,min_dist, rep=False):
     lig_idx = np.array([lig.properties.idx_other for lig in input_ligands])
     lig_vec = np.array([lig.properties.vec for lig in input_ligands])
     lig_ID = [lig.properties.ligID for lig in input_ligands]
+    
     lig_dict = {'lig_list': input_ligands, 'lig_idx': lig_idx, 'lig_vec': lig_vec, 'lig_ID' : lig_ID}
     ret = (connect_ligands_to_core(lig_dict, core, min_dist) for core in input_cores)
     return list(chain.from_iterable(ret))
