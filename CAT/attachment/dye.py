@@ -212,13 +212,3 @@ def multi_substitution(input_ligands, input_cores, n=1):
     return list(chain.from_iterable(ret))
 
 
-
-
-"""
-mol = None
-idx = find_equivalent_atoms(mol)
-if idx:
-    at1, at2 = idx[0][0], idx[0][1]
-    mol = reset_origin(mol, at1)
-    df = get_symmetry(mol)
-"""
