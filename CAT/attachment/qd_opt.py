@@ -117,7 +117,8 @@ def _qd_to_db(qd_df: PropertiesDataFrame,
     job_recipe = properties.optional.qd.optimize
     overwrite = DATA_CAT and 'qd' in properties.optional.database.overwrite
     mol_format = properties.optional.database.mol_format
-    path = properties.optional.qd.dirname
+    qd_path = properties.optional.qd.dirname
+    db_path = properties.optional.database.dirname
 
     # Preapre the job recipe
     v1 = qmflows.geometry['specific'][type_to_string(job_recipe.job1)].copy()
@@ -131,7 +132,7 @@ def _qd_to_db(qd_df: PropertiesDataFrame,
 
     # Update the database
     columns = [HDF5_INDEX, JOB_SETTINGS_QD_OPT, SETTINGS1, SETTINGS2]
-    database = Database(path=path)
+    database = Database(path=db_path)
     database.update_csv(
         qd_df[idx],
         columns=columns,
@@ -141,7 +142,7 @@ def _qd_to_db(qd_df: PropertiesDataFrame,
     )
 
     # Export xyz/pdb files
-    mol_to_file(qd_df[MOL], path, overwrite, mol_format)
+    mol_to_file(qd_df[MOL], qd_path, overwrite, mol_format)
 
 
 def qd_opt(mol: Molecule,

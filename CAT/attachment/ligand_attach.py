@@ -50,7 +50,8 @@ def init_qd_construction(ligand_df: PropertiesDataFrame,
     overwrite = DATA_CAT and 'qd' in properties.optional.database.overwrite
     write = DATA_CAT and 'qd' in properties.optional.database.write
     read = DATA_CAT and 'qd' in properties.optional.database.read
-    path = properties.optional.qd.dirname
+    qd_path = properties.optional.qd.dirname
+    db_path = properties.optional.database.dirname
     mol_format = properties.optional.database.mol_format
 
     # Attempt to pull structures from the database
@@ -60,10 +61,7 @@ def init_qd_construction(ligand_df: PropertiesDataFrame,
         mol_series1 = _read_database(qd_df, ligand_df, core_df)
 
     # Identify and create the to be constructed quantum dots
-    idx = qd_df[HDF5_INDEX] < 0
-    mol_list = [ligand_to_qd(core_df.at[(i, j), MOL], ligand_df.at[(k, l), MOL], properties) for
-                i, j, k, l in qd_df.index[idx]]
-    mol_series2 = pd.Series(mol_list, index=qd_df.index[idx], name=MOL, dtype=object)
+    mol_series2 = construct_mol_series(ligand_df, core_df, ligand_df)
 
     # Update the *mol* column in qd_df with 1 or 2 series of quantum dots
     try:
@@ -73,10 +71,26 @@ def init_qd_construction(ligand_df: PropertiesDataFrame,
 
     # Export the resulting geometries back to the database
     if write:
-        data = Database(path)
+        data = Database(db_path)
         data.update_csv(qd_df, columns=[HDF5_INDEX], database='QD_no_opt')
-        mol_to_file(qd_df[MOL], path, overwrite, mol_format)
+        mol_to_file(qd_df[MOL], qd_path, overwrite, mol_format)
     return qd_df
+
+
+def construct_mol_series(qd_df: PropertiesDataFrame,
+                         core_df: pd.DataFrame,
+                         ligand_df: pd.DataFrame) -> pd.Series:
+    """Construct a Series of new quantum dots"""
+    def _get_mol(i, j, k, l):
+        ij = i, j
+        kl = k, l
+        return ligand_to_qd(core_df.at[ij, MOL], ligand_df.at[kl, MOL], properties)
+
+    properties = qd_df.properties
+    idx = qd_df[HDF5_INDEX] < 0
+
+    mol_list = [_get_mol(i, j, k, l) for i, j, k, l in qd_df.index[idx]]
+    return pd.Series(mol_list, index=qd_df.index[idx], name=MOL, dtype=object)
 
 
 def _read_database(qd_df: PropertiesDataFrame,
@@ -109,7 +123,7 @@ def _read_database(qd_df: PropertiesDataFrame,
         return ret
 
     # Extract arguments
-    path = qd_df.properties.optional.qd.dirname
+    path = qd_df.properties.optional.database.dirname
     data = Database(path)
 
     # Extract molecules from the database and set their properties
@@ -206,7 +220,7 @@ def _get_df(core_index: pd.MultiIndex,
 
     # Create and return the quantum dot dataframe
     data = {HDF5_INDEX: -1, OPT: False}
-    return PropertiesDataFrame(data, index=index, columns=columns)
+    return PropertiesDataFrame(data, index=index, columns=columns, properties=properties)
 
 
 def ligand_to_qd(core: Molecule,
@@ -239,6 +253,7 @@ def ligand_to_qd(core: Molecule,
         return ret
 
     dirname = properties.optional.qd.dirname
+    import pdb; pdb.set_trace()
 
     # Define vectors and indices used for rotation and translation the ligands
     vec1 = sanitize_dim_2(ligand.properties.dummies) - np.array(ligand.get_center_of_mass())

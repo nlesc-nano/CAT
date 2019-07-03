@@ -6,9 +6,8 @@ from typing import (Union, Sequence, List, Tuple, Dict, Any)
 import numpy as np
 import pandas as pd
 
-from scm.plams import (Molecule, Atom, Bond)
+from scm.plams import (Molecule, Atom, Bond, Settings)
 from scm.plams.core.errors import MoleculeError
-from scm.plams.core.settings import Settings
 from scm.plams.core.functions import add_to_class
 from scm.plams.tools.units import Units
 from scm.plams.recipes.global_minimum import global_minimum_scan_rdkit
@@ -136,7 +135,7 @@ def _ligand_to_db(ligand_df: PropertiesDataFrame,
     """Export ligand optimziation results to the database."""
     # Extract arguments
     overwrite = DATA_CAT and 'ligand' in ligand_df.properties.optional.database.overwrite
-    path = ligand_df.properties.optional.ligand.dirname
+    lig_path = ligand_df.properties.optional.ligand.dirname
     mol_format = ligand_df.properties.optional.database.mol_format
 
     kwargs: Dict[str, Any] = {'overwrite': overwrite}
@@ -145,7 +144,7 @@ def _ligand_to_db(ligand_df: PropertiesDataFrame,
         kwargs['columns'] = [FORMULA, HDF5_INDEX, SETTINGS1]
         kwargs['database'] = 'ligand'
         kwargs['opt'] = True
-        mol_to_file(ligand_df[MOL], path, overwrite, mol_format)
+        mol_to_file(ligand_df[MOL], lig_path, overwrite, mol_format)
     else:
         kwargs['columns'] = [FORMULA, HDF5_INDEX]
         kwargs['database'] = 'ligand_no_opt'
