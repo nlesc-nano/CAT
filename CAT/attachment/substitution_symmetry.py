@@ -235,7 +235,7 @@ def symm_permutations(condition, elements):
         b = ''.join(swap_neighbours(elements))
         final = []
         final = [a,b]
-    if condition == 'triangle':                                                                                                                                     
+    if condition == 'C2':                                                                                                                                     
           a = ''.join(elements)
           b = ''.join(swap_two(elements)) 
           #c,d = ''.join(rotate_list(a,1)), ''.join(rotate_list(a,2))
