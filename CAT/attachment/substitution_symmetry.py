@@ -174,7 +174,7 @@ def get_symmetry(mol, decimals=2):
     return df
 
 
-def del_equiv_structures(mols):
+def del_equiv_structures(mols,subsymmetry=None):
     """ 
 	Returnes list of molecules wihout duplicats 	
 
@@ -183,8 +183,10 @@ def del_equiv_structures(mols):
     notunique=[]
    
     for mol in mols:
-        subsymmetry = supstitution_symmetry(mol)
-        ligID = list(mol.properties.ligID)
+        if subsymmetry == None:
+            subsymmetry = supstitution_symmetry(mol)
+        
+        :QligID = list(mol.properties.ligID)
         
         all_permutations = symm_permutations(subsymmetry, ligID)
 
@@ -228,7 +230,14 @@ def symm_permutations(condition, elements):
         b = ''.join(swap_neighbours(elements))
         final = []
         final = [a,b]
-
+    if condition == 'triangle':                                                                                                                                     
+          a = ''.join(elements)
+          b = ''.join(swap_two(elements)) 
+          #c,d = ''.join(rotate_list(a,1)), ''.join(rotate_list(a,2))
+          #e,f = ''.join(rotate_list(b,1)), ''.join(rotate_list(b,2))
+          final = []
+          final = [a,b]#,c,d,e,f]
+                                    
     return final
 
 
