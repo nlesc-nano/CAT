@@ -186,7 +186,7 @@ def del_equiv_structures(mols,subsymmetry=None):
         if subsymmetry == None:
             subsymmetry = supstitution_symmetry(mol)
         
-        :QligID = list(mol.properties.ligID)
+        ligID = list(mol.properties.ligID)
         
         all_permutations = symm_permutations(subsymmetry, ligID)
 
