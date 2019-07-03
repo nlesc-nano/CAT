@@ -1,4 +1,4 @@
-path: /Users/basvanbeek/Documents/CdSe/Week_5
+path: /Users/bvanbeek/Documents/CdSe/Week_5
 
 input_cores:
     - Cd68Se55.xyz:
@@ -14,7 +14,7 @@ optional:
         dirname: database
         read: True
         write: True
-        overwrite: True
+        overwrite: False
         mol_format: [pdb]
         mongodb: False
 
@@ -26,12 +26,9 @@ optional:
         dirname: ligand
         optimize: True
         split: True
-        cosmo-rs: True
+        cosmo-rs: False
 
     qd:
         dirname: QD
         optimize: True
-        dissociate:
-            core_index: [60, 62, 64, 71, 74, 78]
-            job1: True
-            job2: False
+        dissociate: False

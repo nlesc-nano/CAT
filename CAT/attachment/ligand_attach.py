@@ -235,10 +235,10 @@ def ligand_to_qd(core: Molecule,
     """
     def get_name():
         ret = core.properties.name + '__'
-        ret += + str(qd[-1].properties.pdb_info.ResidueNumber - 1) + '_' + ligand.properties.name
+        ret += str(qd[-1].properties.pdb_info.ResidueNumber - 1) + '_' + ligand.properties.name
         return ret
 
-    dirname = ligand.optional.qd.dirname
+    dirname = properties.optional.qd.dirname
 
     # Define vectors and indices used for rotation and translation the ligands
     vec1 = sanitize_dim_2(ligand.properties.dummies) - np.array(ligand.get_center_of_mass())

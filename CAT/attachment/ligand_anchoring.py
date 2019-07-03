@@ -5,7 +5,7 @@ from typing import (Sequence, List, Tuple)
 
 import pandas as pd
 
-from scm.plams import Molecule
+from scm.plams import (Molecule, Settings)
 import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit import Chem
@@ -19,7 +19,7 @@ __all__ = ['init_ligand_anchoring']
 
 # Aliases for pd.MultiIndex columns
 MOL = ('mol', '')
-FORMULA = ('mol', '')
+FORMULA = ('formula', '')
 HDF5_INDEX = ('hdf5 index', '')
 OPT = ('opt', '')
 
@@ -57,16 +57,20 @@ def init_ligand_anchoring(ligand_df: PropertiesDataFrame) -> PropertiesDataFrame
             mol_list += [substructure_split(lig, lig.properties.dummies, split=split)]
 
     # Convert the results into a dataframe
-    return _get_df(mol_list)
+    return _get_df(mol_list, ligand_df.properties)
 
 
-def _get_df(mol_list: Sequence[Molecule]) -> PropertiesDataFrame:
+def _get_df(mol_list: Sequence[Molecule],
+            properties: Settings) -> PropertiesDataFrame:
     """Create and return a new ligand dataframe.
 
     Parameters
     ----------
     mol_list : |list|_ [|plams.Molecule|_]
         A list of PLAMS molecules.
+
+    properties : |Settings|_
+        A Settings instance containing all CAT parameters.
 
     Returns
     -------
@@ -81,7 +85,7 @@ def _get_df(mol_list: Sequence[Molecule]) -> PropertiesDataFrame:
     columns = pd.MultiIndex.from_tuples(columns_tuples, names=['index', 'sub index'])
 
     # Create, fill and return the dataframe
-    df = pd.DataFrame(-1, index=idx, columns=columns)
+    df = PropertiesDataFrame(-1, index=idx, columns=columns, properties=properties)
     df[MOL] = mol_list
     df[FORMULA] = [lig.get_formula() for lig in df[MOL]]
     df[OPT] = False

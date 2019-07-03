@@ -10,10 +10,10 @@ from scm.plams.interfaces.adfsuite.ams import AMSJob
 
 import qmflows
 
-from ..properties_dataframe import PropertiesDataFrame
+from ..jobs import job_geometry_opt
 from ..utils import (get_time, type_to_string)
 from ..mol_utils import (fix_carboxyl, fix_h)
-from ..analysis.jobs import job_geometry_opt
+from ..properties_dataframe import PropertiesDataFrame
 
 try:
     from data_CAT import (Database, mol_to_file)

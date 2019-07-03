@@ -488,7 +488,7 @@ def val_job(job: Settings,
     return job
 
 
-def val_core_idx(idx: Optional[int, Sequence[int]]) -> Union[bool, List[int]]:
+def val_core_idx(idx: Union[None, int, Sequence[int]]) -> Union[bool, List[int]]:
     if not idx:
         return False
     elif isinstance(idx, (int, np.integer)):

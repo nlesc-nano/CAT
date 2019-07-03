@@ -17,14 +17,13 @@ with open('README.rst') as readme_file:
 setup(
     name='CAT',
     version=version['__version__'],
-    description='A collection of tools designed for the automatic construction, and subsequent analysis, of chemical compounds.',
+    description='A collection of tools designed for the automatic construction of chemical compounds.',
     long_description=readme + '\n\n',
     author=['Bas van Beek'],
     author_email='b.f.van.beek@vu.nl',
-    url='https://github.com/BvB93/CAT',
+    url='https://github.com/nlesc-nano/CAT',
     packages=[
         'CAT',
-        'CAT.analysis',
         'CAT.attachment',
         'CAT.data',
         'CAT.data.coskf',

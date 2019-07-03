@@ -1,7 +1,7 @@
 """A module designed for optimizing the geometry of ligands."""
 
 import itertools
-from typing import (Union, Sequence, List, Tuple, Dict Any)
+from typing import (Union, Sequence, List, Tuple, Dict, Any)
 
 import numpy as np
 import pandas as pd
@@ -58,13 +58,7 @@ def init_ligand_opt(ligand_df: PropertiesDataFrame) -> None:
     optimize = properties.optional.ligand.optimize
 
     # Searches for matches between the input ligand and the database; imports the structure
-    if read:
-        database.from_csv(ligand_df, database='ligand')
-        for i, mol in zip(ligand_df[OPT], ligand_df[MOL]):
-            if i == -1:
-                continue
-            print(get_time() + '{}\t has been pulled from the database'.format(mol.properties.name))
-    ligand_df[OPT] = ligand_df[OPT].astype(bool, copy=False)
+    read_data(ligand_df, database, read)
 
     if write:
         _ligand_to_db(ligand_df, database, opt=False)
@@ -72,16 +66,12 @@ def init_ligand_opt(ligand_df: PropertiesDataFrame) -> None:
     # Optimize all new ligands
     if optimize:
         # Identify the to be optimized ligands
-        if overwrite:
-            idx = pd.Series(True, index=ligand_df.index, name='mol')
-            message = '{}\t has been (re-)optimized'
-        else:
-            idx = np.invert(ligand_df[OPT])
-            message = '{}\t has been optimized'
+        idx, message = _parse_overwrite(ligand_df, overwrite)
 
         # Optimize the ligands
         lig_new = start_ligand_jobs(ligand_df, idx, message)
 
+        # Update the ligand dataframe
         if lig_new:
             if len(lig_new) == 1:  # pd.DataFrame.loc has serious issues when assigning 1 molecue
                 idx, _ = next(ligand_df[idx].iterrows())
@@ -95,6 +85,31 @@ def init_ligand_opt(ligand_df: PropertiesDataFrame) -> None:
     # Write newly optimized structures to the database
     if write and optimize:
         _ligand_to_db(ligand_df, database)
+
+
+def _parse_overwrite(ligand_df: PropertiesDataFrame,
+                     overwrite: bool) -> Tuple[pd.Series, str]:
+    """Return a series for dataframe slicing and a to-be printer message."""
+    if overwrite:
+        idx = pd.Series(True, index=ligand_df.index, name=MOL)
+        message = '{}\t has been (re-)optimized'
+    else:
+        idx = np.invert(ligand_df[OPT])
+        message = '{}\t has been optimized'
+    return idx, message
+
+
+def read_data(ligand_df: PropertiesDataFrame,
+              database: Database,
+              read: bool) -> None:
+    """Read ligands from the database if **read** = ``True``."""
+    if read:
+        database.from_csv(ligand_df, database='ligand')
+        for i, mol in zip(ligand_df[OPT], ligand_df[MOL]):
+            if i == -1:
+                continue
+            print(get_time() + '{}\t has been pulled from the database'.format(mol.properties.name))
+    ligand_df[OPT] = ligand_df[OPT].astype(bool, copy=False)
 
 
 def start_ligand_jobs(ligand_df: PropertiesDataFrame,
@@ -116,7 +131,7 @@ def start_ligand_jobs(ligand_df: PropertiesDataFrame,
 
 
 def _ligand_to_db(ligand_df: PropertiesDataFrame,
-                  database: Database,
+                  database: 'Database',
                   opt: bool = True):
     """Export ligand optimziation results to the database."""
     # Extract arguments

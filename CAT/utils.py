@@ -1,7 +1,5 @@
 """A module with miscellaneous functions."""
 
-__all__ = ['check_sys_var', 'dict_concatenate', 'get_time', 'get_template']
-
 import os
 import time
 import yaml
@@ -18,16 +16,25 @@ from scm.plams.interfaces.thirdparty.cp2k import Cp2kJob
 from scm.plams.interfaces.thirdparty.dirac import DiracJob
 from scm.plams.interfaces.thirdparty.gamess import GamessJob
 
+__all__ = ['check_sys_var', 'dict_concatenate', 'get_time', 'get_template']
+
+_job_dict = {
+    ADFJob: 'adf',
+    AMSJob: 'ams',
+    DiracJob: 'dirac',
+    Cp2kJob: 'cp2k',
+    GamessJob: 'gamess',
+    ORCAJob: 'orca'
+}
+
 
 def type_to_string(job: Callable) -> str:
     """Turn a :class:`type` instance into a string."""
-    job_dict = {ADFJob: 'adf', AMSJob: 'ams', DiracJob: 'dirac',
-                Cp2kJob: 'cp2k', GamessJob: 'gamess', ORCAJob: 'orca'}
     try:
-        return job_dict[job]
+        return _job_dict[job]
     except KeyError:
         print(get_time() + 'WARNING: No default settings available for ' + str(job))
-        return False
+        return ''
 
 
 def get_time() -> str:

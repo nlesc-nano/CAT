@@ -15,8 +15,8 @@ from scm.plams.interfaces.thirdparty.cp2k import Cp2kResults
 import qmflows
 
 from .thermo_chem import get_thermo
-from ..utils import (get_time, type_to_string)
-from ..mol_utils import (adf_connectivity, from_mol_other)
+from .utils import (get_time, type_to_string)
+from .mol_utils import (adf_connectivity, from_mol_other)
 
 __all__ = ['job_single_point', 'job_geometry_opt', 'job_freq']
 
