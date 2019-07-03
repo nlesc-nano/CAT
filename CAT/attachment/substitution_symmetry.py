@@ -216,6 +216,11 @@ def symm_permutations(condition, elements):
         """
         j[:2], j[2:] = j[2:], j[:2]
         return j
+    def rotate_list(l,n):
+        return l[n:] + l[:n]
+    def swap_two(j):
+        j[0], j[1] = j[1], j[0]
+        return j
 
     # Making list of all permutations
     if condition == 'D2h':
