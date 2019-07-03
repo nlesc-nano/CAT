@@ -1,6 +1,6 @@
-""" Substitution symmetry """
+"""Substitution symmetry."""
 
-__all__ = ['del_equiv_structures']
+from typing import (Union, Sequence, List, Optional)
 
 import numpy as np
 import pandas as pd
@@ -9,38 +9,102 @@ from scipy.spatial.distance import cdist
 from scm.plams import Molecule
 from scm.plams.tools.geometry import rotation_matrix
 
+__all__ = ['del_equiv_structures']
+
+Mol = Union[Molecule, np.ndarray]
+AtomIndex = Union[int, Sequence[int]]
 
 
+def find_equivalent_atoms(mol: Mol,
+                          idx: Optional[AtomIndex] = None,
+                          idx_substract: int = 0) -> List[List[int]]:
+    """Take a molecule, **mol**, and return the indices of all symmetry equivalent atoms.
 
-def find_equivalent_atoms(mol, idx=None, idx_substract=0):
-    """ Take a molecule, **mol**, and return the indices of all symmetry equivalent atoms.
     The implemented function is based on finding duplicates in the (sorted) distance matrix,
     as symmetry equivalent atoms have identical inter-atomic distances.
 
-    mol <Molecule> or <np.ndarray>: A PLAMS Molecule or a numpy array.
-    idx <None>, <int> or <list> [<int>]: An iterable consisting of atomic indices. ALl atoms in
-        **mol** will be examined if *None*.
-    idx_substract <int>: Substract a constant from all values in **idx**; usefull for
-        interconverting between 1-based and 0-based indices.
-    return <list>[<tuple>[<int>]]: A list with tuples of symmetry equivalent atomic indices.
+    Examples
+    --------
+    An example using benzene, a D6h symmetric molecule.
+    All 6 hydrogens and 6 carbons are symmetry-equivalent:
+
+    .. code:: python
+
+        >>> print(mol)  # Benzene
+          Atoms:
+            1         C     -0.000000     -1.399101      0.000000
+            2         C      1.211657     -0.699550      0.000000
+            3         C      1.211657      0.699550      0.000000
+            4         C      0.000000      1.399101      0.000000
+            5         C     -1.211657      0.699550      0.000000
+            6         C     -1.211657     -0.699550      0.000000
+            7         H      2.149003     -1.240728      0.000000
+            8         H      2.149003      1.240728      0.000000
+            9         H      0.000000      2.481455      0.000000
+           10         H     -2.149003      1.240728      0.000000
+           11         H     -2.149003     -1.240728      0.000000
+           12         H     -0.000000     -2.481455      0.000000
+
+        >>> idx_list = find_equivalent_atoms(mol)
+        >>> print(idx_list)
+        [[0, 1, 2, 3, 4, 5], [6, 7, 8, 9, 10, 11]]
+
+    Parameters
+    ----------
+    mol : |plams.Molecule|_ or |np.ndarray|_ [|np.float64|_]:
+        A PLAMS Molecule or an :math:`m*3` array-like sequence of Cartesian coordinates.
+
+    idx : |int|_ or |list|_ [|int|_]:
+        Optional: A single atomic index or an array-like sequence of atomic indices.
+        If not ``None``, the symmetry search will be limited to this set of atoms.
+
+    idx_substract : |int|_
+        Substract a constant from all values in **idx**.
+        Usefull for interconverting between 1-based (PLAMS) and 0-based (NumPy) indices.
+
+    Returns
+    -------
+    |list|_ [|list|_ [|int|_]]:
+        A nested list of atomic indices.
+        Each nested list contains the indices of a set of symmetry-equivalent atoms.
+
     """
     # Convert a PLAMS molecule to an array
     if isinstance(mol, Molecule):
-        mol = mol.as_array()
-
-    # If **idx** is *None*, investigate all atoms in **mol**
-    if idx is None:
-        idx = slice(0, len(mol))
+        xyz = mol.as_array()
     else:
-        idx = np.array(idx, dtype=int) - idx_substract
+        xyz = np.asarray(xyz, dtype=float)
+
+    # Slice the array based on the values of **idx** and **idx_substract**
+    if idx is None:
+        j = 0
+    else:
+        j = np.asarray(idx, dtype=int) - idx_substract
+        xyz = xyz[j]
 
     # Create a distance matrix, round it to 2 decimals and isolate all unique rows
-    dist = np.around(cdist(mol, mol), decimals=2)
+    dist = np.around(cdist(xyz, xyz), decimals=2)
     dist.sort(axis=1)
-    unique_at = np.unique(dist[idx], axis=0)
+    _, unique_at = np.unique(dist, return_inverse=True, axis=0)
 
-    # Find and return the indices of all duplicate rows in the distance matrix
-    return [tuple(j for j, ar2 in enumerate(dist) if (ar1 == ar2).all()) for ar1 in unique_at]
+    # Return the indices of all duplicate rows in the distance matrix
+    return _aggregate_idx(unique_at, j)
+
+
+def _aggregate_idx(unique_at: np.ndarray,
+                   j: AtomIndex) -> List[List[int]]:
+    """Agregate all sets of symmetry-equivalent indices in **unique_at** into a nested list."""
+     # An array of atomic indices corrected for **idx**
+    at_idx = np.arange(len(unique_at)) + j
+
+    # Aggregate and return
+    idx_list = []
+    for i, at in zip(at_idx, unique_at):
+        try:  # Append a nested list
+            idx_list[at].append(i)
+        except IndexError:  # Create a new nested list
+            idx_list.append([i])
+    return idx_list
 
 
 def reset_origin(mol, at1):
@@ -89,7 +153,6 @@ def get_rotmat_axis(rot_range, axis='x'):
     return ret
 
 
-
 def supstitution_symmetry(mol):
     """ Returns atomic symbols of substituted atoms (or first conection of non diatomic ligand)
     	Writes type of substitution symetry at the molecular properties
@@ -98,7 +161,7 @@ def supstitution_symmetry(mol):
         """
     dataframe,type_of_symetry = [], []
     ligand_identity = mol.properties.ligID
- 
+
     # Defining C atoms conected to substituents and making Molecule object (cmol) out of them
     catoms = mol.properties.coords_other_arrays
     cmol = Molecule()
@@ -117,7 +180,7 @@ def supstitution_symmetry(mol):
             subsymmetry = 'linear'
     else:
         # Getting non zero row indices from data frame - defines symmetry type
-        
+
         dataframe = get_symmetry(cmol,decimals=2)
         type_of_symetry = np.unique(dataframe.to_numpy().nonzero()[0])
 
@@ -138,10 +201,10 @@ def get_symmetry(mol, decimals=2):
     return <pd.DataFrame>: A Pandas dataframe with the number of equivalent atoms per axis
     per operation.
     """
-    
+
     if isinstance(mol, Molecule):
          mol = mol.as_array()
-    
+
     # Prepare the dataframe
     columns = ['x', 'y', 'z']
     index = ['2pi / ' + str(i) for i in range(1,9)] + ['reflection', 'inversion']
@@ -175,31 +238,32 @@ def get_symmetry(mol, decimals=2):
 
 
 def del_equiv_structures(mols):
-    """ 
-	Returnes list of molecules wihout duplicats 	
+    """
+	Returnes list of molecules wihout duplicats
 
     mols <plams.Molecule>: A list of PLAMS molecules
         """
     notunique=[]
-   
+
     for mol in mols:
         subsymmetry = supstitution_symmetry(mol)
         ligID = list(mol.properties.ligID)
-        
+
         all_permutations = symm_permutations(subsymmetry, ligID)
 
         notunique.append(all_permutations)
 
     scos = [sorted(sc) for sc in notunique]
     u, indices = np.unique(scos, return_index=True, axis=0)
-    
+
     unique_molecules = [mols[i] for i in list(indices)]
-    
+
     return unique_molecules
 
-def symm_permutations(condition, elements): 
+
+def symm_permutations(condition, elements):
     """ For given list of elements, makes permutations taking in account symmetry condition
-    <condition>: string 
+    <condition>: string
     <elements>: list
     """
     def swap_neighbours(j):
@@ -230,10 +294,3 @@ def symm_permutations(condition, elements):
         final = [a,b]
 
     return final
-
-
-
-
-
-
-
