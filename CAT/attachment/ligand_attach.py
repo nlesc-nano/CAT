@@ -61,7 +61,7 @@ def init_qd_construction(ligand_df: PropertiesDataFrame,
         mol_series1 = _read_database(qd_df, ligand_df, core_df)
 
     # Identify and create the to be constructed quantum dots
-    mol_series2 = construct_mol_series(ligand_df, core_df, ligand_df)
+    mol_series2 = construct_mol_series(qd_df, core_df, ligand_df)
 
     # Update the *mol* column in qd_df with 1 or 2 series of quantum dots
     try:
@@ -127,7 +127,13 @@ def _read_database(qd_df: PropertiesDataFrame,
     data = Database(path)
 
     # Extract molecules from the database and set their properties
-    mol_series = data.from_csv(qd_df, database='QD', inplace=False)
+    # If possible extract optimized structures; supplement with unoptimized structures if required
+    mol_series_opt = data.from_csv(qd_df, database='QD', inplace=False)
+    mol_series_no_opt = data.from_csv(qd_df, database='QD_no_opt', inplace=False)
+    slice_ = mol_series_no_opt.index.isin(mol_series_opt.index)
+    mol_series = mol_series_opt.append(mol_series_no_opt[~slice_])
+
+    # Update Molecule.properties
     for i, mol in mol_series.iteritems():
         mol.properties = Settings({
             'indices': _get_indices(mol, i),
@@ -156,7 +162,7 @@ def _get_indices(mol: Molecule,
     Returns
     -------
     |list|_ [|int|_]
-        A list of atomic indices
+        A list of atomic indices.
 
     """
     # Collect the indices of the atoms in the core
@@ -253,7 +259,6 @@ def ligand_to_qd(core: Molecule,
         return ret
 
     dirname = properties.optional.qd.dirname
-    import pdb; pdb.set_trace()
 
     # Define vectors and indices used for rotation and translation the ligands
     vec1 = sanitize_dim_2(ligand.properties.dummies) - np.array(ligand.get_center_of_mass())
