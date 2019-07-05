@@ -21,9 +21,9 @@ from .attachment.ligand_attach import init_qd_construction
 from .attachment.ligand_anchoring import init_ligand_anchoring
 
 try:
-    from nano_CAT.analysis.asa import init_asa
-    from nano_CAT.analysis.ligand_bde import init_bde
-    from nano_CAT.analysis.ligand_solvation import init_solv
+    from nanoCAT.asa import init_asa
+    from nanoCAT.ligand_bde import init_bde
+    from nanoCAT.ligand_solvation import init_solv
     NANO_CAT = True
 except ImportError:
     NANO_CAT = False

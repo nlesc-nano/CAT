@@ -23,7 +23,7 @@ from ..mol_utils import (to_symbol, fix_carboxyl, get_bond_index,
                          from_mol_other, from_rdmol, separate_mod)
 
 try:
-    from data_CAT import (Database, mol_to_file)
+    from dataCAT import (Database, mol_to_file)
     DATA_CAT = True
 except ImportError:
     DATA_CAT = False

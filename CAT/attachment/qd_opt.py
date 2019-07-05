@@ -16,7 +16,7 @@ from ..mol_utils import (fix_carboxyl, fix_h)
 from ..properties_dataframe import PropertiesDataFrame
 
 try:
-    from data_CAT import (Database, mol_to_file)
+    from dataCAT import (Database, mol_to_file)
     DATA_CAT = True
 except ImportError:
     DATA_CAT = False

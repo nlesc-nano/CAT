@@ -14,7 +14,7 @@ from ..utils import get_time
 from ..mol_utils import (merge_mol, get_atom_index)
 
 try:
-    from data_CAT import (Database, mol_to_file)
+    from dataCAT import (Database, mol_to_file)
     DATA_CAT = True
 except ImportError:
     DATA_CAT = False
