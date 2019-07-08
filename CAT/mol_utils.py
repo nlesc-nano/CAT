@@ -8,34 +8,42 @@ Index
 -----
 .. currentmodule:: CAT.mol_utils
 .. autosummary::
-    from_mol_other
+    Molecule
+    to_atnum
+    to_symbol
+    adf_connectivity
+    fix_carboxyl
+    fix_h
 
 API
 ---
-.. autofunction:: CAT.mol_utils.from_mol_other
+.. autoclass:: Molecule
+.. autofunction:: CAT.mol_utils.to_atnum
+.. autofunction:: CAT.mol_utils.to_symbol
+.. autofunction:: CAT.mol_utils.adf_connectivity
+.. autofunction:: CAT.mol_utils.fix_carboxyl
+.. autofunction:: CAT.mol_utils.fix_h
 
 """
 
+from __future__ import annotations
+
 from typing import (Optional, Iterable, Union, Tuple, List)
 
-from scm.plams import (Atom, Bond, Molecule)
-from scm.plams.core.functions import add_to_class
+from scm.plams import (Molecule, Atom, Bond, MoleculeError, add_to_class)
 from scm.plams.tools.periodic_table import PeriodicTable
 import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit import Chem
 from rdkit.Chem import rdMolTransforms
 
-__all__ = [
-    'merge_mol', 'adf_connectivity', 'fix_h', 'fix_carboxyl',
-    'from_mol_other', 'from_rdmol', 'separate_mod'
-]
+__all__ = ['adf_connectivity', 'fix_h', 'fix_carboxyl']
 
 
 @add_to_class(Molecule)
 def from_mol_other(self, mol: Molecule,
                    atom_subset: Optional[Iterable[Atom]] = None) -> None:
-    """Update the atomic coordinates of this instance with coordinates from another PLAMS molecule.
+    """Update the Cartesian coordinates of this instance with those from another PLAMS molecule.
 
     Alternatively, update only a subset of atoms.
 
@@ -48,8 +56,8 @@ def from_mol_other(self, mol: Molecule,
         Optional: A subset of atoms in **self**.
 
     """
-    atom_subset = atom_subset or self.atoms
-    for at1, at2 in zip(atom_subset, mol):
+    at_subset = atom_subset or self.atoms
+    for at1, at2 in zip(at_subset, mol):
         at1.coords = at2.coords
 
 
@@ -69,82 +77,64 @@ def from_rdmol(self, rdmol: Chem.Mol,
         Optional: A subset of atoms in **self**.
 
     """
-    atom_subset = atom_subset or self.atoms
+    at_subset = atom_subset or self.atoms
     conf = rdmol.GetConformer()
-    for at1, at2 in zip(atom_subset, rdmol.GetAtoms()):
+    for at1, at2 in zip(at_subset, rdmol.GetAtoms()):
         pos = conf.GetAtomPosition(at2.GetIdx())
         at1.coords = (pos.x, pos.y, pos.z)
 
 
-def to_atnum(item: Union[str, int]) -> int:
-    """Turn an atomic symbol into an atomic number.
+@add_to_class(Molecule)
+def get_index(self, value: Union[Atom, Bond]) -> Union[int, Tuple[int, int]]:
+    """Return the first index of **value** within this instance.
+
+    **value** expects an instance of either :class:`Atom` or :class:`Bond`.
+
+    Note
+    ----
+    Following the convention addopted by PLAMS, the returned index/indices are 1-based rather
+    than 0-based.
 
     Parameters
     ----------
-    item : |int|_ or |str|_
-    An atomic symbol or number.
+    value : |plams.Atom|_ or |plams.Bond|_
+        A PLAMS atom or bonds.
 
     Returns
     -------
-    |int|_
-        An atomic number.
+    |int|_ or |tuple|_ [|int|_]
+        An atomic index or (**value**: |plams.Atom|_) or
+        a tuple of two atomic indices (**item**: |plams.Bond|_).
+
+    Raises
+    ------
+    TypeError
+        Raised if **value** is an instance of neither :class:`Atom` nor :class:`Bond`.
+
+    MoleculeError
+        Raised if the passed :class:`Atom` or :class:`Bond` is not in this instance.
 
     """
-    if isinstance(item, str):
-        return PeriodicTable.get_atomic_number(item)
-    return item
+    if isinstance(value, Atom):
+        if value not in self.atoms:
+            raise MoleculeError("Passed atom, {repr(value)}, is not in this instance")
+        return 1 + self.atoms.index(value)
+    elif isinstance(value, Bond):
+        if value not in self.bonds:
+            raise MoleculeError(f"Passed bond, {repr(value)}, is not in this instance")
+        at1, at2 = value
+        return 1 + self.atoms.index(at1), 1 + self.atoms.index(at2)
 
-
-def to_symbol(item: Union[str, int]) -> str:
-    """Turn an atomic number into an atomic symbol.
-
-    Parameters
-    ----------
-    item : |int|_ or |str|_
-    An atomic symbol or number.
-
-    Returns
-    -------
-    |int|_
-        An atomic symbol.
-
-    """
-    if isinstance(item, int):
-        return PeriodicTable.get_symbol(item)
-    return item
-
-
-@add_to_class(Atom)
-def get_atom_index(self) -> int:
-    """Return the index of an atom (numbering starts with 1).
-
-    Returns
-    -------
-    |int|_
-        An atomic index.
-
-    """
-    return self.mol.atoms.index(self) + 1
-
-
-@add_to_class(Bond)
-def get_bond_index(self) -> Tuple[int, int]:
-    """Return a tuple of two atomic indices defining a bond (numbering starts with 1).
-
-    Returns
-    -------
-    |tuple|_ [|int|_]
-        A tuple of 2 atomic indices defining a bond.
-
-    """
-    return self.atom1.get_atom_index(), self.atom2.get_atom_index()
+    err = "item excepts an instance of 'Atom' or 'Bond'; observed type: '{}'"
+    raise TypeError(err.format(value.__class__.__name__))
 
 
 @add_to_class(Molecule)
 def merge_mol(self, mol_list: Union[Molecule, Iterable[Molecule]]) -> None:
     """Merge two or more molecules into a single molecule.
 
-    No new copies of atoms/bonds are created, all atoms/bonds are moved from mol_list to plams_mol.
+    No new copies of atoms/bonds are created, all atoms/bonds are moved from
+    mol_list to plams_mol.
     Performs an inplace update of this instance.
 
     Parameters
@@ -172,10 +162,10 @@ def separate_mod(self) -> List[Molecule]:
 
     Separate the molecule into connected components.
     Returns is a list of new Molecule instrances (all atoms and bonds are disjoint with
-        the original molecule).
+    the original molecule).
     Each element of this list is identical to one connected component of the base molecule.
     A connected component is a subset of atoms such that there exists a path
-        (along one or more bonds) between any two atoms.
+    (along one or more bonds) between any two atoms.
 
     Returns
     -------
@@ -211,13 +201,69 @@ def separate_mod(self) -> List[Molecule]:
     return frags
 
 
+def to_atnum(item: Union[str, int]) -> int:
+    """Turn an atomic symbol into an atomic number.
+
+    Parameters
+    ----------
+    item : |int|_ or |str|_
+    An atomic symbol or number.
+
+    Returns
+    -------
+    |int|_
+        An atomic number.
+
+    Raises
+    ------
+    TypeError
+        Raised if **item** is an instance of neither :class:`str` nor :class:`int`.
+
+    """
+    if isinstance(item, str):
+        return PeriodicTable.get_atomic_number(item)
+    elif isinstance(item, int):
+        return item
+
+    err = "item expects an instance of 'str' or 'int'; observed type: '{}'"
+    raise TypeError(err.format(item.__class__.__name__))
+
+
+def to_symbol(item: Union[str, int]) -> str:
+    """Turn an atomic number into an atomic symbol.
+
+    Parameters
+    ----------
+    item : |int|_ or |str|_
+    An atomic symbol or number.
+
+    Returns
+    -------
+    |int|_
+        An atomic symbol.
+
+    Raises
+    ------
+    TypeError
+        Raised if **item** is an instance of neither :class:`str` nor :class:`int`.
+
+    """
+    if isinstance(item, int):
+        return PeriodicTable.get_symbol(item)
+    elif isinstance(item, str):
+        return item
+
+    err = "item expects an instance of 'str' or 'int'; observed type: '{}'"
+    raise TypeError(err.format(item.__class__.__name__))
+
+
 def adf_connectivity(plams_mol: Molecule) -> List[str]:
     """Create an AMS-compatible connectivity list.
 
     Parameters
     ----------
     plams_mol : |plams.Molecule|_
-        A PLAMS molecule.
+        A PLAMS molecule with :math:`n` bonds.
 
     Returns
     -------
@@ -231,18 +277,15 @@ def adf_connectivity(plams_mol: Molecule) -> List[str]:
 
     # Create a list of bond orders; aromatic bonds get a bond order of 1.5
     plams_mol.set_atoms_id()
-    bond_orders = [bond.order for bond in plams_mol.bonds]
-    for i, ar in enumerate(aromatic):
-        if ar:
-            bond_orders[i] = 1.5
-    bonds = [str(bond.atom1.id) + ' ' + str(bond.atom2.id) + ' ' + str(order) for
+    bond_orders = [(1.5 if ar else bond.order) for ar, bond in zip(aromatic, plams_mol.bonds)]
+    bonds = ['{:d} {:d} {:.1f}'.format(bond.atom1.id, bond.atom2.id, bond.order) for
              bond, order in zip(plams_mol.bonds, bond_orders)]
     plams_mol.unset_atoms_id()
 
     return bonds
 
 
-def fix_carboxyl(plams_mol: Molecule) -> None:
+def fix_carboxyl(mol: Molecule) -> None:
     """Resets carboxylate OCO angles if it is smaller than :math:`60` degrees.
 
     Performs an inplace update of **plams_mol**.
@@ -253,7 +296,8 @@ def fix_carboxyl(plams_mol: Molecule) -> None:
         A PLAMS molecule.
 
     """
-    rdmol = molkit.to_rdmol(plams_mol)
+    rdmol = molkit.to_rdmol(mol)
+    conf = rdmol.GetConformer()
     carboxylate = Chem.MolFromSmarts('[O-]C(C)=O')
     matches = rdmol.GetSubstructMatches(carboxylate)
 
@@ -261,14 +305,14 @@ def fix_carboxyl(plams_mol: Molecule) -> None:
         get_angle = rdMolTransforms.GetAngleDeg
         set_angle = rdMolTransforms.SetAngleDeg
         for idx in matches:
-            if get_angle(rdmol.GetConformer(), idx[3], idx[1], idx[0]) < 60:
-                set_angle(rdmol.GetConformer(), idx[2], idx[1], idx[3], 180.0)
-                set_angle(rdmol.GetConformer(), idx[0], idx[1], idx[3], 120.0)
-        plams_mol.from_rdmol(rdmol)
+            if get_angle(conf, idx[3], idx[1], idx[0]) < 60:
+                set_angle(conf, idx[2], idx[1], idx[3], 180.0)
+                set_angle(conf, idx[0], idx[1], idx[3], 120.0)
+        mol.from_rdmol(rdmol)
 
 
-def fix_h(plams_mol: Molecule) -> None:
-    """ If a C=C-H angle is smaller than 20.0 degrees, set it back to :math:`120` degrees.
+def fix_h(mol: Molecule) -> None:
+    """If a C=C-H angle is smaller than :math:`20` degrees, set it back to :math:`120` degrees.
 
     Performs an inplace update of **plams_mol**.
 
@@ -278,25 +322,31 @@ def fix_h(plams_mol: Molecule) -> None:
         A PLAMS molecule.
 
     """
-    H_list = [atom for atom in plams_mol if atom.atnum == 1 and 2.0 in
-              [bond.order for bond in plams_mol.neighbors(atom)[0].bonds]]
+    H_list = [atom for atom in mol if atom.atnum == 1 and 2.0 in
+              [bond.order for bond in mol.neighbors(atom)[0].bonds]]
 
-    rdmol = molkit.to_rdmol(plams_mol)
-    idx = plams_mol.atoms.index
+    rdmol = molkit.to_rdmol(mol)
+    conf = rdmol.GetConformer()
+    get_idx = mol.atoms.index
     set_angle = rdMolTransforms.SetAngleDeg
     get_angle = rdMolTransforms.GetAngleDeg
 
-    update = []
+    update = False
     for atom in H_list:
-        at1 = atom
-        at2 = plams_mol.neighbors(at1)[0]
-        at3 = [atom for atom in plams_mol.neighbors(at2) if atom != at1]
-        if get_angle(rdmol.GetConformer(), idx(at3[0]), idx(at2), idx(at1)) <= 20.0:
-            set_angle(rdmol.GetConformer(), idx(at3[0]), idx(at2), idx(at1), 120.0)
-            update.append(True)
-        elif get_angle(rdmol.GetConformer(), idx(at3[1]), idx(at2), idx(at1)) <= 20.0:
-            set_angle(rdmol.GetConformer(), idx(at3[1]), idx(at2), idx(at1), 120.0)
-            update.append(True)
+        at1 = atom  # Central atom
+        at2 = mol.neighbors(at1)[0]  # Neighbours
+        at3 = [atom for atom in mol.neighbors(at2) if atom != at1]  # Neighbours of neighbours
+
+        # Create 2 sets of 3 atomic indices for defining angles: at1-at2=at3
+        idx_tup1 = get_idx(at3[0]), get_idx(at2), get_idx(at1)
+        idx_tup2 = get_idx(at3[1]), get_idx(at2), get_idx(at1)
+
+        if get_angle(conf, *idx_tup1) <= 20.0:
+            set_angle(conf, *idx_tup1, 120.0)
+            update = True
+        elif get_angle(conf, *idx_tup2) <= 20.0:
+            set_angle(conf, *idx_tup2, 120.0)
+            update = True
 
     if update:
-        plams_mol.from_rdmol(rdmol)
+        mol.from_rdmol(rdmol)

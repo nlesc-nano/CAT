@@ -14,7 +14,14 @@ Index
 API
 ---
 .. autoclass:: CAT.settings_dataframe.SettingsSeries
+    :members:
+    :private-members:
+    :special-members:
+
 .. autoclass:: CAT.settings_dataframe.SettingsDataFrame
+    :members:
+    :private-members:
+    :special-members:
 
 """
 
@@ -24,7 +31,7 @@ from typing import Optional
 
 import pandas as pd
 
-from scm.plams import Settings
+from .frozen_settings import FrozenSettings
 
 __all__ = ['SettingsSeries', 'SettingsDataFrame']
 
@@ -40,8 +47,8 @@ class SettingsSeries(pd.Series):
 
     Attributes
     ----------
-    settings : |plams.Settings|_
-        A dictionary with additional user-defined (meta-)data.
+    settings : |CAT.FrozenSettings|_
+        An immutable :class:`.FrozenSettings` instance with additional user-defined (meta-)data.
 
     """
 
@@ -68,14 +75,14 @@ class SettingsSeries(pd.Series):
         return _df
 
     @staticmethod
-    def _sanitize_settings(settings: Optional[dict]) -> Settings:
-        """Sanitize the **settings** parameter for :attr:`.settings`."""
+    def _sanitize_settings(settings: Optional[dict]) -> FrozenSettings:
+        """Sanitize the **settings** parameter for :attr:`SettingsSeries.settings`."""
         if settings is None:
-            return Settings()
+            return FrozenSettings()
         elif isinstance(settings, dict):
-            return Settings(settings)
+            return FrozenSettings(settings)
         else:
-            err = "The settings argument expects an instance of 'dict', not '{}'"
+            err = "The settings argument expects an instance of 'dict'; observed type '{}'"
             raise TypeError(err.format(settings.__class__.__name__))
 
 
@@ -90,8 +97,8 @@ class SettingsDataFrame(pd.DataFrame):
 
     Attributes
     ----------
-    settings : |plams.Settings|_
-        A dictionary with additional user-defined (meta-)data.
+    settings : |CAT.FrozenSettings|_
+        An immutable :class:`.FrozenSettings` instance with additional user-defined (meta-)data.
 
     """
 
@@ -118,12 +125,12 @@ class SettingsDataFrame(pd.DataFrame):
         return _series
 
     @staticmethod
-    def _sanitize_settings(settings: Optional[dict]) -> Settings:
-        """Sanitize the **settings** parameter for :attr:`.settings`."""
+    def _sanitize_settings(settings: Optional[dict]) -> FrozenSettings:
+        """Sanitize the **settings** parameter for :attr:`SettingsDataFrame.settings`."""
         if settings is None:
-            return Settings()
+            return FrozenSettings()
         elif isinstance(settings, dict):
-            return Settings(settings)
+            return FrozenSettings(settings)
         else:
-            err = "The settings argument expects an instance of 'dict', not '{}'"
+            err = "The settings argument expects an instance of 'dict'; observed type '{}'"
             raise TypeError(err.format(settings.__class__.__name__))

@@ -65,7 +65,7 @@ def init_ligand_anchoring(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     for lig in ligand_df[MOL]:
         # Functional group search
         if not lig.properties.dummies:
-            split = ligand_df.properties.optional.ligand.split
+            split = ligand_df.settings.optional.ligand.split
             mol_list += find_substructure(lig, split=split)
 
         # Manual specification of a functional group
@@ -79,11 +79,11 @@ def init_ligand_anchoring(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
             mol_list += [substructure_split(lig, lig.properties.dummies, split=split)]
 
     # Convert the results into a dataframe
-    return _get_df(mol_list, ligand_df.properties)
+    return _get_df(mol_list, ligand_df.settings)
 
 
 def _get_df(mol_list: Sequence[Molecule],
-            properties: Settings) -> SettingsDataFrame:
+            settings: Settings) -> SettingsDataFrame:
     """Create and return a new ligand dataframe.
 
     Parameters
@@ -91,7 +91,7 @@ def _get_df(mol_list: Sequence[Molecule],
     mol_list : |list|_ [|plams.Molecule|_]
         A list of PLAMS molecules.
 
-    properties : |Settings|_
+    settings : |Settings|_
         A Settings instance containing all CAT parameters.
 
     Returns
@@ -107,7 +107,7 @@ def _get_df(mol_list: Sequence[Molecule],
     columns = pd.MultiIndex.from_tuples(columns_tuples, names=['index', 'sub index'])
 
     # Create, fill and return the dataframe
-    df = SettingsDataFrame(-1, index=idx, columns=columns, properties=properties)
+    df = SettingsDataFrame(-1, index=idx, columns=columns, settings=settings)
     df[MOL] = mol_list
     df[FORMULA] = [lig.get_formula() for lig in df[MOL]]
     df[OPT] = False

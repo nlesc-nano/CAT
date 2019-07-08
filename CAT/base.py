@@ -26,7 +26,7 @@ API
 
 """
 
-import time
+from time import time
 from typing import (Optional, Tuple)
 
 import pandas as pd
@@ -83,7 +83,7 @@ def prep(arg: Settings,
 
     """
     # The start
-    time_start = time.time()
+    time_start = time()
     print('\n')
 
     # Interpret and extract the input settings
@@ -99,8 +99,7 @@ def prep(arg: Settings,
     qd_df = prep_qd(ligand_df, core_df)
 
     # The End
-    message = get_time() + 'Total elapsed time:\t\t' + '%.4f' % (time.time() - time_start) + ' sec'
-    print(message)
+    print(get_time() + 'Total elapsed time:\t\t{:.4f} sec'.format(time() - time_start))
 
     if return_mol:
         return qd_df, core_df, ligand_df
@@ -142,11 +141,11 @@ def prep_input(arg: Settings) -> Tuple[SettingsDataFrame, SettingsDataFrame]:
     columns = pd.MultiIndex.from_tuples([MOL], names=['index', 'sub index'])
 
     ligand_df = SettingsDataFrame(index=pd.RangeIndex(len(lig_list)),
-                                    columns=columns.copy(),
-                                    properties=arg)
-    core_df = SettingsDataFrame(index=pd.RangeIndex(len(core_list)),
                                   columns=columns.copy(),
-                                  properties=arg)
+                                  settings=arg)
+    core_df = SettingsDataFrame(index=pd.RangeIndex(len(core_list)),
+                                columns=columns.copy(),
+                                settings=arg)
 
     ligand_df[MOL] = lig_list
     core_df[MOL] = core_list
@@ -169,7 +168,7 @@ def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
 
     """
     # Unpack arguments
-    dummy = core_df.properties.optional.core.dummy
+    dummy = core_df.settings.optional.core.dummy
 
     formula_list = []
     anchor_list = []
@@ -210,6 +209,8 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     * Ligand geometry optimization
     * Ligand COSMO-RS calculations
 
+    .. _Nano-CAT: https://github.com/nlesc-nano/nano-CAT
+
     Parameters
     ----------
     ligand_df : |CAT.SettingsDataFrame|_
@@ -220,10 +221,15 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     |CAT.SettingsDataFrame|_
         A new dataframe containing only valid ligands.
 
+    Raises
+    ------
+    ImportError
+        Raised if a COSMO-RS calculation is attempted without installing the Nano-CAT_ package.
+
     """
     # Unpack arguments
-    optimize = ligand_df.properties.optional.ligand.optimize
-    crs = ligand_df.properties.optional.ligand.crs
+    optimize = ligand_df.settings.optional.ligand.optimize
+    crs = ligand_df.settings.optional.ligand.crs
 
     # Identify functional groups within the ligand.
     ligand_df = init_ligand_anchoring(ligand_df)
@@ -254,6 +260,8 @@ def prep_qd(ligand_df: SettingsDataFrame,
     * Peforming activation strain analyses
     * Dissociating ligands on the quantum dot surface
 
+    .. _Nano-CAT: https://github.com/nlesc-nano/nano-CAT
+
     Parameters
     ----------
     ligand_df : |CAT.SettingsDataFrame|_
@@ -267,11 +275,17 @@ def prep_qd(ligand_df: SettingsDataFrame,
     |CAT.SettingsDataFrame|_
         A dataframe of quantum dots molecules. Molecules are stored in the *mol* column.
 
+    Raises
+    ------
+    ImportError
+        Raised if an activation-strain or ligand dissociation calculation is attempted without
+        installing the Nano-CAT_ package.
+
     """
     # Unpack arguments
-    optimize = ligand_df.properties.arg.optional.qd.optimize
-    dissociate = ligand_df.properties.arg.optional.qd.dissociate
-    activation_strain = ligand_df.properties.optional.qd.activation_strain
+    optimize = ligand_df.settings.arg.optional.qd.optimize
+    dissociate = ligand_df.settings.arg.optional.qd.dissociate
+    activation_strain = ligand_df.settings.optional.qd.activation_strain
 
     # Construct the quantum dots
     qd_df = init_qd_construction(ligand_df, core_df)
@@ -301,6 +315,6 @@ def prep_qd(ligand_df: SettingsDataFrame,
 
 def val_nano_cat(error_message: Optional[str] = None) -> None:
     """Raise an an :exc:`ImportError` if the module-level constant ``NANO_CAT`` is ``False``."""
-    error_message = error_message or ''
+    err_message = error_message or ''
     if not NANO_CAT:
-        raise ImportError(error_message)
+        raise ImportError(err_message)

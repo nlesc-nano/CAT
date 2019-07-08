@@ -51,7 +51,7 @@ from scm.plams.core.settings import Settings
 
 from ..settings_dataframe import SettingsDataFrame
 from ..utils import get_time
-from ..mol_utils import (merge_mol, get_atom_index)
+from ..mol_utils import (merge_mol, get_index)
 
 try:
     from dataCAT import (Database, mol_to_file)
@@ -86,16 +86,16 @@ def init_qd_construction(ligand_df: SettingsDataFrame,
 
     """
     # Extract arguments
-    properties = ligand_df.properties
-    overwrite = DATA_CAT and 'qd' in properties.optional.database.overwrite
-    write = DATA_CAT and 'qd' in properties.optional.database.write
-    read = DATA_CAT and 'qd' in properties.optional.database.read
-    qd_path = properties.optional.qd.dirname
-    db_path = properties.optional.database.dirname
-    mol_format = properties.optional.database.mol_format
+    settings = ligand_df.settings.optional
+    overwrite = DATA_CAT and 'qd' in settings.database.overwrite
+    write = DATA_CAT and 'qd' in settings.database.write
+    read = DATA_CAT and 'qd' in settings.database.read
+    qd_path = settings.qd.dirname
+    db_path = settings.database.dirname
+    mol_format = settings.database.mol_format
 
     # Attempt to pull structures from the database
-    qd_df = _get_df(core_df.index, ligand_df.index, properties)
+    qd_df = _get_df(core_df.index, ligand_df.index, ligand_df.settings)
     qd_df.sort_index(inplace=True)
     if read:
         mol_series1 = _read_database(qd_df, ligand_df, core_df)
@@ -124,9 +124,9 @@ def construct_mol_series(qd_df: SettingsDataFrame,
     def _get_mol(i, j, k, l):
         ij = i, j
         kl = k, l
-        return ligand_to_qd(core_df.at[ij, MOL], ligand_df.at[kl, MOL], properties)
+        return ligand_to_qd(core_df.at[ij, MOL], ligand_df.at[kl, MOL], settings)
 
-    properties = qd_df.properties
+    settings = qd_df.settings
     idx = qd_df[HDF5_INDEX] < 0
 
     mol_list = [_get_mol(i, j, k, l) for i, j, k, l in qd_df.index[idx]]
@@ -157,13 +157,13 @@ def _read_database(qd_df: SettingsDataFrame,
     """
     def get_name():
         """Construct the name of a quantum dot."""
-        ret = core_df.at[(i[0:2]), MOL].properties.name + '__'
-        ret += str(mol[-1].properties.pdb_info.ResidueNumber - 1)
-        ret += '_' + ligand_df.at[(i[2:4]), MOL].properties.name
-        return ret
+        core = core_df.at[(i[0:2]), MOL].properties.name
+        res = mol[-1].properties.pdb_info.ResidueNumber - 1
+        lig = ligand_df.at[(i[2:4]), MOL].properties.name
+        return '{}__{:d}_{}'.format(core, res, lig)
 
     # Extract arguments
-    path = qd_df.properties.optional.database.dirname
+    path = qd_df.settings.optional.database.dirname
     data = Database(path)
 
     # Extract molecules from the database and set their properties
@@ -234,7 +234,7 @@ def _get_indices(mol: Molecule,
 
 def _get_df(core_index: pd.MultiIndex,
             ligand_index: pd.MultiIndex,
-            properties: Settings) -> SettingsDataFrame:
+            settings: Settings) -> SettingsDataFrame:
     """Create and return a new quantum dot dataframe.
 
     Parameters
@@ -245,7 +245,7 @@ def _get_df(core_index: pd.MultiIndex,
     ligand_index : |pd.MultiIndex|_
         A multiindex of the ligands.
 
-    properties : |plams.Settings|_
+    settings : |plams.Settings|_
         A Settings intance extracted from the ligand or core dataframe.
 
     Returns
@@ -266,12 +266,12 @@ def _get_df(core_index: pd.MultiIndex,
 
     # Create and return the quantum dot dataframe
     data = {HDF5_INDEX: -1, OPT: False}
-    return SettingsDataFrame(data, index=index, columns=columns, properties=properties)
+    return SettingsDataFrame(data, index=index, columns=columns, settings=settings)
 
 
 def ligand_to_qd(core: Molecule,
                  ligand: Molecule,
-                 properties: Settings) -> Molecule:
+                 settings: Settings) -> Molecule:
     """Function that handles quantum dot (qd, *i.e.* core + all ligands) operations.
 
     Combine the core and ligands and assign properties to the quantom dot.
@@ -284,7 +284,7 @@ def ligand_to_qd(core: Molecule,
     ligand : |plams.Molecule|_
         A ligand molecule.
 
-    properties : |plams.Settings|_
+    settings : |plams.Settings|_
         A settings object containing all (optional) arguments.
 
     Returns
@@ -298,12 +298,12 @@ def ligand_to_qd(core: Molecule,
         ret += str(qd[-1].properties.pdb_info.ResidueNumber - 1) + '_' + ligand.properties.name
         return ret
 
-    dirname = properties.optional.qd.dirname
+    dirname = settings.optional.qd.dirname
 
     # Define vectors and indices used for rotation and translation the ligands
     vec1 = sanitize_dim_2(ligand.properties.dummies) - np.array(ligand.get_center_of_mass())
     vec2 = np.array(core.get_center_of_mass()) - sanitize_dim_2(core.properties.dummies)
-    idx = ligand.properties.dummies.get_atom_index() - 1
+    idx = ligand.get_index(ligand.properties.dummies) - 1
     ligand.properties.dummies.properties.anchor = True
 
     # Attach the rotated ligands to the core, returning the resulting strucutre (PLAMS Molecule).

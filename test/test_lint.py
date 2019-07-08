@@ -1,4 +1,4 @@
-"""Lint tests."""
+"""Test CAT for pep8 compliance."""
 import os
 import textwrap
 
@@ -6,7 +6,7 @@ import pycodestyle  # formerly known as pep8
 
 
 def test_pep8_conformance() -> None:
-    """Test that we conform to PEP-8."""
+    """Test that CAT conforms to PEP-8."""
     check_paths = ['CAT', 'test']
     exclude_paths = []
 
@@ -18,6 +18,7 @@ def test_pep8_conformance() -> None:
         for i, path in enumerate(paths):
             paths[i] = os.path.join(package_root, path)
 
+    # Increase the maximum amount of characters per line from 79 to 100
     style = pycodestyle.StyleGuide(max_line_length=100)
     style.options.exclude.extend(exclude_paths)
 

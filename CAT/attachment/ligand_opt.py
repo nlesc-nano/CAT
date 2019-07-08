@@ -58,7 +58,7 @@ from rdkit.Chem import AllChem
 from .ligand_attach import (rot_mol_angle, sanitize_dim_2)
 from ..utils import get_time
 from ..settings_dataframe import SettingsDataFrame
-from ..mol_utils import (to_symbol, fix_carboxyl, get_bond_index,
+from ..mol_utils import (to_symbol, fix_carboxyl, get_index,
                          from_mol_other, from_rdmol, separate_mod)
 
 try:
@@ -88,12 +88,12 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
         A dataframe of valid ligands.
 
     """
-    properties = ligand_df.properties
-    database = Database(properties.optional.database.dirname)
-    overwrite = DATA_CAT and 'ligand' in properties.optional.database.overwrite
-    read = DATA_CAT and 'ligand' in properties.optional.database.read
-    write = DATA_CAT and 'ligand' in properties.optional.database.write
-    optimize = properties.optional.ligand.optimize
+    settings = ligand_df.settings.optional
+    database = Database(settings.database.dirname)
+    overwrite = DATA_CAT and 'ligand' in settings.database.overwrite
+    read = DATA_CAT and 'ligand' in settings.database.read
+    write = DATA_CAT and 'ligand' in settings.database.write
+    optimize = settings.ligand.optimize
 
     # Searches for matches between the input ligand and the database; imports the structure
     read_data(ligand_df, database, read)
@@ -173,13 +173,16 @@ def _ligand_to_db(ligand_df: SettingsDataFrame,
                   opt: bool = True):
     """Export ligand optimziation results to the database."""
     # Extract arguments
-    overwrite = DATA_CAT and 'ligand' in ligand_df.properties.optional.database.overwrite
-    lig_path = ligand_df.properties.optional.ligand.dirname
-    mol_format = ligand_df.properties.optional.database.mol_format
+    settings = ligand_df.settings.optional
+    overwrite = DATA_CAT and 'ligand' in settings.database.overwrite
+    lig_path = settings.ligand.dirname
+    mol_format = settings.database.mol_format
 
     kwargs: Dict[str, Any] = {'overwrite': overwrite}
     if opt:
-        kwargs['job_recipe'] = Settings({'1': {'key': 'RDKit_' + rdkit.__version__, 'value': 'UFF'}})
+        kwargs['job_recipe'] = Settings({
+            '1': {'key': 'RDKit_' + rdkit.__version__, 'value': 'UFF'}
+        })
         kwargs['columns'] = [FORMULA, HDF5_INDEX, SETTINGS1]
         kwargs['database'] = 'ligand'
         kwargs['opt'] = True
@@ -429,7 +432,7 @@ def recombine_mol(mol_list: Sequence[Molecule]) -> Molecule:
         mol1.delete_atom(tup[1])
         mol1.delete_atom(tup[3])
         mol1.add_bond(tup[0], tup[2])
-        bond_tup = mol1.bonds[-1].get_bond_index()
+        bond_tup = mol1.get_bond_index(mol1.bonds[-1])
         mol1.from_mol_other(global_minimum_scan_rdkit(mol1, bond_tup))
 
     del mol1.properties.mark

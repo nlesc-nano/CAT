@@ -29,7 +29,7 @@ __all__ = ['get_thermo', 'get_entropy']
 
 
 def get_entropy(mol: Molecule,
-                freqs: Sequence[float],
+                freqs: np.ndarray,
                 T: float = 298.15) -> np.ndarray:
     """Calculate the translational, vibrational and rotational entropy.
 
@@ -41,7 +41,7 @@ def get_entropy(mol: Molecule,
         A PLAMS molecule.
 
     freqs : |np.ndarray|_ [|np.float64|_]
-        An iterable consisting of vibrational frequencies in units of s**-1.
+        An iterable consisting of vibrational frequencies in units of cm**-1.
 
     T : float
         The temperature in Kelvin.
@@ -49,49 +49,56 @@ def get_entropy(mol: Molecule,
     Returns
     -------
     |np.ndarray|_ [|np.float64|_]:
-        A numpy array containing the translational, rotational and
-        vibrational contributions to the entropy.
+        An array with translational, rotational and vibrational contributions to the entropy,
+        ordered in that specific manner.
+        Units are in J/mol.
 
     """
-    if not isinstance(freqs, np.ndarray):
-        freqs = np.array(freqs)
-
     # Define constants
     kT = 1.380648 * 10**-23 * T  # Boltzmann constant * temperature
     h = 6.6260701 * 10**-34  # Planck constant
-    hv_kT = (h * freqs) / kT  # (Planck constant * frequencies) / (Boltzmann * temperature)
+    hv_kT = (h * np.asarray(freqs)) / kT  # (Planck * frequencies) / (Boltzmann * temperature)
     R = 8.31445  # Gas constant
     V_Na = ((R * T) / 10**5) / Units.constants['NA']  # Volume(1 mol ideal gas) / Avogadro's number
     pi = np.pi
 
-    # Extract atomic masses and coordinates
+    # Extract atomic masses and Cartesian coordinates
     m = np.array([at.mass for at in mol]) * 1.6605390 * 10**-27
     x, y, z = mol.as_array().T * 10**-10
 
-    # Calculate the rotational partition function
-    inertia = np.array([sum(m*(y**2 + z**2)), -sum(m*x*y), -sum(m*x*z),
-                        -sum(m*x*y), sum(m*(x**2 + z**2)), -sum(m*y*z),
-                        -sum(m*x*z), -sum(m*y*z), sum(m*(x**2 + y**2))]).reshape(3, 3)
-    inertia = np.product(np.linalg.eig(inertia)[0])
-    q_rot = pi**0.5 * ((8 * pi**2 * kT) / h**2)**1.5 * inertia**0.5
+    # Calculate the rotational partition function: q_rot
+    inertia = np.array([
+        [sum(m*(y**2 + z**2)), -sum(m*x*y), -sum(m*x*z)],
+        [-sum(m*x*y), sum(m*(x**2 + z**2)), -sum(m*y*z)],
+        [-sum(m*x*z), -sum(m*y*z), sum(m*(x**2 + y**2))]
+    ])
+    inertia_product = np.product(np.linalg.eig(inertia)[0])
+    q_rot = pi**0.5 * ((8 * pi**2 * kT) / h**2)**1.5 * inertia_product**0.5
 
     # Calculate the translational, rotational and vibrational entropy (divided by R)
     S_trans = 1.5 + np.log(V_Na * ((2 * pi * sum(m) * kT) / h**2)**1.5)
     S_rot = 1.5 + np.log(q_rot)
-    S_vib = sum(hv_kT / np.expm1(hv_kT) - np.log(1 - np.exp(-hv_kT)))
+    with np.errstate(divide='ignore', invalid='ignore'):
+        S_vib_left = hv_kT / np.expm1(hv_kT)
+        S_vib_left[np.isnan(S_vib_left)] = 0.0
+        S_vib_right = np.log(1 - np.exp(-hv_kT))
+        S_vib_right[S_vib_right == -np.inf] = 0.0
+    S_vib = sum(S_vib_left - S_vib_right)
 
     return R * np.array([S_trans, S_rot, S_vib])
 
 
 def get_thermo(mol: Molecule,
                freqs: Sequence[float],
-               E: float,
+               E: float = 0.0,
                T: float = 298.15,
-               export: Sequence[str] = ('E', 'H', 'S', 'G'),
+               export: Sequence[str] = ('E', 'U', 'H', 'S', 'G'),
                unit: str = 'kcal/mol') -> Union[float, Dict[str, float]]:
     """Extract and return Gibbs free energies, entropies and/or enthalpies from an AMS KF file.
 
     All vibrational frequencies smaller than 100 cm**-1 are set to 100 cm**-1.
+
+    .. _plams.Units: https://www.scm.com/doc/plams/components/utils.html#scm.plams.tools.units.Units
 
     Parameters
     ----------
@@ -99,17 +106,19 @@ def get_thermo(mol: Molecule,
         A PLAMS molecule.
 
     freqs : |np.ndarray|_ [|np.float64|_]
-        An iterable consisting of vibrational frequencies in units of s**-1.
+        An iterable consisting of vibrational frequencies in units of cm**-1.
 
     E : float
         The eletronic energy in kcal/mol.
+        Defaults to 0.0 kcal/mol.
 
     T : float
         The temperature in Kelvin.
 
-    export : |tuple|_ [|str|_]:
+    export : |tuple|_ [|str|_]
         An iterable containing strings of the to be exported energies:
-        * ``'E'``: Electronic energy
+
+        * ``'E'``: Electronic energy (see the **E** parameter)
         * ``'U'``: Interal energy (:math:`E + U_{nuc}`)
         * ``'H'``: Enthalpy (:math:`U + pV`)
         * ``'S'``: Entropy
@@ -117,11 +126,13 @@ def get_thermo(mol: Molecule,
 
     unit : str
         The unit of the to be returned energies.
+        See plams.Units_ for more details and an overview of available energy units.
 
     Returns
     -------
     |float|_ or |dict|_ [|str|_, |float|_]:
         An energy or dictionary of energies.
+        Keys
 
     """
     # Get frequencies; set all frequencies smaller than 100 cm**-1 to 100 cm**-1

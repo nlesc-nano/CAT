@@ -29,7 +29,7 @@ import time
 import yaml
 import pkg_resources as pkg
 from os.path import join
-from typing import Callable
+from typing import (Callable, Iterable)
 
 from scm.plams.core.settings import Settings
 
@@ -53,11 +53,12 @@ _job_dict = {
 
 
 def type_to_string(job: Callable) -> str:
-    """Turn a :class:`type` instance into a string."""
+    """Turn a :class:`type` instance into a :class:`str`."""
     try:
         return _job_dict[job]
     except KeyError:
-        print(get_time() + 'WARNING: No default settings available for ' + str(job))
+        err = 'WARNING: No default settings available for {}'
+        print(get_time() + err.format(repr(job.__class__.__name__)))
         return ''
 
 
@@ -99,10 +100,10 @@ def check_sys_var() -> None:
         raise ImportError(error)
 
 
-def dict_concatenate(dic: dict) -> dict:
+def dict_concatenate(dict_list: Iterable[dict]) -> dict:
     """Concatenates a list of dictionaries."""
     ret = {}
-    for item in dic:
+    for item in dict_list:
         ret.update(item)
     return ret
 
