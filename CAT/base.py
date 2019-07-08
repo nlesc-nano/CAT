@@ -1,4 +1,30 @@
-"""A module handling the interaction with all other modules, functioning as recipe."""
+"""
+CAT.base
+========
+
+A module handling the interaction with all other modules, functioning as recipe.
+
+Index
+-----
+.. currentmodule:: CAT.base
+.. autosummary::
+    prep
+    prep_input
+    prep_core
+    prep_ligand
+    prep_qd
+    val_nano_cat
+
+API
+---
+.. autofunction:: CAT.base.prep
+.. autofunction:: CAT.base.prep_input
+.. autofunction:: CAT.base.prep_core
+.. autofunction:: CAT.base.prep_ligand
+.. autofunction:: CAT.base.prep_qd
+.. autofunction:: CAT.base.val_nano_cat
+
+"""
 
 import time
 from typing import (Optional, Tuple)
@@ -8,7 +34,7 @@ import pandas as pd
 from scm.plams import (Atom, Settings)
 from scm.plams.core.errors import MoleculeError
 
-from .properties_dataframe import PropertiesDataFrame
+from .settings_dataframe import SettingsDataFrame
 
 from .utils import (check_sys_var, get_time)
 
@@ -35,7 +61,7 @@ MOL = ('mol', '')
 
 
 def prep(arg: Settings,
-         return_mol: bool = True) -> Optional[Tuple[PropertiesDataFrame]]:
+         return_mol: bool = True) -> Optional[Tuple[SettingsDataFrame]]:
     """Function that handles all tasks related to the three prep functions.
 
     * :func:`.prep_core`
@@ -52,7 +78,7 @@ def prep(arg: Settings,
 
     Returns
     -------
-    |CAT.PropertiesDataFrame|_
+    |CAT.SettingsDataFrame|_
         Optional: If ``return_mol=True`` return the three QD, core and ligand dataframes.
 
     """
@@ -81,7 +107,7 @@ def prep(arg: Settings,
     return None
 
 
-def prep_input(arg: Settings) -> Tuple[PropertiesDataFrame, PropertiesDataFrame]:
+def prep_input(arg: Settings) -> Tuple[SettingsDataFrame, SettingsDataFrame]:
     """Interpret and extract the input settings. Returns a list of ligands and a list of cores.
 
     Parameters
@@ -91,7 +117,7 @@ def prep_input(arg: Settings) -> Tuple[PropertiesDataFrame, PropertiesDataFrame]
 
     Returns
     -------
-    |tuple|_ [|CAT.PropertiesDataFrame|_, |CAT.PropertiesDataFrame|_]
+    |tuple|_ [|CAT.SettingsDataFrame|_, |CAT.SettingsDataFrame|_]
         A tuple containing the ligand and core dataframe.
 
     """
@@ -115,10 +141,10 @@ def prep_input(arg: Settings) -> Tuple[PropertiesDataFrame, PropertiesDataFrame]
     # Store the molecules in dataframes
     columns = pd.MultiIndex.from_tuples([MOL], names=['index', 'sub index'])
 
-    ligand_df = PropertiesDataFrame(index=pd.RangeIndex(len(lig_list)),
+    ligand_df = SettingsDataFrame(index=pd.RangeIndex(len(lig_list)),
                                     columns=columns.copy(),
                                     properties=arg)
-    core_df = PropertiesDataFrame(index=pd.RangeIndex(len(core_list)),
+    core_df = SettingsDataFrame(index=pd.RangeIndex(len(core_list)),
                                   columns=columns.copy(),
                                   properties=arg)
 
@@ -128,17 +154,17 @@ def prep_input(arg: Settings) -> Tuple[PropertiesDataFrame, PropertiesDataFrame]
     return ligand_df, core_df
 
 
-def prep_core(core_df: PropertiesDataFrame) -> PropertiesDataFrame:
+def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
     """Function that handles the identification and marking of all core dummy atoms.
 
     Parameters
     ----------
-    core_df : |CAT.PropertiesDataFrame|_
+    core_df : |CAT.SettingsDataFrame|_
         A dataframe of core molecules. Molecules are stored in the *mol* column.
 
     Returns
     -------
-    |CAT.PropertiesDataFrame|_
+    |CAT.SettingsDataFrame|_
         A dataframe of cores with all dummy/anchor atoms removed.
 
     """
@@ -177,7 +203,7 @@ def prep_core(core_df: PropertiesDataFrame) -> PropertiesDataFrame:
     return ret
 
 
-def prep_ligand(ligand_df: PropertiesDataFrame) -> PropertiesDataFrame:
+def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     """Function that handles all ligand operations.
 
     * Ligand function group identification
@@ -186,12 +212,12 @@ def prep_ligand(ligand_df: PropertiesDataFrame) -> PropertiesDataFrame:
 
     Parameters
     ----------
-    ligand_df : |CAT.PropertiesDataFrame|_
+    ligand_df : |CAT.SettingsDataFrame|_
         A dataframe of ligand molecules. Molecules are stored in the *mol* column.
 
     Returns
     -------
-    |CAT.PropertiesDataFrame|_
+    |CAT.SettingsDataFrame|_
         A new dataframe containing only valid ligands.
 
     """
@@ -219,8 +245,8 @@ def prep_ligand(ligand_df: PropertiesDataFrame) -> PropertiesDataFrame:
     return ligand_df
 
 
-def prep_qd(ligand_df: PropertiesDataFrame,
-            core_df: PropertiesDataFrame) -> PropertiesDataFrame:
+def prep_qd(ligand_df: SettingsDataFrame,
+            core_df: SettingsDataFrame) -> SettingsDataFrame:
     """Function that handles all quantum dot (qd, i.e. core + all ligands) operations.
 
     * Constructing the quantum dots
@@ -230,15 +256,15 @@ def prep_qd(ligand_df: PropertiesDataFrame,
 
     Parameters
     ----------
-    ligand_df : |CAT.PropertiesDataFrame|_
+    ligand_df : |CAT.SettingsDataFrame|_
         A dataframe of ligand molecules. Molecules are stored in the *mol* column.
 
-    core_df : |CAT.PropertiesDataFrame|_
+    core_df : |CAT.SettingsDataFrame|_
         A dataframe of core molecules. Molecules are stored in the *mol* column.
 
     Returns
     -------
-    |CAT.PropertiesDataFrame|_
+    |CAT.SettingsDataFrame|_
         A dataframe of quantum dots molecules. Molecules are stored in the *mol* column.
 
     """

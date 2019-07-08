@@ -1,4 +1,22 @@
-"""A module related to calculating thermochemical properties."""
+"""
+CAT.thermo_chem
+===============
+
+A module related to calculating thermochemical properties.
+
+Index
+-----
+.. currentmodule:: CAT.thermo_chem
+.. autosummary::
+    get_entropy
+    get_thermo
+
+API
+---
+.. autofunction:: CAT.thermo_chem.get_entropy
+.. autofunction:: CAT.thermo_chem.get_thermo
+
+"""
 
 from typing import (Sequence, Union, Dict)
 

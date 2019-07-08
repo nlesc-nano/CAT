@@ -1,4 +1,28 @@
-"""A module with miscellaneous functions."""
+"""
+CAT.utils
+=========
+
+A module with miscellaneous functions.
+
+Index
+-----
+.. currentmodule:: CAT.utils
+.. autosummary::
+    type_to_string
+    get_time
+    check_sys_var
+    dict_concatenate
+    get_template
+
+API
+---
+.. autofunction:: CAT.utils.type_to_string
+.. autofunction:: CAT.utils.get_time
+.. autofunction:: CAT.utils.check_sys_var
+.. autofunction:: CAT.utils.dict_concatenate
+.. autofunction:: CAT.utils.get_template
+
+"""
 
 import os
 import time

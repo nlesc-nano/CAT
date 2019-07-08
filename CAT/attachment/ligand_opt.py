@@ -1,4 +1,43 @@
-"""A module designed for optimizing the geometry of ligands."""
+"""
+CAT.attachment.ligand_opt
+=========================
+
+A module designed for optimizing the geometry of ligands.
+
+Index
+-----
+.. currentmodule:: CAT.attachment.ligand_opt
+.. autosummary::
+    init_ligand_opt
+    _parse_overwrite
+    read_data
+    start_ligand_jobs
+    _ligand_to_db
+    remove_duplicates
+    split_bond
+    neighbors_mod
+    split_mol
+    get_frag_size
+    recombine_mol
+    get_dihed
+    set_dihed
+
+API
+---
+.. autofunction:: CAT.attachment.ligand_opt.init_ligand_opt
+.. autofunction:: CAT.attachment.ligand_opt._parse_overwrite
+.. autofunction:: CAT.attachment.ligand_opt.read_data
+.. autofunction:: CAT.attachment.ligand_opt.start_ligand_jobs
+.. autofunction:: CAT.attachment.ligand_opt._ligand_to_db
+.. autofunction:: CAT.attachment.ligand_opt.remove_duplicates
+.. autofunction:: CAT.attachment.ligand_opt.split_bond
+.. autofunction:: CAT.attachment.ligand_opt.neighbors_mod
+.. autofunction:: CAT.attachment.ligand_opt.get_frag_size
+.. autofunction:: CAT.attachment.ligand_opt.recombine_mol
+.. autofunction:: CAT.attachment.ligand_opt.get_dihed
+.. autofunction:: CAT.attachment.ligand_opt.set_dihed
+
+"""
 
 import itertools
 from typing import (Union, Sequence, List, Tuple, Dict, Any)
@@ -18,7 +57,7 @@ from rdkit.Chem import AllChem
 
 from .ligand_attach import (rot_mol_angle, sanitize_dim_2)
 from ..utils import get_time
-from ..properties_dataframe import PropertiesDataFrame
+from ..settings_dataframe import SettingsDataFrame
 from ..mol_utils import (to_symbol, fix_carboxyl, get_bond_index,
                          from_mol_other, from_rdmol, separate_mod)
 
@@ -38,14 +77,14 @@ HDF5_INDEX = ('hdf5 index', '')
 SETTINGS1 = ('settings', '1')
 
 
-def init_ligand_opt(ligand_df: PropertiesDataFrame) -> None:
+def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
     """Initialize the ligand optimization procedure.
 
     Performs an inplace update of **ligand_df**.
 
     Parameters
     ----------
-    ligand_df : |CAT.PropertiesDataFrame|_
+    ligand_df : |CAT.SettingsDataFrame|_
         A dataframe of valid ligands.
 
     """
@@ -86,7 +125,7 @@ def init_ligand_opt(ligand_df: PropertiesDataFrame) -> None:
         _ligand_to_db(ligand_df, database)
 
 
-def _parse_overwrite(ligand_df: PropertiesDataFrame,
+def _parse_overwrite(ligand_df: SettingsDataFrame,
                      overwrite: bool) -> Tuple[pd.Series, str]:
     """Return a series for dataframe slicing and a to-be printer message."""
     if overwrite:
@@ -98,7 +137,7 @@ def _parse_overwrite(ligand_df: PropertiesDataFrame,
     return idx, message
 
 
-def read_data(ligand_df: PropertiesDataFrame,
+def read_data(ligand_df: SettingsDataFrame,
               database: Database,
               read: bool) -> None:
     """Read ligands from the database if **read** = ``True``."""
@@ -111,7 +150,7 @@ def read_data(ligand_df: PropertiesDataFrame,
     ligand_df[OPT] = ligand_df[OPT].astype(bool, copy=False)
 
 
-def start_ligand_jobs(ligand_df: PropertiesDataFrame,
+def start_ligand_jobs(ligand_df: SettingsDataFrame,
                       idx: pd.Series,
                       message: str) -> List[Molecule]:
     """Loop over all molecules in ``ligand_df.loc[idx]`` and perform geometry optimizations."""
@@ -129,7 +168,7 @@ def start_ligand_jobs(ligand_df: PropertiesDataFrame,
     return lig_new
 
 
-def _ligand_to_db(ligand_df: PropertiesDataFrame,
+def _ligand_to_db(ligand_df: SettingsDataFrame,
                   database: 'Database',
                   opt: bool = True):
     """Export ligand optimziation results to the database."""

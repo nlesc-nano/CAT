@@ -1,4 +1,44 @@
-"""A module related to the importing of molecules."""
+"""
+CAT.data_handling.mol_import
+============================
+
+A module related to the importing of molecules.
+
+Index
+-----
+.. currentmodule:: CAT.data_handling.mol_import
+.. autosummary::
+    read_mol
+    read_mol_xyz
+    read_mol_pdb
+    read_mol_mol
+    read_mol_smiles
+    read_mol_plams
+    read_mol_rdkit
+    read_mol_folder
+    read_mol_txt
+    get_charge_dict
+    set_mol_prop
+    set_atom_prop
+    print_exception
+
+API
+---
+.. autofunction:: CAT.data_handling.mol_import.read_mol
+.. autofunction:: CAT.data_handling.mol_import.read_mol_xyz
+.. autofunction:: CAT.data_handling.mol_import.read_mol_pdb
+.. autofunction:: CAT.data_handling.mol_import.read_mol_mol
+.. autofunction:: CAT.data_handling.mol_import.read_mol_smiles
+.. autofunction:: CAT.data_handling.mol_import.read_mol_plams
+.. autofunction:: CAT.data_handling.mol_import.read_mol_rdkit
+.. autofunction:: CAT.data_handling.mol_import.read_mol_folder
+.. autofunction:: CAT.data_handling.mol_import.read_mol_txt
+.. autofunction:: CAT.data_handling.mol_import.get_charge_dict
+.. autofunction:: CAT.data_handling.mol_import.set_mol_prop
+.. autofunction:: CAT.data_handling.mol_import.set_atom_prop
+.. autofunction:: CAT.data_handling.mol_import.print_exception
+
+"""
 
 import os
 import itertools

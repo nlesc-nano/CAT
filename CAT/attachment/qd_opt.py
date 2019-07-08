@@ -1,4 +1,28 @@
-"""A module designed for optimizing the combined ligand & core."""
+"""
+CAT.attachment.qd_opt
+=====================
+
+A module designed for optimizing the combined ligand & core.
+
+Index
+-----
+.. currentmodule:: CAT.attachment.qd_opt
+.. autosummary::
+    init_qd_opt
+    start_qd_opt
+    get_job_settings
+    _qd_to_db
+    qd_opt
+
+API
+---
+.. autofunction:: CAT.attachment.qd_opt.init_qd_opt
+.. autofunction:: CAT.attachment.qd_opt.start_qd_opt
+.. autofunction:: CAT.attachment.qd_opt.get_job_settings
+.. autofunction:: CAT.attachment.qd_opt._qd_to_db
+.. autofunction:: CAT.attachment.qd_opt.qd_opt
+
+"""
 
 from typing import List
 
@@ -13,7 +37,7 @@ import qmflows
 from ..jobs import job_geometry_opt
 from ..utils import (get_time, type_to_string)
 from ..mol_utils import (fix_carboxyl, fix_h)
-from ..properties_dataframe import PropertiesDataFrame
+from ..settings_dataframe import SettingsDataFrame
 
 try:
     from dataCAT import (Database, mol_to_file)
@@ -32,14 +56,14 @@ SETTINGS1 = ('settings', '1')
 SETTINGS2 = ('settings', '2')
 
 
-def init_qd_opt(qd_df: PropertiesDataFrame) -> None:
+def init_qd_opt(qd_df: SettingsDataFrame) -> None:
     """Initialize the quantum dot (constrained) geometry optimization.
 
     performs an inplace update of the *mol* column in **qd_df**.
 
     Parameters
     ----------
-    qd_df : |CAT.PropertiesDataFrame|_
+    qd_df : |CAT.SettingsDataFrame|_
         A dataframe of quantum dots.
 
     """
@@ -71,7 +95,7 @@ def init_qd_opt(qd_df: PropertiesDataFrame) -> None:
     return None
 
 
-def start_qd_opt(qd_df: PropertiesDataFrame,
+def start_qd_opt(qd_df: SettingsDataFrame,
                  idx: pd.Series,
                  message: str) -> None:
     """Loop over all molecules in ``qd_df.loc[idx]`` and perform geometry optimizations."""
@@ -88,7 +112,7 @@ def start_qd_opt(qd_df: PropertiesDataFrame,
     finish()
 
 
-def get_job_settings(qd_df: PropertiesDataFrame) -> List[str]:
+def get_job_settings(qd_df: SettingsDataFrame) -> List[str]:
     """Create a nested list of input files for each molecule in **ligand_df**."""
     job_settings = []
     for mol in qd_df[MOL]:
@@ -99,13 +123,13 @@ def get_job_settings(qd_df: PropertiesDataFrame) -> List[str]:
     return job_settings
 
 
-def _qd_to_db(qd_df: PropertiesDataFrame,
+def _qd_to_db(qd_df: SettingsDataFrame,
               idx: pd.Series) -> None:
     """Export quantum dot optimziation results to the database.
 
     Parameters
     ----------
-    qd_df : |CAT.PropertiesDataFrame|_
+    qd_df : |CAT.SettingsDataFrame|_
         A dataframe of quantum dots.
 
     idx : |pd.Series|_

@@ -1,4 +1,26 @@
-"""A module designed for finding ligand functional groups."""
+"""
+CAT.attachment.ligand_anchoring
+===============================
+
+A module designed for finding ligand functional groups.
+
+Index
+-----
+.. currentmodule:: CAT.attachment.ligand_anchoring
+.. autosummary::
+    init_ligand_anchoring
+    _get_df
+    find_substructure
+    substructure_split
+
+API
+---
+.. autofunction:: CAT.attachment.ligand_anchoring.init_ligand_anchoring
+.. autofunction:: CAT.attachment.ligand_anchoring._get_df
+.. autofunction:: CAT.attachment.ligand_anchoring.find_substructure
+.. autofunction:: CAT.attachment.ligand_anchoring.substructure_split
+
+"""
 
 from itertools import chain
 from typing import (Sequence, List, Tuple)
@@ -10,7 +32,7 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit import Chem
 
-from ..properties_dataframe import PropertiesDataFrame
+from ..settings_dataframe import SettingsDataFrame
 from ..utils import (get_time, get_template)
 from ..mol_utils import separate_mod
 from ..data_handling.input_sanitizer import santize_smiles
@@ -24,17 +46,17 @@ HDF5_INDEX = ('hdf5 index', '')
 OPT = ('opt', '')
 
 
-def init_ligand_anchoring(ligand_df: PropertiesDataFrame) -> PropertiesDataFrame:
+def init_ligand_anchoring(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     """Initialize the ligand functional group searcher.
 
     Parameters
     ----------
-    ligand_df : |CAT.PropertiesDataFrame|_
+    ligand_df : |CAT.SettingsDataFrame|_
         A dataframe of valid ligands.
 
     Returns
     -------
-    |CAT.PropertiesDataFrame|_
+    |CAT.SettingsDataFrame|_
         A dataframe of ligands with functional groups that can serve as valid anchor points.
 
     """
@@ -61,7 +83,7 @@ def init_ligand_anchoring(ligand_df: PropertiesDataFrame) -> PropertiesDataFrame
 
 
 def _get_df(mol_list: Sequence[Molecule],
-            properties: Settings) -> PropertiesDataFrame:
+            properties: Settings) -> SettingsDataFrame:
     """Create and return a new ligand dataframe.
 
     Parameters
@@ -74,7 +96,7 @@ def _get_df(mol_list: Sequence[Molecule],
 
     Returns
     -------
-    |CAT.PropertiesDataFrame|_
+    |CAT.SettingsDataFrame|_
         A dataframe of ligands with functional groups that can serve as valid anchor points.
 
     """
@@ -85,7 +107,7 @@ def _get_df(mol_list: Sequence[Molecule],
     columns = pd.MultiIndex.from_tuples(columns_tuples, names=['index', 'sub index'])
 
     # Create, fill and return the dataframe
-    df = PropertiesDataFrame(-1, index=idx, columns=columns, properties=properties)
+    df = SettingsDataFrame(-1, index=idx, columns=columns, properties=properties)
     df[MOL] = mol_list
     df[FORMULA] = [lig.get_formula() for lig in df[MOL]]
     df[OPT] = False

@@ -1,4 +1,28 @@
-"""A module designed for running Jobs."""
+"""
+CAT.jobs
+========
+
+A module designed for running Jobs.
+
+Index
+-----
+.. currentmodule:: CAT.jobs
+.. autosummary::
+    get_main_molecule
+    get_energy
+    job_single_point
+    job_geometry_opt
+    job_freq
+
+API
+---
+.. autofunction:: CAT.jobs.get_main_molecule
+.. autofunction:: CAT.jobs.get_energy
+.. autofunction:: CAT.jobs.job_single_point
+.. autofunction:: CAT.jobs.job_geometry_opt
+.. autofunction:: CAT.jobs.job_freq
+
+"""
 
 from os.path import join
 from typing import (Optional, Callable)

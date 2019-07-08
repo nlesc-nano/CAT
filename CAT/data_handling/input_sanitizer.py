@@ -1,4 +1,60 @@
-"""A module designed for sanitizing and interpreting the input file."""
+"""
+CAT.data_handling.input_sanitizer
+=================================
+
+A module designed for sanitizing and interpreting the input file.
+
+Index
+-----
+.. currentmodule:: CAT.data_handling.input_sanitizer
+.. autosummary::
+    sanitize_path
+    sanitize_input_mol
+    get_mol_defaults
+    sanitize_mol_type
+    get_default_input_mol
+    santize_smiles
+    sanitize_optional
+    get_default_optional
+    get_default_dissociate
+    val_format
+    val_data
+    val_type
+    val_int
+    val_string
+    val_indices
+    val_dir_names
+    val_atnum
+    val_bool
+    val_job
+    val_core_idx
+    val_dissociate
+
+API
+---
+.. autofunction:: CAT.data_handling.input_sanitizer.sanitize_path
+.. autofunction:: CAT.data_handling.input_sanitizer.sanitize_input_mol
+.. autofunction:: CAT.data_handling.input_sanitizer.get_mol_defaults
+.. autofunction:: CAT.data_handling.input_sanitizer.sanitize_mol_type
+.. autofunction:: CAT.data_handling.input_sanitizer.get_default_input_mol
+.. autofunction:: CAT.data_handling.input_sanitizer.santize_smiles
+.. autofunction:: CAT.data_handling.input_sanitizer.sanitize_optional
+.. autofunction:: CAT.data_handling.input_sanitizer.get_default_optional
+.. autofunction:: CAT.data_handling.input_sanitizer.get_default_dissociate
+.. autofunction:: CAT.data_handling.input_sanitizer.val_format
+.. autofunction:: CAT.data_handling.input_sanitizer.val_data
+.. autofunction:: CAT.data_handling.input_sanitizer.val_type
+.. autofunction:: CAT.data_handling.input_sanitizer.val_int
+.. autofunction:: CAT.data_handling.input_sanitizer.val_string
+.. autofunction:: CAT.data_handling.input_sanitizer.val_indices
+.. autofunction:: CAT.data_handling.input_sanitizer.val_dir_names
+.. autofunction:: CAT.data_handling.input_sanitizer.val_atnum
+.. autofunction:: CAT.data_handling.input_sanitizer.val_bool
+.. autofunction:: CAT.data_handling.input_sanitizer.val_job
+.. autofunction:: CAT.data_handling.input_sanitizer.val_core_idx
+.. autofunction:: CAT.data_handling.input_sanitizer.val_dissociate
+
+"""
 
 import os
 from os.path import (join, isdir, isfile, exists)

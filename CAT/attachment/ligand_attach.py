@@ -1,4 +1,44 @@
-"""A module designed for attaching ligands to cores."""
+"""
+CAT.attachment.ligand_attach
+============================
+
+A module designed for attaching ligands to cores.
+
+Index
+-----
+.. currentmodule:: CAT.attachment.ligand_attach
+.. autosummary::
+    init_qd_construction
+    construct_mol_series
+    _read_database
+    _get_indices
+    _get_df
+    ligand_to_qd
+    _get_rotmat1
+    _get_rotmat2
+    rot_mol
+    rot_mol_angle
+    array_to_qd
+    sanitize_dim_2
+    sanitize_dim_3
+
+API
+---
+.. autofunction:: CAT.attachment.ligand_attach.init_qd_construction
+.. autofunction:: CAT.attachment.ligand_attach.construct_mol_series
+.. autofunction:: CAT.attachment.ligand_attach._read_database
+.. autofunction:: CAT.attachment.ligand_attach._get_indices
+.. autofunction:: CAT.attachment.ligand_attach._get_df
+.. autofunction:: CAT.attachment.ligand_attach.ligand_to_qd
+.. autofunction:: CAT.attachment.ligand_attach._get_rotmat1
+.. autofunction:: CAT.attachment.ligand_attach._get_rotmat2
+.. autofunction:: CAT.attachment.ligand_attach.rot_mol
+.. autofunction:: CAT.attachment.ligand_attach.rot_mol_angle
+.. autofunction:: CAT.attachment.ligand_attach.array_to_qd
+.. autofunction:: CAT.attachment.ligand_attach.sanitize_dim_2
+.. autofunction:: CAT.attachment.ligand_attach.sanitize_dim_3
+
+"""
 
 from typing import (List, Tuple)
 
@@ -9,7 +49,7 @@ from scipy.spatial.distance import cdist
 from scm.plams.mol.molecule import Molecule
 from scm.plams.core.settings import Settings
 
-from ..properties_dataframe import PropertiesDataFrame
+from ..settings_dataframe import SettingsDataFrame
 from ..utils import get_time
 from ..mol_utils import (merge_mol, get_atom_index)
 
@@ -27,21 +67,21 @@ MOL = ('mol', '')
 OPT = ('opt', '')
 
 
-def init_qd_construction(ligand_df: PropertiesDataFrame,
-                         core_df: PropertiesDataFrame) -> PropertiesDataFrame:
+def init_qd_construction(ligand_df: SettingsDataFrame,
+                         core_df: SettingsDataFrame) -> SettingsDataFrame:
     """Initialize the quantum dot construction.
 
     Parameters
     ----------
-    ligand_df : |CAT.PropertiesDataFrame|_
+    ligand_df : |CAT.SettingsDataFrame|_
         A dataframe of ligands.
 
-    core_df : |CAT.PropertiesDataFrame|_
+    core_df : |CAT.SettingsDataFrame|_
         A dataframe of cores.
 
     Returns
     -------
-    |CAT.PropertiesDataFrame|_
+    |CAT.SettingsDataFrame|_
         A dataframe of quantum dots.
 
     """
@@ -77,7 +117,7 @@ def init_qd_construction(ligand_df: PropertiesDataFrame,
     return qd_df
 
 
-def construct_mol_series(qd_df: PropertiesDataFrame,
+def construct_mol_series(qd_df: SettingsDataFrame,
                          core_df: pd.DataFrame,
                          ligand_df: pd.DataFrame) -> pd.Series:
     """Construct a Series of new quantum dots"""
@@ -93,20 +133,20 @@ def construct_mol_series(qd_df: PropertiesDataFrame,
     return pd.Series(mol_list, index=qd_df.index[idx], name=MOL, dtype=object)
 
 
-def _read_database(qd_df: PropertiesDataFrame,
-                   ligand_df: PropertiesDataFrame,
-                   core_df: PropertiesDataFrame) -> pd.Series:
+def _read_database(qd_df: SettingsDataFrame,
+                   ligand_df: SettingsDataFrame,
+                   core_df: SettingsDataFrame) -> pd.Series:
     """Read quantum dots from the database and set their properties.
 
     Parameters
     ----------
-    ligand_df : |CAT.PropertiesDataFrame|_
+    ligand_df : |CAT.SettingsDataFrame|_
         A dataframe of quantum dots.
 
-    ligand_df : |CAT.PropertiesDataFrame|_
+    ligand_df : |CAT.SettingsDataFrame|_
         A dataframe of ligands.
 
-    core_df : |CAT.PropertiesDataFrame|_
+    core_df : |CAT.SettingsDataFrame|_
         A dataframe of cores.
 
     Returns
@@ -194,7 +234,7 @@ def _get_indices(mol: Molecule,
 
 def _get_df(core_index: pd.MultiIndex,
             ligand_index: pd.MultiIndex,
-            properties: Settings) -> PropertiesDataFrame:
+            properties: Settings) -> SettingsDataFrame:
     """Create and return a new quantum dot dataframe.
 
     Parameters
@@ -210,7 +250,7 @@ def _get_df(core_index: pd.MultiIndex,
 
     Returns
     -------
-    |CAT.PropertiesDataFrame|_
+    |CAT.SettingsDataFrame|_
         An empty dataframe (*i.e.* filled with ``-1`` and ``False``) of quantum dots.
 
     """
@@ -226,7 +266,7 @@ def _get_df(core_index: pd.MultiIndex,
 
     # Create and return the quantum dot dataframe
     data = {HDF5_INDEX: -1, OPT: False}
-    return PropertiesDataFrame(data, index=index, columns=columns, properties=properties)
+    return SettingsDataFrame(data, index=index, columns=columns, properties=properties)
 
 
 def ligand_to_qd(core: Molecule,

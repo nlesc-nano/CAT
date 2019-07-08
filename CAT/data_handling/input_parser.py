@@ -1,4 +1,23 @@
 #!/usr/bin/env python
+"""
+CAT.data_handling.input_parser
+==============================
+
+Entry point for CAT.
+
+Index
+-----
+.. currentmodule:: CAT.data_handling.input_parser
+.. autosummary::
+    extract_args
+    main
+
+API
+---
+.. autofunction:: CAT.data_handling.input_parser.extract_args
+.. autofunction:: CAT.data_handling.input_parser.main
+
+"""
 
 import argparse
 from os import getcwd

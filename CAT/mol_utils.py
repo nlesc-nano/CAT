@@ -1,4 +1,20 @@
-"""A module with misc functions related to manipulating molecules and their geometry."""
+"""
+CAT.mol_utils
+=============
+
+A module with misc functions related to manipulating molecules and their geometry.
+
+Index
+-----
+.. currentmodule:: CAT.mol_utils
+.. autosummary::
+    from_mol_other
+
+API
+---
+.. autofunction:: CAT.mol_utils.from_mol_other
+
+"""
 
 from typing import (Optional, Iterable, Union, Tuple, List)
 
@@ -11,8 +27,8 @@ from rdkit import Chem
 from rdkit.Chem import rdMolTransforms
 
 __all__ = [
-        'merge_mol', 'adf_connectivity', 'fix_h', 'fix_carboxyl',
-        'from_mol_other', 'from_rdmol', 'separate_mod'
+    'merge_mol', 'adf_connectivity', 'fix_h', 'fix_carboxyl',
+    'from_mol_other', 'from_rdmol', 'separate_mod'
 ]
 
 

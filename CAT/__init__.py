@@ -1,5 +1,10 @@
-"""A collection of tools designed for the construction,
-and subsequent analysis, of various chemical compounds."""
+"""
+CAT
+===
+
+A collection of tools designed for the construction of various chemical compounds.
+
+"""
 
 from .__version__ import __version__
 
