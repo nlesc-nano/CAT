@@ -213,5 +213,6 @@ autodoc_mock_imports = [
     'numpy',
     'pandas',
     'scipy',
-    'schema'
+    'schema',
+    'pymongo'
 ]
