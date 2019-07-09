@@ -206,13 +206,5 @@ autodoc_member_order = 'bysource'
 # You may only specify the root package of the dependencies themselves and omit the sub-modules:
 autodoc_mock_imports = [
     'rdkit',
-    'qmflows',
-    'scm',
-    'yaml',
     'h5py',
-    'numpy',
-    'pandas',
-    'scipy',
-    'schema',
-    'pymongo'
 ]
