@@ -338,9 +338,9 @@ def val_mongo(arg: Settings) -> Settings:
     })
     ret = schema.validate(arg)
 
+    user = ret.pop('username')
+    passwd = ret.pop('password')
     if ret.username and ret.password:
-        user = ret.pop('username')
-        passwd = ret.pop('password')
         hostname = ret.host
         ret.host = f"mongodb://{user}:{passwd}@{hostname}/"
     return ret
