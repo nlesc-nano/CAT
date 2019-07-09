@@ -37,7 +37,7 @@ ARG = Settings(yaml.load(
             write: True
             overwrite: False
             mol_format: [xyz, pdb]
-            mongodb: False
+            mongodb: null
 
         core:
             dirname: core

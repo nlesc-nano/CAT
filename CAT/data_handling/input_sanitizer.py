@@ -207,7 +207,7 @@ def sanitize_optional(arg_dict):
     arg.optional.database.write = val_data(arg.optional.database.write)
     arg.optional.database.overwrite = val_data(arg.optional.database.overwrite)
     arg.optional.database.mol_format = val_format(arg.optional.database.mol_format, mol_format)
-    arg.optional.database.mongodb = False
+    arg.optional.database.mongodb = val_mongo(arg.optional.database.mongodb)
     arg.optional.ligand.dirname = val_dir_names(arg.optional.ligand.dirname, arg.path)
     arg.optional.ligand.optimize = val_bool(arg.optional.ligand.optimize)
     arg.optional.ligand.split = val_bool(arg.optional.ligand.split)
@@ -316,6 +316,34 @@ str_to_class = {
     'dftbplus': DFTBPlusJob, 'dftbplusjob': DFTBPlusJob,
     'crs': CRSJob, 'cosmo-rs': CRSJob, 'crsjob': CRSJob
 }
+
+
+def val_mongo(arg: Settings) -> Settings:
+    """Validate database.mongodb."""
+    if arg is None:
+        return
+
+    arg.soft_update({
+        'host': 'localhost',
+        'port': 27017,
+        'username': None,
+        'password': None
+    })
+
+    schema = Schema({
+        'host': str,
+        'port': Or(int, None),
+        'username': Or(str, None),
+        'password': Or(str, None)
+    })
+    ret = schema.validate(arg)
+
+    user = ret.pop('username')
+    passwd = ret.pop('password')
+    if ret.username and ret.password:
+        hostname = ret.host
+        ret.host = f"mongodb://{user}:{passwd}@{hostname}/"
+    return ret
 
 
 def val_format(arg, ref):

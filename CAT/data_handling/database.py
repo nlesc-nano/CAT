@@ -11,12 +11,14 @@ import yaml
 import h5py
 import numpy as np
 import pandas as pd
+from pymongo import MongoClient
+from pymongo.errors import (ServerSelectionTimeoutError, BulkWriteError)
 
 from scm.plams import Settings
 
 from .database_functions import (
-    _create_csv, _create_yaml, _create_hdf5, even_index,
-    from_pdb_array, sanitize_yaml_settings, as_pdb_array
+    _create_csv, _create_yaml, _create_hdf5, _create_mongodb, even_index,
+    from_pdb_array, sanitize_yaml_settings, as_pdb_array, df_to_mongo_dict
 )
 from ..mol_utils import from_rdmol
 
@@ -36,10 +38,14 @@ class Database():
                     * **hdf5** (|str|_) – Path and filename of the .hdf5 file containing all \
                     structures (as partiallize de-serialized .pdb files).
 
-                    * **mongodb** (|None|_) – *None*.
+                    * **mongodb** (|None|_ or |dict|_) – Optional: A dictionary with keyword
+                    arguments for `pymongo.MongoClient <http://api.mongodb.com/python/current/api/pymongo/mongo_client.html>`_.  # noqa
     """
 
-    def __init__(self, path=None):
+    def __init__(self, path=None,
+                 host: str = 'localhost',
+                 port: int = 27017,
+                 **kwargs: dict) -> None:
         path = path or getcwd()
 
         # Attributes which hold the absolute paths to various components of the database
@@ -47,14 +53,23 @@ class Database():
         self.csv_qd = _create_csv(path, database='QD')
         self.yaml = _create_yaml(path)
         self.hdf5 = _create_hdf5(path)
-        self.mongodb = None  # Placeholder
+        try:
+            self.mongodb = _create_mongodb(host, port, **kwargs)
+        except ServerSelectionTimeoutError:
+            self.mongodb = None
 
     def __str__(self):
-        ret = Settings()
-        attr_dict = vars(self)
-        for key in attr_dict:
-            ret[key] = type(attr_dict[key])
-        return str(ret)
+        return self._str(str)
+
+    def __repr__(self):
+        return self._str(type)
+
+    def _str(self, operation=type):
+        ret = 'Database(\n'
+        k_len = max(len(k) for k in vars(self)) + 5
+        for k, v in vars(self).items():
+            ret += '\t{:{width}} {}\n'.format(k + ':', operation(v), width=k_len)
+        return ret + ')'
 
     """ ###########################  Opening and closing the database ######################### """
 
@@ -201,6 +216,54 @@ class Database():
             return df.__getitem__(key)
 
     """ #################################  Updating the database ############################## """
+
+    def update_mongodb(self, database: str = 'ligand',
+                       overwrite: bool = False) -> None:
+        """Export ligand or qd results to the MongoDB database.
+
+        Parameters
+        ----------
+        database : str
+            The type of database; accepted values are ``"ligand"`` and ``"QD"``.
+
+        overwrite : bool
+            Whether or not previous entries can be overwritten or not.
+
+        """
+        if self.mongodb is None:
+            raise ValueError
+
+        # Open the MongoDB database
+        client = MongoClient(**self.mongodb)
+        db = client.cat_database
+
+        # Operate on either the ligand or quantum dot database
+        if database == 'ligand':
+            idx_keys = ('smiles', 'anchor')
+            path = self.csv_lig
+            open_csv = self.open_csv_lig
+            collection = db.ligand_database
+        elif database == 'QD':
+            idx_keys = ('core', 'core anchor', 'ligand smiles', 'ligand anchor')
+            collection = db.qd_database
+            path = self.csv_qd
+            open_csv = self.open_csv_qd
+        else:
+            err = "database={}; accepted values for database are 'ligand' and 'QD'"
+            raise ValueError(err.format(database))
+
+        # Parse the ligand or qd dataframe
+        with open_csv(path, write=False) as db:
+            df_dict = df_to_mongo_dict(db)
+
+        # Update the collection
+        for item in df_dict:
+            try:
+                collection.insert_one(item)
+            except BulkWriteError:  # An item is already present in the collection
+                if overwrite:
+                    filter_ = {i: item[i] for i in idx_keys}
+                    collection.replace_one(filter_, item)
 
     def update_csv(self, df, database='ligand', columns=None, overwrite=False, job_recipe=None,
                    opt=False):
@@ -374,7 +437,7 @@ class Database():
         return None
 
     @staticmethod
-    def _read_inp(job_paths, ax2=0, ax3=0):
+    def _read_inp(job_paths, ax2=0, ax3=0):  # TODO return a generator instead of an array
         """Convert all files in **job_paths** (nested sequence of filenames) into a 3D array."""
         # Determine the minimum size of the to-be returned 3D array
         line_count = [[Database._get_line_count(j) for j in i] for i in job_paths]

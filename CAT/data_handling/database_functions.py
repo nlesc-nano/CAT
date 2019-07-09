@@ -1,21 +1,82 @@
 """A module for holding functions related to the Database class."""
 
-__all__ = ['mol_to_file']
+__all__ = ['mol_to_file', 'df_to_mongo_dict']
 
 from os import getcwd
 from os.path import (join, isfile, isdir)
+from typing import (Dict, Any, List)
 
 import yaml
 import h5py
 import numpy as np
 import pandas as pd
+from pymongo import MongoClient, ASCENDING
 
+from scm.plams import Settings
 import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit import Chem
 
 from ..mol_utils import from_rdmol
 from ..utils import (get_time, get_template)
+
+
+def even_index(df1: pd.DataFrame,
+               df2: pd.DataFrame) -> pd.DataFrame:
+    """Ensure that ``df2.index`` is a subset of ``df1.index``.
+
+    Parameters
+    ----------
+    df1 : |pd.DataFrame|_
+        A DataFrame whose index is to-be a superset of ``df2.index``.
+
+    df2 : |pd.DataFrame|_
+        A DataFrame whose index is to-be a subset of ``df1.index``.
+
+    Returns
+    -------
+    |pd.DataFrame|_
+        A new
+
+    """
+    # Figure out if ``df1.index`` is a subset of ``df2.index``
+    bool_ar = df2.index.isin(df1.index)
+    if bool_ar.all():
+        return df1
+
+    # Make ``df1.index`` a subset of ``df2.index``
+    nan_row = get_nan_row(df1)
+    idx = df2.index[~bool_ar]
+    df_tmp = pd.DataFrame(len(idx) * [nan_row], index=idx, columns=df1.columns)
+    return df1.append(df_tmp, sort=True)
+
+
+def get_unflattend(input_dict: dict) -> zip:
+    """Flatten a dictionary and return a :class:`zip` instance consisting of keys and values."""
+    def _unflatten(input_dict_: dict) -> dict:
+        """ """
+        ret = Settings()
+        for key, value in input_dict_.items():
+            s = ret
+            for k1, k2 in zip(key[:-1], key[1:]):
+                s = s[k1]
+            s[key[-1]] = value
+
+        return ret.as_dict()
+
+    return zip(*[(k, _unflatten(v)) for k, v in input_dict.items()])
+
+
+def df_to_mongo_dict(df: pd.DataFrame) -> List[dict]:
+    """Convert a dataframe into a dictionary suitable for MongoDB."""
+    keys, ret = get_unflattend(df.T.to_dict())
+    idx_names = df.index.names
+
+    for item, idx in zip(ret, keys):
+        idx_dict = dict(zip(idx_names, idx))
+        item.update(idx_dict)
+
+    return ret
 
 
 def mol_to_file(mol_list, path=None, overwrite=False, mol_format=['xyz', 'pdb']):
@@ -91,7 +152,7 @@ def get_nan_row(df):
         return ret
 
 
-def as_pdb_array(mol_list, min_size=0):
+def as_pdb_array(mol_list, min_size=0):  # TODO return a generator instead of an array
     """ Converts a list of PLAMS molecule into an array of strings representing (partially)
     de-serialized .pdb files.
 
@@ -282,31 +343,65 @@ def _create_yaml(path, name='job_settings.yaml'):
     return path
 
 
-def even_index(df1: pd.DataFrame,
-               df2: pd.DataFrame) -> pd.DataFrame:
-    """Ensure that ``df2.index`` is a subset of ``df1.index``.
+def _create_mongodb(host: str = 'localhost',
+                    port: int = 27017,
+                    **kwargs: Dict[str, Any]) -> dict:
+    """Create the the MongoDB collections and set their index.
 
-    Parameters
+    Paramaters
     ----------
-    df1 : |pd.DataFrame|_
-        A DataFrame whose index is to-be a superset of ``df2.index``.
+    host : |str|_
+        Hostname or IP address or Unix domain socket path of a single mongod or
+        mongos instance to connect to, or a mongodb URI, or a list of hostnames mongodb URIs.
+        If **host** is an IPv6 literal it must be enclosed in ``"["`` and ``"["`` characters
+        following the RFC2732 URL syntax (e.g. ``"[::1]"`` for localhost).
+        Multihomed and round robin DNS addresses are not supported.
 
-    df2 : |pd.DataFrame|_
-        A DataFrame whose index is to-be a subset of ``df1.index``.
+    port : |str|_
+        port number on which to connect.
+
+    kwargs : |dict|_
+        Optional keyword argument for `pymongo.MongoClient <http://api.mongodb.com/python/current/api/pymongo/mongo_client.html>`_.  # noqa
 
     Returns
     -------
-    |pd.DataFrame|_
-        A new
+    |dict|_
+        A dictionary with all supplied keyword arguments.
+
+    Raises
+    ------
+    ServerSelectionTimeoutError
+        Raised if no connection can be established with the host.
 
     """
-    # Figure out if ``df1.index`` is a subset of ``df2.index``
-    bool_ar = df2.index.isin(df1.index)
-    if bool_ar.all():
-        return df1
+    # Open the client
+    client = MongoClient(host, port, serverSelectionTimeoutMS=5000, **kwargs)
+    client.server_info()  # Raises an ServerSelectionTimeoutError error if the server is inaccesible
 
-    # Make ``df1.index`` a subset of ``df2.index``
-    nan_row = get_nan_row(df1)
-    idx = df2.index[~bool_ar]
-    df_tmp = pd.DataFrame(len(idx) * [nan_row], index=idx, columns=df1.columns)
-    return df1.append(df_tmp, sort=True)
+    # Open the database
+    db = client.cat_database
+
+    # Open and set the index of the ligand collection
+    lig_collection = db.ligand_database
+    lig_key = 'smiles_1_anchor_1'
+    if lig_key not in lig_collection.index_information():
+        lig_collection.create_index([
+            ('smiles', ASCENDING),
+            ('anchor', ASCENDING)
+        ], unique=True)
+
+    # Open and set the index of the QD collection
+    qd_collection = db.QD_database
+    qd_key = 'core_1_core anchor_1_ligand smiles_1_ligand anchor_1'
+    if qd_key not in qd_collection.index_information():
+        qd_collection.create_index([
+            ('core', ASCENDING),
+            ('core anchor', ASCENDING),
+            ('ligand smiles', ASCENDING),
+            ('ligand anchor', ASCENDING)
+        ], unique=True)
+
+    # Return all provided keyword argument
+    ret = {'host': host, 'port': port}
+    ret.update(kwargs)
+    return ret
