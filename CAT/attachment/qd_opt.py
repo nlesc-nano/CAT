@@ -68,9 +68,9 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
 
     """
     # Extract arguments
-    properties = qd_df.properties
-    write = DATA_CAT and 'qd' in properties.optional.database.write
-    overwrite = DATA_CAT and 'qd' in properties.optional.database.overwrite
+    settings = qd_df.settings.optional
+    write = DATA_CAT and 'qd' in settings.database.write
+    overwrite = DATA_CAT and 'qd' in settings.database.overwrite
 
     # Prepare slices
     if overwrite and DATA_CAT:
@@ -137,12 +137,12 @@ def _qd_to_db(qd_df: SettingsDataFrame,
 
     """
     # Extract arguments
-    properties = qd_df.properties
-    job_recipe = properties.optional.qd.optimize
-    overwrite = DATA_CAT and 'qd' in properties.optional.database.overwrite
-    mol_format = properties.optional.database.mol_format
-    qd_path = properties.optional.qd.dirname
-    db_path = properties.optional.database.dirname
+    settings = qd_df.settings.optional
+    job_recipe = settings.qd.optimize
+    overwrite = DATA_CAT and 'qd' in settings.database.overwrite
+    mol_format = settings.database.mol_format
+    qd_path = settings.qd.dirname
+    db_path = settings.database.dirname
 
     # Preapre the job recipe
     v1 = qmflows.geometry['specific'][type_to_string(job_recipe.job1)].copy()
@@ -156,7 +156,7 @@ def _qd_to_db(qd_df: SettingsDataFrame,
 
     # Update the database
     columns = [HDF5_INDEX, JOB_SETTINGS_QD_OPT, SETTINGS1, SETTINGS2]
-    database = Database(path=db_path)
+    database = Database(path=db_path, **settings.database.mongodb)
     database.update_csv(
         qd_df[idx],
         columns=columns,

@@ -111,7 +111,7 @@ def init_qd_construction(ligand_df: SettingsDataFrame,
 
     # Export the resulting geometries back to the database
     if write:
-        data = Database(db_path)
+        data = Database(db_path, **settings.database.mongodb)
         data.update_csv(qd_df, columns=[HDF5_INDEX], database='QD_no_opt')
         mol_to_file(qd_df[MOL], qd_path, overwrite, mol_format)
     return qd_df
@@ -163,8 +163,9 @@ def _read_database(qd_df: SettingsDataFrame,
         return '{}__{:d}_{}'.format(core, res, lig)
 
     # Extract arguments
-    path = qd_df.settings.optional.database.dirname
-    data = Database(path)
+    settings = qd_df.settings.optional
+    path = settings.database.dirname
+    data = Database(path, **settings.database.mongodb)
 
     # Extract molecules from the database and set their properties
     # If possible extract optimized structures; supplement with unoptimized structures if required

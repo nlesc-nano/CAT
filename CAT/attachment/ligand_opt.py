@@ -89,7 +89,7 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
 
     """
     settings = ligand_df.settings.optional
-    database = Database(settings.database.dirname)
+    database = Database(settings.database.dirname, **settings.database.mongodb)
     overwrite = DATA_CAT and 'ligand' in settings.database.overwrite
     read = DATA_CAT and 'ligand' in settings.database.read
     write = DATA_CAT and 'ligand' in settings.database.write
