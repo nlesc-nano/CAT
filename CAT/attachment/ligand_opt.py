@@ -138,7 +138,7 @@ def _parse_overwrite(ligand_df: SettingsDataFrame,
 
 
 def read_data(ligand_df: SettingsDataFrame,
-              database: Database,
+              database: 'Database',
               read: bool) -> None:
     """Read ligands from the database if **read** = ``True``."""
     if read:
