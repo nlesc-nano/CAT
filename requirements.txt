@@ -1,3 +1,11 @@
 sphinx>=1.4
 sphinx_rtd_theme
 nbsphinx
+numpy
+scipy
+pandas
+pyyaml>=5.1
+schemas
+pymongo
+git+https://github.com/SCM-NV/PLAMS@master
+qmflows@git+https://github.com/SCM-NV/qmflows@master
