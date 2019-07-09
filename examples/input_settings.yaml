@@ -16,7 +16,11 @@ optional:
         write: True
         overwrite: True
         mol_format: [pdb]
-        mongodb: False
+        mongodb:
+            username: bob  # An optional username
+            password: my_fancy_password  # An optional password
+            host: localhost
+            port: 27017
 
     core:
         dirname: core
