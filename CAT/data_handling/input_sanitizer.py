@@ -400,9 +400,9 @@ def val_mongo(arg: Optional[Settings]) -> Optional[Settings]:
     })
     ret = schema.validate(arg)
 
-    if ret.username and ret.password:
-        user = ret.pop('username')
-        passwd = ret.pop('password')
+    user = ret.pop('username')
+    passwd = ret.pop('password')
+    if user and passwd:
         hostname = ret.host
         ret.host = f"mongodb://{user}:{passwd}@{hostname}/"
     return ret
