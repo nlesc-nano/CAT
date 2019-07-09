@@ -98,48 +98,6 @@ def santize_smiles(smiles: str) -> str:
     return name
 
 
-def parse_mol_type(mol_dict: Settings):
-    """ Sanitize and return the (file) type of the input molecule (SMILES, .xyz, dir, etc...). """
-    mol = mol_dict.mol
-    if isinstance(mol, str):
-        if isfile(mol):
-            mol_dict.type = mol.rsplit('.', 1)[-1]
-            mol_dict.name = basename(mol.rsplit('.', 1)[0])
-        elif isdir(mol):
-            mol_dict.type = 'folder'
-            mol_dict.name = basename(mol)
-        else:
-            mol_dict.type = 'smiles'
-            mol_dict.mol = basename(mol)
-            mol_dict.name = santize_smiles(basename(mol))
-
-    elif isinstance(mol, Molecule):
-        mol_dict.type = 'plams_mol'
-        if not mol.properties.name:
-            mol_dict.name = Chem.CanonSmiles(Chem.MolToSmiles(Chem.RemoveHs(molkit.to_rdmol(mol))))
-        else:
-            mol_dict.name = mol.properties.name
-
-    elif isinstance(mol, Chem.rdchem.Mol):
-        mol_dict.type = 'rdmol'
-        mol_dict.name = Chem.CanonSmiles(Chem.MolToSmiles(Chem.RemoveHs(mol.mol)))
-
-    else:
-        raise TypeError(f"mol_dict['mol'] expects an instance of 'str', 'Molecule' or 'Mol'; "
-                        "observed type: {mol.__class__.__name__}")
-
-
-def _parse_mol_type(mol_type: str) -> bool:
-    """Parse the **mol_type** parameter of :func:`.validate_mol`."""
-    if mol_type.lower() == 'input_cores':
-        return True
-    elif mol_type.lower() == 'input_ligands':
-        return False
-    else:
-        raise ValueError(f"accepted values for mol_type are 'input_cores' and input_ligands; "
-                         f"observed value: {repr(mol_type)}")
-
-
 def validate_mol(args: Sequence[Union[Any, Settings]],
                  mol_type: str,
                  path: Optional[str] = None) -> None:
@@ -157,22 +115,24 @@ def validate_mol(args: Sequence[Union[Any, Settings]],
         >>> print(args1)  # A list of .xyz files
         ['mol1.xyz', 'mol2.xyz']
 
-        >>> validate_mol(args1, 'input_ligands')
+        >>> mol_type = 'input_ligands'
+        >>> validate_mol(args1, mol_type)
+
         >>> print(args1[0], '\n', args1[1])
         is_core:        False
-        mol:    mol1.xyz
-        name:   mol1.xyz
-        path:   /Users/bvanbeek/Documents/GitHub/CAT/CAT/data_handling
+        mol:    /path/to/my/current/working/dir/mol1.xyz
+        name:   mol1
+        path:   /path/to/my/current/working/dir
         type:   smiles
 
         is_core:        False
-        mol:    mol2.xyz
-        name:   mol2.xyz
-        path:   /Users/bvanbeek/Documents/GitHub/CAT/CAT/data_handling
+        mol:    /path/to/my/current/working/dir/mol2.xyz
+        name:   mol2
+        path:   /path/to/my/current/working/dir
         type:   smiles
 
 
-    An example using a list of .xyz-containing dictionaries as input
+    Another example using a list of .pdb-containing dictionaries as input
 
     .. code :: python
 
@@ -183,26 +143,29 @@ def validate_mol(args: Sequence[Union[Any, Settings]],
              guess_bonds:       True
         ]
 
-        >>> validate_mol(args2, 'input_cores')
+        >>> mol_type = 'input_ligands'
+        >>> path = '/path/to/custom/working/dir'
+        >>> validate_mol(args2, mol_type, path)
+
         >>> print(args2[0], '\n', args2[1])
         guess_bonds:    True
         is_core:        True
-        mol:    mol3.pdb
-        name:   mol3.pdb
-        path:   /Users/bvanbeek/Documents/GitHub/CAT/CAT/data_handling
+        mol:    /path/to/custom/working/dir/mol3.pdb
+        name:   mol3
+        path:   /path/to/custom/working/dir
         type:   smiles
 
         guess_bonds:    True
         is_core:        True
-        mol:    mol4.pdb
-        name:   mol4.pdb
-        path:   /Users/bvanbeek/Documents/GitHub/CAT/CAT/data_handling
+        mol:    /path/to/custom/working/dir/mol4.pdb
+        name:   mol4
+        path:   /path/to/custom/working/dir
         type:   smiles
 
 
     Parameters
     ----------
-    args : |list|_ [|Settings|_]
+    args : |list|_ [|plams.Settings|_]
         A list of input molecules.
         Accepts strings, PLAMS molecules and RDKit molecules.
         Additional arguments can be provided by putting above-mentioned molecules in a dictionary.
@@ -233,22 +196,80 @@ def validate_mol(args: Sequence[Union[Any, Settings]],
     is_core = _parse_mol_type(mol_type)
     _path = validate_path(path)
 
-    for i, item in enumerate(args):
-        if not isinstance(item, dict):  # No optional arguments provided
-            mol = item
-            value = Settings({'path': _path, 'is_core': is_core})
-        else:  # Pptional arguments have been provided: parse and validate them
-            mol, value = next(iter(item.items()))
-            value.setdefault('is_core', is_core)
-            value = mol_schema.validate(value)
-            value.setdefault('path', _path)
+    for i, dict_ in enumerate(args):
+        if not isinstance(dict_, dict):  # No optional arguments provided
+            mol = dict_
+            mol_dict = Settings({'path': _path, 'is_core': is_core})
+        else:  # Optional arguments have been provided: parse and validate them
+            mol, mol_dict = next(iter(dict_.items()))
+            mol_dict.setdefault('is_core', is_core)
+            mol_dict = mol_schema.validate(mol_dict)
+            mol_dict.setdefault('path', _path)
 
         if isinstance(mol, str) and not isfile(mol):
-            mol = join(value.path, mol)
-        value.mol = mol
+            mol = join(mol_dict.path, mol)
+        mol_dict.mol = mol
 
-        parse_mol_type(value)
-        args[i] = value
+        _parse_name_type(mol_dict)
+        args[i] = mol_dict
+
+
+def _parse_name_type(mol_dict: Settings) -> None:
+    """Set the ``"name"`` and ``"type"`` keys in **mol_dict**.
+
+    The new values of ``"name"`` and ``"type"`` depend on the value of ``mol_dict["mol"]``.
+
+    Parameters
+    ----------
+    mol_dict : |plams.Settings|_
+        A Settings instance containing the ``"mol"`` key.
+        ``mol_dict["mol"]`` is exp
+
+    Raises
+    ------
+    TypeError
+        Raised ``mol_dict["mol"]`` is an instance of neither :class:`str`, :class:`Molecule` nor
+        :class:`mol`.
+
+    """
+    mol = mol_dict.mol
+    if isinstance(mol, str):
+        if isfile(mol):  # mol is a file
+            mol_dict.type = mol.rsplit('.', 1)[-1]
+            mol_dict.name = basename(mol.rsplit('.', 1)[0])
+        elif isdir(mol):  # mol is a directory
+            mol_dict.type = 'folder'
+            mol_dict.name = basename(mol)
+        else:  # mol is (probably; hopefully?) a SMILES string
+            mol_dict.type = 'smiles'
+            mol_dict.mol = basename(mol)
+            mol_dict.name = santize_smiles(basename(mol))
+
+    elif isinstance(mol, Molecule):  # mol is an instance of plams.Molecule
+        mol_dict.type = 'plams_mol'
+        if not mol.properties.name:
+            mol_dict.name = Chem.CanonSmiles(Chem.MolToSmiles(Chem.RemoveHs(molkit.to_rdmol(mol))))
+        else:
+            mol_dict.name = mol.properties.name
+
+    elif isinstance(mol, Chem.rdchem.Mol):  # mol is an instance of rdkit.Chem.Mol
+        mol_dict.type = 'rdmol'
+        mol_dict.name = Chem.CanonSmiles(Chem.MolToSmiles(Chem.RemoveHs(mol.mol)))
+
+    else:
+        raise TypeError(f"mol_dict['mol'] expects an instance of 'str', 'Molecule' or 'Mol'; "
+                        f"observed type: '{mol.__class__.__name__}'")
+
+
+def _parse_mol_type(mol_type: str) -> bool:
+    """Parse the **mol_type** parameter of :func:`.validate_mol`."""
+    if mol_type.lower() == 'input_cores':
+        return True
+    elif mol_type.lower() == 'input_ligands':
+        return False
+    else:
+        raise ValueError(f"accepted values for mol_type are 'input_cores' and input_ligands; "
+                         f"observed value: {repr(mol_type)}")
 
 
 args = Settings(yaml.load("""
