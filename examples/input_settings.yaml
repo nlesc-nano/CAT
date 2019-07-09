@@ -16,7 +16,7 @@ optional:
         write: True
         overwrite: False
         mol_format: [pdb]
-        mongodb: False
+        mongodb: null
 
     core:
         dirname: core
