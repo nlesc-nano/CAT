@@ -1,7 +1,7 @@
 """Tests for :mod:`CAT.frozen_settings`."""
 
 from CAT.frozen_settings import FrozenSettings
-from CAT.assertion_functions import (assert_value, assert_exception, assert_id, Invert)
+from CAT.assertion_functions import (assert_eq, assert_exception, assert_id, Invert)
 
 SETTINGS = FrozenSettings({'a': True, 'b': False, 'c': [1, 2, 3, 4]})
 
@@ -9,7 +9,7 @@ SETTINGS = FrozenSettings({'a': True, 'b': False, 'c': [1, 2, 3, 4]})
 def test_missing() -> None:
     """Tests for :meth:`CAT.frozen_settings.FrozenSettings.__missing__`."""
     item = SETTINGS.d
-    assert_value(item, FrozenSettings())
+    assert_eq(item, FrozenSettings())
 
 
 def test_delitem() -> None:
@@ -27,6 +27,6 @@ def test_setitem() -> None:
 def test_copy() -> None:
     """Tests for :meth:`CAT.frozen_settings.FrozenSettings.copy`."""
     settings = SETTINGS.copy()
-    assert_value(settings, SETTINGS)
+    assert_eq(settings, SETTINGS)
     with Invert(assert_id) as func:
         func(settings, SETTINGS)

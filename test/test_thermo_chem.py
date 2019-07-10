@@ -6,7 +6,7 @@ import numpy as np
 
 from scm.plams import (Molecule, Units)
 
-from CAT.assertion_functions import assert_value
+from CAT.assertion_functions import assert_eq
 from CAT.thermo_chem import (get_entropy, get_thermo)
 
 PATH = 'test/test_files'
@@ -36,7 +36,7 @@ def test_get_thermo() -> None:
     thermo1 = get_thermo(MOL, FREQ)
     for k, v in thermo1.items():
         i, j = round(v, 8), round(ref1[k], 8)
-        assert_value(i, j)
+        assert_eq(i, j)
 
     # Test with E != 0.0
     ref2 = {'E': -692.08,
@@ -47,13 +47,13 @@ def test_get_thermo() -> None:
     thermo2 = get_thermo(MOL, FREQ, -692.08)
     for k, v in thermo2.items():
         i, j = round(v, 8), round(ref2[k], 8)
-        assert_value(i, j)
+        assert_eq(i, j)
 
     # Test with a different unit (au)
     thermo3 = get_thermo(MOL, FREQ, unit='au')
     for k, v in thermo3.items():
         i, j = round(v, 8), round(Units.convert(ref1[k], 'kcal/mol', 'au'), 8)
-        assert_value(i, j)
+        assert_eq(i, j)
 
     # Test with a different temperature
     ref4 = {'E': 0.0,
@@ -64,10 +64,10 @@ def test_get_thermo() -> None:
     thermo4 = get_thermo(MOL, FREQ, T=400)
     for k, v in thermo4.items():
         i, j = round(v, 8), round(ref4[k], 8)
-        assert_value(i, j)
+        assert_eq(i, j)
 
     # Test when exporting a single quantity
     ref5 = 14.678634916523373
     G = get_thermo(MOL, FREQ, export='G')
     i, j = round(G, 8), round(ref5, 8)
-    assert_value(i, j)
+    assert_eq(i, j)

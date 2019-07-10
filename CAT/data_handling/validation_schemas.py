@@ -84,7 +84,7 @@ mol_schema = Schema({
 
     Optional_('indices'):
         Or(
-            And(int, lambda n: n >= 0),
+            And(int, lambda n: n >= 0, Use(lambda n: (n,))),
             And(
                 abc.Collection,
                 lambda n: all(isinstance(i, int) and i >= 0 for i in n),
@@ -93,7 +93,7 @@ mol_schema = Schema({
         ),
 
     Optional_('type'):
-        object,
+        str,
 
     Optional_('name'):
         str,
@@ -122,34 +122,34 @@ database_schema = Schema({
     'dirname':
         str,
 
-    Optional_('read', default=True):  # Attempt to pull structures from the database
+    Optional_('read', default=_db_names):  # Attempt to pull structures from the database
         Or(
             And(bool, Use(lambda n: _db_names)),
             And(str, lambda n: n in _db_names, Use(lambda n: (n,))),
             And(abc.Collection, lambda n: all(i in _db_names for i in n), Use(tuple))
         ),
 
-    Optional_('write', default=True):  # Attempt to write structures to the database
+    Optional_('write', default=_db_names):  # Attempt to write structures to the database
         Or(
             And(bool, Use(lambda n: _db_names)),
             And(str, lambda n: n in _db_names, Use(lambda n: (n,))),
             And(abc.Collection, lambda n: all(i in _db_names for i in n), Use(tuple))
         ),
 
-    Optional_('overwrite', default=False):  # Allow previous entries to be overwritten
+    Optional_('overwrite', default=_db_names):  # Allow previous entries to be overwritten
         Or(
             And(bool, Use(lambda n: _db_names)),
             And(str, lambda n: n in _db_names, Use(lambda n: (n,))),
             And(abc.Collection, lambda n: all(i in _db_names for i in n), Use(tuple))
         ),
 
-    Optional_('mongodb', default=None):  # Settings specific to MongoDB
+    Optional_('mongodb', default={}):  # Settings specific to MongoDB
         Or(
             dict,
-            And(False, Use(lambda n: {}))
+            And(bool, lambda n: n is False, Use(lambda n: {}))
         ),
 
-    Optional_('mol_format', default=('xyz', 'pdb')):  # Return a tuple of file formats
+    Optional_('mol_format', default=('pdb', 'xyz')):  # Return a tuple of file formats
         Or(
             And(str, lambda n: n in ('pdb', 'xyz')),
             And(abc.Collection, lambda n: all(i in ('pdb', 'xyz') for i in n), Use(tuple))
@@ -163,7 +163,7 @@ ligand_schema = Schema({
     'dirname':
         str,
 
-    Optional_('functional_groups_', default=None):
+    Optional_('functional_groups', default=None):
         Or(
             And(str, Use(lambda n: (n,))),
             And(abc.Collection, lambda n: all(isinstance(i, str) for i in n), Use(tuple))
