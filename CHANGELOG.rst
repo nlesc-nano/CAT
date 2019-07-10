@@ -8,13 +8,21 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 0.5.0
 *****
 
-* CAT has been split into 3 seperate packages:
-  * `CAT <https://github.com/nlesc-nano/CAT/>`_: A collection of tools designed for the automatic construction of chemical compounds.
-  * `nano-CAT <https://github.com/nlesc-nano/nano-CAT/>`_: A collection of tools for the analysis of nanocrystals.
-  * `data-CAT <https://github.com/nlesc-nano/data-CAT/>`_: A databasing framework for the Compound Attachment Tools package (`CAT <https://github.com/nlesc-nano/CAT/>`_).
+* CAT_ has been split into 3 seperate packages:
+
+  * CAT_: A collection of tools designed for the automatic construction of composite chemical compounds.
+  * nano-CAT_: A collection of tools for the analysis of nanocrystals.
+  * data-CAT_: A databasing framework for the Compound Attachment Tools package (CAT_).
+  
 * Docstrings have been changed into NumPy style.
 * Added typehints.
-* Added the :class:`.PropertiesDataFrame` class.
+* Added the CAT.SettingsDataFrame and CAT.SettingsSeries classes.
+* Added more tests.
+* Cleaned up all input-parsing related modules.
+
+.. _CAT: https://github.com/nlesc-nano/CAT/
+.. _nano-CAT: https://github.com/nlesc-nano/nano-CAT/
+.. _data-CAT: https://github.com/nlesc-nano/data-CAT/
 
 
 0.4.5
