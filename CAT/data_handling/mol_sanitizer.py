@@ -1,6 +1,6 @@
 """
-CAT.data_handling.input_sanitizer
-=================================
+CAT.data_handling.mol_sanitizer
+===============================
 
 A module designed for sanitizing and interpreting the input file.
 
@@ -11,7 +11,6 @@ from os.path import (join, isfile, isdir, exists, basename)
 from collections import abc
 from typing import (Sequence, Any, Union, Optional)
 
-import yaml
 import numpy as np
 import schema
 
@@ -19,42 +18,11 @@ from rdkit import Chem
 from scm.plams import Settings, Molecule
 import scm.plams.interfaces.molecule.rdkit as molkit
 
-from CAT.utils import get_time
+from CAT.data_handling.input_sanitizer1 import validate_path
+
+__all__ = ['validate_mol', 'santize_smiles']
 
 _INT = (int, np.integer)
-_FLOAT = (int, float, np.integer, np.float)
-
-
-def validate_path(path: Optional[str]) -> str:
-    """Validate a provided directory path.
-
-    Parameters
-    ----------
-    path : str
-        Optional: A path to a directory.
-        Will default to the current working directory if ``None``.
-
-    Results
-    -------
-    Returns either the provided **path** parameter or the current working directory.
-
-    Raises
-    ------
-    FileNotFoundError
-        Raised if **path** cannot be found.
-
-    NotADirectoryError
-        Raised if **path** is not a directory.
-
-    """
-    if path is None:
-        return os.getcwd()
-    elif isdir(path):
-        return path
-    elif not exists(path):
-        raise FileNotFoundError(get_time() + f"'{path}' not found")
-    elif isfile(path):
-        raise NotADirectoryError(get_time() + f"'{path}' is not a directory")
 
 
 #: Schema for validating input molecules.
@@ -71,8 +39,15 @@ mol_schema = schema.Schema({
     schema.Optional('row'):
         schema.And(_INT, schema.Use(int), lambda n: n >= 0),
 
-    schema.Optional('indices'):
-        schema.And(abc.Iterable, lambda n: all(isinstance(i, _INT) for i in n)),
+    schema.Optional('indices'):  #
+        schema.Or(
+            schema.And(_INT, lambda n: n >= 0, schema.Use(int)),
+            schema.And(
+                abc.Collection,
+                lambda n: all(isinstance(i, _INT) and i >= 0 for i in n),
+                schema.Use(lambda n: tuple(int(i) for i in n))
+            ),
+        ),
 
     schema.Optional('type'):
         object,
@@ -248,13 +223,13 @@ def _parse_name_type(mol_dict: Settings) -> None:
     elif isinstance(mol, Molecule):  # mol is an instance of plams.Molecule
         mol_dict.type = 'plams_mol'
         if not mol.properties.name:
-            mol_dict.name = Chem.CanonSmiles(Chem.MolToSmiles(Chem.RemoveHs(molkit.to_rdmol(mol))))
+            mol_dict.name = Chem.MolToSmiles(Chem.RemoveHs(molkit.to_rdmol(mol)), canonical=True)
         else:
             mol_dict.name = mol.properties.name
 
     elif isinstance(mol, Chem.rdchem.Mol):  # mol is an instance of rdkit.Chem.Mol
         mol_dict.type = 'rdmol'
-        mol_dict.name = Chem.CanonSmiles(Chem.MolToSmiles(Chem.RemoveHs(mol.mol)))
+        mol_dict.name = Chem.MolToSmiles(Chem.RemoveHs(mol.mol), canonical=True)
 
     else:
         raise TypeError(f"mol_dict['mol'] expects an instance of 'str', 'Molecule' or 'Mol'; "
@@ -270,12 +245,3 @@ def _parse_mol_type(mol_type: str) -> bool:
     else:
         raise ValueError(f"accepted values for mol_type are 'input_cores' and input_ligands; "
                          f"observed value: {repr(mol_type)}")
-
-
-args = Settings(yaml.load("""
-    input_cores:
-        - Cd68Se55.xyz:
-            guess_bonds: False
-""", Loader=yaml.FullLoader))
-
-validate_mol(args.input_cores, 'input_cores', None)
