@@ -28,8 +28,8 @@ import os
 import time
 import yaml
 import pkg_resources as pkg
-from os.path import join
-from typing import (Callable, Iterable)
+from os.path import (join, isdir, isfile, exists)
+from typing import (Callable, Iterable, Optional)
 
 from scm.plams.core.settings import Settings
 
@@ -118,3 +118,36 @@ def get_template(template_name: str,
     else:
         with open(template_name, 'r') as file:
             return Settings(yaml.load(file, Loader=yaml.FullLoader))
+
+
+def validate_path(path: Optional[str]) -> str:
+    """Validate a provided directory path.
+
+    Parameters
+    ----------
+    path : str
+        Optional: A path to a directory.
+        Will default to the current working directory if ``None``.
+
+    Results
+    -------
+    |str|_
+        Returns either **path** or the current working directory.
+
+    Raises
+    ------
+    FileNotFoundError
+        Raised if **path** cannot be found.
+
+    NotADirectoryError
+        Raised if **path** is not a directory.
+
+    """
+    if path in (None, '.', ''):
+        return os.getcwd()
+    elif isdir(path):
+        return path
+    elif not exists(path):
+        raise FileNotFoundError(get_time() + f"'{path}' not found")
+    elif isfile(path):
+        raise NotADirectoryError(get_time() + f"'{path}' is not a directory")

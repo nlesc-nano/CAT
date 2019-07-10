@@ -39,7 +39,7 @@ from .settings_dataframe import SettingsDataFrame
 from .utils import (check_sys_var, get_time)
 
 from .data_handling.mol_import import read_mol
-from .data_handling.input_sanitizer import (sanitize_path, sanitize_input_mol, sanitize_optional)
+from .data_handling.validate_input import validate_input
 
 from .attachment.qd_opt import init_qd_opt
 from .attachment.ligand_opt import init_ligand_opt
@@ -121,13 +121,12 @@ def prep_input(arg: Settings) -> Tuple[SettingsDataFrame, SettingsDataFrame]:
 
     """
     # Interpret arguments
-    arg.update(sanitize_path(arg))
-    arg.update(sanitize_optional(arg))
-    arg.update(sanitize_input_mol(arg))
+    validate_input(arg)
 
     # Read the input ligands and cores
     lig_list = read_mol(arg.input_ligands)
     core_list = read_mol(arg.input_cores)
+    import pdb; pdb.set_trace()
     del arg.input_ligands
     del arg.input_cores
 
@@ -141,7 +140,7 @@ def prep_input(arg: Settings) -> Tuple[SettingsDataFrame, SettingsDataFrame]:
     columns = pd.MultiIndex.from_tuples([MOL], names=['index', 'sub index'])
 
     ligand_df = SettingsDataFrame(index=pd.RangeIndex(len(lig_list)),
-                                  columns=columns.copy(),
+                                  columns=columns,
                                   settings=arg)
     core_df = SettingsDataFrame(index=pd.RangeIndex(len(core_list)),
                                 columns=columns.copy(),

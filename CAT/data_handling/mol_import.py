@@ -52,7 +52,7 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 from rdkit import Chem
 
 from ..utils import get_time
-from ..data_handling.input_sanitizer import (sanitize_mol_type, get_mol_defaults)
+from ..data_handling.input_sanitizer_old import (sanitize_mol_type, get_mol_defaults)
 
 __all__ = ['read_mol', 'set_mol_prop']
 
@@ -91,7 +91,7 @@ def read_mol(input_mol: Iterable[Settings]) -> List[Molecule]:
         try:
             read_mol = extension_dict[mol_dict.type]
         except KeyError as ex:
-            print(get_time() + ex.__class__.__name__ + ':\t' + str(ex) + '\n')
+            print(get_time() + f'{ex.__class__.__name__}:\t{ex}\n')
             read_mol = False
 
         if not read_mol:  # Unrecognized input type

@@ -7,7 +7,7 @@ Modules related to the importing, exporting and general handling of data.
 """
 
 from .mol_import import (read_mol, set_mol_prop)
-from .input_sanitizer import (sanitize_optional, sanitize_input_mol, sanitize_path)
+from .input_sanitizer_old import (sanitize_optional, sanitize_input_mol, sanitize_path)
 
 
 __all__ = [

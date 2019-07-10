@@ -35,7 +35,7 @@ from rdkit import Chem
 from ..settings_dataframe import SettingsDataFrame
 from ..utils import (get_time, get_template)
 from ..mol_utils import separate_mod
-from ..data_handling.input_sanitizer import santize_smiles
+from ..data_handling.input_sanitizer_old import santize_smiles
 
 __all__ = ['init_ligand_anchoring']
 

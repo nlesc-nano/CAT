@@ -2,61 +2,21 @@
 CAT.data_handling.mol_sanitizer
 ===============================
 
-A module designed for sanitizing and interpreting the input file.
+A module designed for sanitizing and interpreting all molecule-related settings in the input file.
 
 """
 
-import os
-from os.path import (join, isfile, isdir, exists, basename)
-from collections import abc
+from os.path import (join, isfile, isdir, basename)
 from typing import (Sequence, Any, Union, Optional)
-
-import numpy as np
-import schema
 
 from rdkit import Chem
 from scm.plams import Settings, Molecule
 import scm.plams.interfaces.molecule.rdkit as molkit
 
-from CAT.data_handling.input_sanitizer1 import validate_path
+from .validation_schemas import mol_schema
+from ..utils import validate_path
 
 __all__ = ['validate_mol', 'santize_smiles']
-
-_INT = (int, np.integer)
-
-
-#: Schema for validating input molecules.
-mol_schema = schema.Schema({
-    schema.Optional('guess_bonds', default=False):
-        bool,
-
-    schema.Optional('is_core'):
-        bool,
-
-    schema.Optional('column'):
-        schema.And(_INT, schema.Use(int), lambda n: n >= 0),
-
-    schema.Optional('row'):
-        schema.And(_INT, schema.Use(int), lambda n: n >= 0),
-
-    schema.Optional('indices'):  #
-        schema.Or(
-            schema.And(_INT, lambda n: n >= 0, schema.Use(int)),
-            schema.And(
-                abc.Collection,
-                lambda n: all(isinstance(i, _INT) and i >= 0 for i in n),
-                schema.Use(lambda n: tuple(int(i) for i in n))
-            ),
-        ),
-
-    schema.Optional('type'):
-        object,
-
-    schema.Optional('name'):
-        str,
-
-    schema.Optional('path'): schema.Use(validate_path)
-})
 
 
 def santize_smiles(smiles: str) -> str:
