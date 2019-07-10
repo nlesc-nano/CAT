@@ -6,7 +6,7 @@ A module designed for sanitizing and interpreting the input file.
 
 """
 
-from typing import (Optional, Dict)
+from typing import Dict
 from collections import abc
 
 from schema import (Or, And, Use, Schema)
@@ -27,7 +27,6 @@ from scm.plams.interfaces.thirdparty.gamess import GamessJob
 from scm.plams.interfaces.thirdparty.dftbplus import DFTBPlusJob
 
 from scm.plams.core.basejob import Job
-from scm.plams.core.settings import Settings
 
 from ..utils import get_template, validate_path
 from ..mol_utils import to_atnum
@@ -115,6 +114,7 @@ core_schema = Schema({
         )
 })
 
+_db_names = ('core', 'ligand', 'qd')
 
 #: Schema for validating the ``['optional']['database']`` block.
 database_schema = Schema({
@@ -123,16 +123,31 @@ database_schema = Schema({
         str,
 
     Optional_('read', default=True):  # Attempt to pull structures from the database
-        bool,
+        Or(
+            And(bool, Use(lambda n: _db_names)),
+            And(str, lambda n: n in _db_names, Use(lambda n: (n,))),
+            And(abc.Collection, lambda n: all(i in _db_names for i in n), Use(tuple))
+        ),
 
     Optional_('write', default=True):  # Attempt to write structures to the database
-        bool,
+        Or(
+            And(bool, Use(lambda n: _db_names)),
+            And(str, lambda n: n in _db_names, Use(lambda n: (n,))),
+            And(abc.Collection, lambda n: all(i in _db_names for i in n), Use(tuple))
+        ),
 
     Optional_('overwrite', default=False):  # Allow previous entries to be overwritten
-        bool,
+        Or(
+            And(bool, Use(lambda n: _db_names)),
+            And(str, lambda n: n in _db_names, Use(lambda n: (n,))),
+            And(abc.Collection, lambda n: all(i in _db_names for i in n), Use(tuple))
+        ),
 
     Optional_('mongodb', default=None):  # Settings specific to MongoDB
-        Or(dict, False),
+        Or(
+            dict,
+            And(False, Use(lambda n: {}))
+        ),
 
     Optional_('mol_format', default=('xyz', 'pdb')):  # Return a tuple of file formats
         Or(
@@ -249,7 +264,7 @@ bde_schema = Schema({
 
     Optional_('s1', default=_bde_s1_default):
         Or(
-            And(dict, Use(Settings)),
+            dict,
             And(str, Use(lambda n: get_template(n, from_cat_data=False)))
         ),
 
@@ -261,7 +276,7 @@ bde_schema = Schema({
 
     Optional_('s2'):
         Or(
-            And(dict, Use(Settings)),
+            dict,
             And(str, Use(lambda n: get_template(n, from_cat_data=False)))
         )
 })
@@ -278,7 +293,7 @@ qd_opt_schema = Schema({
     # The job settings for the first half of the optimization
     Optional_('s1', default=_qd_opt_s1_default):
         Or(
-            And(dict, Use(Settings)),
+            dict,
             And(str, Use(lambda n: get_template(n, from_cat_data=False)))
         ),
 
@@ -292,7 +307,7 @@ qd_opt_schema = Schema({
     # The job settings for the second half of the optimization
     Optional_('s2', default=_qd_opt_s2_default):
         Or(
-            And(dict, Use(Settings)),
+            dict,
             And(str, Use(lambda n: get_template(n, from_cat_data=False)))
         )
 })
@@ -309,7 +324,7 @@ crs_schema = Schema({
     # The settings for constructing the COSMO surface
     Optional_('s1', default=_crs_s1_default):
         Or(
-            And(dict, Use(Settings)),
+            dict,
             And(str, Use(lambda n: get_template(n, from_cat_data=False)))
         ),
 
@@ -321,7 +336,7 @@ crs_schema = Schema({
 
     Optional_('s2', default=_crs_s2_default):  # The settings for the actual COSMO-RS calculation
         Or(
-            And(dict, Use(Settings)),
+            dict,
             And(str, Use(lambda n: get_template(n, from_cat_data=False)))
         )
 })

@@ -17,9 +17,8 @@ from CAT.data_handling.validation_schemas import (
     core_schema, ligand_schema, qd_schema, database_schema,
     mongodb_schema, bde_schema, qd_opt_schema, crs_schema
 )
-from CAT.data_handling.validate_mol import validate_mol
-from CAT.utils import validate_path
-
+from .validate_mol import validate_mol
+from ..utils import validate_path
 
 __all__ = ['validate_input']
 

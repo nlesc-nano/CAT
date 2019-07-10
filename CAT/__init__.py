@@ -21,8 +21,7 @@ from .attachment import (
 )
 
 from .data_handling import (
-    read_mol, set_mol_prop,
-    sanitize_optional, sanitize_input_mol, sanitize_path
+    read_mol, set_mol_prop
 )
 
 from .base import prep
@@ -40,8 +39,7 @@ __all__ = [
 
     'init_qd_opt', 'init_ligand_opt', 'init_qd_construction', 'init_ligand_anchoring',
 
-    'read_mol', 'set_mol_prop',
-    'sanitize_optional', 'sanitize_input_mol', 'sanitize_path',
+    'read_mol', 'set_mol_prop'
 
     'prep',
 

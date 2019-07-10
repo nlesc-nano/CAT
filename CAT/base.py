@@ -126,7 +126,6 @@ def prep_input(arg: Settings) -> Tuple[SettingsDataFrame, SettingsDataFrame]:
     # Read the input ligands and cores
     lig_list = read_mol(arg.input_ligands)
     core_list = read_mol(arg.input_cores)
-    import pdb; pdb.set_trace()
     del arg.input_ligands
     del arg.input_cores
 
@@ -176,7 +175,7 @@ def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
         formula_list.append(core.get_formula())
 
         # Returns the indices and Atoms of all dummy atom ligand placeholders in the core
-        if core.properties.dummies is None:
+        if not core.properties.dummies:
             idx, dummies = zip(*[(j, atom) for j, atom in enumerate(core.atoms, 1) if
                                  atom.atnum == dummy])
         else:
