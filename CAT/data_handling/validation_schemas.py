@@ -139,6 +139,7 @@ core_schema = Schema({
 })
 
 _db_names = ('core', 'ligand', 'qd')
+_format_names = ('pdb', 'xyz')
 
 #: Schema for validating the ``['optional']['database']`` block.
 database_schema = Schema({
@@ -148,7 +149,7 @@ database_schema = Schema({
 
     Optional_('read', default=_db_names):  # Attempt to pull structures from the database
         Or(
-            And(bool, Use(lambda n: _db_names)),
+            And(bool, Use(lambda n: _db_names if n is True else ())),
             And(str, lambda n: n in _db_names, Use(lambda n: (n,))),
             And(abc.Collection,
                 lambda n: all(i in _db_names for i in n),
@@ -158,7 +159,7 @@ database_schema = Schema({
 
     Optional_('write', default=_db_names):  # Attempt to write structures to the database
         Or(
-            And(bool, Use(lambda n: _db_names)),
+            And(bool, Use(lambda n: _db_names if n is True else ())),
             And(str, lambda n: n in _db_names, Use(lambda n: (n,))),
             And(abc.Collection,
                 lambda n: all(i in _db_names for i in n),
@@ -166,9 +167,9 @@ database_schema = Schema({
                 Use(to_tuple))
         ),
 
-    Optional_('overwrite', default=_db_names):  # Allow previous entries to be overwritten
+    Optional_('overwrite', default=tuple):  # Allow previous entries to be overwritten
         Or(
-            And(bool, Use(lambda n: _db_names)),
+            And(bool, Use(lambda n: _db_names if n is True else ())),
             And(str, lambda n: n in _db_names, Use(lambda n: (n,))),
             And(abc.Collection,
                 lambda n: all(i in _db_names for i in n),
@@ -176,17 +177,18 @@ database_schema = Schema({
                 Use(to_tuple))
         ),
 
-    Optional_('mongodb', default={}):  # Settings specific to MongoDB
+    Optional_('mongodb', default=dict):  # Settings specific to MongoDB
         Or(
             dict,
             And(bool, lambda n: n is False, Use(lambda n: {}))
         ),
 
-    Optional_('mol_format', default=('pdb', 'xyz')):  # Return a tuple of file formats
+    Optional_('mol_format', default=_format_names):  # Return a tuple of file formats
         Or(
-            And(str, lambda n: n in ('pdb', 'xyz')),
+            And(bool, Use(lambda n: _format_names if n is True else ())),
+            And(str, lambda n: n in _format_names),
             And(abc.Collection,
-                lambda n: all(i in ('pdb', 'xyz') for i in n),
+                lambda n: all(i in _format_names for i in n),
                 lambda n: len(n) == len(set(n)),
                 Use(to_tuple))
         )

@@ -17,8 +17,10 @@ with open('README.rst') as readme_file:
 setup(
     name='CAT',
     version=version['__version__'],
-    description='A collection of tools designed for the automatic construction of chemical compounds.',
+    description=('A collection of tools designed for the automatic '
+                 'construction of chemical compounds.'),
     long_description=readme + '\n\n',
+    long_description_content_type='text/x-rst',
     author=['Bas van Beek'],
     author_email='b.f.van.beek@vu.nl',
     url='https://github.com/nlesc-nano/CAT',
@@ -38,7 +40,7 @@ setup(
         ]
     },
     entry_points={
-          'console_scripts': ['init_cat=CAT.data_handling.input_parser:main']
+        'console_scripts': ['init_cat=CAT.data_handling.entry_points:main']
     },
     include_package_data=True,
     license='GNU Lesser General Public License v3 or later',
@@ -57,11 +59,12 @@ setup(
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Chemistry'
-        'License :: OSI Approved :: GNU Lesser General Public License',
+        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Natural Language :: English',
         'Programming Language :: Python :: 3.7',
     ],
     test_suite='tests',
+    python_requires='>=3.7',
     install_requires=[
         'numpy',
         'scipy',
@@ -83,7 +86,7 @@ setup(
         'pycodestyle',
     ],
     extras_require={
-        'test': ['pytest', 'pytest-cov', 'pytest-mock', 'nbsphinx', 'pycodestyle'],
+        'test': ['pytest', 'pytest-cov', 'pytest-mock', 'pycodestyle'],
         'doc': ['sphinx', 'sphinx_rtd_theme', 'sphinx-autodoc-typehints']
     }
 )

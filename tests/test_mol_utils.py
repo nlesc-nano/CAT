@@ -12,7 +12,7 @@ from CAT.mol_utils import (
     to_atnum, to_symbol, adf_connectivity, fix_carboxyl, fix_h
 )
 
-PATH = 'test/test_files'
+PATH = 'tests/test_files'
 MOL = Molecule(join(PATH, 'Methanol.xyz'))  # Methanol; BP86/QZ4P
 MOL.guess_bonds()
 

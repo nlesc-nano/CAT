@@ -83,8 +83,8 @@ def check_sys_var() -> None:
         Raised if an ADF version prior to 2019 is found.
 
     """
-    sys_var = ['ADFBIN', 'ADFHOME', 'ADFRESOURCES', 'SCMLICENSE']
-    sys_var_exists = [item in os.environ for item in sys_var]
+    sys_var = ('ADFBIN', 'ADFHOME', 'ADFRESOURCES', 'SCMLICENSE')
+    sys_var_exists = [item in os.environ and os.environ[item] for item in sys_var]
     for i, item in enumerate(sys_var_exists):
         if not item:
             err = 'WARNING: The environment variable {} has not been set'

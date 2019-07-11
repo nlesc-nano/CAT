@@ -40,9 +40,6 @@ def validate_input(s: Settings) -> None:
     # Set the various working directories
     dirnames = ('database', 'ligand', 'core', 'qd')
     for key in dirnames:
-        if isdir(key):
-            continue
-
         value = join(path, key)
         s.optional[key].dirname = value
         if not isdir(value):
@@ -50,7 +47,7 @@ def validate_input(s: Settings) -> None:
 
     # Validate optional argument
     s.optional.database = database_schema.validate(s.optional.database)
-    s.loptional.igand = ligand_schema.validate(s.optional.ligand)
+    s.optional.ligand = ligand_schema.validate(s.optional.ligand)
     s.optional.core = core_schema.validate(s.optional.core)
     s.optional.qd = qd_schema.validate(s.optional.qd)
 

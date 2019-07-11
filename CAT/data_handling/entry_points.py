@@ -38,8 +38,8 @@ def extract_args(args: Optional[List[str]] = None) -> Settings:
     elif exists(join(getcwd(), input_file)):
         input_file = join(getcwd(), input_file)
     else:
-        error = 'No file found at ' + input_file + ' or ' + join(getcwd(), input_file)
-        raise FileNotFoundError(error)
+        input_file2 = join(getcwd(), input_file)
+        raise FileNotFoundError(f'No file found at {input_file} or {input_file2}')
 
     with open(input_file, 'r') as file:
         return Settings(yaml.load(file, Loader=yaml.FullLoader))
@@ -47,18 +47,16 @@ def extract_args(args: Optional[List[str]] = None) -> Settings:
 
 def main(args: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(
-            prog='CAT',
-            usage='init_cat my_settings_file.yaml',
-            description='Description: This script initalizes \
-            the Compound Attachment/Analysis Tool.'
+        prog='CAT',
+        usage='init_cat my_settings_file.yaml',
+        description=('Description: This script initalizes '
+                     'the Compound Attachment Tool (CAT).')
     )
 
     parser.add_argument(
-            'YAML',
-            nargs='+',
-            type=str,
-            help='A .yaml file with the settings for CAT'
+        'YAML', nargs=1, type=str, metavar='input.yaml',
+        help='Required: A .yaml file with the settings for CAT'
     )
 
     args = parser.parse_args(args)
-    CAT.base.prep(extract_args(args))
+    CAT.base.prep(extract_args(args), return_mol=False)

@@ -7,7 +7,7 @@ import pycodestyle  # formerly known as pep8
 
 def test_pep8_conformance() -> None:
     """Test that CAT conforms to PEP-8."""
-    check_paths = ['CAT', 'test']
+    check_paths = ['CAT', 'tests']
     exclude_paths = []
 
     print("PEP8 check of directories: {}\n".format(', '.join(check_paths)))

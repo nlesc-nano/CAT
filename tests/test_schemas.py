@@ -14,18 +14,7 @@ from CAT.data_handling.validation_schemas import (
 )
 from nanoCAT import CRSJob
 
-
-PATH = 'test/test_files'
-
-_bde_s1_default = get_template('qd.yaml')['MOPAC']
-_bde_s2_default = get_template('qd.yaml')['UFF']
-
-_qd_opt_s1_default = get_template('qd.yaml')['UFF']
-_qd_opt_s2_default = _qd_opt_s1_default
-
-_crs_s1_default = get_template('qd.yaml')['COSMO-MOPAC']
-_crs_s2_default = get_template('qd.yaml')['COSMO-RS activity coefficient']
-_crs_s2_default.update(get_template('crs.yaml')['MOPAC PM6'])
+PATH = 'tests/test_files'
 
 
 def test_mol_schema() -> None:
@@ -98,7 +87,7 @@ def test_database_schema() -> None:
         'dirname': '.',
         'read': ('core', 'ligand', 'qd'),
         'write': ('core', 'ligand', 'qd'),
-        'overwrite': ('core', 'ligand', 'qd'),
+        'overwrite': (),
         'mongodb': {},
         'mol_format': ('pdb', 'xyz')
 
@@ -259,6 +248,9 @@ def test_mongodb_schema() -> None:
 
 def test_qd_opt_schema() -> None:
     """Test :data:`CAT.data_handling.validation_schemas.qd_opt_schema`."""
+    _qd_opt_s1_default = get_template('qd.yaml')['UFF']
+    _qd_opt_s2_default = _qd_opt_s1_default
+
     qd_opt_dict = Settings()
     ref = Settings({
         'job1': AMSJob,
@@ -297,6 +289,10 @@ def test_qd_opt_schema() -> None:
 
 def test_crs_schema() -> None:
     """Test :data:`CAT.data_handling.validation_schemas.crs_schema`."""
+    _crs_s1_default = get_template('qd.yaml')['COSMO-MOPAC']
+    _crs_s2_default = get_template('qd.yaml')['COSMO-RS activity coefficient']
+    _crs_s2_default.update(get_template('crs.yaml')['MOPAC PM6'])
+
     crs_dict = Settings()
     ref = Settings({
         'job1': AMSJob,
@@ -335,6 +331,9 @@ def test_crs_schema() -> None:
 
 def test_bde_schema() -> None:
     """Test :data:`CAT.data_handling.validation_schemas.bde_schema`."""
+    _bde_s1_default = get_template('qd.yaml')['MOPAC']
+    _bde_s2_default = get_template('qd.yaml')['UFF']
+
     bde_dict = Settings({'core_atom': 'Cd', 'lig_count': 2})
     ref = Settings({
         'core_atom': 48,
@@ -381,7 +380,6 @@ def test_bde_schema() -> None:
     bde_dict['topology'] = {'key': 'value'}  # Exception: incorrect value
     assert_exception(*args)
     bde_dict['topology'] = {1: 'value'}
-    assert_exception(*args)
     assert_eq(bde_schema.validate(bde_dict)['topology'], {1: 'value'})
 
     for dist in ('core_core_dist', 'lig_core_dist'):

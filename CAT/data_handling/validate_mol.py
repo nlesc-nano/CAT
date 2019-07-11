@@ -189,7 +189,7 @@ def _parse_name_type(mol_dict: Settings) -> None:
 
     elif isinstance(mol, Chem.rdchem.Mol):  # mol is an instance of rdkit.Chem.Mol
         mol_dict.type = 'rdmol'
-        mol_dict.name = Chem.MolToSmiles(Chem.RemoveHs(mol.mol), canonical=True)
+        mol_dict.name = Chem.MolToSmiles(Chem.RemoveHs(mol), canonical=True)
 
     else:
         raise TypeError(f"mol_dict['mol'] expects an instance of 'str', 'Molecule' or 'Mol'; "

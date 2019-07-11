@@ -43,7 +43,7 @@ API
 import os
 import itertools
 from string import ascii_letters
-from typing import (Dict, Iterable, List, Callable, Sequence)
+from typing import (Dict, Iterable, List, Callable, Sequence, Optional)
 
 from scm.plams import (Molecule, Atom, Settings)
 import scm.plams.interfaces.molecule.rdkit as molkit
@@ -90,7 +90,7 @@ def read_mol(input_mol: Iterable[Settings]) -> List[Molecule]:
         try:
             read_mol = extension_dict[mol_dict.type]
         except KeyError as ex:
-            print(get_time() + f'{ex.__class__.__name__}:\t{ex}\n')
+            print(get_time() + f'{ex.__class__.__name__}:\t {ex}\n')
             continue
 
         mol = read_mol(mol_dict)
@@ -108,76 +108,170 @@ def read_mol(input_mol: Iterable[Settings]) -> List[Molecule]:
     return mol_list
 
 
-def read_mol_xyz(mol: Settings) -> Molecule:
+def read_mol_xyz(mol_dict: Settings) -> Optional[Molecule]:
     """Read an .xyz file."""
     try:
-        return Molecule(mol.mol, inputformat='xyz')
+        mol = Molecule(mol_dict.mol, inputformat='xyz')
+        if mol_dict.guess_bonds:
+            mol.guess_bonds()
+        canonicalize_mol(mol)
+        return mol
     except Exception as ex:
-        print_exception(read_mol_xyz.__code__, ex, mol.mol)
+        print_exception(read_mol_xyz.__code__, ex, mol_dict.mol)
 
 
-def read_mol_pdb(mol: Settings) -> Molecule:
+def read_mol_pdb(mol_dict: Settings) -> Optional[Molecule]:
     """Read a .pdb file."""
     try:
-        return molkit.readpdb(mol.mol)
+        mol = molkit.readpdb(mol_dict.mol)
+        if mol_dict.guess_bonds:
+            mol.guess_bonds()
+        canonicalize_mol(mol)
+        return mol
     except Exception as ex:
-        print_exception(read_mol_pdb.__code__, ex, mol.mol)
+        print_exception(read_mol_pdb.__code__, ex, mol_dict.mol)
 
 
-def read_mol_mol(mol: Settings) -> Molecule:
+def read_mol_mol(mol_dict: Settings) -> Optional[Molecule]:
     """Read a .mol file."""
     try:
-        return molkit.from_rdmol(Chem.MolFromMolFile(mol.mol, removeHs=False))
+        mol = molkit.from_rdmol(Chem.MolFromMolFile(mol_dict.mol, removeHs=False))
+        if mol_dict.guess_bonds:
+            mol.guess_bonds()
+        canonicalize_mol(mol)
+        return mol
     except Exception as ex:
-        print_exception(read_mol_mol.__code__, ex, mol.mol)
+        print_exception(read_mol_mol.__code__, ex, mol_dict.mol)
 
 
-def read_mol_smiles(mol: Settings) -> Molecule:
+def read_mol_smiles(mol_dict: Settings) -> Optional[Molecule]:
     """Read a SMILES string."""
     try:
-        return molkit.from_smiles(mol.mol)
+        mol = molkit.from_smiles(mol_dict.mol)
+        if mol_dict.guess_bonds:
+            mol.guess_bonds()
+        return mol
     except Exception as ex:
-        print_exception(read_mol_smiles.__code__, ex, mol.mol)
+        print_exception(read_mol_smiles.__code__, ex, mol_dict.mol)
 
 
-def read_mol_plams(mol: Settings) -> Molecule:
+def read_mol_plams(mol_dict: Settings) -> Optional[Molecule]:
     """Read a PLAMS molecule."""
     try:
-        return mol.mol
+        mol = mol_dict.mol
+        if mol_dict.guess_bonds:
+            mol.guess_bonds()
+        canonicalize_mol(mol)
+        return mol
     except Exception as ex:
-        print_exception(read_mol_plams.__code__, ex, mol.mol)
+        print_exception(read_mol_plams.__code__, ex, mol_dict.mol)
 
 
-def read_mol_rdkit(mol: Settings) -> Molecule:
+def read_mol_rdkit(mol_dict: Settings) -> Optional[Molecule]:
     """Read a RDKit molecule."""
     try:
-        return molkit.from_rdmol(mol.mol)
+        mol = molkit.from_rdmol(mol_dict.mol)
+        if mol_dict.guess_bonds:
+            mol.guess_bonds()
+        canonicalize_mol(mol)
+        return mol
     except Exception as ex:
-        print_exception(read_mol_rdkit.__code__, ex, mol.mol)
+        print_exception(read_mol_rdkit.__code__, ex, mol_dict.mol)
 
 
-def read_mol_folder(mol: Settings) -> Molecule:
+def read_mol_folder(mol_dict: Settings) -> Optional[Molecule]:
     """Read all files (.xyz, .pdb, .mol, .txt or further subfolders) within a folder."""
     try:
-        file_list = [file for file in os.listdir(mol.mol)]
-        mol_type = 'input_cores' if mol.is_core else 'input_ligands'
-        input_mol = validate_mol(file_list, mol.path, mol_type)
-        return read_mol(input_mol)
+        mol_type = 'input_cores' if mol_dict.is_core else 'input_ligands'
+
+        _file_list = os.listdir(mol_dict.mol)
+        optional_dict = Settings({k: v for k, v in mol_dict.items() if k not in ('mol', 'path')})
+        file_list = [{i: optional_dict} for i in _file_list]
+
+        validate_mol(file_list, mol_type, mol_dict.path)
+        return read_mol(file_list)
     except Exception as ex:
-        print_exception(read_mol_folder.__code__, ex, mol.mol)
+        print_exception(read_mol_folder.__code__, ex, mol_dict.mol)
 
 
-def read_mol_txt(mol: Settings) -> Molecule:
+def read_mol_txt(mol_dict: Settings) -> Optional[Molecule]:
     """Read a plain text file containing one or more SMILES strings."""
     try:
-        with open(mol.mol, 'r') as file:
-            file_list = file.read().splitlines()
-        file_list = [file.split()[mol.column] for file in file_list[mol.row:] if file]
-        mol_type = 'input_cores' if mol.is_core else 'input_ligands'
-        input_mol = validate_mol(file_list, mol.path, mol_type)
-        return read_mol(input_mol)
+        row = 0 if 'row' not in mol_dict else mol_dict.row
+        column = 0 if 'column' not in mol_dict else mol_dict.column
+        mol_type = 'input_cores' if mol_dict.is_core else 'input_ligands'
+
+        with open(mol_dict.mol, 'r') as f:
+            iterator = itertools.islice(f, row, None)
+            _file_list = [i.rstrip('\n').split()[column] for i in iterator if i]
+        optional_dict = Settings({k: v for k, v in mol_dict.items() if k not in ('mol', 'path')})
+        file_list = [{i: optional_dict} for i in _file_list]
+
+        validate_mol(file_list, mol_type, mol_dict.path)
+        return read_mol(file_list)
     except Exception as ex:
-        print_exception(read_mol_txt.__code__, ex, mol.mol)
+        print_exception(read_mol_txt.__code__, ex, mol_dict.mol)
+
+
+def canonicalize_mol(mol: Molecule,
+                     inplace: bool = True) -> Optional[Molecule]:
+    """Take a PLAMS molecule and sort its atoms based on their canonical rank.
+
+    .. _rdkit.Chem.CanonicalRankAtoms: https://www.rdkit.org/docs/source/rdkit.Chem.rdmolfiles.html#rdkit.Chem.rdmolfiles.CanonicalRankAtoms
+
+    Examples
+    --------
+    .. code:: python
+
+        >>> print(mol)  # Methane
+        Atoms:
+            1         H      0.640510      0.640510     -0.640510
+            2         H      0.640510     -0.640510      0.640510
+            3         C      0.000000      0.000000      0.000000
+            4         H     -0.640510      0.640510      0.640510
+            5         H     -0.640510     -0.640510     -0.640510
+
+        >>> canonicalize_mol(mol)
+        >>> print(mol)
+        Atoms:
+            1         C      0.000000      0.000000      0.000000
+            2         H     -0.640510     -0.640510     -0.640510
+            3         H     -0.640510      0.640510      0.640510
+            4         H      0.640510     -0.640510      0.640510
+            5         H      0.640510      0.640510     -0.640510
+
+    Parameters
+    ----------
+    mol : |plams.Molecule|_
+        A PLAMS molecule.
+
+    inplace : bool
+        If ``True``, perform an inplace update of **mol** rather than returning
+        a new :class:`Molecule` instance.
+
+    Returns
+    -------
+    |plams.Molecule|_
+        Optional: if ``inplace=False``, return a copy of **mol** with its atoms sorted by their
+        canonical rank.
+
+    See also
+    --------
+    * rdkit.Chem.CanonicalRankAtoms_: Returns the canonical atom ranking for each atom of a
+      molecule fragment.
+
+    """  # noqa
+    rdmol = molkit.to_rdmol(mol)
+    idx_collection = Chem.CanonicalRankAtoms(rdmol)
+
+    # Reverse sort Molecule.atoms by the atomic indices in idx_collection
+    if inplace:
+        mol.atoms = [at for _, at in sorted(zip(idx_collection, mol.atoms), reverse=True)]
+        return
+    else:
+        ret = mol.copy()
+        ret.atoms = [at for _, at in sorted(zip(idx_collection, ret.atoms), reverse=True)]
+        return ret
 
 
 def get_charge_dict() -> Dict[str, int]:
@@ -226,15 +320,15 @@ def set_mol_prop(mol: Molecule,
         set_atom_prop(atom, i, residue_name)
 
     if not mol.properties.smiles:
-        tmp = Chem.MolToSmiles(Chem.RemoveHs(molkit.to_rdmol(mol)))
-        mol.properties.smiles = Chem.CanonSmiles(tmp)
+        mol.properties.smiles = Chem.MolToSmiles(Chem.RemoveHs(molkit.to_rdmol(mol)),
+                                                 canonical=True)
 
 
 def set_atom_prop(atom: Atom,
-                  i: Sequence[str],
+                  at_id: Sequence[str],
                   residue_name: str) -> None:
     """Set atomic properties."""
-    symbol = '{:4}'.format(atom.symbol + ''.join(i))
+    symbol = '{:4}'.format(atom.symbol + ''.join(at_id))
 
     # Add a number of properties to atom
     atom.properties.pdb_info.ResidueName = residue_name
@@ -251,24 +345,33 @@ def set_atom_prop(atom: Atom,
         atom.properties.pdb_info.IsHeteroAtom = True
 
     # Sets the formal atomic charge
-    if not atom.properties.charge:
-        if atom.symbol in charge_dict:
-            total_bonds = int(sum([bond.order for bond in atom.bonds]))
-            default_charge = charge_dict[atom.symbol]
-            abs_charge = abs(default_charge)
-            sign = -1 * int(default_charge / abs_charge)
-            atom.properties.charge = default_charge + sign*total_bonds
+    if atom.properties.charge:
+        return
 
-            # Update formal atomic charges for hypervalent atoms
-            if total_bonds > abs_charge:
-                if total_bonds is abs_charge + 2:
-                    atom.properties.charge += 2 * sign
-                elif total_bonds is abs_charge + 4:
-                    atom.properties.charge += 4 * sign
-                elif total_bonds >= abs_charge + 6:
-                    atom.properties.charge += 6 * sign
-        else:
-            atom.properties.charge = 0
+    # Default to a charge of 0 if no charge is available for that specific element
+    if atom.symbol not in charge_dict:
+        atom.properties.charge = 0
+        return
+
+    # Update the charge of non-hypervalent atoms
+    total_bonds = int(sum([bond.order for bond in atom.bonds]))
+    default_charge = charge_dict[atom.symbol]
+    abs_charge = abs(default_charge)
+    sign = -1 * int(default_charge / abs_charge)
+
+    # Take the default charge and correct for the number (and order) of bonds
+    atom.properties.charge = default_charge + sign * total_bonds
+    if total_bonds <= abs_charge:
+        return
+
+    # Update formal atomic charges for hypervalent atoms
+    if total_bonds is abs_charge + 2:
+        atom.properties.charge += 2 * sign
+    elif total_bonds is abs_charge + 4:
+        atom.properties.charge += 4 * sign
+    elif total_bonds >= abs_charge + 6:
+        atom.properties.charge += 6 * sign
+    return
 
 
 def print_exception(func: Callable,
@@ -280,6 +383,6 @@ def print_exception(func: Callable,
                       'read_mol_folder': 'folder', 'read_mol_txt': '.txt file',
                       'read_mol_excel': '.xlsx file', 'read_mol_plams': 'PLAMS molecule',
                       'read_mol_rdkit': 'RDKit molecule'}
-    print(get_time() + str(type(ex).__name__), str(ex))
-    print(get_time() + 'Warning:', name, 'not recognized as a valid',
-          extension_dict[func.co_name], '\n')
+    print(get_time() + f'{ex.__class__.__name__}:\t {ex}')
+    filename = extension_dict[func.co_name]
+    print(get_time() + f'Warning: {name} not recognized as a valid {filename}\n')
