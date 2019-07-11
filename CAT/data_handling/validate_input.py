@@ -68,9 +68,3 @@ def validate_input(s: Settings) -> None:
     # Validate the input cores and ligands
     validate_mol(s.input_cores, 'input_cores', join(path, 'core'))
     validate_mol(s.input_ligands, 'input_ligands', join(path, 'ligand'))
-
-
-path = '/Users/basvanbeek/Documents/GitHub/CAT/examples/input_settings.yaml'
-with open(path, 'r') as f:
-    s = Settings(yaml.load(f, Loader=yaml.FullLoader))
-validate_input(s)

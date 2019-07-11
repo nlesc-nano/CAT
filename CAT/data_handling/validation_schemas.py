@@ -6,7 +6,7 @@ A module designed for sanitizing and interpreting the input file.
 
 """
 
-from typing import Dict
+from typing import (Dict, Collection)
 from collections import abc
 
 from schema import (Or, And, Use, Schema)
@@ -42,6 +42,27 @@ __all__ = ['mol_schema', 'core_schema', 'ligand_schema', 'qd_schema', 'database_
            'mongodb_schema', 'bde_schema', 'qd_opt_schema', 'crs_schema']
 
 
+def to_tuple(collection: Collection) -> tuple:
+    """Convert a collection into a sorted tuple."""
+    try:
+        ret = sorted(collection)
+    except TypeError:  # collection contains a mix of sorting-incompoatible objects
+        ret = sorted(collection, key=str)
+    finally:
+        return tuple(ret)
+
+
+# The **default** parameter of schema.Optional() will automatically call any callable
+# Solution: provide a callable that returns another callable
+def _get_amsjob() -> type:
+    return AMSJob
+
+
+def _get_crsjob() -> type:
+    return CRSJob
+
+
+# Default settings templates
 _bde_s1_default = get_template('qd.yaml')['MOPAC']
 _bde_s2_default = get_template('qd.yaml')['UFF']
 
@@ -51,6 +72,7 @@ _qd_opt_s2_default = _qd_opt_s1_default
 _crs_s1_default = get_template('qd.yaml')['COSMO-MOPAC']
 _crs_s2_default = get_template('qd.yaml')['COSMO-RS activity coefficient']
 _crs_s2_default.update(get_template('crs.yaml')['MOPAC PM6'])
+
 
 _class_dict: Dict[str, type] = {
     'adf': ADFJob, 'adfjob': ADFJob,
@@ -67,6 +89,7 @@ _class_dict: Dict[str, type] = {
     'dftbplus': DFTBPlusJob, 'dftbplusjob': DFTBPlusJob,
     'crs': CRSJob, 'cosmo-rs': CRSJob, 'crsjob': CRSJob
 }
+
 
 #: Schema for validating input molecules.
 mol_schema = Schema({
@@ -88,6 +111,7 @@ mol_schema = Schema({
             And(
                 abc.Collection,
                 lambda n: all(isinstance(i, int) and i >= 0 for i in n),
+                lambda n: len(n) == len(set(n)),
                 Use(tuple)
             ),
         ),
@@ -126,21 +150,30 @@ database_schema = Schema({
         Or(
             And(bool, Use(lambda n: _db_names)),
             And(str, lambda n: n in _db_names, Use(lambda n: (n,))),
-            And(abc.Collection, lambda n: all(i in _db_names for i in n), Use(tuple))
+            And(abc.Collection,
+                lambda n: all(i in _db_names for i in n),
+                lambda n: len(n) == len(set(n)),
+                Use(to_tuple))
         ),
 
     Optional_('write', default=_db_names):  # Attempt to write structures to the database
         Or(
             And(bool, Use(lambda n: _db_names)),
             And(str, lambda n: n in _db_names, Use(lambda n: (n,))),
-            And(abc.Collection, lambda n: all(i in _db_names for i in n), Use(tuple))
+            And(abc.Collection,
+                lambda n: all(i in _db_names for i in n),
+                lambda n: len(n) == len(set(n)),
+                Use(to_tuple))
         ),
 
     Optional_('overwrite', default=_db_names):  # Allow previous entries to be overwritten
         Or(
             And(bool, Use(lambda n: _db_names)),
             And(str, lambda n: n in _db_names, Use(lambda n: (n,))),
-            And(abc.Collection, lambda n: all(i in _db_names for i in n), Use(tuple))
+            And(abc.Collection,
+                lambda n: all(i in _db_names for i in n),
+                lambda n: len(n) == len(set(n)),
+                Use(to_tuple))
         ),
 
     Optional_('mongodb', default={}):  # Settings specific to MongoDB
@@ -152,7 +185,10 @@ database_schema = Schema({
     Optional_('mol_format', default=('pdb', 'xyz')):  # Return a tuple of file formats
         Or(
             And(str, lambda n: n in ('pdb', 'xyz')),
-            And(abc.Collection, lambda n: all(i in ('pdb', 'xyz') for i in n), Use(tuple))
+            And(abc.Collection,
+                lambda n: all(i in ('pdb', 'xyz') for i in n),
+                lambda n: len(n) == len(set(n)),
+                Use(to_tuple))
         )
 })
 
@@ -166,7 +202,10 @@ ligand_schema = Schema({
     Optional_('functional_groups', default=None):
         Or(
             And(str, Use(lambda n: (n,))),
-            And(abc.Collection, lambda n: all(isinstance(i, str) for i in n), Use(tuple))
+            And(abc.Collection,
+                lambda n: all(isinstance(i, str) for i in n),
+                lambda n: len(n) == len(set(n)),
+                Use(to_tuple))
         ),
 
     Optional_('optimize', default=True):  # Optimize the ligands
@@ -223,7 +262,7 @@ mongodb_schema = Schema({
     Optional_('port', default=27017):  # Port of the MongoDB host
         int,
 
-    str:  # Other keyword arguments for :class:`pymongo.MongoClient`
+    Optional_(str):  # Other keyword arguments for :class:`pymongo.MongoClient`
         object
 })
 
@@ -249,14 +288,15 @@ bde_schema = Schema({
             And(
                 abc.Collection,
                 lambda n: all(isinstance(i, int) and i >= 0 for i in n),
-                Use(tuple)
+                lambda n: len(n) == len(set(n)),
+                Use(to_tuple)
             )
         ),
 
-    Optional_('topology', default={7: 'vertice', 8: 'edge', 10: 'face'}):
+    Optional_('topology', default=dict):
         And(dict, lambda n: all(isinstance(k, int) for k in n)),
 
-    Optional_('job1', default=AMSJob):
+    Optional_('job1', default=_get_amsjob):
         Or(
             And(type, lambda n: issubclass(n, Job)),
             And(str, lambda n: n.lower() in _class_dict, Use(lambda n: _class_dict[n.lower()]))
@@ -284,7 +324,7 @@ bde_schema = Schema({
 #: Schema for validating the ``['optional']['qd']['optimize']`` block.
 qd_opt_schema = Schema({
     # The job type for the first half of the optimization
-    Optional_('job1', default=AMSJob):
+    Optional_('job1', default=_get_amsjob):
         Or(
             And(type, lambda n: issubclass(n, Job)),
             And(str, lambda n: n.lower() in _class_dict, Use(lambda n: _class_dict[n.lower()]))
@@ -298,7 +338,7 @@ qd_opt_schema = Schema({
         ),
 
     # The job type for the second half of the optimization
-    Optional_('job2', default=AMSJob):
+    Optional_('job2', default=_get_amsjob):
         Or(
             And(type, lambda n: issubclass(n, Job)),
             And(str, lambda n: n.lower() in _class_dict, Use(lambda n: _class_dict[n.lower()]))
@@ -315,7 +355,7 @@ qd_opt_schema = Schema({
 #: Schema for validating the ``['optional']['ligand']['cosmo-rs']`` block.
 crs_schema = Schema({
     # The job type for constructing the COSMO surface
-    Optional_('job1', default=AMSJob):
+    Optional_('job1', default=_get_amsjob):
         Or(
             And(type, lambda n: issubclass(n, Job)),
             And(str, lambda n: n.lower() in _class_dict, Use(lambda n: _class_dict[n.lower()]))
@@ -328,7 +368,7 @@ crs_schema = Schema({
             And(str, Use(lambda n: get_template(n, from_cat_data=False)))
         ),
 
-    Optional_('job2', default=CRSJob):  # The job type for the actual COSMO-RS calculation
+    Optional_('job2', default=_get_crsjob):  # The job type for the actual COSMO-RS calculation
         Or(
             And(type, lambda n: issubclass(n, Job)),
             And(str, lambda n: n.lower() in _class_dict, Use(lambda n: _class_dict[n.lower()]))
