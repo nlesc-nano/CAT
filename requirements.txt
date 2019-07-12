@@ -8,3 +8,5 @@ schema
 pymongo
 plams@git+https://github.com/SCM-NV/PLAMS@master
 qmflows@git+https://github.com/SCM-NV/qmflows@master
+dataCAT@git+https://github.com/nlesc-nano/data-CAT@master
+nanoCAT@git+https://github.com/nlesc-nano/nano-CAT@master
