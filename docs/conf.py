@@ -37,8 +37,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
     'sphinx.ext.autosummary',
-    'sphinx.ext.napoleon',
-    'sphinx_autodoc_typehints'
+    'sphinx.ext.napoleon'  # , 'sphinx_autodoc_typehints'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -205,14 +204,6 @@ autodoc_member_order = 'bysource'
 # This is useful when some external dependencies are not met at build time and break the building process.
 # You may only specify the root package of the dependencies themselves and omit the sub-modules:
 autodoc_mock_imports = [
-    'rdkit',
-    'h5py'
-]
-
-# This value contains a list of modules to be mocked up. 
-# See autodoc_mock_imports for more details. 
-# It defaults to autodoc_mock_imports.
-autosummary_mock_imports = [
     'rdkit',
     'h5py'
 ]
