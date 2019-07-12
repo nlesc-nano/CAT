@@ -212,3 +212,12 @@ autodoc_mock_imports = [
     'rdkit',
     'h5py'
 ]
+
+# This value contains a list of modules to be mocked up. 
+# See autodoc_mock_imports for more details. 
+# It defaults to autodoc_mock_imports.
+autosummary_mock_imports = [
+    'rdkit',
+    'h5py'
+]
+
