@@ -2,7 +2,7 @@
 # Metadata for citation of this software according to the CFF format (https://citation-file-format.github.io/)
 cff-version: 1.0.3
 message: If you use this software, please cite it as below.
-title: Compound Attachment/Analysis Tool (CAT)
+title: Compound Attachment Tool (CAT)
 authors:
 - given-names: Bas
   family-names: van Beek
