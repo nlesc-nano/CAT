@@ -21,7 +21,7 @@ install:
     # Install virtual enviroment
     - conda create -n CAT python=3.7
     - conda install -n CAT -c conda-forge h5py rdkit
-    - source activate cp2kparser
+    - source activate CAT
 
     # Install qmflows package
     - pip install .[test]
