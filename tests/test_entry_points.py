@@ -16,7 +16,7 @@ def test_main() -> None:
         main([filename])
     finally:
         rmtree(join(PATH, 'ligand'))
-        rmtree(join(PATH, 'QD'))
+        rmtree(join(PATH, 'qd'))
         rmtree(join(PATH, 'database'))
 
     assert_exception(FileNotFoundError, main, [filename + 'bob'])

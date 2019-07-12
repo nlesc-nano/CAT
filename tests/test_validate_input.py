@@ -46,5 +46,5 @@ def test_validate_input() -> None:
         assert_eq(s.optional, ref)
     finally:
         rmtree(join(PATH, 'ligand'))
-        rmtree(join(PATH, 'QD'))
+        rmtree(join(PATH, 'qd'))
         rmtree(join(PATH, 'database'))
