@@ -1,5 +1,6 @@
 sudo: false
-language: python
+language: 
+    python: 3.7
 
 env:
     global:
@@ -18,9 +19,9 @@ install:
     - conda info -a
 
     # Install virtual enviroment
-    - conda install -c conda-forge python==3.7
-    - conda install -c conda-forge h5py
-    - conda install -c conda-forge rdkit
+    - conda create -n CAT python=3.7
+    - conda install -n CAT -c conda-forge h5py rdkit
+    - source activate cp2kparser
 
     # Install qmflows package
     - pip install .[test]
