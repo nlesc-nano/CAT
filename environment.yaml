@@ -2,6 +2,7 @@ channels:
     - conda-forge
 dependencies:
     - python=3.7
+    - pip
     - h5py
     - rdkit
 
@@ -10,13 +11,13 @@ dependencies:
     - sphinx-autodoc-typehints
 
     - pyyaml=5.1
-    - schema
     - numpy
     - scipy
     - pandas
     - pymongo
 
     - pip:
+        - schema
         - plams@git+https://github.com/SCM-NV/PLAMS@master
         - qmflows@git+https://github.com/SCM-NV/qmflows@master
         - data-CAT@git+https://github.com/nlesc-nano/data-CAT@master
