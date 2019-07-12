@@ -25,19 +25,18 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '2.0'
+# needs_sphinx = '2.0'
 
-# Add any Sphinx extension module names here, as strings. 
+# Add any Sphinx extension module names here, as strings.
 # They can be extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
-    'sphinx.ext.githubpages',
     'sphinx.ext.autosummary',
-    'sphinx.ext.napoleon'  # , 'sphinx_autodoc_typehints'
+    'sphinx.ext.napoleon',
+    'sphinx_autodoc_typehints'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -81,9 +80,6 @@ exclude_patterns = [
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
-
-# If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = True
 
 
 # -- Options for HTML output ----------------------------------------------
@@ -215,7 +211,25 @@ autodoc_mock_imports = [
 napoleon_numpy_docstring = True
 
 
+# True to parse NumPy style docstrings.
+# False to disable support for NumPy style docstrings.
+# Defaults to True.
+napoleon_google_docstring = False
+
+
 # True to use the .. admonition:: directive for the Example and Examples sections.
 # False to use the .. rubric:: directive instead. One may look better than the other depending on what HTML theme is used.
 # Defaults to False.
 napoleon_use_admonition_for_examples = True
+
+
+# True to use the .. admonition:: directive for Notes sections.
+# False to use the .. rubric:: directive instead.
+#  Defaults to False.
+napoleon_use_admonition_for_notes = True
+
+
+# True to use the .. admonition:: directive for References sections.
+# False to use the .. rubric:: directive instead.
+# Defaults to False.
+napoleon_use_admonition_for_references = True

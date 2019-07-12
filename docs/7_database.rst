@@ -17,17 +17,22 @@ accoring to their functionality:
     for loading and unloading parts of the database from the harddrive.
     These methods should be used in conjunction with |with|_ statements:
 
-    ::
+    .. code:: python
 
-        import CAT
+        >>> import CAT
 
-        database = CAT.Database()
-        with database.open_csv_lig(db.csv_lig) as db:
-            print('my ligand database')
-        with database.open_yaml(db.yaml) as db:
-            print('my job settings database')
-        with h5py.File(db.hdf5) as db:
-            print('my structure database')
+        >>> database = CAT.Database()
+        >>> with database.OpenCsvLig(database.csv_lig) as db:
+        >>>     print(type(db))
+        <class 'pandas.core.frame.DataFrame'>
+
+        >>> with database.OpenYaml(database.yaml) as db:
+        >>>     print('my job settings database')
+        <class 'scm.plams.core.settings.Settings'>
+
+        >>> with h5py.File(database.hdf5) as db:
+        >>>     print(type(db))
+        <class 'h5py._hl.files.File'>
 
     ====================  ===================  ==================  ==================
     :class:`.OpenCsvLig`  :class:`.OpenCsvQd`  :class:`.OpenYaml`  :class:`h5py.File`
