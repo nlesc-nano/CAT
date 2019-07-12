@@ -29,9 +29,9 @@ accoring to their functionality:
         with h5py.File(db.hdf5) as db:
             print('my structure database')
 
-    ======================  =====================  ===================  ==================
-    :class:`.open_csv_lig`  :class:`.open_csv_qd`  :class:`.open_yaml`  :class:`h5py.File`
-    ======================  =====================  ===================  ==================
+    ====================  ===================  ==================  ==================
+    :class:`.OpenCsvLig`  :class:`.OpenCsvQd`  :class:`.OpenYaml`  :class:`h5py.File`
+    ====================  ===================  ==================  ==================
 
 -   Importing to the database - these methods handle the importing of new data
     from python objects to the Database class:
@@ -47,15 +47,16 @@ accoring to their functionality:
     :meth:`.from_csv`  :meth:`.from_hdf5`
     =================  ==================
 
+
 Index
 ~~~~~
 
-.. currentmodule:: data_CAT.data_handling.database.Database
+.. currentmodule:: dataCAT.database.Database
 .. autosummary::
 
-    open_yaml
-    open_csv_lig
-    open_csv_qd
+    OpenYaml
+    OpenCsvLig
+    OpenCsvQd
     DF
     update_mongodb
     update_csv
@@ -65,7 +66,7 @@ Index
     from_hdf5
 
 
-.. currentmodule:: data_CAT.data_handling.database_functions
+.. currentmodule:: dataCAT.database_functions
 .. autosummary::
 
     mol_to_file
@@ -77,19 +78,21 @@ Index
 Class API
 ~~~~~~~~~
 
-.. autoclass:: data_CAT.data_handling.database.Database
+.. autoclass:: dataCAT.database.Database
     :members:
+
 
 Function API
 ~~~~~~~~~~~~
 
-.. autofunction:: data_CAT.data_handling.database_functions.mol_to_file
+.. autofunction:: dataCAT.database_functions.mol_to_file
 
-.. autofunction:: data_CAT.data_handling.database_functions.as_pdb_array
+.. autofunction:: dataCAT.database_functions.as_pdb_array
 
-.. autofunction:: data_CAT.data_handling.database_functions.from_pdb_array
+.. autofunction:: dataCAT.database_functions.from_pdb_array
 
-.. autofunction:: data_CAT.data_handling.database_functions.sanitize_yaml_settings
+.. autofunction:: dataCAT.database_functions.sanitize_yaml_settings
+
 
 .. _rdkit.Chem.Mol: http://rdkit.org/docs/source/rdkit.Chem.rdchem.html#rdkit.Chem.rdchem.Mol
 .. _h5py.File: http://docs.h5py.org/en/stable/high/file.html
@@ -108,7 +111,9 @@ Function API
 .. _str: https://docs.python.org/3/library/stdtypes.html#str
 .. _int: https://docs.python.org/3/library/functions.html#int
 .. _None: https://docs.python.org/3.7/library/constants.html#None
+.. _bool: https://docs.python.org/3/library/functions.html?highlight=bool#bool
 .. _with: https://docs.python.org/3/reference/compound_stmts.html#with
+.. _Sequence: https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence
 
 .. |rdkit.Chem.Mol| replace:: *rdkit.Chem.Mol*
 .. |h5py.File| replace:: *h5py.File*
@@ -127,4 +132,6 @@ Function API
 .. |str| replace:: *str*
 .. |int| replace:: *int*
 .. |None| replace:: *None*
+.. |bool| replace:: *bool*
 .. |with| replace:: ``with``
+.. |Sequence| replace:: *Sequence*
