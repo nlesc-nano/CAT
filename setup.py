@@ -71,7 +71,6 @@ setup(
         'pandas',
         'pyyaml>=5.1',
         'schema',
-        'pymongo',
         'plams@git+https://github.com/SCM-NV/PLAMS@release',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master'
     ],
