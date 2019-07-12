@@ -16,11 +16,11 @@ Index
 
 API
 ---
-.. autofunction:: CAT.jobs.get_main_molecule
-.. autofunction:: CAT.jobs.get_energy
-.. autofunction:: CAT.jobs.job_single_point
-.. autofunction:: CAT.jobs.job_geometry_opt
-.. autofunction:: CAT.jobs.job_freq
+.. automethod:: get_main_molecule
+.. automethod:: get_energy
+.. autofunction:: job_single_point
+.. autofunction:: job_geometry_opt
+.. autofunction:: job_freq
 
 """
 

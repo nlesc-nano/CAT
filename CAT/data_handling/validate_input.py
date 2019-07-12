@@ -4,12 +4,20 @@ CAT.data_handling.validate_input
 
 A module designed for sanitizing and interpreting the input file.
 
+Index
+-----
+.. currentmodule:: CAT.data_handling.validate_input
+.. autosummary::
+    validate_input
+
+API
+---
+.. autofunction:: validate_input
+
 """
 
 from os import mkdir
 from os.path import (join, isdir)
-
-import yaml
 
 from scm.plams import Settings
 
@@ -24,7 +32,7 @@ __all__ = ['validate_input']
 
 
 def validate_input(s: Settings) -> None:
-    """Initialize the validation procedure.
+    """Initialize the input-validation procedure.
 
     performs an inplace update of **s**.
 

@@ -11,6 +11,7 @@ Index
     Invert
     assert_eq
     assert_id
+    assert_subclass
     assert_instance
     assert_exception
     assert_isin
@@ -23,18 +24,19 @@ Index
 
 API
 ---
-.. autoclass:: CAT.assertion_functions.Invert
-.. autofunction:: CAT.assertion_functions.assert_eq
-.. autofunction:: CAT.assertion_functions.assert_id
-.. autofunction:: CAT.assertion_functions.assert_instance
-.. autofunction:: CAT.assertion_functions.assert_exception
-.. autofunction:: CAT.assertion_functions.assert_isin
-.. autofunction:: CAT.assertion_functions.assert_lt
-.. autofunction:: CAT.assertion_functions.assert_le
-.. autofunction:: CAT.assertion_functions.assert_gt
-.. autofunction:: CAT.assertion_functions.assert_ge
-.. autofunction:: CAT.assertion_functions._err_msg
-.. autofunction:: CAT.assertion_functions._exc_msg
+.. autoclass:: Invert
+.. autofunction:: assert_eq
+.. autofunction:: assert_id
+.. autofunction:: assert_subclass
+.. autofunction:: assert_instance
+.. autofunction:: assert_exception
+.. autofunction:: assert_isin
+.. autofunction:: assert_lt
+.. autofunction:: assert_le
+.. autofunction:: assert_gt
+.. autofunction:: assert_ge
+.. autofunction:: _err_msg
+.. autofunction:: _exc_msg
 
 """
 
@@ -169,6 +171,18 @@ def assert_instance(value: Any,
     assert isinstance(value, ref), _err_msg(assertion, ref_name, value_name)
 
     _assertion = 'assert not isinstance(value, reference)'
+    return _assertion, ref_name, value_name
+
+
+def assert_subclass(value: type,
+                    ref: type) -> Tuple[str, str, str]:
+    """Assert :code:`issubclass(value, ref)`; returns arguments for :func:`._err_msg`."""
+    assertion = 'assert issubclass(value, reference)'
+    ref_name = ref.__name__
+    value_name = value.__name__
+    assert issubclass(value, ref), _err_msg(assertion, ref_name, value_name)
+
+    _assertion = 'assert not issubclass(value, reference)'
     return _assertion, ref_name, value_name
 
 

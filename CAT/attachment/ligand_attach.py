@@ -24,19 +24,19 @@ Index
 
 API
 ---
-.. autofunction:: CAT.attachment.ligand_attach.init_qd_construction
-.. autofunction:: CAT.attachment.ligand_attach.construct_mol_series
-.. autofunction:: CAT.attachment.ligand_attach._read_database
-.. autofunction:: CAT.attachment.ligand_attach._get_indices
-.. autofunction:: CAT.attachment.ligand_attach._get_df
-.. autofunction:: CAT.attachment.ligand_attach.ligand_to_qd
-.. autofunction:: CAT.attachment.ligand_attach._get_rotmat1
-.. autofunction:: CAT.attachment.ligand_attach._get_rotmat2
-.. autofunction:: CAT.attachment.ligand_attach.rot_mol
-.. autofunction:: CAT.attachment.ligand_attach.rot_mol_angle
-.. autofunction:: CAT.attachment.ligand_attach.array_to_qd
-.. autofunction:: CAT.attachment.ligand_attach.sanitize_dim_2
-.. autofunction:: CAT.attachment.ligand_attach.sanitize_dim_3
+.. autofunction:: init_qd_construction
+.. autofunction:: construct_mol_series
+.. autofunction:: _read_database
+.. autofunction:: _get_indices
+.. autofunction:: _get_df
+.. autofunction:: ligand_to_qd
+.. autofunction:: _get_rotmat1
+.. autofunction:: _get_rotmat2
+.. autofunction:: rot_mol
+.. autofunction:: rot_mol_angle
+.. autofunction:: array_to_qd
+.. autofunction:: sanitize_dim_2
+.. autofunction:: sanitize_dim_3
 
 """
 

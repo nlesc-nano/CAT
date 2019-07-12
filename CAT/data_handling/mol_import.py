@@ -24,19 +24,19 @@ Index
 
 API
 ---
-.. autofunction:: CAT.data_handling.mol_import.read_mol
-.. autofunction:: CAT.data_handling.mol_import.read_mol_xyz
-.. autofunction:: CAT.data_handling.mol_import.read_mol_pdb
-.. autofunction:: CAT.data_handling.mol_import.read_mol_mol
-.. autofunction:: CAT.data_handling.mol_import.read_mol_smiles
-.. autofunction:: CAT.data_handling.mol_import.read_mol_plams
-.. autofunction:: CAT.data_handling.mol_import.read_mol_rdkit
-.. autofunction:: CAT.data_handling.mol_import.read_mol_folder
-.. autofunction:: CAT.data_handling.mol_import.read_mol_txt
-.. autofunction:: CAT.data_handling.mol_import.get_charge_dict
-.. autofunction:: CAT.data_handling.mol_import.set_mol_prop
-.. autofunction:: CAT.data_handling.mol_import.set_atom_prop
-.. autofunction:: CAT.data_handling.mol_import.print_exception
+.. autofunction:: read_mol
+.. autofunction:: read_mol_xyz
+.. autofunction:: read_mol_pdb
+.. autofunction:: read_mol_mol
+.. autofunction:: read_mol_smiles
+.. autofunction:: read_mol_plams
+.. autofunction:: read_mol_rdkit
+.. autofunction:: read_mol_folder
+.. autofunction:: read_mol_txt
+.. autofunction:: get_charge_dict
+.. autofunction:: set_mol_prop
+.. autofunction:: set_atom_prop
+.. autofunction:: print_exception
 
 """
 

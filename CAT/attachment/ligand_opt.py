@@ -24,18 +24,18 @@ Index
 
 API
 ---
-.. autofunction:: CAT.attachment.ligand_opt.init_ligand_opt
-.. autofunction:: CAT.attachment.ligand_opt._parse_overwrite
-.. autofunction:: CAT.attachment.ligand_opt.read_data
-.. autofunction:: CAT.attachment.ligand_opt.start_ligand_jobs
-.. autofunction:: CAT.attachment.ligand_opt._ligand_to_db
-.. autofunction:: CAT.attachment.ligand_opt.remove_duplicates
-.. autofunction:: CAT.attachment.ligand_opt.split_bond
-.. autofunction:: CAT.attachment.ligand_opt.neighbors_mod
-.. autofunction:: CAT.attachment.ligand_opt.get_frag_size
-.. autofunction:: CAT.attachment.ligand_opt.recombine_mol
-.. autofunction:: CAT.attachment.ligand_opt.get_dihed
-.. autofunction:: CAT.attachment.ligand_opt.set_dihed
+.. autofunction:: init_ligand_opt
+.. autofunction:: _parse_overwrite
+.. autofunction:: read_data
+.. autofunction:: start_ligand_jobs
+.. autofunction:: _ligand_to_db
+.. autofunction:: remove_duplicates
+.. autofunction:: split_bond
+.. autofunction:: neighbors_mod
+.. autofunction:: get_frag_size
+.. autofunction:: recombine_mol
+.. autofunction:: get_dihed
+.. autofunction:: set_dihed
 
 """
 

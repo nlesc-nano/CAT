@@ -1,8 +1,43 @@
 """
-CAT.data_handling.input_sanitizer
-=================================
+CAT.data_handling.validation_schemas
+====================================
 
 A module designed for sanitizing and interpreting the input file.
+
+Index
+-----
+.. currentmodule:: CAT.data_handling.validation_schemas
+.. autosummary::
+    mol_schema
+    core_schema
+    ligand_schema
+    qd_schema
+    database_schema
+    mongodb_schema
+    bde_schema
+    qd_opt_schema
+    crs_schema
+
+API
+---
+.. autodata:: mol_schema
+    :annotation: = schema.Schema
+.. autodata:: core_schema
+    :annotation: = schema.Schema
+.. autodata:: ligand_schema
+    :annotation: = schema.Schema
+.. autodata:: qd_schema
+    :annotation: = schema.Schema
+.. autodata:: database_schema
+    :annotation: = schema.Schema
+.. autodata:: mongodb_schema
+    :annotation: = schema.Schema
+.. autodata:: bde_schema
+    :annotation: = schema.Schema
+.. autodata:: qd_opt_schema
+    :annotation: = schema.Schema
+.. autodata:: crs_schema
+    :annotation: = schema.Schema
 
 """
 
@@ -46,7 +81,7 @@ def to_tuple(collection: Collection) -> tuple:
     """Convert a collection into a sorted tuple."""
     try:
         ret = sorted(collection)
-    except TypeError:  # collection contains a mix of sorting-incompoatible objects
+    except TypeError:  # The collection contains a mix of sorting-incompatibl objects
         ret = sorted(collection, key=str)
     finally:
         return tuple(ret)
@@ -55,10 +90,12 @@ def to_tuple(collection: Collection) -> tuple:
 # The **default** parameter of schema.Optional() will automatically call any callable
 # Solution: provide a callable that returns another callable
 def _get_amsjob() -> type:
+    """Return a type object of :class:`.AMSJob`."""
     return AMSJob
 
 
 def _get_crsjob() -> type:
+    """Return a type object of :class:`.CRSJob`."""
     return CRSJob
 
 
@@ -74,6 +111,7 @@ _crs_s2_default = get_template('qd.yaml')['COSMO-RS activity coefficient']
 _crs_s2_default.update(get_template('crs.yaml')['MOPAC PM6'])
 
 
+# A dictionary for translating strings into :class:`plams.Job` types
 _class_dict: Dict[str, type] = {
     'adf': ADFJob, 'adfjob': ADFJob,
     'ams': AMSJob, 'amsjob': AMSJob,
@@ -91,8 +129,8 @@ _class_dict: Dict[str, type] = {
 }
 
 
-#: Schema for validating input molecules.
-mol_schema = Schema({
+#: Schema for validating the ``['input_ligands']`` and ``['input_cores']`` blocks.
+mol_schema: Schema = Schema({
     Optional_('guess_bonds', default=False):
         bool,
 
@@ -127,7 +165,7 @@ mol_schema = Schema({
 })
 
 #: Schema for validating the ``['optional']['core']`` block.
-core_schema = Schema({
+core_schema: Schema = Schema({
     'dirname':
         str,
 
@@ -142,7 +180,7 @@ _db_names = ('core', 'ligand', 'qd')
 _format_names = ('pdb', 'xyz')
 
 #: Schema for validating the ``['optional']['database']`` block.
-database_schema = Schema({
+database_schema: Schema = Schema({
     # path+directory name of the database
     'dirname':
         str,
@@ -196,7 +234,7 @@ database_schema = Schema({
 
 
 #: Schema for validating the ``['optional']['ligand']`` block.
-ligand_schema = Schema({
+ligand_schema: Schema = Schema({
     # path+directory name of the ligand directory
     'dirname':
         str,
@@ -225,7 +263,7 @@ ligand_schema = Schema({
 
 
 #: Schema for validating the ``['optional']['qd']`` block.
-qd_schema = Schema({
+qd_schema: Schema = Schema({
     # path+directory name of the quantum dot directory
     'dirname':
         str,
@@ -250,7 +288,7 @@ qd_schema = Schema({
 
 
 #: Schema for validating the ``['optional']['database']['mongodb']`` block.
-mongodb_schema = Schema({
+mongodb_schema: Schema = Schema({
     # Optional username for the MongoDB host
     Optional_('username'):
         Or(str, int),
@@ -270,7 +308,7 @@ mongodb_schema = Schema({
 
 
 #: Schema for validating the ``['optional']['qd']['dissociate']`` block.
-bde_schema = Schema({
+bde_schema: Schema = Schema({
     # Atom type of the to-be dissociated core atom
     'core_atom':
         And(Or(int, str), Use(to_atnum)),
@@ -324,7 +362,7 @@ bde_schema = Schema({
 })
 
 #: Schema for validating the ``['optional']['qd']['optimize']`` block.
-qd_opt_schema = Schema({
+qd_opt_schema: Schema = Schema({
     # The job type for the first half of the optimization
     Optional_('job1', default=_get_amsjob):
         Or(
@@ -355,7 +393,7 @@ qd_opt_schema = Schema({
 })
 
 #: Schema for validating the ``['optional']['ligand']['cosmo-rs']`` block.
-crs_schema = Schema({
+crs_schema: Schema = Schema({
     # The job type for constructing the COSMO surface
     Optional_('job1', default=_get_amsjob):
         Or(

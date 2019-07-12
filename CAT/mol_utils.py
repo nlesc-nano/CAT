@@ -8,7 +8,11 @@ Index
 -----
 .. currentmodule:: CAT.mol_utils
 .. autosummary::
-    Molecule
+    from_mol_other
+    from_rdmol
+    get_index
+    merge_mol
+    separate_mod
     to_atnum
     to_symbol
     adf_connectivity
@@ -17,12 +21,16 @@ Index
 
 API
 ---
-.. autoclass:: Molecule
-.. autofunction:: CAT.mol_utils.to_atnum
-.. autofunction:: CAT.mol_utils.to_symbol
-.. autofunction:: CAT.mol_utils.adf_connectivity
-.. autofunction:: CAT.mol_utils.fix_carboxyl
-.. autofunction:: CAT.mol_utils.fix_h
+.. automethod:: from_mol_other
+.. automethod:: from_rdmol
+.. automethod:: get_index
+.. automethod:: merge_mol
+.. automethod:: separate_mod
+.. autofunction:: to_atnum
+.. autofunction:: to_symbol
+.. autofunction:: adf_connectivity
+.. autofunction:: fix_carboxyl
+.. autofunction:: fix_h
 
 """
 

@@ -14,8 +14,8 @@ Index
 
 API
 ---
-.. autofunction:: CAT.data_handling.input_parser.extract_args
-.. autofunction:: CAT.data_handling.input_parser.main
+.. autofunction:: extract_args
+.. autofunction:: main
 
 """
 

@@ -13,8 +13,8 @@ Index
 
 API
 ---
-.. autofunction:: CAT.thermo_chem.get_entropy
-.. autofunction:: CAT.thermo_chem.get_thermo
+.. autofunction:: get_entropy
+.. autofunction:: get_thermo
 
 """
 

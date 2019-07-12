@@ -17,12 +17,12 @@ Index
 
 API
 ---
-.. autofunction:: CAT.base.prep
-.. autofunction:: CAT.base.prep_input
-.. autofunction:: CAT.base.prep_core
-.. autofunction:: CAT.base.prep_ligand
-.. autofunction:: CAT.base.prep_qd
-.. autofunction:: CAT.base.val_nano_cat
+.. autofunction:: prep
+.. autofunction:: prep_input
+.. autofunction:: prep_core
+.. autofunction:: prep_ligand
+.. autofunction:: prep_qd
+.. autofunction:: val_nano_cat
 
 """
 

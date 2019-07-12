@@ -14,7 +14,7 @@ Index
 
 API
 ---
-.. autoclass:: CAT.frozen_settings.FrozenSettings
+.. autoclass:: FrozenSettings
     :members:
     :private-members:
     :special-members:

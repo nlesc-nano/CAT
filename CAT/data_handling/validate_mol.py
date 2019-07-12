@@ -1,8 +1,24 @@
 """
-CAT.data_handling.mol_sanitizer
-===============================
+CAT.data_handling.validate_mol
+==============================
 
 A module designed for sanitizing and interpreting all molecule-related settings in the input file.
+
+Index
+-----
+.. currentmodule:: CAT.data_handling.validate_mol
+.. autosummary::
+    santize_smiles
+    validate_mol
+    _parse_name_type
+    _parse_mol_type
+
+API
+---
+.. autofunction:: santize_smiles
+.. autofunction:: validate_mol
+.. autofunction:: _parse_name_type
+.. autofunction:: _parse_mol_type
 
 """
 

@@ -9,21 +9,25 @@ Index
 .. currentmodule:: CAT.attachment.ligand_anchoring
 .. autosummary::
     init_ligand_anchoring
-    _get_df
+    get_functional_groups
+    _smiles_to_rdmol
     find_substructure
     substructure_split
+    _get_df
 
 API
 ---
-.. autofunction:: CAT.attachment.ligand_anchoring.init_ligand_anchoring
-.. autofunction:: CAT.attachment.ligand_anchoring._get_df
-.. autofunction:: CAT.attachment.ligand_anchoring.find_substructure
-.. autofunction:: CAT.attachment.ligand_anchoring.substructure_split
+.. autofunction:: init_ligand_anchoring
+.. autofunction:: get_functional_groups
+.. autofunction:: find_substructure
+.. autofunction:: _smiles_to_rdmol
+.. autofunction:: substructure_split
+.. autofunction:: _get_df
 
 """
 
 from itertools import chain
-from typing import (Sequence, List, Tuple)
+from typing import (Sequence, List, Tuple, Optional, Iterable)
 
 import pandas as pd
 
@@ -32,9 +36,10 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit import Chem
 
-from ..settings_dataframe import SettingsDataFrame
+
 from ..utils import (get_time, get_template)
 from ..mol_utils import separate_mod
+from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.validate_mol import santize_smiles
 
 __all__ = ['init_ligand_anchoring']
@@ -60,23 +65,30 @@ def init_ligand_anchoring(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
         A dataframe of ligands with functional groups that can serve as valid anchor points.
 
     """
+    # Unpack arguments
+    settings = ligand_df.settings.optional
+    split = settings.ligand.split
+    _functional_groups = settings.ligand.functional_groups
+
+    # Construct reference functional groups
+    functional_groups = get_functional_groups(_functional_groups, split)
+
     # Find all functional groups; return a copy of each mol for each functional group
     mol_list = []
     for lig in ligand_df[MOL]:
         # Functional group search
         if not lig.properties.dummies:
-            split = ligand_df.settings.optional.ligand.split
-            mol_list += find_substructure(lig, split=split)
+            mol_list += find_substructure(lig, functional_groups, split)
+            continue
 
         # Manual specification of a functional group
-        else:
-            if len(lig.properties.dummies) == 1:  # optional.ligand.split = False
-                lig.properties.dummies = lig.properties.dummies[0] - 1
-                split = False
-            elif len(lig.properties.dummies) == 2:  # optional.ligand.split = True
-                lig.properties.dummies = [i - 1 for i in lig.properties.dummies]
-                split = True
-            mol_list += [substructure_split(lig, lig.properties.dummies, split=split)]
+        if len(lig.properties.dummies) == 1:  # optional.ligand.split = False
+            lig.properties.dummies = lig.properties.dummies[0] - 1
+            split_ = False
+        elif len(lig.properties.dummies) == 2:  # optional.ligand.split = True
+            lig.properties.dummies = tuple(i - 1 for i in lig.properties.dummies)
+            split_ = True
+        mol_list += [substructure_split(lig, lig.properties.dummies, split=split_)]
 
     # Convert the results into a dataframe
     return _get_df(mol_list, ligand_df.settings)
@@ -114,7 +126,51 @@ def _get_df(mol_list: Sequence[Molecule],
     return df
 
 
+def get_functional_groups(functional_groups: Optional[Iterable[str]] = None,
+                          split: bool = True) -> Tuple[Chem.Mol]:
+    """Construct a list of RDKit molecules representing functional groups.
+
+    Parameters
+    ----------
+    functional_groups : |list|_ [|str|_]
+        Optional: A list of smiles strings representing functional groups.
+        Will default to templates provided by CAT if ``None``.
+
+    split : bool
+        If templates should be pulled from the ``['split']`` or ``['no_split']`` block.
+        Only relevant if **functional_groups** is ``None``.
+
+    Returns
+    -------
+    |tuple|_ [|Chem.Mol|_]
+        A list of RDKit molecules constructed from either **functional_group** or
+        the default smiles templates in CAT.
+
+    """
+    # The user has, explicitly, provided functional groups
+    if functional_groups:
+        return tuple(_smiles_to_rdmol(smiles) for smiles in functional_groups)
+
+    # Read functional groups from the default CAT SMILES templates
+    if split:
+        func_groups = get_template('smiles.yaml').split
+    else:
+        func_groups = get_template('smiles.yaml').no_split
+
+    return tuple(_smiles_to_rdmol(smiles) for smiles in func_groups)
+
+
+def _smiles_to_rdmol(smiles: str) -> Chem.Mol:
+    """Convert a SMILES string into an rdkit Mol; supports explicit hydrogens."""
+    # RDKit tends to remove explicit hydrogens if SANITIZE_ADJUSTHS is enabled
+    sanitize = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_ADJUSTHS
+    mol = Chem.MolFromSmiles(smiles, sanitize=False)
+    Chem.rdmolops.SanitizeMol(mol, sanitizeOps=sanitize)
+    return mol
+
+
 def find_substructure(ligand: Molecule,
+                      func_groups: Iterable[Chem.Mol],
                       split: bool = True) -> List[Molecule]:
     """Identify interesting functional groups within the ligand.
 
@@ -122,6 +178,9 @@ def find_substructure(ligand: Molecule,
     ----------
     ligand : |plams.Molecule|_
         The ligand molecule.
+
+    func_groups : |tuple|_ [|Chem.Mol|_]
+        A collection of RDKit molecules representing functional groups.
 
     split : bool
         If a functional group should be split from **ligand** (``True``) or not (``False``).
@@ -137,36 +196,27 @@ def find_substructure(ligand: Molecule,
     """
     rdmol = molkit.to_rdmol(ligand)
 
-    # Creates a list containing predefined functional groups, each saved as an rdkit molecule
-    # IMPORTANT: The first atom should ALWAYS be the atom that should attach to the core
-    if split:
-        func_groups = get_template('smiles.yaml').split
-    else:
-        func_groups = get_template('smiles.yaml').no_split
-    func_groups = chain.from_iterable(func_groups.values())
-    func_groups = [Chem.MolFromSmarts(smarts) for smarts in func_groups]
-
     # Searches for functional groups (defined by functional_group_list) within the ligand
-    # Duplicates are removed
-    rdmatch = rdmol.GetSubstructMatches
-    matches = chain(*[rdmatch(smarts) for smarts in func_groups])
+    get_match = rdmol.GetSubstructMatches
+    matches = chain.from_iterable(get_match(mol, useChirality=True) for mol in func_groups)
 
     # Remove all duplicate matches, each heteroatom (match[0]) should have <= 1 entry
     ligand_indices = []
     ref = []
-    for match in matches:
-        if match[0] not in ref:
-            ligand_indices.append(match)
-            ref.append(match[0])
+    for idx_tup in matches:
+        i, *_ = idx_tup
+        if i in ref:
+            continue  # Skip duplicates
+
+        ligand_indices.append(idx_tup)
+        ref.append(i)
 
     if ligand_indices:
-        ligand_list = [substructure_split(ligand, tup, split) for tup in ligand_indices]
+        return [substructure_split(ligand, tup, split) for tup in ligand_indices]
     else:
         msg = 'No functional groups were found (optional.ligand.split = {}) for ligand: {}'
         print(get_time() + msg.format(split, ligand.properties.smiles))
-        ligand_list = []
-
-    return ligand_list
+        return []
 
 
 def substructure_split(ligand: Molecule,
@@ -201,9 +251,11 @@ def substructure_split(ligand: Molecule,
         lig.delete_atom(at2)
         mol_list = lig.separate_mod()
         for mol in mol_list:
-            if at1 in mol:
-                lig = mol
-                break
+            if at1 not in mol:
+                continue
+
+            lig = mol
+            break
 
         # Check if the ligand heteroatom has a charge assigned, assigns a charge if not
         if not at1.properties.charge or at1.properties.charge == 0:

@@ -16,11 +16,11 @@ Index
 
 API
 ---
-.. autofunction:: CAT.utils.type_to_string
-.. autofunction:: CAT.utils.get_time
-.. autofunction:: CAT.utils.check_sys_var
-.. autofunction:: CAT.utils.dict_concatenate
-.. autofunction:: CAT.utils.get_template
+.. autofunction:: type_to_string
+.. autofunction:: get_time
+.. autofunction:: check_sys_var
+.. autofunction:: dict_concatenate
+.. autofunction:: get_template
 
 """
 

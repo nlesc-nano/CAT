@@ -16,11 +16,11 @@ Index
 
 API
 ---
-.. autofunction:: CAT.attachment.qd_opt.init_qd_opt
-.. autofunction:: CAT.attachment.qd_opt.start_qd_opt
-.. autofunction:: CAT.attachment.qd_opt.get_job_settings
-.. autofunction:: CAT.attachment.qd_opt._qd_to_db
-.. autofunction:: CAT.attachment.qd_opt.qd_opt
+.. autofunction:: init_qd_opt
+.. autofunction:: start_qd_opt
+.. autofunction:: get_job_settings
+.. autofunction:: _qd_to_db
+.. autofunction:: qd_opt
 
 """
 

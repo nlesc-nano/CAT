@@ -1,84 +1,25 @@
 split:
-    ammonium_cation:
-        -   '[N+]C.[-]'
-        -   '[n+]C.[-]'
-        -   '[N+]c.[-]'
-        -   '[n+]c.[-]'
-    amide_anion:
-        -   'N(C)[H]'
-        -   'N(c)[H]'
-    phosphide_anion:
-        -   'P(C)[H]'
-        -   'P(c)[H]'
-    phosphorus_oxide_anion:
-        -   'O(P)[H]'
-        -   'O(p)[H]'
-    alkoxide_anion:
-        -   'O(C)[H]'
-        -   'O(c)[H]'
-    sulfide_anion:
-        -   'S(C)[H]'
-        -   'S(c)[H]'
-    sulfoxide_anion:
-        -   'O(S)[H]'
-        -   'O(s)[H]'
+    - '[N+]C.[F-]'  # ammonium fluoride
+    - '[N+]C.[Cl-]'  # ammonium chloride
+    - '[N+]C.[Br-]'  # ammonium bromide
+    - '[N+]C.[I-]'  # ammonium iodide
+    - 'N(C)[H]'  # amide anion
+    - 'P(C)[H]'  # phosphide anion
+    - 'O(P)[H]'  # phosphorus oxide anion
+    - 'O(C)[H]'  #  alkoxide anion
+    - 'S(C)[H]'  # sulfide anion
+    - 'O(S)[H]'  # sulfoxide anion
 no_split:
-    ammonium_cation:
-        -   '[N+]C'
-        -   '[n+]C'
-        -   '[N+]c'
-        -   '[n+]c'
-    amine:
-        -   'NC'
-        -   'Nc'
-        -   'nC'
-        -   'nc'
-    amide_anion:
-        -   '[N-]C'
-        -   '[N-]c'
-        -   '[n-]C'
-        -   '[n-]c'
-    phosphine:
-        -   'PC'
-        -   'Pc'
-        -   'pC'
-        -   'pc'
-    phosphide_anion:
-        -   '[P-]C'
-        -   '[P-]c'
-        -   '[p-]C'
-        -   '[p-]c'
-    phosphorus_oxide:
-        -   'OP'
-        -   'Op'
-        -   'oP'
-        -   'op'
-    phosphorus_oxide_anion:
-        -   '[O-]P'
-        -   '[O-]p'
-        -   '[o-]P'
-        -   '[o-]p'
-    alkoxide:
-        -   'OC'
-        -   'Oc'
-        -   'oC'
-        -   'oc'
-    alkoxide_anion:
-        -   '[O-]C'
-        -   '[O-]c'
-    sulfide:
-        -   'SC'
-        -   'Sc'
-        -   'sC'
-        -   'sc'
-    sulfide_anion:
-        -   '[S-]C'
-        -   '[S-]c'
-    sulfoxide:
-        -   'OS'
-        -   'Os'
-        -   'oS'
-        -   'os'
-    sulfoxide_anion:
-        -   '[O-]S'
-        -   '[O-]s'
+    - '[N+]C'  # ammonium cation
+    - 'NC'  # amine
+    - '[N-]C'  # amide anion
+    - 'PC'  # phosphine
+    - '[P-]C'  # phosphide anion
+    - 'OP'  # phosphorus oxide
+    - '[O-]P'  # phosphorus oxide anion
+    - 'OC'  # alkoxide
+    - '[O-]C'  # alkoxide anion
+    - 'SC'  # sulfide
+    - '[S-]C'  # sulfide anion
+    - 'OS'  # sulfoxide
+    - '[O-]S'  # sulfoxide anion
