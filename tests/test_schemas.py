@@ -12,7 +12,12 @@ from CAT.data_handling.validation_schemas import (
     mol_schema, core_schema, ligand_schema, qd_schema, database_schema,
     mongodb_schema, bde_schema, qd_opt_schema, crs_schema
 )
-from nanoCAT import CRSJob
+
+try:
+    from nanoCAT import CRSJob
+except ModuleNotFoundError:
+    from scm.plams.core.basejob import Job
+    CRSJob = Job
 
 PATH = 'tests/test_files'
 

@@ -1,4 +1,4 @@
-path: null
+path: tests/test_files
 
 input_cores:
     - Cd68Se55.xyz:
