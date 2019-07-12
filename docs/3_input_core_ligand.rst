@@ -18,7 +18,7 @@ recursively. Both absolute and relative paths are explored.
 Default Settings
 ~~~~~~~~~~~~~~~~
 
-::
+.. code::
 
     input_cores:
         - Cd68Se55.xyz:

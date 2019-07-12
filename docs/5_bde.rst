@@ -6,11 +6,11 @@ Bond Dissociation Energy
 Calculate the bond dissociation energy (BDE) of ligands attached to the
 surface of the core. The calculation consists of five distinct steps:
 
-    1.  Dissociate all combinations of |n| ligands (|Y|, see
-    **qd.dissociate.lig_count**) and an atom from the core (|X|, see
-    **qd.dissociate.core_atom**) within a radius *r* from aforementioned
-    core atom (see **qd.dissociate.lig_core_dist** and
-    **qd.dissociate.core_core_dist**).
+    1.  Dissociate all combinations of |n| ligands (|Y|, see :attr:`optional.qd.dissociate.lig_count`) a
+    nd an atom from the core (|X|, see :attr:`optional.qd.dissociate.core_atom`)
+    within a radius :math:`r` from aforementioned
+    core atom (see :attr:`optional.qd.dissociate.lig_core_dist` and
+    :attr:`optional.qd.dissociate.core_core_dist`).
     The dissociated compound has the general structure of |XYn|.
 
     2.  Optimize the geometry of |XYn| at the first level of theory
@@ -32,7 +32,7 @@ surface of the core. The calculation consists of five distinct steps:
 Default Settings
 ~~~~~~~~~~~~~~~~
 
-::
+.. code::
 
     optional:
         qd:
@@ -59,7 +59,7 @@ Arguments
 
 .. attribute:: optional.qd.dissociate
 
-    ::
+    .. code::
 
         optional:
             qd:
@@ -154,7 +154,7 @@ Arguments - Job Customization
 .. attribute:: optional.qd.dissociate
     :noindex:
 
-    ::
+    .. code::
 
         optional:
             qd:
@@ -187,7 +187,7 @@ Arguments - Job Customization
             :Parameter:     * **Type** - :class:`dict`, :class:`str` or :class:`bool`
                             * **Default value** – See below
 
-            ::
+            .. code::
 
                 s1:
                     input:
@@ -230,7 +230,7 @@ Arguments - Job Customization
             :Parameter:     * **Type** - :class:`dict`, :class:`str` or :class:`bool`
                             * **Default value** – See below
 
-            ::
+            .. code::
 
                 s2:
                     input:

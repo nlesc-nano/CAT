@@ -13,7 +13,7 @@ assuming one is content with the default settings.
 Default Settings
 ~~~~~~~~~~~~~~~~
 
-::
+.. code::
 
     optional:
         database:
@@ -49,7 +49,7 @@ Database
 
 .. attribute:: optional.database
 
-    ::
+    .. code::
 
         optional:
             database:
@@ -86,13 +86,13 @@ Database
 
         For example:
 
-        ::
+        .. code::
 
             optional:
                 database:
                     read: (core, ligand, qd)  # is equivalent to read: True
 
-        ::
+        .. code::
 
             optional:
                 database:
@@ -154,7 +154,7 @@ Core
 
 .. attribute:: optional.core
 
-    ::
+    .. code::
 
         optional:
             core:
@@ -189,12 +189,13 @@ Ligand
 
 .. attribute:: optional.ligand
 
-    ::
+    .. code::
 
         optional:
             ligand:
                 dirname: ligand
                 optimize: True
+                functional_groups: null
                 split: True
                 cosmo-rs: False
 
@@ -221,6 +222,22 @@ Ligand
         while checking for the optimal dihedral angle. The ligand fragments are
         biased towards more linear conformations to minimize inter-ligand
         repulsion once the ligands are attached to the core.
+
+
+    .. attribute:: optional.ligand.functional_groups
+
+        :Parameter:     * **Type** - :class:`str` or :class:`tuple` [:class:`str`]
+                        * **Default value** – ``None``
+
+        Manually specify SMILES strings representing functional groups.
+        For example, with :attr:`optional.ligand.functional_groups` = ``("O[H]", "[N+].[Cl-]")`` all
+        ligands will be searched for the presence of hydroxides and ammonium chlorides.
+
+        The first atom in each SMILES string (*i.e.* the "anchor") will be used for attaching the ligand
+        to the core, while the last atom (assuming :attr:`optional.ligand.split` = ``True``) will be
+        dissociated from the ligand and disgarded.
+
+        If not specified, the default functional groups of **CAT** are used.
 
 
     .. attribute:: optional.ligand.split
@@ -271,7 +288,7 @@ QD
 .. attribute:: optional.qd
 
 
-    ::
+    .. code::
 
         optional:
             qd:
@@ -339,11 +356,8 @@ QD
         surface of the core. See :ref:`Bond Dissociation Energy` for more details.
         The calculation consists of five distinct steps:
 
-            1.  Dissociate all combinations of |n| ligands (|Y|, see
-            **qd.dissociate.lig_count**) and an atom from the core (|X|, see
-            **qd.dissociate.core_atom**) within a radius *r* from aforementioned
-            core atom (see **qd.dissociate.lig_core_dist** and
-            **qd.dissociate.core_core_dist**).
+            1.  Dissociate all combinations of |n| ligands (|Y|) and an atom from the core (|X|)
+            within a radius *r* from aforementioned core atom.
             The dissociated compound has the general structure of |XYn|.
 
             2.  Optimize the geometry of |XYn| at the first level of theory
