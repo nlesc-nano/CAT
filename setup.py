@@ -92,6 +92,6 @@ setup(
                  'pycodestyle',
                  'data-CAT@git+https://github.com/nlesc-nano/data-CAT@master',
                  'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@master'],
-        'doc': ['sphinx', 'sphinx_rtd_theme', 'sphinx-autodoc-typehints']
+        'doc': ['sphinx>=2.0', 'sphinx_rtd_theme', 'sphinx-autodoc-typehints']
     }
 )
