@@ -36,7 +36,7 @@ Dependencies installation
 
 Using the conda environment the following packages should be installed:
 
-- rdkit_ & HDF5_: ``conda install -y --name CAT --channel conda-forge rdkit h5py``
+- rdkit_ : ``conda install -y --name CAT --channel conda-forge rdkit``
 
 .. _installation:
 

@@ -76,9 +76,6 @@ setup(
     ],
     setup_requires=[
         'pytest-runner',
-        'sphinx',
-        'sphinx_rtd_theme',
-        'recommonmark'
     ],
     tests_require=[
         'pytest',
