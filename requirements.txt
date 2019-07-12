@@ -1,0 +1,12 @@
+sphinx>=2.0
+sphinx_rtd_theme
+nbsphinx
+numpy
+scipy
+pandas
+pyyaml>=5.1
+schema
+git+https://github.com/SCM-NV/PLAMS@master
+plams@qmflows@git+https://github.com/SCM-NV/qmflows@master
+nano-cat@https://github.com/nlesc-nano/nano-CAT@master
+data-cat@https://github.com/nlesc-nano/data-CAT@master
