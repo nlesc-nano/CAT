@@ -5,6 +5,7 @@
 .. image:: https://img.shields.io/badge/python-3.7-blue.svg
    :target: https://www.python.org
 
+##############################
 Compound Attachment Tool 0.5.0
 ##############################
 
