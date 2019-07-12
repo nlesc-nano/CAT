@@ -8,7 +8,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 0.5.0
 *****
 
-* CAT_ has been split into 3 seperate packages:
+* CAT_ has been split into 3 seperate packages (see https://github.com/nlesc-nano/CAT/issues/39):
 
   * CAT_: A collection of tools designed for the automatic construction of composite chemical compounds.
   * nano-CAT_: A collection of tools for the analysis of nanocrystals.
@@ -20,7 +20,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * Added more tests.
 * Cleaned up all input-parsing related modules.
 * Custom function groups (*i.e.* SMILES_ strings) can now be specified in the input
-  under the optional.ligand.functional_groups key.
+  under the optional.ligand.functional_groups key (see https://github.com/nlesc-nano/CAT/issues/13).
 
 .. _CAT: https://github.com/nlesc-nano/CAT/
 .. _nano-CAT: https://github.com/nlesc-nano/nano-CAT/
