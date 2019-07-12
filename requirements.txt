@@ -1,6 +1,6 @@
 sphinx>=2.0
 sphinx_rtd_theme
-nbsphinx
+sphinx-autodoc-typehints
 numpy
 scipy
 pandas
