@@ -6,6 +6,7 @@ scipy
 pandas
 pyyaml>=5.1
 schema
-pymongo
-git+https://github.com/SCM-NV/PLAMS@master
+plams@git+https://github.com/SCM-NV/PLAMS@master
 qmflows@git+https://github.com/SCM-NV/qmflows@master
+nano-cat@git+https://github.com/nlesc-nano/nano-CAT@master
+data-cat@git+https://github.com/nlesc-nano/data-CAT@master

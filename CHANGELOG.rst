@@ -1,9 +1,32 @@
-###########
+##########
 Change Log
-###########
+##########
 
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
+
+0.5.0
+*****
+
+* CAT_ has been split into 3 seperate packages (see https://github.com/nlesc-nano/CAT/issues/39):
+
+  * CAT_: A collection of tools designed for the automatic construction of composite chemical compounds.
+  * nano-CAT_: A collection of tools for the analysis of nanocrystals.
+  * data-CAT_: A databasing framework for the Compound Attachment Tools package (CAT_).
+
+* Docstrings have been changed into NumPy style.
+* Added typehints.
+* Added the CAT.SettingsDataFrame and CAT.SettingsSeries classes.
+* Added more tests.
+* Cleaned up all input-parsing related modules.
+* Custom function groups (*i.e.* SMILES_ strings) can now be specified in the input
+  under the optional.ligand.functional_groups key (see https://github.com/nlesc-nano/CAT/issues/13).
+
+.. _CAT: https://github.com/nlesc-nano/CAT/
+.. _nano-CAT: https://github.com/nlesc-nano/nano-CAT/
+.. _data-CAT: https://github.com/nlesc-nano/data-CAT/
+.. _SMILES: https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system
+
 
 0.4.6
 *****

@@ -1,4 +1,4 @@
-path: /Users/basvanbeek/Documents/CdSe/Week_5
+path: tests/test_files
 
 input_cores:
     - Cd68Se55.xyz:
@@ -7,7 +7,6 @@ input_cores:
 input_ligands:
     - CO
     - CCO
-    # - FragranceDB2.txt
 
 optional:
     database:
@@ -16,11 +15,7 @@ optional:
         write: True
         overwrite: False
         mol_format: [pdb]
-        mongodb:
-            username: bob  # An optional username
-            password: my_fancy_password  # An optional password
-            host: localhost
-            port: 27017
+        mongodb: False
 
     core:
         dirname: core
@@ -34,5 +29,5 @@ optional:
 
     qd:
         dirname: QD
-        optimize: False
+        optimize: True
         dissociate: False

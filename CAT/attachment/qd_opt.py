@@ -1,73 +1,150 @@
-""" A module designed for optimizing the combined ligand & core. """
+"""
+CAT.attachment.qd_opt
+=====================
 
-__all__ = ['init_qd_opt']
+A module designed for optimizing the combined ligand & core.
+
+Index
+-----
+.. currentmodule:: CAT.attachment.qd_opt
+.. autosummary::
+    init_qd_opt
+    start_qd_opt
+    get_job_settings
+    _qd_to_db
+    qd_opt
+
+API
+---
+.. autofunction:: init_qd_opt
+.. autofunction:: start_qd_opt
+.. autofunction:: get_job_settings
+.. autofunction:: _qd_to_db
+.. autofunction:: qd_opt
+
+"""
+
+from typing import List
 
 import pandas as pd
 
-from scm.plams.core.settings import Settings
+from scm.plams import (Molecule, Settings)
 from scm.plams.core.functions import (init, finish)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 
 import qmflows
 
+from ..jobs import job_geometry_opt
 from ..utils import (get_time, type_to_string)
 from ..mol_utils import (fix_carboxyl, fix_h)
-from ..analysis.jobs import job_geometry_opt
-from ..data_handling.database import Database
-from ..data_handling.database_functions import mol_to_file
+from ..settings_dataframe import SettingsDataFrame
+
+try:
+    from dataCAT import (Database, mol_to_file)
+    DATA_CAT = True
+except ImportError:
+    DATA_CAT = False
+
+__all__ = ['init_qd_opt']
+
+# Aliases for pd.MultiIndex columns
+MOL = ('mol', '')
+OPT = ('opt', '')
+HDF5_INDEX = ('hdf5 index', '')
+JOB_SETTINGS_QD_OPT = ('job_settings_QD_opt', '')
+SETTINGS1 = ('settings', '1')
+SETTINGS2 = ('settings', '2')
 
 
-def init_qd_opt(qd_df, arg):
-    """ Initialized the quantum dot (constrained) geometry optimization.
+def init_qd_opt(qd_df: SettingsDataFrame) -> None:
+    """Initialize the quantum dot (constrained) geometry optimization.
+
     performs an inplace update of the *mol* column in **qd_df**.
 
-    :parameter qd_df: A dataframe of quantum dots.
-    :type qd_df: |pd.DataFrame|_ (columns: |str|_, index: |str|_, values: |plams.Molecule|_)
-    :parameter arg: A settings object containing all (optional) arguments.
-    :type arg: |plams.Settings|_ (superclass: |dict|_).
+    Parameters
+    ----------
+    qd_df : |CAT.SettingsDataFrame|_
+        A dataframe of quantum dots.
+
     """
+    # Extract arguments
+    settings = qd_df.settings.optional
+    write = DATA_CAT and 'qd' in settings.database.write
+    overwrite = DATA_CAT and 'qd' in settings.database.overwrite
+
     # Prepare slices
-    job_recipe = arg.optional.qd.optimize
-    overwrite = 'qd' in arg.optional.database.overwrite
-    if overwrite:
+    if overwrite and DATA_CAT:
         idx = pd.Series(True, index=qd_df.index, name='mol')
         message = '\t has been (re-)optimized'
     else:
-        idx = qd_df['opt'] == False  # noqa
+        idx = qd_df[OPT] == False  # noqa
         message = '\t has been optimized'
 
     # Optimize the geometries
     if idx.any():
-        init(path=arg.optional.qd.dirname, folder='QD_optimize')
-        for mol in qd_df['mol'][idx]:
-            mol.properties.job_path = []
-            qd_opt(mol, job_recipe)
-            print(get_time() + mol.properties.name + message)
-        finish()
-
-        job_settings = []
-        for mol in qd_df['mol']:
-            try:
-                job_settings.append(mol.properties.pop('job_path'))
-            except KeyError:
-                job_settings.append([])
-        qd_df[('job_settings_QD_opt', '')] = job_settings
+        start_qd_opt(qd_df, idx, message)
+        qd_df[JOB_SETTINGS_QD_OPT] = get_job_settings(qd_df)
         print()
     else:  # No new molecules, move along
         return None
 
     # Export the geometries to the database
-    if 'qd' in arg.optional.database.write:
+    if write and DATA_CAT:
         with pd.option_context('mode.chained_assignment', None):
-            _qd_to_db(qd_df, arg, idx)
+            _qd_to_db(qd_df, idx)
     return None
 
 
-def _qd_to_db(qd_df, arg, idx):
-    """Export quantum dot optimziation results to the database."""
-    job_recipe = arg.optional.qd.optimize
-    overwrite = 'qd' in arg.optional.database.overwrite
+def start_qd_opt(qd_df: SettingsDataFrame,
+                 idx: pd.Series,
+                 message: str) -> None:
+    """Loop over all molecules in ``qd_df.loc[idx]`` and perform geometry optimizations."""
+    # Extract arguments
+    path = qd_df.properties.optional.qd.dirname
+    job_recipe = qd_df.properties.optional.qd.optimize
 
+    # Perform the main optimization loop
+    init(path=path, folder='QD_optimize')
+    for mol in qd_df[MOL][idx]:
+        mol.properties.job_path = []
+        qd_opt(mol, job_recipe)
+        print(get_time() + mol.properties.name + message)
+    finish()
+
+
+def get_job_settings(qd_df: SettingsDataFrame) -> List[str]:
+    """Create a nested list of input files for each molecule in **ligand_df**."""
+    job_settings = []
+    for mol in qd_df[MOL]:
+        try:
+            job_settings.append(mol.properties.pop('job_path'))
+        except KeyError:
+            job_settings.append([])
+    return job_settings
+
+
+def _qd_to_db(qd_df: SettingsDataFrame,
+              idx: pd.Series) -> None:
+    """Export quantum dot optimziation results to the database.
+
+    Parameters
+    ----------
+    qd_df : |CAT.SettingsDataFrame|_
+        A dataframe of quantum dots.
+
+    idx : |pd.Series|_
+        A Series for slicing **qd_df**.
+
+    """
+    # Extract arguments
+    settings = qd_df.settings.optional
+    job_recipe = settings.qd.optimize
+    overwrite = DATA_CAT and 'qd' in settings.database.overwrite
+    mol_format = settings.database.mol_format
+    qd_path = settings.qd.dirname
+    db_path = settings.database.dirname
+
+    # Preapre the job recipe
     v1 = qmflows.geometry['specific'][type_to_string(job_recipe.job1)].copy()
     v1.update(job_recipe.s1)
     v2 = qmflows.geometry['specific'][type_to_string(job_recipe.job2)].copy()
@@ -77,9 +154,9 @@ def _qd_to_db(qd_df, arg, idx):
         '2': {'key': job_recipe.job2, 'value': v2}
     })
 
-    columns = [('hdf5 index', ''), ('job_settings_QD_opt', ''),
-               ('settings', '1'), ('settings', '2')]
-    database = Database(path=arg.optional.database.dirname)
+    # Update the database
+    columns = [HDF5_INDEX, JOB_SETTINGS_QD_OPT, SETTINGS1, SETTINGS2]
+    database = Database(path=db_path, **settings.database.mongodb)
     database.update_csv(
         qd_df[idx],
         columns=columns,
@@ -88,21 +165,37 @@ def _qd_to_db(qd_df, arg, idx):
         opt=True
     )
 
-    path = arg.optional.qd.dirname
-    mol_to_file(qd_df['mol'], path, overwrite, arg.optional.database.mol_format)
+    # Export xyz/pdb files
+    mol_to_file(qd_df[MOL], qd_path, overwrite, mol_format)
 
 
-def qd_opt(mol, job_recipe):
-    """ """
+def qd_opt(mol: Molecule,
+           job_recipe: Settings) -> None:
+    """Perform an optimization of the quantum dot.
+
+    Performs an inplace update of **mol**.
+
+    Parameters
+    ----------
+    mol : |plams.Molecule|_
+        The to-be optimized molecule.
+
+    job_recipe : |plams.Settings|_
+        A Settings instance containing all jon settings.
+        Expects 4 keys: ``"job1"``, ``"job2"``, ``"s1"``, ``"s2"``.
+
+    """
     if job_recipe.job1 is AMSJob:
         job_recipe.s1.input.ams.constraints.atom = mol.properties.indices
     if job_recipe.job2 is AMSJob:
         job_recipe.s2.input.ams.constraints.atom = mol.properties.indices
 
     # Prepare the job settings
-    mol.job_geometry_opt(job_recipe.job1, job_recipe.s1, name='QD_opt_part1')
+    job1, s1 = job_recipe.job1, job_recipe.s1
+    mol.job_geometry_opt(job1, s1, name='QD_opt_part1')
 
     # Fix broken angles
     fix_carboxyl(mol)
     fix_h(mol)
-    mol.job_geometry_opt(job_recipe.job2, job_recipe.s2, name='QD_opt_part2')
+    job2, s2 = job_recipe.job2, job_recipe.s2
+    mol.job_geometry_opt(job2, s2, name='QD_opt_part2')
