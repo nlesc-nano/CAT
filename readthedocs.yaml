@@ -14,4 +14,4 @@ formats: all
 
 # Configuration for Conda support
 conda:
-    environment: ./environment.yml
+    environment: origin/CAT_0.5/environment.yml
