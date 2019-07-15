@@ -279,14 +279,21 @@ def adf_connectivity(plams_mol: Molecule) -> List[str]:
         An ADF-compatible connectivity list of :math:`n` bonds.
 
     """
+    plams_mol.set_atoms_id()
+
     # Create list of indices of all aromatic bonds
-    rdmol = molkit.to_rdmol(plams_mol)
+    try:
+        rdmol = molkit.to_rdmol(plams_mol)
+    except ValueError:  # Plan B: ignore aromatic bonds
+        bonds = [f'{bond.atom1.id} {bond.atom2.id} {bond.order:.1f}' for bond in plams_mol.bonds]
+        plams_mol.unset_atoms_id()
+        return bonds
+
     aromatic = [bond.GetIsAromatic() for bond in rdmol.GetBonds()]
 
     # Create a list of bond orders; aromatic bonds get a bond order of 1.5
-    plams_mol.set_atoms_id()
     bond_orders = [(1.5 if ar else bond.order) for ar, bond in zip(aromatic, plams_mol.bonds)]
-    bonds = ['{:d} {:d} {:.1f}'.format(bond.atom1.id, bond.atom2.id, bond.order) for
+    bonds = [f'{bond.atom1.id} {bond.atom2.id} {order:.1f}' for
              bond, order in zip(plams_mol.bonds, bond_orders)]
     plams_mol.unset_atoms_id()
 
