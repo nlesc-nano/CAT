@@ -9,6 +9,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 *****
 
 * Documentation update.
+* Updated to the ligand dissociation module in nano-CAT_ (see https://github.com/nlesc-nano/nano-CAT/issues/1).
 
 
 0.5.0
