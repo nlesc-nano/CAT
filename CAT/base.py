@@ -48,7 +48,7 @@ from .attachment.ligand_anchoring import init_ligand_anchoring
 
 try:
     from nanoCAT.asa import init_asa
-    from nanoCAT.ligand_bde import init_bde
+    from nanoCAT.bde.bde_workflow import init_bde
     from nanoCAT.ligand_solvation import init_solv
     NANO_CAT = True
 except ImportError:
@@ -281,8 +281,8 @@ def prep_qd(ligand_df: SettingsDataFrame,
 
     """
     # Unpack arguments
-    optimize = ligand_df.settings.arg.optional.qd.optimize
-    dissociate = ligand_df.settings.arg.optional.qd.dissociate
+    optimize = ligand_df.settings.optional.qd.optimize
+    dissociate = ligand_df.settings.optional.qd.dissociate
     activation_strain = ligand_df.settings.optional.qd.activation_strain
 
     # Construct the quantum dots

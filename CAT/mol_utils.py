@@ -233,7 +233,7 @@ def to_atnum(item: Union[str, int]) -> int:
     elif isinstance(item, int):
         return item
 
-    err = "item expects an instance of 'str' or 'int'; observed type: '{}'"
+    err = "the 'item' argument expects an instance of 'str' or 'int'; observed type: '{}'"
     raise TypeError(err.format(item.__class__.__name__))
 
 
@@ -261,7 +261,7 @@ def to_symbol(item: Union[str, int]) -> str:
     elif isinstance(item, str):
         return item
 
-    err = "item expects an instance of 'str' or 'int'; observed type: '{}'"
+    err = "the 'item' argument expects an instance of 'str' or 'int'; observed type: '{}'"
     raise TypeError(err.format(item.__class__.__name__))
 
 

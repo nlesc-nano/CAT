@@ -107,7 +107,7 @@ def job_single_point(self, job: Callable,
     try:
         self.properties.energy.E = results.get_energy(unit='kcal/mol')
     except TypeError:
-        print(get_time() + 'WARNING: Failed to retrieve results of ' + results.job.name)
+        print(get_time() + f'WARNING: Failed to retrieve results of {results.job.name}')
     if not self.properties.energy.E or self.properties.energy.E is None:
         self.properties.energy.E = np.nan
 
@@ -166,9 +166,9 @@ def job_geometry_opt(self, job: Callable,
     try:
         self.from_mol_other(results.get_main_molecule())
         self.properties.energy.E = results.get_energy(unit='kcal/mol')
-    except TypeError as ex:
-        print(ex)
-        print(get_time() + 'WARNING: Failed to retrieve results of ' + results.job.name)
+    except TypeError:
+        print(get_time() + f'WARNING: Failed to retrieve results of {results.job.name}')
+
     if not self.properties.energy.E or self.properties.energy.E is None:
         self.properties.energy.E = np.nan
 
@@ -240,7 +240,7 @@ def job_freq(self, job, settings, name='Frequency_analysis', opt=True, ret_resul
     except TypeError:
         self.properties.frequencies = np.nan
         self.properties.energy = {'E': np.nan, 'H': np.nan, 'S': np.nan, 'G': np.nan}
-        print(get_time() + 'WARNING: Failed to retrieve results of ' + results.job.name)
+        print(get_time() + f'WARNING: Failed to retrieve results of {results.job.name}')
 
     if not isinstance(self.properties.frequencies, np.ndarray):
         self.properties.frequencies = np.nan
