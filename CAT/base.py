@@ -51,7 +51,7 @@ try:
     from nanoCAT.bde.bde_workflow import init_bde
     from nanoCAT.ligand_solvation import init_solv
     NANO_CAT = True
-except ImportError:
+except ModuleNotFoundError:
     NANO_CAT = False
 
 __all__ = ['prep']
