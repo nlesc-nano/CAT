@@ -316,7 +316,7 @@ bde_schema: Schema = Schema({
     'lig_count':  # THe number of ligands per core_atom
         And(int, lambda n: n >= 0),
 
-    Optional_('core_core_dist', default=5.0):
+    Optional_('core_core_dist', default=0.0):
         And(Or(int, float), lambda n: n >= 0.0, Use(float)),
 
     Optional_('lig_core_dist', default=5.0):
