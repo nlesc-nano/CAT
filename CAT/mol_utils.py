@@ -38,6 +38,8 @@ from __future__ import annotations
 
 from typing import (Optional, Iterable, Union, Tuple, List)
 
+import numpy as np
+
 from scm.plams import (Molecule, Atom, Bond, MoleculeError, add_to_class)
 from scm.plams.tools.periodic_table import PeriodicTable
 import scm.plams.interfaces.molecule.rdkit as molkit
@@ -207,6 +209,28 @@ def separate_mod(self) -> List[Molecule]:
         b.mol.bonds.append(b)
 
     return frags
+
+
+@add_to_class(Molecule)
+def round_coordinates(self, decimals: int = 3) -> None:
+    """Round the Cartesian coordinates of this instance to a given precision in decimal digits.
+
+    Performs an inplace update of this instance.
+
+    Note
+    ----
+
+
+
+    Parameters
+    ----------
+    decimals : int
+        The desired precision in decimal digits.
+
+    """
+    xyz = self.as_array()
+    np.round(xyz, decimals=decimals, out=xyz)
+    self.from_array(xyz)
 
 
 def to_atnum(item: Union[str, int]) -> int:
