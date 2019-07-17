@@ -28,17 +28,19 @@ import os
 import time
 import yaml
 import pkg_resources as pkg
-from os.path import (join, isdir, isfile, exists)
+from shutil import rmtree
 from typing import (Callable, Iterable, Optional)
+from os.path import (join, isdir, isfile, exists)
 
-from scm.plams.core.settings import Settings
-
+from scm.plams import (init, config, Settings)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 from scm.plams.interfaces.adfsuite.adf import ADFJob
 from scm.plams.interfaces.thirdparty.orca import ORCAJob
 from scm.plams.interfaces.thirdparty.cp2k import Cp2kJob
 from scm.plams.interfaces.thirdparty.dirac import DiracJob
 from scm.plams.interfaces.thirdparty.gamess import GamessJob
+
+from .gen_job_manager import GenJobManager
 
 __all__ = ['check_sys_var', 'dict_concatenate', 'get_time', 'get_template']
 
@@ -151,3 +153,77 @@ def validate_path(path: Optional[str]) -> str:
         raise FileNotFoundError(get_time() + f"'{path}' not found")
     elif isfile(path):
         raise NotADirectoryError(get_time() + f"'{path}' is not a directory")
+
+
+def restart_init(path: str,
+                 folder: str,
+                 hashing: Optional[str] = 'input') -> None:
+    """A wrapper around the plams.init_ function; used for importing one or more previous jobs.
+
+    All pickled .dill files in **path**/**folder**/ will be loaded into the
+    :class:`GenJobManager` instance initiated by :func:`init`.
+
+    .. _plams.init: https://www.scm.com/doc/plams/components/functions.html#scm.plams.core.functions.init
+
+    Note
+    ----
+    Previous jobs are stored in a more generator-esque manner in :attr:`GenJobManager.hashes` and
+    :class:`Job` instances are thus created on demand rather than
+    permanently storing them in memory.
+
+    Paramaters
+    ----------
+    path : str
+        The path to the PLAMS workdir.
+
+    folder : str
+        The name of the PLAMS workdir.
+
+    hashing : str
+        Optional: The type of hashing used by the PLAMS :class:`JobManager`.
+        Accepted values are: ``"input"``, ``"runscript"``, ``"input+runscript"`` and ``None``.
+
+    """  # noqa
+    attr_dict = {
+        'path': path,
+        'foldername': folder,
+        'workdir': join(path, folder),
+        'logfile': join(path, folder, 'logfile'),
+        'input': join(path, folder, hashing)
+    }
+
+    # Create a job manager
+    settings = Settings({'counter_len': 3, 'hashing': hashing, 'remove_empty_directories': True})
+    manager = GenJobManager(settings)
+    for k, v in attr_dict.items():
+        setattr(manager, k, v)
+
+    # Change the default job manager
+    init()
+    rmtree(config.default_jobmanager.workdir)
+    config.default_jobmanager = manager
+
+    # Update the default job manager with previous Jobs
+    workdir = manager.workdir
+    for f in os.listdir(workdir):
+        job_dir = join(workdir, f)
+        if not isdir(job_dir):  # Not a directory; move along
+            continue
+
+        dill_file = join(job_dir, f + '.dill')
+        if isfile(dill_file):  # Update JobManager.hashes
+            manager.load_job(dill_file)
+
+        # Grab the job name
+        try:
+            name, num = f.rsplit('.', 1)
+            num = int(num)
+        except ValueError:  # Jobname is not appended with a number
+            name = f
+            num = 1
+
+        # Update JobManager.names
+        try:
+            manager.names[name] = max(manager.names[name], num)
+        except KeyError:
+            manager.names[name] = num

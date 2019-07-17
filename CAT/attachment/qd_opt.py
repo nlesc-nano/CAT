@@ -100,8 +100,8 @@ def start_qd_opt(qd_df: SettingsDataFrame,
                  message: str) -> None:
     """Loop over all molecules in ``qd_df.loc[idx]`` and perform geometry optimizations."""
     # Extract arguments
-    path = qd_df.properties.optional.qd.dirname
-    job_recipe = qd_df.properties.optional.qd.optimize
+    path = qd_df.settings.optional.qd.dirname
+    job_recipe = qd_df.settings.optional.qd.optimize
 
     # Perform the main optimization loop
     init(path=path, folder='QD_optimize')

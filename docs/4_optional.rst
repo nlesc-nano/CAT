@@ -13,7 +13,7 @@ assuming one is content with the default settings.
 Default Settings
 ~~~~~~~~~~~~~~~~
 
-::
+.. code::
 
     optional:
         database:
@@ -21,7 +21,7 @@ Default Settings
             read: True
             write: True
             overwrite: False
-            mol_format: [pdb, xyz]
+            mol_format: (pdb, xyz)
             mongodb: False
 
         core:
@@ -35,10 +35,11 @@ Default Settings
             cosmo-rs: False
 
         qd:
-            dirname: QD
+            dirname: qd
             optimize: False
             activation_strain: False
             dissociate: False
+
 
 Arguments
 ~~~~~~~~~
@@ -46,267 +47,333 @@ Arguments
 Database
 --------
 
-::
+.. attribute:: optional.database
 
-    optional:
-        database:
-            dirname: database
-            read: True
-            write: True
-            overwrite: False
-            mol_format: [pdb, xyz]
-            mongodb: False
+    .. code::
 
-**database.dirname** |str|_ = *database*
+        optional:
+            database:
+                dirname: database
+                read: True
+                write: True
+                overwrite: False
+                mol_format: (pdb, xyz)
+                mongodb: False
 
-    The name of the directory where the database will be stored.
-    The database directory will be created (if it does not yet exist)
-    at the path specified in :ref:`Path`.
+|
 
-    |
+    .. attribute:: optional.database.dirname
 
-**database.read** |bool|_, |str|_ or |list|_ [|str|_] = *True*
+        :Parameter:     * **Type** - :class:`str`
+                        * **Default Value** - ``"qd"``
 
-    Before optimizing a structure, check if a geometry is available from
-    previous calculations. If a match is found, use that structure and
-    avoid a geometry reoptimizations. If one wants more control then the
-    boolean can be substituted for a list of strings (*i.e.* *core*,
-    *ligand* and/or *QD*), meaning that structures will be read only for a
-    specific subset.
+        The name of the directory where the database will be stored.
+        The database directory will be created (if it does not yet exist)
+        at the path specified in :ref:`Path`.
 
-    For example:
 
-        ::
+    .. attribute:: optional.database.read
+
+        :Parameter:     * **Type** - :class:`bool`, :class:`str` or :class:`tuple` [:class:`str`]
+                        * **Default value** - ``("core", "ligand", "qd")``
+
+        Before optimizing a structure, check if a geometry is available from
+        previous calculations. If a match is found, use that structure and
+        avoid a geometry reoptimizations. If one wants more control then the
+        boolean can be substituted for a list of strings (*i.e.* ``"core"``,
+        ``"ligand"`` and/or ``"qd"``), meaning that structures will be read only for a
+        specific subset.
+
+        For example:
+
+        .. code::
 
             optional:
                 database:
-                    read: [core, ligand, QD]  # is equivalent to read: True
+                    read: (core, ligand, qd)  # is equivalent to read: True
 
-        ::
+        .. code::
 
             optional:
                 database:
                     read: ligand
 
-    |
 
-**database.write** |bool|_, |str|_ or |list|_ [|str|_] = *True*
+    .. attribute:: optional.database.write
 
-    Export the optimized structures to the database of results.
-    Previous results will **not** be overwritten unless
-    ``optional.database.overwrite = True``. If one wants more control then
-    the boolean can be substituted for a list of strings (*i.e.* *core*,
-    *ligand* and/or *QD*), meaning that structures written for for a specific
-    subset.
+        :Parameter:     * **Type** - :class:`bool`, :class:`str` or :class:`tuple` [:class:`str`]
+                        * **Default value** - ``("core", "ligand", "qd")``
 
-    See **database.read** for a similar relevant example.
+        Export the optimized structures to the database of results.
+        Previous results will **not** be overwritten unless
+        :attr:`optional.database.overwrite` = ``True``. If one wants more control then
+        the boolean can be substituted for a list of strings (*i.e.* ``"core"``,
+        ``"ligand"`` and/or ``"qd"``), meaning that structures written for for a specific
+        subset.
 
-    |
+        See :attr:`optional.database.read` for a similar relevant example.
 
-**database.overwrite** |bool|_, |str|_ or |list|_ [|str|_] = *False*
 
-    Allows previous results in the database to be overwritten.
-    Only apllicable if ``optional.database.write = True``.
-    If one wants more control then the boolean can be substituted for
-    a list of strings (*i.e.* *core*, *ligand* and/or *QD*), meaning
-    that structures written for for a specific subset.
+    .. attribute:: optional.database.overwrite
 
-    See **database.read** for a similar relevant example.
+        :Parameter:     * **Type** - :class:`bool`, :class:`str` or :class:`tuple` [:class:`str`]
+                        * **Default value** - ``False``
 
-    |
+        Allows previous results in the database to be overwritten.
+        Only apllicable if :attr:`optional.database.write` = ``True``.
+        If one wants more control then the boolean can be substituted for
+        a list of strings (*i.e.* ``"core"``, ``"ligand"`` and/or ``"qd"``), meaning
+        that structures written for for a specific subset.
 
-**database.mol_format** |bool|_, |str|_ or |list|_ [|str|_] = [*pdb*, *xyz*]
+        See :attr:`optional.database.read` for a similar relevant example.
 
-    The file format(s) for storing moleculair structures.
-    By default all structures are stored in the .hdf5 format as
-    (partially) de-serialized .pdb files. Additional formats can be
-    requisted with this keyword.
-    Accepted values: *pdb* and/or *xyz*.
 
-    |
+    .. attribute:: optional.database.mol_format
 
-**database.mongodb** |bool|_ = *False*
+        :Parameter:     * **Type** - :class:`bool`, :class:`str` or :class:`tuple` [:class:`str`]
+                        * **Default value** - ``("pdb", "xyz")``
 
-    Handles convertion of the database to the mongoDB format.
-    Not implemented as of yet, this keyword is a placeholder.
+        The file format(s) for storing moleculair structures.
+        By default all structures are stored in the .hdf5 format as
+        (partially) de-serialized .pdb files. Additional formats can be
+        requisted with this keyword.
+        Accepted values: ``"pdb"`` and/or ``"xyz"``.
 
-    |
+
+    .. attribute:: optional.database.mongodb
+
+        :Parameter:     * **Type** - :class:`bool` or :class:`dict`
+                        * **Default Value** – ``False``
+
+        Handles convertion of the database to the mongoDB format.
+
+|
 
 Core
 ----
 
-::
+.. attribute:: optional.core
 
-    optional:
-        core:
-            dirname: core
-            dummy: Cl
+    .. code::
 
-**core.dirname** |str|_ = *core*
+        optional:
+            core:
+                dirname: core
+                dummy: Cl
 
-    The name of the directory where all cores will be stored.
-    The core directory will be created (if it does not yet exist)
-    at the path specified in :ref:`Path`.
+|
 
-    |
+    .. attribute:: optional.core.dirname
 
-**core.dummy** |str|_ or |int|_ = *Cl*
+        :Parameter:     * **Type** - :class:`str`
+                        * **Default value** – ``"core"``
 
-    The atomic number or atomic symbol of the atoms in the core which are to be
-    replaced with ligands. Alternatively, dummy atoms can be manually specified
-    with the core_indices variable.
+        The name of the directory where all cores will be stored.
+        The core directory will be created (if it does not yet exist)
+        at the path specified in :ref:`Path`.
 
-    |
+
+    .. attribute:: optional.core.dummy
+
+        :Parameter:     * **Type** - :class:`str` or :class:`int`
+                        * **Default value** – ``17``
+
+        The atomic number or atomic symbol of the atoms in the core which are to be
+        replaced with ligands. Alternatively, dummy atoms can be manually specified
+        with the core_indices variable.
+
+|
 
 Ligand
 ------
 
-::
+.. attribute:: optional.ligand
 
-    optional:
-        ligand:
-            dirname: ligand
-            optimize: True
-            split: True
-            cosmo-rs: False
+    .. code::
 
-**ligand.dirname** |str|_ = *ligand*
+        optional:
+            ligand:
+                dirname: ligand
+                optimize: True
+                functional_groups: null
+                split: True
+                cosmo-rs: False
 
-    The name of the directory where all ligands will be stored.
-    The ligand directory will be created (if it does not yet exist)
-    at the path specified in :ref:`Path`.
+|
 
-    |
+    .. attribute:: optional.ligand.dirname
 
-**ligand.optimize** |bool|_ = *True*
+        :Parameter:     * **Type** - :class:`str`
+                        * **Default value** – ``"ligand"``
 
-    Optimize the geometry of the to be attached ligands.
-    The ligand is split into one or multiple (more or less) linear fragments,
-    which are subsequently optimized (RDKit UFF [1_, 2_, 3_]) and reassembled
-    while checking for the optimal dihedral angle. The ligand fragments are
-    biased towards more linear conformations to minimize inter-ligand
-    repulsion once the ligands are attached to the core.
+        The name of the directory where all ligands will be stored.
+        The ligand directory will be created (if it does not yet exist)
+        at the path specified in :ref:`Path`.
 
-    |
 
-**ligand.split** |bool|_ = *True*
+    .. attribute:: optional.ligand.optimize
 
-    If *False*: The ligand in its entirety is to be attached to the core.
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``True``
 
-    -   N\ :sup:`+`\ R\ :sub:`4`\                -> N\ :sup:`+`\ R\ :sub:`4`\
+        Optimize the geometry of the to be attached ligands.
+        The ligand is split into one or multiple (more or less) linear fragments,
+        which are subsequently optimized (RDKit UFF [1_, 2_, 3_]) and reassembled
+        while checking for the optimal dihedral angle. The ligand fragments are
+        biased towards more linear conformations to minimize inter-ligand
+        repulsion once the ligands are attached to the core.
 
-    -   O\ :sub:`2`\CR                           -> O\ :sub:`2`\CR
 
-    -   HO\ :sub:`2`\CR                          -> HO\ :sub:`2`\CR
+    .. attribute:: optional.ligand.functional_groups
 
-    -   H\ :sub:`3`\CO\ :sub:`2`\CR              -> H\ :sub:`3`\CO\ :sub:`2`\CR
+        :Parameter:     * **Type** - :class:`str` or :class:`tuple` [:class:`str`]
+                        * **Default value** – ``None``
 
-    If *True*: A proton, counterion or functional group is to be removed from
-    the ligand before attachment to the core.
+        Manually specify SMILES strings representing functional groups.
+        For example, with :attr:`optional.ligand.functional_groups` = ``("O[H]", "[N+].[Cl-]")`` all
+        ligands will be searched for the presence of hydroxides and ammonium chlorides.
 
-    -   X\ :sup:`-`\.N\ :sup:`+`\ R\ :sub:`4`\   -> N\ :sup:`+`\ R\ :sub:`4`\
+        The first atom in each SMILES string (*i.e.* the "anchor") will be used for attaching the ligand
+        to the core, while the last atom (assuming :attr:`optional.ligand.split` = ``True``) will be
+        dissociated from the ligand and disgarded.
 
-    -   HO\ :sub:`2`\CR                          -> O\ :sup:`-`\ :sub:`2`\CR
+        If not specified, the default functional groups of **CAT** are used.
 
-    -   Na\ :sup:`+`\.O\ :sup:`-`\ :sub:`2`\CR	 -> O\ :sup:`-`\ :sub:`2`\CR
 
-    -   H\ :sub:`3`\CO\ :sub:`2`\CR              -> O\ :sup:`-`\ :sub:`2`\CR
+    .. attribute:: optional.ligand.split
 
-    |
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``True``
 
-**ligand.cosmo-rs** |bool|_ = *False*
+        If ``False``: The ligand in its entirety is to be attached to the core.
 
-    Perform a property calculation with COSMO-RS [4_, 5_, 6_, 7_]; the COSMO
-    surfaces are constructed using ADF MOPAC [8_, 9_, 10_].
+        -   N\ :sup:`+`\ R\ :sub:`4`\                -> N\ :sup:`+`\ R\ :sub:`4`\
 
-    The solvation energy of the ligand and its activity coefficient are
-    calculated in the following solvents: acetone, acetonitrile,
-    dimethyl formamide (DMF), dimethyl sulfoxide (DMSO), ethyl acetate,
-    ethanol, *n*-hexane, toluene and water.
+        -   O\ :sub:`2`\CR                           -> O\ :sub:`2`\CR
 
-    |
+        -   HO\ :sub:`2`\CR                          -> HO\ :sub:`2`\CR
+
+        -   H\ :sub:`3`\CO\ :sub:`2`\CR              -> H\ :sub:`3`\CO\ :sub:`2`\CR
+
+        If ``True``: A proton, counterion or functional group is to be removed from
+        the ligand before attachment to the core.
+
+        -   X\ :sup:`-`\.N\ :sup:`+`\ R\ :sub:`4`\   -> N\ :sup:`+`\ R\ :sub:`4`\
+
+        -   HO\ :sub:`2`\CR                          -> O\ :sup:`-`\ :sub:`2`\CR
+
+        -   Na\ :sup:`+`\.O\ :sup:`-`\ :sub:`2`\CR	 -> O\ :sup:`-`\ :sub:`2`\CR
+
+        -   H\ :sub:`3`\CO\ :sub:`2`\CR              -> O\ :sup:`-`\ :sub:`2`\CR
+
+
+    .. attribute:: optional.ligand.cosmo-rs
+
+        :Parameter:     * **Type** - :class:`bool` or :class:`dict`
+                        * **Default value** – ``False``
+
+        Perform a property calculation with COSMO-RS [4_, 5_, 6_, 7_]; the COSMO
+        surfaces are constructed using ADF MOPAC [8_, 9_, 10_].
+
+        The solvation energy of the ligand and its activity coefficient are
+        calculated in the following solvents: acetone, acetonitrile,
+        dimethyl formamide (DMF), dimethyl sulfoxide (DMSO), ethyl acetate,
+        ethanol, *n*-hexane, toluene and water.
+
+|
 
 QD
 --
 
-::
+.. attribute:: optional.qd
 
-    optional:
-        qd:
-            dirname: QD
-            optimize: False
-            activation_strain: False
-            dissociate: False
 
-**qd.dirname** |str|_ = *QD*
+    .. code::
 
-    The name of the directory where all quantum dots will be stored.
-    The quantum dot directory will be created (if it does not yet exist)
-    at the path specified in :ref:`Path`.
+        optional:
+            qd:
+                dirname: QD
+                optimize: False
+                activation_strain: False
+                dissociate: False
 
-    |
+|
 
-**qd.optimize** |bool|_ = *False*
+    .. attribute:: optional.qd.dirname
 
-    Optimize the quantum dot (i.e. core + all ligands) with ADF UFF [3_, 11_].
-    The geometry of the core and ligand atoms directly attached to the core
-    are frozen during this optimization.
+        :Parameter:     * **Type** - :class:`str`
+                        * **Default value** – ``"qd"``
 
-    |
+        The name of the directory where all quantum dots will be stored.
+        The quantum dot directory will be created (if it does not yet exist)
+        at the path specified in :ref:`Path`.
 
-**qd.activation_strain** |bool|_ = *False*
 
-    Perform an activation strain analyses [12_, 13_, 14_]
-    (kcal mol\ :sup:`-1`\) on the ligands attached to the quantum dot surface
-    with RDKit UFF [1_, 2_, 3_].
+    .. attribute:: optional.qd.optimize
 
-    The core is removed during this process; the analyses is thus exclusively
-    focused on ligand deformation and inter-ligand interaction.
-    Yields three terms:
+        :Parameter:     * **Type** - :class:`bool` or :class:`dict`
+                        * **Default value** – ``False``
 
-    1.  d\ *E*\ :sub:`strain`\  : 	The energy required to deform the ligand
-    from their equilibrium geometry to the geometry they adopt on the quantum
-    dot surface. This term is, by definition, destabilizing. Also known as the
-    preperation energy (d\ *E*\ :sub:`prep`\).
+        Optimize the quantum dot (i.e. core + all ligands) with ADF UFF [3_, 11_].
+        The geometry of the core and ligand atoms directly attached to the core
+        are frozen during this optimization.
 
-    2.  d\ *E*\ :sub:`int`\  :	The mutual interaction between all deformed
-    ligands. This term is characterized by the non-covalent interaction between
-    ligands (UFF Lennard-Jones potential) and, depending on the inter-ligand
-    distances, can be either stabilizing or destabilizing.
 
-    3.  d\ *E* :	The sum of d\ *E*\ :sub:`strain`\  and d\ *E*\ :sub:`int`\ .
-    Accounts for both the destabilizing ligand deformation and (de-)stabilizing
-    interaction between all ligands in the absence of the core.
+    .. attribute:: optional.qd.activation_strain
 
-    |
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``False``
 
-**qd.dissociate** |bool|_ = *False*
+        Perform an activation strain analyses [12_, 13_, 14_]
+        (kcal mol\ :sup:`-1`\) on the ligands attached to the quantum dot surface
+        with RDKit UFF [1_, 2_, 3_].
 
-    Calculate the bond dissociation energy (BDE) of ligands attached to the
-    surface of the core. See :ref:`Bond Dissociation Energy` for more details.
-    The calculation consists of five distinct steps:
+        The core is removed during this process; the analyses is thus exclusively
+        focused on ligand deformation and inter-ligand interaction.
+        Yields three terms:
 
-    1.  Dissociate all combinations of *n* ligandsand an atom from the core
-    within a radius *r* from aforementioned core atom.
-    General structure: |XYn|.
+        1.  d\ *E*\ :sub:`strain`\  : 	The energy required to deform the ligand
+        from their equilibrium geometry to the geometry they adopt on the quantum
+        dot surface. This term is, by definition, destabilizing. Also known as the
+        preperation energy (d\ *E*\ :sub:`prep`\).
 
-    2.  Optimize the geometry of |XYn| at the first level of theory
-    (lvl1): ADF MOPAC [1_, 2_, 3_].
+        2.  d\ *E*\ :sub:`int`\  :	The mutual interaction between all deformed
+        ligands. This term is characterized by the non-covalent interaction between
+        ligands (UFF Lennard-Jones potential) and, depending on the inter-ligand
+        distances, can be either stabilizing or destabilizing.
 
-    3.  Calculate the "electronic" contribution to the BDE (|dE|)
-    at the first level of theory (lvl1): ADF MOPAC [1_, 2_, 3_].
-    This step consists of single point calculations of the complete
-    quantum dot, |XYn| and all |XYn|-dissociated quantum dots.
+        3.  d\ *E* :	The sum of d\ *E*\ :sub:`strain`\  and d\ *E*\ :sub:`int`\ .
+        Accounts for both the destabilizing ligand deformation and (de-)stabilizing
+        interaction between all ligands in the absence of the core.
 
-    4.  Calculate the thermalchemical contribution to the BDE (|ddG|) at the
-    second level of theory (lvl2): ADF UFF [4_, 5_]. This step consists
-    of geometry optimizations and frequency analyses of the same
-    compounds used for step 3.
 
-    5.  |dG| = |dE_lvl1| + |ddG_lvl2| = |dE_lvl1| + ( |dG_lvl2| - |dE_lvl2|
-    ).
+    .. attribute:: optional.qd.dissociate
 
-    |
+        :Parameter:     * **Type** - :class:`bool` or :class:`dict`
+                        * **Default value** – ``False``
+
+        Calculate the bond dissociation energy (BDE) of ligands attached to the
+        surface of the core. See :ref:`Bond Dissociation Energy` for more details.
+        The calculation consists of five distinct steps:
+
+            1.  Dissociate all combinations of |n| ligands (|Y|) and an atom from the core (|X|)
+            within a radius *r* from aforementioned core atom.
+            The dissociated compound has the general structure of |XYn|.
+
+            2.  Optimize the geometry of |XYn| at the first level of theory
+            (:math:`1`). Default: ADF MOPAC [1_, 2_, 3_].
+
+            3.  Calculate the "electronic" contribution to the BDE (|dE|)
+            at the first level of theory (:math:`1`): ADF MOPAC [1_, 2_, 3_].
+            This step consists of single point calculations of the complete
+            quantum dot, |XYn| and all |XYn|-dissociated quantum dots.
+
+            4.  Calculate the thermalchemical contribution to the BDE (|ddG|) at the
+            second level of theory (:math:`2`). Default: ADF UFF [4_, 5_]. This step
+            consists of geometry optimizations and frequency analyses of the same
+            compounds used for step 3.
+
+            5.  :math:`\Delta G_{tot} = \Delta E_{1} + \Delta \Delta G_{2} = \Delta E_{1} + (\Delta G_{2} - \Delta E_{2})`.
 
 
 .. _1: http://www.rdkit.org
@@ -324,21 +391,15 @@ QD
 .. _13: https://doi.org/10.1002/wcms.1221
 .. _14: https://doi.org/10.1021/acs.jpcc.5b02987
 
-.. _bool: https://docs.python.org/3/library/stdtypes.html#boolean-values
-.. _str: https://docs.python.org/3/library/stdtypes.html#str
-.. _list: https://docs.python.org/3/library/stdtypes.html#list
-.. _int: https://docs.python.org/3/library/functions.html#int
-
-.. |bool| replace:: ``bool``
-.. |str| replace:: ``str``
-.. |list| replace:: ``list``
-.. |int| replace:: ``int``
-
-.. |dE| replace:: d\ *E*
-.. |dE_lvl1| replace:: d\ *E*\ :sub:`lvl1`
-.. |dE_lvl2| replace:: d\ *E*\ :sub:`lvl2`
-.. |dG| replace:: d\ *G*
-.. |dG_lvl2| replace:: d\ *G*\ :sub:`lvl2`
-.. |ddG| replace:: dd\ *G*
-.. |ddG_lvl2| replace:: dd\ *G*\ :sub:`lvl2`
-.. |XYn| replace:: XY\ :sub:`n`
+.. |dE| replace:: :math:`\Delta E`
+.. |dE_lvl1| replace:: :math:`\Delta E_{1}`
+.. |dE_lvl2| replace:: :math:`\Delta E_{2}`
+.. |dG| replace:: :math:`\Delta G_{tot}`
+.. |dG_lvl2| replace:: :math:`\Delta G_{2}`
+.. |ddG| replace:: :math:`\Delta \Delta G`
+.. |ddG_lvl2| replace:: :math:`\Delta \Delta G_{2}`
+.. |XYn| replace:: :math:`XY_{n}`
+.. |Yn| replace:: :math:`Y_{n}`
+.. |n| replace:: :math:`{n}`
+.. |X| replace:: :math:`X`
+.. |Y| replace:: :math:`Y`

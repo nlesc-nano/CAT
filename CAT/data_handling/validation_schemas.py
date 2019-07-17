@@ -313,10 +313,13 @@ bde_schema: Schema = Schema({
     'core_atom':
         And(Or(int, str), Use(to_atnum)),
 
-    'lig_count':  # THe number of ligands per core_atom
+    'lig_count':  # The number of ligands per core_atom
         And(int, lambda n: n >= 0),
 
-    Optional_('core_core_dist', default=5.0):
+    Optional_('keep_files', default=True):  # Delete files after the calculations are finished
+        bool,
+
+    Optional_('core_core_dist', default=0.0):
         And(Or(int, float), lambda n: n >= 0.0, Use(float)),
 
     Optional_('lig_core_dist', default=5.0):
@@ -394,6 +397,10 @@ qd_opt_schema: Schema = Schema({
 
 #: Schema for validating the ``['optional']['ligand']['cosmo-rs']`` block.
 crs_schema: Schema = Schema({
+    # Delete files after the calculations are finished
+    Optional_('keep_files', default=True):
+        bool,
+
     # The job type for constructing the COSMO surface
     Optional_('job1', default=_get_amsjob):
         Or(

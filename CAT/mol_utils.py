@@ -38,6 +38,8 @@ from __future__ import annotations
 
 from typing import (Optional, Iterable, Union, Tuple, List)
 
+import numpy as np
+
 from scm.plams import (Molecule, Atom, Bond, MoleculeError, add_to_class)
 from scm.plams.tools.periodic_table import PeriodicTable
 import scm.plams.interfaces.molecule.rdkit as molkit
@@ -209,6 +211,23 @@ def separate_mod(self) -> List[Molecule]:
     return frags
 
 
+@add_to_class(Molecule)
+def round_coords(self, decimals: int = 3) -> None:
+    """Round the Cartesian coordinates of this instance to a given precision in decimal digits.
+
+    Performs an inplace update of all atoms in this instance.
+
+    Parameters
+    ----------
+    decimals : int
+        The desired precision in decimal digits.
+
+    """
+    xyz = self.as_array()
+    np.round(xyz, decimals=decimals, out=xyz)
+    self.from_array(xyz)
+
+
 def to_atnum(item: Union[str, int]) -> int:
     """Turn an atomic symbol into an atomic number.
 
@@ -233,7 +252,7 @@ def to_atnum(item: Union[str, int]) -> int:
     elif isinstance(item, int):
         return item
 
-    err = "item expects an instance of 'str' or 'int'; observed type: '{}'"
+    err = "the 'item' argument expects an instance of 'str' or 'int'; observed type: '{}'"
     raise TypeError(err.format(item.__class__.__name__))
 
 
@@ -261,7 +280,7 @@ def to_symbol(item: Union[str, int]) -> str:
     elif isinstance(item, str):
         return item
 
-    err = "item expects an instance of 'str' or 'int'; observed type: '{}'"
+    err = "the 'item' argument expects an instance of 'str' or 'int'; observed type: '{}'"
     raise TypeError(err.format(item.__class__.__name__))
 
 
@@ -279,14 +298,21 @@ def adf_connectivity(plams_mol: Molecule) -> List[str]:
         An ADF-compatible connectivity list of :math:`n` bonds.
 
     """
+    plams_mol.set_atoms_id()
+
     # Create list of indices of all aromatic bonds
-    rdmol = molkit.to_rdmol(plams_mol)
+    try:
+        rdmol = molkit.to_rdmol(plams_mol)
+    except ValueError:  # Plan B: ignore aromatic bonds
+        bonds = [f'{bond.atom1.id} {bond.atom2.id} {bond.order:.1f}' for bond in plams_mol.bonds]
+        plams_mol.unset_atoms_id()
+        return bonds
+
     aromatic = [bond.GetIsAromatic() for bond in rdmol.GetBonds()]
 
     # Create a list of bond orders; aromatic bonds get a bond order of 1.5
-    plams_mol.set_atoms_id()
     bond_orders = [(1.5 if ar else bond.order) for ar, bond in zip(aromatic, plams_mol.bonds)]
-    bonds = ['{:d} {:d} {:.1f}'.format(bond.atom1.id, bond.atom2.id, bond.order) for
+    bonds = [f'{bond.atom1.id} {bond.atom2.id} {order:.1f}' for
              bond, order in zip(plams_mol.bonds, bond_orders)]
     plams_mol.unset_atoms_id()
 

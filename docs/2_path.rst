@@ -6,31 +6,22 @@ path
 Default Settings
 ~~~~~~~~~~~~~~~~
 
-::
+.. code::
 
-    path: None
+    path: null
+
+|
 
 Arguments
 ~~~~~~~~~
 
-**path** |None|_ or |str|_ = *None*
+.. attribute:: path
+
+    :Parameter:     * **Type** - :class:`str` or :class:`NoneType`
+                    * **Default value** – ``None``
 
     The path were all working directories are/will be stored.
     To use the current working directory, use one of the following values:
+    ``None``, ``"."``, ``""`` or ``"path_to_workdir"``.
 
-    -   *None*
-
-    -   *.*
-
-    -   *cwd*
-
-    -   |$PWD|
-
-    -   /path/to/my/current/working/directory
-
-.. _str: https://docs.python.org/3/library/stdtypes.html#str
-.. _None: https://docs.python.org/3.7/library/constants.html#None
-
-.. |None| replace:: ``None``
-.. |str| replace:: ``str``
-.. |$PWD| replace:: *$PWD*
+    Note: The yaml format uses ``null`` rather than ``None``.

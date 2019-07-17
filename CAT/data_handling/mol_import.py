@@ -114,7 +114,8 @@ def read_mol_xyz(mol_dict: Settings) -> Optional[Molecule]:
         mol = Molecule(mol_dict.mol, inputformat='xyz')
         if mol_dict.guess_bonds:
             mol.guess_bonds()
-        canonicalize_mol(mol)
+        if not mol_dict.is_core:
+            canonicalize_mol(mol)
         return mol
     except Exception as ex:
         print_exception(read_mol_xyz.__code__, ex, mol_dict.mol)
@@ -126,7 +127,8 @@ def read_mol_pdb(mol_dict: Settings) -> Optional[Molecule]:
         mol = molkit.readpdb(mol_dict.mol)
         if mol_dict.guess_bonds:
             mol.guess_bonds()
-        canonicalize_mol(mol)
+        if not mol_dict.is_core:
+            canonicalize_mol(mol)
         return mol
     except Exception as ex:
         print_exception(read_mol_pdb.__code__, ex, mol_dict.mol)
@@ -138,7 +140,8 @@ def read_mol_mol(mol_dict: Settings) -> Optional[Molecule]:
         mol = molkit.from_rdmol(Chem.MolFromMolFile(mol_dict.mol, removeHs=False))
         if mol_dict.guess_bonds:
             mol.guess_bonds()
-        canonicalize_mol(mol)
+        if not mol_dict.is_core:
+            canonicalize_mol(mol)
         return mol
     except Exception as ex:
         print_exception(read_mol_mol.__code__, ex, mol_dict.mol)
@@ -161,7 +164,8 @@ def read_mol_plams(mol_dict: Settings) -> Optional[Molecule]:
         mol = mol_dict.mol
         if mol_dict.guess_bonds:
             mol.guess_bonds()
-        canonicalize_mol(mol)
+        if not mol_dict.is_core:
+            canonicalize_mol(mol)
         return mol
     except Exception as ex:
         print_exception(read_mol_plams.__code__, ex, mol_dict.mol)
@@ -173,7 +177,8 @@ def read_mol_rdkit(mol_dict: Settings) -> Optional[Molecule]:
         mol = molkit.from_rdmol(mol_dict.mol)
         if mol_dict.guess_bonds:
             mol.guess_bonds()
-        canonicalize_mol(mol)
+        if not mol_dict.is_core:
+            canonicalize_mol(mol)
         return mol
     except Exception as ex:
         print_exception(read_mol_rdkit.__code__, ex, mol_dict.mol)

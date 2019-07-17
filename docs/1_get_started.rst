@@ -39,6 +39,7 @@ Default Settings
         - OC(C)=O
         - OC(CC)=O
 
+
 Verbose default Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -60,7 +61,7 @@ Verbose default Settings
             read: True
             write: True
             overwrite: False
-            mol_format: [pdb, xyz]
+            mol_format: (pdb, xyz)
             mongodb: False
 
         core:
@@ -97,10 +98,10 @@ Maximum verbose default Settings
     optional:
         database:
             dirname: database
-            read: True
-            write: True
+            read: (core, ligand, qd)
+            write: (core, ligand, qd)
             overwrite: False
-            mol_format: [pdb, xyz]
+            mol_format: (pdb, xyz)
             mongodb: False
 
         core:

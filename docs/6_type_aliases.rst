@@ -4,41 +4,41 @@ Type Aliases
 ============
 
 Aliases are available for a large number of job types,
-allowing one to pass a |str|_ instead of a |type|_ object, thus simplifying
+allowing one to pass a :class:`str` instead of a :class:`type` object, thus simplifying
 the input settings for **CAT**. Aliases are insensitive towards capitalization
 (or lack thereof).
 
-A comprehensive list of |Job|_ subclasses and their respective
-aliases (|str|_) is presented below.
+A comprehensive list of :class:`plams.Job` subclasses and their respective
+aliases (*i.e.* :class:`str`) is presented below.
 
 Aliases
 ~~~~~~~
 
--   |ADFJob|_ = *adf* = *adfjob*
+-   |ADFJob|_ = ``"adf"`` = ``"adfjob"``
 
--   |AMSJob|_ = *ams* = *amsjob*
+-   |AMSJob|_ = ``"ams"`` = ``"amsjob"``
 
--   |UFFJob|_ = *uff* = *uffjob*
+-   |UFFJob|_ = ``"uff"`` = ``"uffjob"``
 
--   |BANDJob|_ = *band* = *bandjob*
+-   |BANDJob|_ = ``"band"`` = ``"bandjob"``
 
--   |DFTBJob|_ = *dftb* = *dftbjob*
+-   |DFTBJob|_ = ``"dftb"`` = ``"dftbjob"``
 
--   |MOPACJob|_ = *mopac* = *mopacjob*
+-   |MOPACJob|_ = ``"mopac"`` = ``"mopacjob"``
 
--   |ReaxFFJob|_ = *reaxff* = *reaxffjob*
+-   |ReaxFFJob|_ = ``"reaxff"`` = ``"reaxffjob"``
 
--   |Cp2kJob|_ = *cp2k* = *cp2kjob*
+-   |Cp2kJob|_ = ``"cp2k"`` = ``"cp2kjob"``
 
--   |ORCAJob|_ = *orca* = *orcajob*
+-   |ORCAJob|_ = ``"orca"`` = ``"orcajob"``
 
--   |DiracJob|_ = *dirac* = *diracjob*
+-   |DiracJob|_ = ``"dirac"`` = ``"diracjob"``
 
--   |GamessJob|_ = *gamess* = *gamessjob*
+-   |GamessJob|_ = ``"gamess"`` = ``"gamessjob"``
 
--   |DFTBPlusJob|_ = *dftbplus* = *dftbplusjob*
+-   |DFTBPlusJob|_ = ``"dftbplus"`` = ``"dftbplusjob"``
 
--   |CRSJob|_ = *crs* = *cosmo-rs* = *crsjob*
+-   |CRSJob|_ = ``"crs"`` = ``"cosmo-rs"`` = ``"crsjob"``
 
 
 .. _str: https://docs.python.org/3/library/stdtypes.html#str
@@ -57,11 +57,8 @@ Aliases
 .. _DiracJob: https://www.scm.com/doc/plams/interfaces/dirac.html#api
 .. _GamessJob: https://www.scm.com/doc/plams/interfaces/interfaces.html
 .. _DFTBPlusJob: https://www.scm.com/doc/plams/interfaces/dftbplus.html#api
-.. _CRSJob: https://github.com/BvB93/CAT/blob/master/CAT/analysis/crs.py
+.. _CRSJob: https://github.com/nlesc-nano/nano-CAT/blob/master/nanoCAT/crs.py
 
-.. |str| replace:: ``str``
-.. |type| replace:: ``type``
-.. |Job| replace:: ``Job``
 
 .. |ADFJob| replace:: ``ADFJob``
 .. |AMSJob| replace:: ``AMSJob``

@@ -5,6 +5,16 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+0.5.1
+*****
+
+* Documentation update.
+* Updated to the ligand dissociation module in nano-CAT_ (see https://github.com/nlesc-nano/nano-CAT/issues/1).
+* Added the ``keep_files`` keyword to the cosmo-rs and ligand dissociation workflows.
+  Default value: ``True``.
+* See https://github.com/nlesc-nano/nano-CAT/pull/9.
+
+
 0.5.0
 *****
 
