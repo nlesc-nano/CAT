@@ -13,11 +13,8 @@ from CAT.data_handling.validation_schemas import (
     mongodb_schema, bde_schema, qd_opt_schema, crs_schema
 )
 
-try:
-    from nanoCAT import CRSJob
-except ModuleNotFoundError:
-    from scm.plams.core.basejob import Job
-    CRSJob = Job
+from nanoCAT.crs import CRSJob
+
 
 PATH = 'tests/test_files'
 
