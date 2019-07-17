@@ -212,15 +212,10 @@ def separate_mod(self) -> List[Molecule]:
 
 
 @add_to_class(Molecule)
-def round_coordinates(self, decimals: int = 3) -> None:
+def round_coords(self, decimals: int = 3) -> None:
     """Round the Cartesian coordinates of this instance to a given precision in decimal digits.
 
-    Performs an inplace update of this instance.
-
-    Note
-    ----
-
-
+    Performs an inplace update of all atoms in this instance.
 
     Parameters
     ----------

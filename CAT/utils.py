@@ -28,11 +28,11 @@ import os
 import time
 import yaml
 import pkg_resources as pkg
-from os.path import (join, isdir, isfile, exists)
+from shutil import rmtree
 from typing import (Callable, Iterable, Optional)
+from os.path import (join, isdir, isfile, exists)
 
-from scm.plams.core.settings import Settings
-
+from scm.plams import (JobManager, init, config, Settings)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 from scm.plams.interfaces.adfsuite.adf import ADFJob
 from scm.plams.interfaces.thirdparty.orca import ORCAJob
@@ -151,3 +151,71 @@ def validate_path(path: Optional[str]) -> str:
         raise FileNotFoundError(get_time() + f"'{path}' not found")
     elif isfile(path):
         raise NotADirectoryError(get_time() + f"'{path}' is not a directory")
+
+
+def restart_init(path: str,
+                 folder: str,
+                 hashing: Optional[str] = 'input') -> None:
+    """A wrapper around the plams.init_ function; used for importing one or more previous jobs.
+
+    All pickled .dill files in **path**/**folder**/ will be loaded into the :class:`JobManager` instance
+    initiated by :func:`init`.
+
+    .. _plams.init: https://www.scm.com/doc/plams/components/functions.html#scm.plams.core.functions.init
+
+    Paramaters
+    ----------
+    path : str
+        The path to the PLAMS workdir.
+
+    folder : str
+        The name of the PLAMS workdir.
+
+    hashing : str
+        Optional: The type of hashing used by the PLAMS :class:`JobManager`.
+        Accepted values are: ``"input"``, ``"runscript"``, ``"input+runscript"`` and ``None``.
+
+    """  # noqa
+    attr_dict = {
+        'path': path,
+        'foldername': folder,
+        'workdir': join(path, folder),
+        'logfile': join(path, folder, 'logfile'),
+        'input': join(path, folder, hashing)
+    }
+
+    # Create a job manager
+    settings = Settings({'counter_len': 3, 'hashing': hashing, 'remove_empty_directories': True})
+    manager = JobManager(settings)
+    for k, v in attr_dict.items():
+        setattr(manager, k, v)
+
+    # Change the default job manager
+    init()
+    rmtree(config.default_jobmanager.workdir)
+    config.default_jobmanager = manager
+
+    # Update the default job manager with previous Jobs
+    for folder in os.listdir(manager.workdir):
+        dill_file = join(manager.workdir, folder, folder + '.dill')
+        if not isfile(dill_file):  # Not a .dill file; move along
+            continue
+
+        # Update JobManager.hashes
+        job = manager.load_job(dill_file)
+
+        # Update JobManager.jobs
+        manager.jobs.append(job)
+
+        # Grab the job name
+        name, num = folder.rsplit('.', 1)
+        try:
+            int(num)
+        except ValueError:  # Jobname is not appended with a number
+            name = folder
+
+        # Update JobManager.names
+        try:
+            manager.names[name] += 1
+        except KeyError:
+            manager.names[name] = 1
