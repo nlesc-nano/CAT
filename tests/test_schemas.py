@@ -310,7 +310,7 @@ def test_crs_schema() -> None:
     crs_dict['keep_files'] = 1  # Exception: incorrect type
     assert_exception(*args)
     crs_dict['keep_files'] = False
-    assert_id(bde_schema.validate(crs_dict)['keep_files'], False)
+    assert_id(crs_schema.validate(crs_dict)['keep_files'], False)
     crs_dict['keep_files'] = True
 
     for job in ('job1', 'job2'):
@@ -348,7 +348,7 @@ def test_bde_schema() -> None:
         'keep_files': True,
         'core_atom': 48,
         'lig_count': 2,
-        'core_core_dist': 5.0,
+        'core_core_dist': 0.0,
         'lig_core_dist': 5.0,
         'topology': {},
         'job1': AMSJob,
