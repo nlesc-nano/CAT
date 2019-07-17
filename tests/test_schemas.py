@@ -300,6 +300,7 @@ def test_crs_schema() -> None:
 
     crs_dict = Settings()
     ref = Settings({
+        'keep_files': True,
         'job1': AMSJob,
         's1': _crs_s1_default,
         'job2': CRSJob,
@@ -308,6 +309,12 @@ def test_crs_schema() -> None:
     args = SchemaError, crs_schema.validate, crs_dict
 
     assert_eq(crs_schema.validate(crs_dict), ref)
+
+    crs_dict['keep_files'] = 1  # Exception: incorrect type
+    assert_exception(*args)
+    crs_dict['keep_files'] = False
+    assert_id(bde_schema.validate(crs_dict)['keep_files'], False)
+    crs_dict['keep_files'] = True
 
     for job in ('job1', 'job2'):
         crs_dict[job] = 1  # Exception: incorrect type

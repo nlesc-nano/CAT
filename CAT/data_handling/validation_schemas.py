@@ -397,6 +397,10 @@ qd_opt_schema: Schema = Schema({
 
 #: Schema for validating the ``['optional']['ligand']['cosmo-rs']`` block.
 crs_schema: Schema = Schema({
+    # Delete files after the calculations are finished
+    Optional_('keep_files', default=True):
+        bool,
+
     # The job type for constructing the COSMO surface
     Optional_('job1', default=_get_amsjob):
         Or(
