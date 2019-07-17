@@ -39,6 +39,7 @@ Default Settings
             dissociate:
                 core_atom: Cd
                 lig_count: 2
+                keep_files: True
                 core_core_dist: 5.0
                 lig_core_dist: 5.0
                 core_index: False
@@ -66,6 +67,7 @@ Arguments
                 dissociate:
                     core_atom: Cd
                     lig_count: 2
+                    keep_files: True
                     core_core_dist: 5.0
                     lig_core_dist: 5.0
                     core_index: False
@@ -95,6 +97,14 @@ Arguments
         The number of ligands, *n*, which is to be dissociated in combination
         with a single core atom (X, see :attr:`optional.qd.dissociate.core_atom`).
         Yields a compound with the general formula |XYn|.
+
+
+        .. attribute:: optional.qd.dissociate.keep_files
+
+            :Parameter:     * **Type** - :class:`bool`
+                            * **Default value** – ``True``
+
+        Whether to keep or delete all BDE files after all calculations are finished.
 
 
         .. attribute:: optional.qd.dissociate.core_core_dist

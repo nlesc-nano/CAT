@@ -313,8 +313,11 @@ bde_schema: Schema = Schema({
     'core_atom':
         And(Or(int, str), Use(to_atnum)),
 
-    'lig_count':  # THe number of ligands per core_atom
+    'lig_count':  # The number of ligands per core_atom
         And(int, lambda n: n >= 0),
+
+    Optional_('keep_files', default=True):  # Delete files after the calculations are finished
+        bool,
 
     Optional_('core_core_dist', default=0.0):
         And(Or(int, float), lambda n: n >= 0.0, Use(float)),

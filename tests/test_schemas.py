@@ -341,6 +341,7 @@ def test_bde_schema() -> None:
 
     bde_dict = Settings({'core_atom': 'Cd', 'lig_count': 2})
     ref = Settings({
+        'keep_files': True,
         'core_atom': 48,
         'lig_count': 2,
         'core_core_dist': 5.0,
@@ -352,6 +353,12 @@ def test_bde_schema() -> None:
     args = SchemaError, bde_schema.validate, bde_dict
 
     assert_eq(bde_schema.validate(bde_dict), ref)
+
+    bde_dict['keep_files'] = 1  # Exception: incorrect type
+    assert_exception(*args)
+    bde_dict['keep_files'] = False
+    assert_id(bde_schema.validate(bde_dict)['keep_files'], False)
+    bde_dict['keep_files'] = True
 
     bde_dict['core_atom'] = 5.0  # Exception: incorrect type
     assert_exception(*args)
