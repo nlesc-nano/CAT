@@ -164,13 +164,8 @@ def _smiles_to_rdmol(smiles: str) -> Chem.Mol:
     """Convert a SMILES string into an rdkit Mol; supports explicit hydrogens."""
     # RDKit tends to remove explicit hydrogens if SANITIZE_ADJUSTHS is enabled
     sanitize = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_ADJUSTHS
-    try:
-        mol = Chem.MolFromSmiles(smiles, sanitize=False)
-        Chem.rdmolops.SanitizeMol(mol, sanitizeOps=sanitize)
-    except Exception as ex:
-        err = f'Failed to parse the following SMILES string: {repr(smiles)}\n\n{ex}'
-        ex_class = ex.__class__
-        raise ex_class(err)
+    mol = Chem.MolFromSmiles(smiles, sanitize=False)
+    Chem.rdmolops.SanitizeMol(mol, sanitizeOps=sanitize)
     return mol
 
 
