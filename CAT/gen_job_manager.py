@@ -105,11 +105,6 @@ class GenJobManager(JobManager):
             A |Job| instance stored there is loaded and returned.
             All attributes of this instance removed before pickling are restored.
 
-        Returns
-        -------
-        |str|_
-            The filename (excluding extension) of the .dill file.
-
         """
         def setstate(job, path, parent=None):
             job.parent = parent
