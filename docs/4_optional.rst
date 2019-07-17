@@ -65,7 +65,7 @@ Database
     .. attribute:: optional.database.dirname
 
         :Parameter:     * **Type** - :class:`str`
-                        * **Default Value** - ``"qd"``
+                        * **Default Value** - ``"database"``
 
         The name of the directory where the database will be stored.
         The database directory will be created (if it does not yet exist)
@@ -84,19 +84,24 @@ Database
         ``"ligand"`` and/or ``"qd"``), meaning that structures will be read only for a
         specific subset.
 
-        For example:
 
-        .. code::
+        .. admonition:: Example
 
-            optional:
-                database:
-                    read: (core, ligand, qd)  # is equivalent to read: True
+            Example #1:
 
-        .. code::
+            .. code::
 
-            optional:
-                database:
-                    read: ligand
+                optional:
+                    database:
+                        read: (core, ligand, qd)  # This is equivalent to read: True
+
+            Example #2:
+
+            .. code::
+
+                optional:
+                    database:
+                        read: ligand
 
 
     .. attribute:: optional.database.write
@@ -146,6 +151,10 @@ Database
                         * **Default Value** – ``False``
 
         Handles convertion of the database to the mongoDB format.
+
+        .. admonition:: See also
+
+            More extensive options for this argument are provided in :ref:`Database`:.
 
 |
 
@@ -239,32 +248,41 @@ Ligand
 
         If not specified, the default functional groups of **CAT** are used.
 
+        .. note::
+            This argument has no value be default and will thus default to SMILES strings of the default
+            functional groups supported by **CAT**.
+
+        .. note::
+            The yaml format uses ``null`` rather than ``None`` as in Python.
 
     .. attribute:: optional.ligand.split
 
         :Parameter:     * **Type** - :class:`bool`
                         * **Default value** – ``True``
 
-        If ``False``: The ligand in its entirety is to be attached to the core.
+        If ``False``: The ligand is to be attached to the core in its entirety .
 
-        -   N\ :sup:`+`\ R\ :sub:`4`\                -> N\ :sup:`+`\ R\ :sub:`4`\
-
-        -   O\ :sub:`2`\CR                           -> O\ :sub:`2`\CR
-
-        -   HO\ :sub:`2`\CR                          -> HO\ :sub:`2`\CR
-
-        -   H\ :sub:`3`\CO\ :sub:`2`\CR              -> H\ :sub:`3`\CO\ :sub:`2`\CR
+        =================== ==================
+        Before              After
+        =================== ==================
+        :math:`{NR_4}^+`    :math:`{NR_4}^+`
+        :math:`O_2 CR`      :math:`O_2 CR`
+        :math:`HO_2 CR`     :math:`HO_2 CR`
+        :math:`H_3 CO_2 CR` :math:`H_3 CO_2 CR`
+        =================== ==================
 
         If ``True``: A proton, counterion or functional group is to be removed from
         the ligand before attachment to the core.
 
-        -   X\ :sup:`-`\.N\ :sup:`+`\ R\ :sub:`4`\   -> N\ :sup:`+`\ R\ :sub:`4`\
-
-        -   HO\ :sub:`2`\CR                          -> O\ :sup:`-`\ :sub:`2`\CR
-
-        -   Na\ :sup:`+`\.O\ :sup:`-`\ :sub:`2`\CR	 -> O\ :sup:`-`\ :sub:`2`\CR
-
-        -   H\ :sub:`3`\CO\ :sub:`2`\CR              -> O\ :sup:`-`\ :sub:`2`\CR
+        ========================= ==================
+        Before                    After
+        ========================= ==================
+        :math:`Cl^- + {NR_4}^+`   :math:`{NR_4}^+`
+        :math:`HO_2 CR`           :math:`{O_2 CR}^-`
+        :math:`Na^+ + {O_2 CR}^-` :math:`{O_2 CR}^-`
+        :math:`HO_2 CR`           :math:`{O_2 CR}^-`
+        :math:`H_3 CO_2 CR`       :math:`{O_2 CR}^-`
+        ========================= ==================
 
 
     .. attribute:: optional.ligand.cosmo-rs
@@ -353,7 +371,7 @@ QD
                         * **Default value** – ``False``
 
         Calculate the bond dissociation energy (BDE) of ligands attached to the
-        surface of the core. See :ref:`Bond Dissociation Energy` for more details.
+        surface of the core.
         The calculation consists of five distinct steps:
 
             1.  Dissociate all combinations of |n| ligands (|Y|) and an atom from the core (|X|)
@@ -374,6 +392,11 @@ QD
             compounds used for step 3.
 
             5.  :math:`\Delta G_{tot} = \Delta E_{1} + \Delta \Delta G_{2} = \Delta E_{1} + (\Delta G_{2} - \Delta E_{2})`.
+
+        .. admonition:: See also
+
+            More extensive options for this argument are provided in :ref:`Bond Dissociation Energy`:.
+
 
 
 .. _1: http://www.rdkit.org

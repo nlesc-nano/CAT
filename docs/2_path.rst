@@ -24,4 +24,5 @@ Arguments
     To use the current working directory, use one of the following values:
     ``None``, ``"."``, ``""`` or ``"path_to_workdir"``.
 
-    Note: The yaml format uses ``null`` rather than ``None``.
+    .. note::
+        The yaml format uses ``null`` rather than ``None`` as in Python.
