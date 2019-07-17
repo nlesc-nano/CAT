@@ -31,7 +31,6 @@ except ModuleNotFoundError:
 from scm.plams import (JobManager, log, config, FileError)
 from scm.plams.core.basejob import (Job, MultiJob)
 
-
 __all__ = ['GenJobManager']
 
 
