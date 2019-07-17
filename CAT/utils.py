@@ -32,13 +32,15 @@ from shutil import rmtree
 from typing import (Callable, Iterable, Optional)
 from os.path import (join, isdir, isfile, exists)
 
-from scm.plams import (JobManager, init, config, Settings)
+from scm.plams import (init, config, Settings)
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 from scm.plams.interfaces.adfsuite.adf import ADFJob
 from scm.plams.interfaces.thirdparty.orca import ORCAJob
 from scm.plams.interfaces.thirdparty.cp2k import Cp2kJob
 from scm.plams.interfaces.thirdparty.dirac import DiracJob
 from scm.plams.interfaces.thirdparty.gamess import GamessJob
+
+from .gen_job_manager import GenJobManager
 
 __all__ = ['check_sys_var', 'dict_concatenate', 'get_time', 'get_template']
 
@@ -158,10 +160,16 @@ def restart_init(path: str,
                  hashing: Optional[str] = 'input') -> None:
     """A wrapper around the plams.init_ function; used for importing one or more previous jobs.
 
-    All pickled .dill files in **path**/**folder**/ will be loaded into the :class:`JobManager` instance
-    initiated by :func:`init`.
+    All pickled .dill files in **path**/**folder**/ will be loaded into the
+    :class:`GenJobManager` instance initiated by :func:`init`.
 
     .. _plams.init: https://www.scm.com/doc/plams/components/functions.html#scm.plams.core.functions.init
+
+    Note
+    ----
+    Previous jobs are stored in a more generator-esque manner in :attr:`GenJobManager.hashes` and
+    :class:`Job` instances are thus created on demand rather than
+    permanently storing them in memory.
 
     Paramaters
     ----------
@@ -186,7 +194,7 @@ def restart_init(path: str,
 
     # Create a job manager
     settings = Settings({'counter_len': 3, 'hashing': hashing, 'remove_empty_directories': True})
-    manager = JobManager(settings)
+    manager = GenJobManager(settings)
     for k, v in attr_dict.items():
         setattr(manager, k, v)
 
@@ -196,26 +204,26 @@ def restart_init(path: str,
     config.default_jobmanager = manager
 
     # Update the default job manager with previous Jobs
-    for folder in os.listdir(manager.workdir):
-        dill_file = join(manager.workdir, folder, folder + '.dill')
-        if not isfile(dill_file):  # Not a .dill file; move along
+    workdir = manager.workdir
+    for f in os.listdir(workdir):
+        job_dir = join(workdir, f)
+        if not isdir(job_dir):  # Not a directory; move along
             continue
 
-        # Update JobManager.hashes
-        job = manager.load_job(dill_file)
-
-        # Update JobManager.jobs
-        manager.jobs.append(job)
+        dill_file = join(job_dir, f + '.dill')
+        if isfile(dill_file):  # Update JobManager.hashes
+            manager.load_job(dill_file)
 
         # Grab the job name
-        name, num = folder.rsplit('.', 1)
         try:
-            int(num)
+            name, num = f.rsplit('.', 1)
+            num = int(num)
         except ValueError:  # Jobname is not appended with a number
-            name = folder
+            name = f
+            num = 1
 
         # Update JobManager.names
         try:
-            manager.names[name] += 1
+            manager.names[name] = max(manager.names[name], num)
         except KeyError:
-            manager.names[name] = 1
+            manager.names[name] = num

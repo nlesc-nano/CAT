@@ -32,5 +32,7 @@ optional:
         dirname: QD
         optimize: True
         dissociate:
+            keep_files: False
             core_atom: Cd
             lig_count: 2
+            core_index: [67, 68, 69, 79, 80, 81]
