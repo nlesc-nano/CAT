@@ -9,6 +9,7 @@ Index
 .. currentmodule:: CAT.assertion_functions
 .. autosummary::
     Invert
+    assert_attr
     assert_len
     assert_eq
     assert_id
@@ -20,12 +21,14 @@ Index
     assert_le
     assert_gt
     assert_ge
+    _args_to_str
     _err_msg
     _exc_msg
 
 API
 ---
 .. autoclass:: Invert
+.. autofunction:: assert_attr
 .. autofunction:: assert_len
 .. autofunction:: assert_eq
 .. autofunction:: assert_id
@@ -37,6 +40,7 @@ API
 .. autofunction:: assert_le
 .. autofunction:: assert_gt
 .. autofunction:: assert_ge
+.. autofunction:: _args_to_str
 .. autofunction:: _err_msg
 .. autofunction:: _exc_msg
 
@@ -114,20 +118,36 @@ class Invert():
         return wrapper
 
 
+def assert_attr(value: Any,
+                ref: str) -> Tuple[str, Any, str]:
+    """Assert :code:`hasattr(value, ref)`; returns arguments for :func:`._err_msg`."""
+    assertion = 'assert hasattr(value, reference)'
+
+    assert hasattr(value, ref), _err_msg(assertion, value, ref)
+
+    _assertion = 'assert not hasattr(value, reference)'
+    return _assertion, value, ref
+
+
 def assert_len(value: Sized,
-               ref: int) -> Tuple[str, Any, Any]:
+               ref: int) -> Tuple[str, str, int]:
     """Assert :code:`len(value) == ref`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert len(value) == reference'
-    assert len(value) == ref, _err_msg(assertion, value, ref)
+
+    assert_attr(value, '__len__')
+    value_len = f"{len(value)} == len(value); {value}"
+    assert len(value) == ref, _err_msg(assertion, value_len, ref)
 
     _assertion = 'assert len(value) != reference'
-    return _assertion, value, ref
+    return _assertion, value_len, ref
 
 
 def assert_le(value: Any,
               ref: Any) -> Tuple[str, Any, Any]:
     """Assert :code:`value <= ref`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert value <= reference'
+
+    assert_attr(value, '__le__')
     assert value <= ref, _err_msg(assertion, value, ref)
 
     _assertion = 'assert value > reference'
@@ -138,6 +158,8 @@ def assert_ge(value: Any,
               ref: Any) -> Tuple[str, Any, Any]:
     """Assert :code:`value >= ref`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert value => reference'
+
+    assert_attr(value, '__ge__')
     assert value >= ref, _err_msg(assertion, value, ref)
 
     _assertion = 'assert value < reference'
@@ -148,6 +170,8 @@ def assert_lt(value: Any,
               ref: Any) -> Tuple[str, Any, Any]:
     """Assert :code:`value < ref`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert value < reference'
+
+    assert_attr(value, '__lt__')
     assert value < ref, _err_msg(assertion, value, ref)
 
     _assertion = 'assert value >= reference'
@@ -158,6 +182,8 @@ def assert_gt(value: Any,
               ref: Any) -> Tuple[str, Any, Any]:
     """Assert :code:`value > ref`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert value > reference'
+
+    assert_attr(value, '__gt__')
     assert value > ref, _err_msg(assertion, value, ref)
 
     _assertion = 'assert value <= reference'
@@ -168,6 +194,8 @@ def assert_isin(value: Any,
                 ref: Container) -> Tuple[str, Any, Container]:
     """Assert :code:`value in ref`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert value in reference'
+
+    assert_attr(ref, '__contains__')
     assert value in ref, _err_msg(assertion, value, ref)
 
     _assertion = 'assert value not in reference'
@@ -180,6 +208,7 @@ def assert_instance(value: Any,
     assertion = 'assert isinstance(value, reference)'
     ref_name = ref.__name__
     value_name = value.__class__.__name__
+
     assert isinstance(value, ref), _err_msg(assertion, ref_name, value_name)
 
     _assertion = 'assert not isinstance(value, reference)'
@@ -192,6 +221,7 @@ def assert_subclass(value: type,
     assertion = 'assert issubclass(value, reference)'
     ref_name = ref.__name__
     value_name = value.__name__
+
     assert issubclass(value, ref), _err_msg(assertion, ref_name, value_name)
 
     _assertion = 'assert not issubclass(value, reference)'
@@ -202,6 +232,8 @@ def assert_eq(value: Any,
               ref: Any) -> Tuple[str, Any, Any]:
     """Assert :code:`value == ref`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert value == reference'
+
+    assert_attr(value, '__eq__')
     assert value == ref, _err_msg(assertion, value, ref)
 
     _assertion = 'assert value != reference'
@@ -212,9 +244,11 @@ def assert_id(value: Any,
               ref: Any) -> Tuple[str, int, int]:
     """Assert :code:`value is ref`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert value is reference'
+    value_id = f"'{hex(id(value))}' == hex(id(value)); {value}"
+    ref_id = f"'{hex(id(ref))}' == hex(id(reference)); {ref}"
+
     assert_eq(ref, value)
-    value_id = f'{id(value)} = id({value})'
-    ref_id = f'{id(ref)} = id({ref})'
+    assert_eq(ref.__class__, value.__class__)
     assert ref is value, _err_msg(assertion, value_id, ref_id)
 
     _assertion = 'assert value is not reference'
@@ -228,13 +262,11 @@ def assert_exception(exc: Exception,
     """Assert **exc** is raised by :code:`func(*args, **kwargs)`."""
     err_ref = exc.__name__
     err = None.__class__.__name__
-    arguments = ''
-    if args is not None:
-        arguments += ', '.join(repr(i) for i in args)
-    if kwargs is not None:
-        arguments += ', '.join(f'{k}={v}' for k, v in kwargs.items())
+    arguments = _args_to_str(*args, **kwargs)
     assertion = f'assert {func.__qualname__}({arguments}) -> {exc.__name__}'
 
+    assert_instance(exc, Exception)
+    assert_attr(func, '__call__')
     try:
         func(*args, **kwargs)
     except exc:  # The desired exception is raised
@@ -247,6 +279,17 @@ def assert_exception(exc: Exception,
 
     _assertion = f'assert {func.__qualname__}({arguments}) -/> {exc.__name__}'
     return _assertion, err, err_ref
+
+
+def _args_to_str(*args: Sequence,
+                 **kwargs: dict) -> str:
+    """Return a string representation of **args** and **kwargs** in :func:`assert_exception`."""
+    ret = ''
+    if args is not None:
+        ret += ', '.join(repr(i) for i in args)
+    if kwargs is not None:
+        ret += ', '.join(f'{k}={v}' for k, v in kwargs.items())
+    return ret
 
 
 def _err_msg(assertion: Any,
