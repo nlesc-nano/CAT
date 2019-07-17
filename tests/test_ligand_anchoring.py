@@ -54,25 +54,25 @@ def test_smiles_to_rdmol() -> None:
     """Tests for :meth:`CAT.attachment.ligand_anchoring._smiles_to_rdmol`."""
     smiles1 = 'CO'
     rdmol1 = _smiles_to_rdmol(smiles1)
-    C, O = rdmol1.GetAtoms()
+    C, O_ = rdmol1.GetAtoms()
 
     assert_len(C.GetBonds(), 1)
     assert_eq(C.GetSymbol(), 'C')
     assert_eq(C.GetFormalCharge(), 0)
-    assert_len(O.GetBonds(), 1)
-    assert_eq(O.GetSymbol(), 'O')
-    assert_eq(O.GetFormalCharge(), 0)
+    assert_len(O_.GetBonds(), 1)
+    assert_eq(O_.GetSymbol(), 'O')
+    assert_eq(O_.GetFormalCharge(), 0)
 
     smiles2 = 'CO[H]'
     rdmol2 = _smiles_to_rdmol(smiles2)
-    C, O, H = rdmol2.GetAtoms()
+    C, O_, H = rdmol2.GetAtoms()
 
     assert_len(C.GetBonds(), 1)
     assert_eq(C.GetSymbol(), 'C')
     assert_eq(C.GetFormalCharge(), 0)
-    assert_len(O.GetBonds(), 2)
-    assert_eq(O.GetSymbol(), 'O')
-    assert_eq(O.GetFormalCharge(), 0)
+    assert_len(O_.GetBonds(), 2)
+    assert_eq(O_.GetSymbol(), 'O')
+    assert_eq(O_.GetFormalCharge(), 0)
     assert_len(H.GetBonds(), 1)
     assert_eq(H.GetSymbol(), 'H')
     assert_eq(H.GetFormalCharge(), 0)
