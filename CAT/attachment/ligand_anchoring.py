@@ -36,7 +36,6 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit import Chem
 
-
 from ..utils import (get_time, get_template)
 from ..mol_utils import separate_mod
 from ..settings_dataframe import SettingsDataFrame
@@ -172,6 +171,7 @@ def _smiles_to_rdmol(smiles: str) -> Chem.Mol:
         ex_class = ex.__class__
         raise ex_class(err)
     return mol
+
 
 def find_substructure(ligand: Molecule,
                       func_groups: Iterable[Chem.Mol],
