@@ -9,6 +9,7 @@ Index
 .. currentmodule:: CAT.assertion_functions
 .. autosummary::
     Invert
+    assert_len
     assert_eq
     assert_id
     assert_subclass
@@ -25,6 +26,7 @@ Index
 API
 ---
 .. autoclass:: Invert
+.. autofunction:: assert_len
 .. autofunction:: assert_eq
 .. autofunction:: assert_id
 .. autofunction:: assert_subclass
@@ -41,7 +43,7 @@ API
 """
 
 from functools import wraps
-from typing import (Any, Callable, Tuple, Sequence, Container)
+from typing import (Any, Callable, Tuple, Sequence, Container, Sized)
 
 
 class Invert():
@@ -110,6 +112,16 @@ class Invert():
             else:
                 raise AssertionError(self.get_err_msg(func, tup))
         return wrapper
+
+
+def assert_len(value: Sized,
+               ref: int) -> Tuple[str, Any, Any]:
+    """Assert :code:`len(value) == ref`; returns arguments for :func:`._err_msg`."""
+    assertion = 'assert len(value) == reference'
+    assert len(value) == ref, _err_msg(assertion, value, ref)
+
+    _assertion = 'assert len(value) != reference'
+    return _assertion, value, ref
 
 
 def assert_le(value: Any,
