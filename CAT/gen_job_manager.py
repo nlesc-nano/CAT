@@ -31,7 +31,6 @@ except ModuleNotFoundError:
 from scm.plams import (JobManager, log, config, FileError)
 from scm.plams.core.basejob import (Job, MultiJob)
 
-
 __all__ = ['GenJobManager']
 
 
@@ -104,11 +103,6 @@ class GenJobManager(JobManager):
             A path to a .dill file in some job folder.
             A |Job| instance stored there is loaded and returned.
             All attributes of this instance removed before pickling are restored.
-
-        Returns
-        -------
-        |str|_
-            The filename (excluding extension) of the .dill file.
 
         """
         def setstate(job, path, parent=None):

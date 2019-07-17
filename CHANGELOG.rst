@@ -5,6 +5,13 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+0.5.2
+*****
+
+* Added more tests.
+* Added a more explicit error message to ``_smiles_to_rdmol()``.
+
+
 0.5.1
 *****
 
