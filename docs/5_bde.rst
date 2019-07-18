@@ -75,124 +75,134 @@ Arguments
 
 |
 
-        .. attribute:: optional.qd.dissociate.core_atom
+    .. attribute:: optional.qd.dissociate.core_atom
 
-            :Parameter:     * **Type** - :class:`str` or :class:`int`
-                            * **Default value** – ``None``
+        :Parameter:     * **Type** - :class:`str` or :class:`int`
+                        * **Default value** – ``None``
 
-            The atomic number or atomic symbol of the core atoms (:math:`X`) which are to be
-            dissociated. The core atoms are dissociated in combination with :math:`n` ligands
-            (:math:`Y`, see :attr:`optional.qd.dissociate.lig_count`).
-            Yields a compound with the general formula |XYn|.
+        The atomic number or atomic symbol of the core atoms (:math:`X`) which are to be
+        dissociated. The core atoms are dissociated in combination with :math:`n` ligands
+        (:math:`Y`, see :attr:`optional.qd.dissociate.lig_count`).
+        Yields a compound with the general formula |XYn|.
 
-            .. warning::
-                This argument has no value be default and thus *must* be provided by the user.
+        If one is interested in dissociating ligands in combination with
+        a molecular species (*e.g.* :math:`X = {NR_4}^+`) the atomic number (or symbol)
+        can be substituted for a SMILES string represting a poly-atomic ion
+        (*e.g.* tetramethyl ammonium: C[N+](C)(C)C).
 
-            .. note::
-                The yaml format uses ``null`` rather than ``None`` as in Python.
+        If a SMILES string is provided it must satisfy the following 2 requirements:
 
+            1. The SMILES string *must* contain a single charged atom; unpredictable behaviour can occur otherwise.
+            2. The provided structure (including its bonds) must be present in the core.
 
-        .. attribute:: optional.qd.dissociate.lig_count
+        .. warning::
+            This argument has no value be default and thus *must* be provided by the user.
 
-            :Parameter:     * **Type** - :class:`int`
-                            * **Default value** – ``None``
-
-            The number of ligands, :math:`n`, which is to be dissociated in combination
-            with a single core atom (:math:`X`, see :attr:`optional.qd.dissociate.core_atom`).
-            Yields a compound with the general formula |XYn|.
-
-            .. warning::
-                This argument has no value be default and thus *must* be provided by the user.
-
-            .. note::
-                The yaml format uses ``null`` rather than ``None`` as in Python.
+        .. note::
+            The yaml format uses ``null`` rather than ``None`` as in Python.
 
 
-        .. attribute:: optional.qd.dissociate.keep_files
+    .. attribute:: optional.qd.dissociate.lig_count
 
-            :Parameter:     * **Type** - :class:`bool`
-                            * **Default value** – ``True``
+        :Parameter:     * **Type** - :class:`int`
+                        * **Default value** – ``None``
 
-            Whether to keep or delete all BDE files after all calculations are finished.
+        The number of ligands, :math:`n`, which is to be dissociated in combination
+        with a single core atom (:math:`X`, see :attr:`optional.qd.dissociate.core_atom`).
+        Yields a compound with the general formula |XYn|.
 
+        .. warning::
+            This argument has no value be default and thus *must* be provided by the user.
 
-        .. attribute:: optional.qd.dissociate.core_core_dist
-
-            :Parameter:     * **Type** - :class:`float` or :class:`int`
-                            * **Default value** – ``0.0``
-
-            The maximum to be considered distance (Ångström) between atoms in
-            :attr:`optional.qd.dissociate.core_atom`.
-            Used for determining the topology of the core atom
-            (see :attr:`optional.qd.dissociate.topology`) and whether it is exposed to the
-            surface of the core or not. It is recommended to use a radius which
-            encapsulates a single (complete) shell of neighbours.
-
-            If not specified (or equal to ``0.0``) **CAT** will attempt to guess a suitable value
-            based on the cores' radial distribution function.
+        .. note::
+            The yaml format uses ``null`` rather than ``None`` as in Python.
 
 
-        .. attribute:: optional.qd.dissociate.lig_core_dist
+    .. attribute:: optional.qd.dissociate.keep_files
 
-            :Parameter:     * **Type** - :class:`float` or :class:`int`
-                            * **Default value** – ``5.0``
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``True``
 
-            Dissociate all possible combinations of :math:`n` ligands and a single core atom
-            (see :attr:`optional.qd.dissociate.core_atom`) within a given radius (Ångström)
-            from aforementioned core atom. The number of ligands dissociated in
-            combination with a single core atom is controlled by
-            :attr:`optional.qd.dissociate.lig_count`.
+        Whether to keep or delete all BDE files after all calculations are finished.
 
-            .. image:: _images/BDE_XY2.png
-                :scale: 25 %
-                :align: center
+
+    .. attribute:: optional.qd.dissociate.core_core_dist
+
+        :Parameter:     * **Type** - :class:`float` or :class:`int`
+                        * **Default value** – ``0.0``
+
+        The maximum to be considered distance (Ångström) between atoms in
+        :attr:`optional.qd.dissociate.core_atom`.
+        Used for determining the topology of the core atom
+        (see :attr:`optional.qd.dissociate.topology`) and whether it is exposed to the
+        surface of the core or not. It is recommended to use a radius which
+        encapsulates a single (complete) shell of neighbours.
+
+        If not specified (or equal to ``0.0``) **CAT** will attempt to guess a suitable value
+        based on the cores' radial distribution function.
+
+
+    .. attribute:: optional.qd.dissociate.lig_core_dist
+
+        :Parameter:     * **Type** - :class:`float` or :class:`int`
+                        * **Default value** – ``5.0``
+
+        Dissociate all possible combinations of :math:`n` ligands and a single core atom
+        (see :attr:`optional.qd.dissociate.core_atom`) within a given radius (Ångström)
+        from aforementioned core atom. The number of ligands dissociated in
+        combination with a single core atom is controlled by
+        :attr:`optional.qd.dissociate.lig_count`.
+
+        .. image:: _images/BDE_XY2.png
+            :scale: 25 %
+            :align: center
 
 |
 
 
-        .. attribute:: optional.qd.dissociate.core_index
+    .. attribute:: optional.qd.dissociate.core_index
 
-            :Parameter:     * **Type** - :class:`int` or :class:`tuple` [:class:`int`]
-                            * **Default value** – ``None``
+        :Parameter:     * **Type** - :class:`int` or :class:`tuple` [:class:`int`]
+                        * **Default value** – ``None``
 
-            Alternative to :attr:`optional.qd.dissociate.lig_core_dist` and :attr:`optional.qd.dissociate.core_atom`.
-            Manually specify the indices of all to-be dissociated atoms in the core.
-            Core atoms will be dissociated in combination with the :math:`n` closest ligands.
+        Alternative to :attr:`optional.qd.dissociate.lig_core_dist` and :attr:`optional.qd.dissociate.core_atom`.
+        Manually specify the indices of all to-be dissociated atoms in the core.
+        Core atoms will be dissociated in combination with the :math:`n` closest ligands.
 
-            .. note::
-                Atom numbering follows the PLAMS [1_, 2_] convention of starting from 1 rather than 0.
+        .. note::
+            Atom numbering follows the PLAMS [1_, 2_] convention of starting from 1 rather than 0.
 
-            .. note::
-                The yaml format uses ``null`` rather than ``None`` as in Python.
+        .. note::
+            The yaml format uses ``null`` rather than ``None`` as in Python.
 
 
-        .. attribute:: optional.qd.dissociate.topology
+    .. attribute:: optional.qd.dissociate.topology
 
-            :Parameter:     * **Type** - :class:`dict`
-                            * **Default value** – ``{}``
+        :Parameter:     * **Type** - :class:`dict`
+                        * **Default value** – ``{}``
 
-            A dictionary which translates the number neighbouring core atoms
-            (see :attr:`optional.qd.dissociate.core_atom` and :attr:`optional.qd.dissociate.core_core_dist`)
-            into a topology. Keys represent the number of neighbours, values represent
-            the matching topology.
+        A dictionary which translates the number neighbouring core atoms
+        (see :attr:`optional.qd.dissociate.core_atom` and :attr:`optional.qd.dissociate.core_core_dist`)
+        into a topology. Keys represent the number of neighbours, values represent
+        the matching topology.
 
-            .. admonition:: Example
+        .. admonition:: Example
 
-                Given a :attr:`optional.qd.dissociate.core_core_dist` of ``5.0`` Ångström,
-                the following options can be interpreted as following:
+            Given a :attr:`optional.qd.dissociate.core_core_dist` of ``5.0`` Ångström,
+            the following options can be interpreted as following:
 
-                .. code::
+            .. code::
 
-                    optional:
-                        qd:
-                            dissociate:
-                                7: vertice
-                                8: edge
-                                10: face
+                optional:
+                    qd:
+                        dissociate:
+                            7: vertice
+                            8: edge
+                            10: face
 
-                Core atoms with ``7`` other neighbouring core atoms (within a radius of ``5.0`` Ångström)
-                are marked as ``"vertice"``, the ones with ``8`` neighbours are marked as ``"edge"``
-                and the ones with ``10`` neighbours as ``"face"``.
+            Core atoms with ``7`` other neighbouring core atoms (within a radius of ``5.0`` Ångström)
+            are marked as ``"vertice"``, the ones with ``8`` neighbours are marked as ``"edge"``
+            and the ones with ``10`` neighbours as ``"face"``.
 
 |
 

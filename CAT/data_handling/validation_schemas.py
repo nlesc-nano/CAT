@@ -41,11 +41,14 @@ API
 
 """
 
-from typing import (Dict, Collection)
+from typing import (Dict, Collection, Union)
 from collections import abc
 
 from schema import (Or, And, Use, Schema)
 from schema import Optional as Optional_
+
+from scm.plams import Molecule, PeriodicTable, MoleculeError
+from scm.plams.interfaces.molecule.rdkit import from_smiles
 
 from scm.plams.interfaces.adfsuite.adf import ADFJob
 from scm.plams.interfaces.adfsuite.ams import AMSJob
@@ -77,11 +80,46 @@ __all__ = ['mol_schema', 'core_schema', 'ligand_schema', 'qd_schema', 'database_
            'mongodb_schema', 'bde_schema', 'qd_opt_schema', 'crs_schema']
 
 
+def parse_core_atom(atom: Union[str, int]) -> Union[Molecule, int]:
+    """Parse the ``["optional"]["qd"]["dissociate"]["core_atom"]`` argument."""
+    # Potential atomic number or symbol
+    if isinstance(atom, int) or atom in PeriodicTable.symtonum:
+        return to_atnum(atom)
+
+    # Potential SMILES string
+    try:
+        mol = from_smiles(atom)
+    except Exception as ex:
+        err = ('Failed to recognize {repr(atom)} as a valid atomic number, '
+               'atomic symbol or SMILES string\n\n{ex}')
+        raise ex.__class__(err)
+
+    # Double check the SMILES string:
+    charge_dict = {}
+    for at in mol:
+        charge = at.properties.charge
+        try:
+            charge_dict[charge] += 1
+        except KeyError:
+            charge_dict[charge] = 1
+    if 0 in charge_dict:
+        del charge_dict[0]
+
+    # Only a single charged atom is allowed
+    if len(charge_dict) > 1:
+        charge_count = sum([v for v in charge_dict.values()])
+        err = (f'The SMILES string {repr(atom)} contains more than one charged atom: '
+               f'charged atom count: {charge_count}')
+        raise MoleculeError(err)
+
+    return mol
+
+
 def to_tuple(collection: Collection) -> tuple:
     """Convert a collection into a sorted tuple."""
     try:
         ret = sorted(collection)
-    except TypeError:  # The collection contains a mix of sorting-incompatibl objects
+    except TypeError:  # The collection contains a mix of sorting-incompatible objects
         ret = sorted(collection, key=str)
     finally:
         return tuple(ret)
@@ -366,8 +404,9 @@ bde_schema: Schema = Schema({
     # Atom type of the to-be dissociated core atom
     'core_atom':
         And(
-            Or(int, str), Use(to_atnum),
-            error='optional.qd.dissociate.core_atom expects a string or integer'
+            Or(int, str), Use(parse_core_atom),
+            error=('optional.qd.dissociate.core_atom expects a SMILES string, '
+                   'atomic number (int) or atomic symbol (str)')
         ),
 
     'lig_count':  # The number of ligands per core_atom
