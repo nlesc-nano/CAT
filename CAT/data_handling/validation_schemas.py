@@ -81,7 +81,7 @@ __all__ = ['mol_schema', 'core_schema', 'ligand_schema', 'qd_schema', 'database_
 
 
 def parse_core_atom(atom: Union[str, int]) -> Union[Molecule, int]:
-    """Parse the ``["optional"]["qd"]["dissociate"]["core_atom"]`` argument."""
+    """Parse and validate the ``["optional"]["qd"]["dissociate"]["core_atom"]`` argument."""
     # Potential atomic number or symbol
     if isinstance(atom, int) or atom in PeriodicTable.symtonum:
         return to_atnum(atom)
