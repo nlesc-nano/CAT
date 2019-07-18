@@ -168,7 +168,8 @@ def merge_mol(self, mol_list: Union[Molecule, Iterable[Molecule]]) -> None:
 
 @add_to_class(Molecule)
 def separate_mod(self) -> List[Molecule]:
-    """Modified PLAMS function: seperates a molecule instead of a copy of a molecule.
+    """Modified PLAMS function: creates new molecules out of this instance rather than
+    a copy of this instance. Atoms, bonds and properties are *not* copied.
 
     Separate the molecule into connected components.
     Returns is a list of new Molecule instrances (all atoms and bonds are disjoint with
@@ -234,7 +235,7 @@ def to_atnum(item: Union[str, int]) -> int:
     Parameters
     ----------
     item : |int|_ or |str|_
-    An atomic symbol or number.
+        An atomic symbol or number.
 
     Returns
     -------
@@ -262,7 +263,7 @@ def to_symbol(item: Union[str, int]) -> str:
     Parameters
     ----------
     item : |int|_ or |str|_
-    An atomic symbol or number.
+        An atomic symbol or number.
 
     Returns
     -------
@@ -284,12 +285,12 @@ def to_symbol(item: Union[str, int]) -> str:
     raise TypeError(err.format(item.__class__.__name__))
 
 
-def adf_connectivity(plams_mol: Molecule) -> List[str]:
+def adf_connectivity(mol: Molecule) -> List[str]:
     """Create an AMS-compatible connectivity list.
 
     Parameters
     ----------
-    plams_mol : |plams.Molecule|_
+    mol : |plams.Molecule|_
         A PLAMS molecule with :math:`n` bonds.
 
     Returns
@@ -298,23 +299,23 @@ def adf_connectivity(plams_mol: Molecule) -> List[str]:
         An ADF-compatible connectivity list of :math:`n` bonds.
 
     """
-    plams_mol.set_atoms_id()
+    mol.set_atoms_id()
 
     # Create list of indices of all aromatic bonds
     try:
-        rdmol = molkit.to_rdmol(plams_mol)
+        rdmol = molkit.to_rdmol(mol)
     except ValueError:  # Plan B: ignore aromatic bonds
-        bonds = [f'{bond.atom1.id} {bond.atom2.id} {bond.order:.1f}' for bond in plams_mol.bonds]
-        plams_mol.unset_atoms_id()
+        bonds = [f'{bond.atom1.id} {bond.atom2.id} {bond.order:.1f}' for bond in mol.bonds]
+        mol.unset_atoms_id()
         return bonds
 
     aromatic = [bond.GetIsAromatic() for bond in rdmol.GetBonds()]
 
     # Create a list of bond orders; aromatic bonds get a bond order of 1.5
-    bond_orders = [(1.5 if ar else bond.order) for ar, bond in zip(aromatic, plams_mol.bonds)]
+    bond_orders = [(1.5 if ar else bond.order) for ar, bond in zip(aromatic, mol.bonds)]
     bonds = [f'{bond.atom1.id} {bond.atom2.id} {order:.1f}' for
-             bond, order in zip(plams_mol.bonds, bond_orders)]
-    plams_mol.unset_atoms_id()
+             bond, order in zip(mol.bonds, bond_orders)]
+    mol.unset_atoms_id()
 
     return bonds
 
