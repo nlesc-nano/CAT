@@ -36,7 +36,8 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit import Chem
 
-from ..utils import (get_time, get_template)
+from ..logger import logger
+from ..utils import get_template
 from ..mol_utils import separate_mod
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.validate_mol import santize_smiles
@@ -76,18 +77,19 @@ def init_ligand_anchoring(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     mol_list = []
     for lig in ligand_df[MOL]:
         # Functional group search
-        if not lig.properties.dummies:
+        dummies = lig.properties.dummies
+        if not dummies:
             mol_list += find_substructure(lig, functional_groups, split)
             continue
 
         # Manual specification of a functional group
-        if len(lig.properties.dummies) == 1:  # optional.ligand.split = False
-            lig.properties.dummies = lig.properties.dummies[0] - 1
-            split_ = False
-        elif len(lig.properties.dummies) == 2:  # optional.ligand.split = True
-            lig.properties.dummies = tuple(i - 1 for i in lig.properties.dummies)
-            split_ = True
-        mol_list += [substructure_split(lig, lig.properties.dummies, split=split_)]
+        if len(dummies) == 1:  # optional.ligand.split = False
+            lig.properties.dummies = dummies[0] - 1
+            _split = False
+        elif len(dummies) == 2:  # optional.ligand.split = True
+            lig.properties.dummies = tuple(i - 1 for i in dummies)
+            _split = True
+        mol_list += [substructure_split(lig, lig.properties.dummies, split=_split)]
 
     # Convert the results into a dataframe
     return _get_df(mol_list, ligand_df.settings)
@@ -167,9 +169,9 @@ def _smiles_to_rdmol(smiles: str) -> Chem.Mol:
         mol = Chem.MolFromSmiles(smiles, sanitize=False)
         Chem.rdmolops.SanitizeMol(mol, sanitizeOps=sanitize)
     except Exception as ex:
-        err = f'Failed to parse the following SMILES string: {repr(smiles)}\n\n{ex}'
-        ex_class = ex.__class__
-        raise ex_class(err)
+        err = f'Failed to parse the following SMILES string: {repr(smiles)}'
+        logger.critical(f'{ex.__class__.__name__}: {err}')
+        raise ex.__class__(err + f'\n\n{ex}')
     return mol
 
 
@@ -218,8 +220,9 @@ def find_substructure(ligand: Molecule,
     if ligand_indices:
         return [substructure_split(ligand, tup, split) for tup in ligand_indices]
     else:
-        msg = 'No functional groups were found (optional.ligand.split = {}) for ligand: {}'
-        print(get_time() + msg.format(split, ligand.properties.smiles))
+        err = (f"No functional groups were found (optional.ligand.split = {split}) for "
+               f"ligand: '{ligand.properties.name}'")
+        logger.warn(err)
         return []
 
 

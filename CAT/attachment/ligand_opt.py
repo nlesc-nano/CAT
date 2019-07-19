@@ -56,7 +56,7 @@ import rdkit
 from rdkit.Chem import AllChem
 
 from .ligand_attach import (rot_mol_angle, sanitize_dim_2)
-from ..utils import get_time
+from ..logger import logger
 from ..settings_dataframe import SettingsDataFrame
 from ..mol_utils import (to_symbol, fix_carboxyl, get_index,
                          from_mol_other, from_rdmol, separate_mod)
@@ -117,7 +117,6 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
             else:
                 ligand_df.loc[idx, MOL] = lig_new
 
-    print()
     remove_duplicates(ligand_df)
 
     # Write newly optimized structures to the database
@@ -130,10 +129,10 @@ def _parse_overwrite(ligand_df: SettingsDataFrame,
     """Return a series for dataframe slicing and a to-be printer message."""
     if overwrite:
         idx = pd.Series(True, index=ligand_df.index, name=MOL)
-        message = '{}\t has been (re-)optimized'
+        message = '{} has been (re-)optimized'
     else:
         idx = np.invert(ligand_df[OPT])
-        message = '{}\t has been optimized'
+        message = '{} has been optimized'
     return idx, message
 
 
@@ -146,7 +145,7 @@ def read_data(ligand_df: SettingsDataFrame,
         for i, mol in zip(ligand_df[OPT], ligand_df[MOL]):
             if i == -1:
                 continue
-            print(get_time() + '{}\t has been pulled from the database'.format(mol.properties.name))
+            logger.info(f'{mol.properties.name} has been pulled from the database')
     ligand_df[OPT] = ligand_df[OPT].astype(bool, copy=False)
 
 
@@ -164,7 +163,7 @@ def start_ligand_jobs(ligand_df: SettingsDataFrame,
         lig_new.append(ligand_tmp)
 
         # Print messages
-        print(get_time() + message.format(ligand.properties.name))
+        logger.info(message.format(ligand.properties.name))
     return lig_new
 
 
@@ -270,7 +269,9 @@ def neighbors_mod(self, atom: Atom,
     """
     exclude = to_symbol(exclude)
     if atom.mol != self:
-        raise MoleculeError('neighbors: passed atom should belong to the molecule')
+        err = 'neighbors: passed atom should belong to the molecule'
+        logger.info('MoleculeError: ' + err)
+        raise MoleculeError(err)
     return [b.other_end(atom) for b in atom.bonds if b.other_end(atom).atnum != exclude]
 
 
@@ -415,8 +416,9 @@ def recombine_mol(mol_list: Sequence[Molecule]) -> Molecule:
         return mol_list[0]
     tup_list = mol_list[0].properties.mark
     if not tup_list:
-        error = 'No PLAMS atoms specified in mol_list[0].properties.mark, aborting recombine_mol()'
-        raise IndexError(error)
+        err = 'No PLAMS atoms specified in mol_list[0].properties.mark, aborting recombine_mol()'
+        logger.critical('IndexError: ' + err)
+        raise IndexError(err)
 
     for tup in tup_list:
         # Allign mol1 & mol2

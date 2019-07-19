@@ -38,8 +38,9 @@ from scm.plams.interfaces.thirdparty.cp2k import Cp2kResults
 
 import qmflows
 
+from .logger import logger
 from .thermo_chem import get_thermo
-from .utils import (get_time, type_to_string)
+from .utils import type_to_string
 from .mol_utils import (adf_connectivity, from_mol_other)
 
 __all__ = ['job_single_point', 'job_geometry_opt', 'job_freq']
@@ -107,7 +108,7 @@ def job_single_point(self, job: Callable,
     try:
         self.properties.energy.E = results.get_energy(unit='kcal/mol')
     except TypeError:
-        print(get_time() + f'WARNING: Failed to retrieve results of {results.job.name}')
+        logger.error(f'Failed to retrieve results of {results.job.name})')
     if not self.properties.energy.E or self.properties.energy.E is None:
         self.properties.energy.E = np.nan
 
@@ -167,7 +168,7 @@ def job_geometry_opt(self, job: Callable,
         self.from_mol_other(results.get_main_molecule())
         self.properties.energy.E = results.get_energy(unit='kcal/mol')
     except TypeError:
-        print(get_time() + f'WARNING: Failed to retrieve results of {results.job.name}')
+        logger.error(f'Failed to retrieve results of {results.job.name})')
 
     if not self.properties.energy.E or self.properties.energy.E is None:
         self.properties.energy.E = np.nan
@@ -240,7 +241,7 @@ def job_freq(self, job, settings, name='Frequency_analysis', opt=True, ret_resul
     except TypeError:
         self.properties.frequencies = np.nan
         self.properties.energy = {'E': np.nan, 'H': np.nan, 'S': np.nan, 'G': np.nan}
-        print(get_time() + f'WARNING: Failed to retrieve results of {results.job.name}')
+        logger.error(f'Failed to retrieve results of {results.job.name})')
 
     if not isinstance(self.properties.frequencies, np.ndarray):
         self.properties.frequencies = np.nan

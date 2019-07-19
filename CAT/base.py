@@ -31,12 +31,13 @@ from typing import (Optional, Tuple)
 
 import pandas as pd
 
-from scm.plams import (Atom, Settings)
+from scm.plams import Settings
 from scm.plams.core.errors import MoleculeError
 
+from .utils import check_sys_var
+from .logger import logger
+from .mol_utils import to_symbol
 from .settings_dataframe import SettingsDataFrame
-
-from .utils import (check_sys_var, get_time)
 
 from .data_handling.mol_import import read_mol
 from .data_handling.validate_input import validate_input
@@ -84,7 +85,6 @@ def prep(arg: Settings,
     """
     # The start
     time_start = time()
-    print('\n')
 
     # Interpret and extract the input settings
     ligand_df, core_df = prep_input(arg)
@@ -99,7 +99,8 @@ def prep(arg: Settings,
     qd_df = prep_qd(ligand_df, core_df)
 
     # The End
-    print(get_time() + 'Total elapsed time:\t\t{:.4f} sec'.format(time() - time_start))
+    delta_t = time() - time_start
+    logger.info(f'Total elapsed time: {delta_t:.4f} sec')
 
     if return_mol:
         return qd_df, core_df, ligand_df
@@ -131,9 +132,13 @@ def prep_input(arg: Settings) -> Tuple[SettingsDataFrame, SettingsDataFrame]:
 
     # Raises an error if lig_list or core_list is empty
     if not lig_list:
-        raise MoleculeError('No valid input ligands were found, aborting run')
+        err = 'No valid input ligands were found, aborting run'
+        logger.critical('MoleculeError: ' + err)
+        raise MoleculeError(err)
     elif not core_list:
-        raise MoleculeError('No valid input cores were found, aborting run')
+        err = 'No valid input cores were found, aborting run'
+        logger.critical('MoleculeError: ' + err)
+        raise MoleculeError(err)
 
     # Store the molecules in dataframes
     columns = pd.MultiIndex.from_tuples([MOL], names=['index', 'sub index'])
@@ -168,32 +173,34 @@ def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
     # Unpack arguments
     dummy = core_df.settings.optional.core.dummy
 
-    formula_list = []
-    anchor_list = []
+    idx_tuples = []
     for core in core_df[MOL]:
         # Checks the if the dummy is a string (atomic symbol) or integer (atomic number)
-        formula_list.append(core.get_formula())
+        formula = core.get_formula()
 
         # Returns the indices and Atoms of all dummy atom ligand placeholders in the core
         if not core.properties.dummies:
-            idx, dummies = zip(*[(j, atom) for j, atom in enumerate(core.atoms, 1) if
-                                 atom.atnum == dummy])
+            _at_idx, core.properties.dummies = zip(*[(j, atom) for j, atom in enumerate(core, 1) if
+                                                     atom.atnum == dummy])
         else:
-            idx, dummies = zip(*[(j, core[j]) for j in core.properties.dummies])
-        core.properties.dummies = dummies
-        anchor_list.append(''.join([' ' + str(i) for i in sorted(idx)])[1:])
-
-        # Delete all core dummy atoms
-        for at in reversed(core.properties.dummies):
-            core.delete_atom(at)
+            _at_idx, core.properties.dummies = zip(*[(j, core[j]) for j in core.properties.dummies])
+        dummies = core.properties.dummies
 
         # Returns an error if no dummy atoms were found
-        if not core.properties.dummies:
-            raise MoleculeError(Atom(atnum=dummy).symbol +
-                                ' was specified as dummy atom, yet no dummy atoms were found')
+        if not dummies:
+            err = (f"{repr(to_symbol(dummy))} was specified as core dummy atom, yet no matching "
+                   f"atoms were found in {core.properties.name} (formula: {formula})")
+            logger.critical('MoleculeError: ' + err)
+            raise MoleculeError(err)
+
+        # Delete all core dummy atoms
+        for at in reversed(dummies):
+            core.delete_atom(at)
+
+        at_idx = ' '.join(str(i) for i in sorted(_at_idx))
+        idx_tuples.append((formula, at_idx))
 
     # Create and return a new dataframe
-    idx_tuples = list(zip(formula_list, anchor_list))
     idx = pd.MultiIndex.from_tuples(idx_tuples, names=['formula', 'anchor'])
     ret = core_df.reindex(idx)
     ret[MOL] = core_df[MOL].values
@@ -234,7 +241,9 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
 
     # Check if any valid functional groups were found
     if not ligand_df[MOL].any():
-        raise MoleculeError('No valid functional groups found in any of the ligands, aborting run')
+        err = 'No valid functional groups found in any of the ligands, aborting run'
+        logger.critical('MoleculeError: ' + err)
+        raise MoleculeError(err)
 
     # Optimize the ligands
     if optimize:
@@ -298,14 +307,14 @@ def prep_qd(ligand_df: SettingsDataFrame,
     # Calculate the interaction between ligands on the quantum dot surface
     if activation_strain:
         val_nano_cat("Quantum dot activation-strain calculations require the nano-CAT package")
-        print(get_time() + 'calculating ligand distortion and inter-ligand interaction')
+        logger.info('calculating ligand distortion and inter-ligand interaction')
         init_asa(qd_df)
 
     # Calculate the interaction between ligands on the quantum dot surface upon removal of CdX2
     if dissociate:
         val_nano_cat("Quantum dot ligand dissociation calculations require the nano-CAT package")
         # Start the BDE calculation
-        print(get_time() + 'calculating ligand dissociation energy')
+        logger.info('calculating ligand dissociation energy')
         init_bde(qd_df)
 
     return qd_df
@@ -313,6 +322,7 @@ def prep_qd(ligand_df: SettingsDataFrame,
 
 def val_nano_cat(error_message: Optional[str] = None) -> None:
     """Raise an an :exc:`ImportError` if the module-level constant ``NANO_CAT`` is ``False``."""
-    err_message = error_message or ''
+    err = error_message or ''
     if not NANO_CAT:
-        raise ImportError(err_message)
+        logger.critical('ImportError: ' + err)
+        raise ImportError(err)

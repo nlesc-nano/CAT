@@ -41,14 +41,11 @@ API
 
 """
 
-from typing import (Dict, Collection, Union)
+from typing import (Dict, Collection)
 from collections import abc
 
 from schema import (Or, And, Use, Schema)
 from schema import Optional as Optional_
-
-from scm.plams import Molecule, PeriodicTable, MoleculeError
-from scm.plams.interfaces.molecule.rdkit import from_smiles
 
 from scm.plams.interfaces.adfsuite.adf import ADFJob
 from scm.plams.interfaces.adfsuite.ams import AMSJob
@@ -66,7 +63,7 @@ from scm.plams.interfaces.thirdparty.dftbplus import DFTBPlusJob
 
 from scm.plams.core.basejob import Job
 
-from ..utils import get_template, validate_path
+from ..utils import (get_template, validate_path, validate_core_atom)
 from ..mol_utils import to_atnum
 
 try:
@@ -78,41 +75,6 @@ except ImportError:
 
 __all__ = ['mol_schema', 'core_schema', 'ligand_schema', 'qd_schema', 'database_schema',
            'mongodb_schema', 'bde_schema', 'qd_opt_schema', 'crs_schema']
-
-
-def parse_core_atom(atom: Union[str, int]) -> Union[Molecule, int]:
-    """Parse and validate the ``["optional"]["qd"]["dissociate"]["core_atom"]`` argument."""
-    # Potential atomic number or symbol
-    if isinstance(atom, int) or atom in PeriodicTable.symtonum:
-        return to_atnum(atom)
-
-    # Potential SMILES string
-    try:
-        mol = from_smiles(atom)
-    except Exception as ex:
-        err = ('Failed to recognize {repr(atom)} as a valid atomic number, '
-               'atomic symbol or SMILES string\n\n{ex}')
-        raise ex.__class__(err)
-
-    # Double check the SMILES string:
-    charge_dict = {}
-    for at in mol:
-        charge = at.properties.charge
-        try:
-            charge_dict[charge] += 1
-        except KeyError:
-            charge_dict[charge] = 1
-    if 0 in charge_dict:
-        del charge_dict[0]
-
-    # Only a single charged atom is allowed
-    if len(charge_dict) > 1:
-        charge_count = sum([v for v in charge_dict.values()])
-        err = (f'The SMILES string {repr(atom)} contains more than one charged atom: '
-               f'charged atom count: {charge_count}')
-        raise MoleculeError(err)
-
-    return mol
 
 
 def to_tuple(collection: Collection) -> tuple:
@@ -191,8 +153,9 @@ mol_schema: Schema = Schema({
                 abc.Collection,
                 lambda n: all(isinstance(i, int) and i >= 0 for i in n),
                 lambda n: len(n) == len(set(n)),
+                lambda n: n <= 2,
                 Use(tuple),
-                error=".indices expects a list of unique integers larger than or equal to 0"
+                error=".indices expects one or two unique integers larger than or equal to 0"
             ),
             error=".indices expects an atomic index (int) or a list unique atomic indices"
         ),
@@ -333,8 +296,8 @@ ligand_schema: Schema = Schema({
                 Use(to_tuple),
                 error='optional.ligand.functional_groups expects a list of unique SMILES strings'
             ),
-            error=('optional.ligand.functional_groups expects None (NoneType), a SMILES string'
-                   ', or a list of unique SMILES string')
+            error=('optional.ligand.functional_groups expects None (NoneType), a SMILES string, '
+                   'or a list of unique SMILES string')
         ),
 
     Optional_('optimize', default=True):  # Optimize the ligands
@@ -404,7 +367,7 @@ bde_schema: Schema = Schema({
     # Atom type of the to-be dissociated core atom
     'core_atom':
         And(
-            Or(int, str), Use(parse_core_atom),
+            Or(int, str), Use(validate_core_atom),
             error=('optional.qd.dissociate.core_atom expects a SMILES string, '
                    'atomic number (int) or atomic symbol (str)')
         ),
@@ -461,8 +424,8 @@ bde_schema: Schema = Schema({
         Or(
             And(
                 type, lambda n: issubclass(n, Job),
-                error=('optional.qd.dissociate.job1 expects a type object'
-                       ' that is a subclass of plams.Job')
+                error=('optional.qd.dissociate.job1 expects a type object '
+                       'that is a subclass of plams.Job')
             ),
             And(
                 str, lambda n: n.lower() in _class_dict, Use(lambda n: _class_dict[n.lower()]),
@@ -483,8 +446,8 @@ bde_schema: Schema = Schema({
         Or(
             And(
                 type, lambda n: issubclass(n, Job),
-                error=('optional.qd.dissociate.job2 expects a type object'
-                       ' that is a subclass of plams.Job')
+                error=('optional.qd.dissociate.job2 expects a type object '
+                       'that is a subclass of plams.Job')
             ),
             And(
                 str, lambda n: n.lower() in _class_dict, Use(lambda n: _class_dict[n.lower()]),
@@ -508,8 +471,8 @@ qd_opt_schema: Schema = Schema({
         Or(
             And(
                 type, lambda n: issubclass(n, Job),
-                error=('optional.qd.opt.job1 expects a type object'
-                       ' that is a subclass of plams.Job')
+                error=('optional.qd.opt.job1 expects a type object '
+                       'that is a subclass of plams.Job')
             ),
             And(
                 str, lambda n: n.lower() in _class_dict, Use(lambda n: _class_dict[n.lower()]),
@@ -531,8 +494,8 @@ qd_opt_schema: Schema = Schema({
         Or(
             And(
                 type, lambda n: issubclass(n, Job),
-                error=('optional.qd.opt.job2 expects a type object'
-                       ' that is a subclass of plams.Job')
+                error=('optional.qd.opt.job2 expects a type object '
+                       'that is a subclass of plams.Job')
             ),
             And(
                 str, lambda n: n.lower() in _class_dict, Use(lambda n: _class_dict[n.lower()]),
@@ -561,8 +524,8 @@ crs_schema: Schema = Schema({
         Or(
             And(
                 type, lambda n: issubclass(n, Job),
-                error=('optional.ligand.cosmo-rs.job1 expects a type object'
-                       ' that is a subclass of plams.Job')
+                error=('optional.ligand.cosmo-rs.job1 expects a type object '
+                       'that is a subclass of plams.Job')
             ),
             And(
                 str, lambda n: n.lower() in _class_dict, Use(lambda n: _class_dict[n.lower()]),
@@ -584,8 +547,8 @@ crs_schema: Schema = Schema({
         Or(
             And(
                 type, lambda n: issubclass(n, Job),
-                error=('optional.ligand.cosmo-rs.job2 expects a type object'
-                       ' that is a subclass of plams.Job')
+                error=('optional.ligand.cosmo-rs.job2 expects a type object '
+                       'that is a subclass of plams.Job')
             ),
             And(
                 str, lambda n: n.lower() in _class_dict, Use(lambda n: _class_dict[n.lower()]),

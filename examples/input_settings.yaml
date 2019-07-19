@@ -7,6 +7,7 @@ input_cores:
 input_ligands:
     - CO
     - CCO
+    - CCCO
     # - FragranceDB2.txt
 
 optional:
@@ -31,8 +32,8 @@ optional:
     qd:
         dirname: QD
         optimize: True
-        dissociate:
-            keep_files: False
-            core_atom: Cd
-            lig_count: 2
-            core_index: [67, 68, 69, 79, 80, 81]
+#        dissociate:
+#            keep_files: False
+#            core_atom: Cd
+#            lig_count: 2
+#            core_index: [67, 68, 69, 79, 80, 81]

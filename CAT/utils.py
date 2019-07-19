@@ -25,14 +25,14 @@ API
 """
 
 import os
-import time
 import yaml
 import pkg_resources as pkg
 from shutil import rmtree
-from typing import (Callable, Iterable, Optional)
+from typing import (Callable, Iterable, Optional, Union)
 from os.path import (join, isdir, isfile, exists)
 
-from scm.plams import (init, config, Settings)
+from scm.plams import (init, config, Settings, Molecule, MoleculeError, PeriodicTable)
+from scm.plams.interfaces.molecule.rdkit import from_smiles
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 from scm.plams.interfaces.adfsuite.adf import ADFJob
 from scm.plams.interfaces.thirdparty.orca import ORCAJob
@@ -40,9 +40,11 @@ from scm.plams.interfaces.thirdparty.cp2k import Cp2kJob
 from scm.plams.interfaces.thirdparty.dirac import DiracJob
 from scm.plams.interfaces.thirdparty.gamess import GamessJob
 
+from .logger import logger
+from .mol_utils import to_atnum
 from .gen_job_manager import GenJobManager
 
-__all__ = ['check_sys_var', 'dict_concatenate', 'get_time', 'get_template']
+__all__ = ['check_sys_var', 'dict_concatenate', 'get_template']
 
 _job_dict = {
     ADFJob: 'adf',
@@ -59,14 +61,8 @@ def type_to_string(job: Callable) -> str:
     try:
         return _job_dict[job]
     except KeyError:
-        err = 'WARNING: No default settings available for {}'
-        print(get_time() + err.format(repr(job.__class__.__name__)))
+        logger.warn(f"No default settings available for type: '{job.__class.__name__}'")
         return ''
-
-
-def get_time() -> str:
-    """Return the current time as string."""
-    return '[{}] '.format(time.strftime('%H:%M:%S'))
 
 
 def check_sys_var() -> None:
@@ -89,17 +85,17 @@ def check_sys_var() -> None:
     sys_var_exists = [item in os.environ and os.environ[item] for item in sys_var]
     for i, item in enumerate(sys_var_exists):
         if not item:
-            err = 'WARNING: The environment variable {} has not been set'
-            print(get_time() + err.format(sys_var[i]))
+            logger.warn(f"The environment variable '{sys_var[i]}' has not been set")
 
     if not all(sys_var_exists):
-        raise EnvironmentError(get_time() + 'One or more ADF environment variables have '
-                               'not been set, aborting ADF job.')
+        err = 'One or more ADF environment variables have not been set, aborting ADF job'
+        logger.critical('EnvironmentError: ' + err)
+        raise EnvironmentError(err)
 
     if '2019' not in os.environ['ADFHOME']:
-        error = get_time() + 'No ADF/2019 detected in ' + os.environ['ADFHOME']
-        error += ', aborting ADF job.'
-        raise ImportError(error)
+        err = f"ADF/2019 not detected in {os.environ['ADFHOME']}"
+        logger.critical('ImportError: ' + err)
+        raise ImportError(err)
 
 
 def dict_concatenate(dict_list: Iterable[dict]) -> dict:
@@ -150,9 +146,50 @@ def validate_path(path: Optional[str]) -> str:
     elif isdir(path):
         return path
     elif not exists(path):
-        raise FileNotFoundError(get_time() + f"'{path}' not found")
+        err = f"'{path}' not found"
+        logger.critical('FileNotFoundError: ' + err)
+        raise FileNotFoundError(err)
     elif isfile(path):
-        raise NotADirectoryError(get_time() + f"'{path}' is not a directory")
+        err = f"'{path}' is not a directory"
+        logger.critical('NotADirectoryError: ' + err)
+        raise NotADirectoryError(err)
+
+
+def validate_core_atom(atom: Union[str, int]) -> Union[Molecule, int]:
+    """Parse and validate the ``["optional"]["qd"]["dissociate"]["core_atom"]`` argument."""
+    # Potential atomic number or symbol
+    if isinstance(atom, int) or atom in PeriodicTable.symtonum:
+        return to_atnum(atom)
+
+    # Potential SMILES string
+    try:
+        mol = from_smiles(atom)
+    except Exception as ex:
+        err = (f'Failed to recognize {repr(atom)} as a valid atomic number, '
+               f'atomic symbol or SMILES string')
+        logger.critical(ex.__class__.__name__ + err)
+        raise ex.__class__(err + f'\n\n{ex}')
+
+    # Double check the SMILES string:
+    charge_dict = {}
+    for at in mol:
+        charge = at.properties.charge
+        try:
+            charge_dict[charge] += 1
+        except KeyError:
+            charge_dict[charge] = 1
+    if 0 in charge_dict:
+        del charge_dict[0]
+
+    # Only a single charged atom is allowed
+    if len(charge_dict) > 1:
+        charge_count = sum([v for v in charge_dict.values()])
+        err = (f'The SMILES string {repr(atom)} contains more than one charged atom: '
+               f'charged atom count: {charge_count}')
+        logger.critical('MoleculeError: ' + err)
+        raise MoleculeError(err)
+
+    return mol
 
 
 def restart_init(path: str,
@@ -202,6 +239,8 @@ def restart_init(path: str,
     init()
     rmtree(config.default_jobmanager.workdir)
     config.default_jobmanager = manager
+    config.log.file = 3
+    config.log.stdout = 1
 
     # Update the default job manager with previous Jobs
     workdir = manager.workdir

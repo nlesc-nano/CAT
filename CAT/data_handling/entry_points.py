@@ -39,7 +39,9 @@ def extract_args(args: Optional[List[str]] = None) -> Settings:
         input_file = join(getcwd(), input_file)
     else:
         input_file2 = join(getcwd(), input_file)
-        raise FileNotFoundError(f'No file found at {input_file} or {input_file2}')
+        err = f'No file found at {input_file} or {input_file2}'
+        CAT.logger.logger('FileNotFoundError: ' + err)
+        raise FileNotFoundError(err)
 
     with open(input_file, 'r') as file:
         return Settings(yaml.load(file, Loader=yaml.FullLoader))

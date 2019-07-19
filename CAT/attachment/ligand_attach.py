@@ -50,7 +50,7 @@ from scm.plams.mol.molecule import Molecule
 from scm.plams.core.settings import Settings
 
 from ..settings_dataframe import SettingsDataFrame
-from ..utils import get_time
+from ..logger import logger
 from ..mol_utils import (merge_mol, get_index)
 
 try:
@@ -182,7 +182,7 @@ def _read_database(qd_df: SettingsDataFrame,
             'job_path': [],
             'name': get_name()
         })
-        print(get_time() + '{}\t has been pulled from the database'.format(mol.properties.name))
+        logger.info(f'{mol.properties.name} has been pulled from the database')
     return mol_series
 
 
@@ -322,7 +322,7 @@ def ligand_to_qd(core: Molecule,
     })
 
     # Print and return
-    print(get_time() + qd.properties.name + '\t has been constructed')
+    logger.info(f'{qd.properties.name} has been pulled from the database')
     return qd
 
 

@@ -29,13 +29,14 @@ from typing import List
 import pandas as pd
 
 from scm.plams import (Molecule, Settings)
-from scm.plams.core.functions import (init, finish)
+from scm.plams.core.functions import finish
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 
 import qmflows
 
 from ..jobs import job_geometry_opt
-from ..utils import (get_time, type_to_string)
+from ..utils import (restart_init, type_to_string)
+from ..logger import logger
 from ..mol_utils import (fix_carboxyl, fix_h)
 from ..settings_dataframe import SettingsDataFrame
 
@@ -75,16 +76,15 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
     # Prepare slices
     if overwrite and DATA_CAT:
         idx = pd.Series(True, index=qd_df.index, name='mol')
-        message = '\t has been (re-)optimized'
+        message = ' has been (re-)optimized'
     else:
         idx = qd_df[OPT] == False  # noqa
-        message = '\t has been optimized'
+        message = ' has been optimized'
 
     # Optimize the geometries
     if idx.any():
         start_qd_opt(qd_df, idx, message)
         qd_df[JOB_SETTINGS_QD_OPT] = get_job_settings(qd_df)
-        print()
     else:  # No new molecules, move along
         return None
 
@@ -104,11 +104,11 @@ def start_qd_opt(qd_df: SettingsDataFrame,
     job_recipe = qd_df.settings.optional.qd.optimize
 
     # Perform the main optimization loop
-    init(path=path, folder='QD_optimize')
+    restart_init(path=path, folder='QD_optimize')
     for mol in qd_df[MOL][idx]:
         mol.properties.job_path = []
         qd_opt(mol, job_recipe)
-        print(get_time() + mol.properties.name + message)
+        logger.info(mol.properties.name + message)
     finish()
 
 
