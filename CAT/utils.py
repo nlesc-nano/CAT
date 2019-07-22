@@ -228,10 +228,14 @@ def restart_init(path: str,
     rmtree(config.default_jobmanager.workdir)
     config.default_jobmanager = manager
     config.log.file = 3
-    config.log.stdout = 1
+    config.log.stdout = 0
+
+    workdir = manager.workdir
+    if not isdir(workdir):
+        os.mkdir(workdir)
+        return
 
     # Update the default job manager with previous Jobs
-    workdir = manager.workdir
     for f in os.listdir(workdir):
         job_dir = join(workdir, f)
         if not isdir(job_dir):  # Not a directory; move along

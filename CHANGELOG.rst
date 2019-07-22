@@ -10,6 +10,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 * Increased the clarity of many exceptions.
 * Updated the documentation.
+* Introduced a proper logger (see https://github.com/nlesc-nano/CAT/issues/46).
 
 
 0.5.2

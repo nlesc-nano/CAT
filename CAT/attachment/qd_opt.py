@@ -37,7 +37,7 @@ import qmflows
 from ..jobs import job_geometry_opt
 from ..utils import (restart_init, type_to_string)
 from ..logger import logger
-from ..mol_utils import (fix_carboxyl, fix_h)
+from ..mol_utils import (fix_carboxyl, fix_h, round_coords)
 from ..settings_dataframe import SettingsDataFrame
 
 try:
@@ -107,6 +107,7 @@ def start_qd_opt(qd_df: SettingsDataFrame,
     restart_init(path=path, folder='QD_optimize')
     for mol in qd_df[MOL][idx]:
         mol.properties.job_path = []
+        mol.round_coords()
         qd_opt(mol, job_recipe)
         logger.info(mol.properties.name + message)
     finish()
