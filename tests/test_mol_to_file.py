@@ -11,7 +11,7 @@ from scm.plams import Molecule
 
 _PATH = 'tests/test_files'
 PATH = join(_PATH, 'mol_to_file')
-MOL = Molecule(join(_PATH, 'methanol.pdb'))
+MOL = Molecule(join(_PATH, 'Methanol.pdb'))
 
 
 def test_mol_to_file() -> None:
