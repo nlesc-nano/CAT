@@ -29,7 +29,7 @@ import yaml
 from scm.plams.core.settings import Settings
 
 from CAT import prep
-from cat.logger import logger
+from CAT.logger import logger
 
 
 def extract_args(args: Optional[List[str]] = None) -> Settings:

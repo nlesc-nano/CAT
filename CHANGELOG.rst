@@ -14,6 +14,8 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * Increased the clarity of many exceptions (see https://github.com/nlesc-nano/CAT/issues/45).
 * Updated the documentation.
 * Introduced a proper logger (see https://github.com/nlesc-nano/CAT/issues/46).
+* Updated data-CAT_ to 0.1.1 (https://github.com/nlesc-nano/data-CAT/pull/12) and
+  nano_CAT_ to 0.1.2 (https://github.com/nlesc-nano/nano-CAT/pull/10).
 
 
 0.5.2
