@@ -14,7 +14,7 @@ from scm.plams.interfaces.thirdparty.gamess import GamessJob
 
 from CAT.assertion_functions import (assert_eq, assert_lt, assert_id, assert_exception)
 from CAT.utils import (
-    type_to_string, get_time, dict_concatenate, get_template, validate_path, check_sys_var
+    type_to_string, dict_concatenate, get_template, validate_path, check_sys_var
 )
 
 PATH = 'tests/test_files'
@@ -35,18 +35,6 @@ def test_type_to_string() -> None:
         i = type_to_string(k)
         assert_eq(i, j)
     assert_eq(type_to_string('bob'), '')
-
-
-def test_get_time() -> None:
-    """Test :func:`CAT.utils.get_time`."""
-    time = get_time()
-    assert_eq(time[0], '[')
-    assert_eq(time[9:], '] ')
-    assert_eq(time[3], ':')
-    assert_eq(time[6], ':')
-    assert_lt(int(time[1:3]), 25)
-    assert_lt(int(time[4:6]), 61)
-    assert_lt(int(time[7:9]), 61)
 
 
 def test_dict_concatenate() -> None:

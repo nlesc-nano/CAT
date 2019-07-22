@@ -60,9 +60,10 @@ from ..logger import logger
 from ..settings_dataframe import SettingsDataFrame
 from ..mol_utils import (to_symbol, fix_carboxyl, get_index,
                          from_mol_other, from_rdmol, separate_mod)
+from ..data_handling.mol_to_file import mol_to_file
 
 try:
-    from dataCAT import (Database, mol_to_file)
+    from dataCAT import Database
     DATA_CAT = True
 except ImportError:
     DATA_CAT = False
@@ -89,14 +90,19 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
 
     """
     settings = ligand_df.settings.optional
-    database = Database(settings.database.dirname, **settings.database.mongodb)
     overwrite = DATA_CAT and 'ligand' in settings.database.overwrite
     read = DATA_CAT and 'ligand' in settings.database.read
     write = DATA_CAT and 'ligand' in settings.database.write
     optimize = settings.ligand.optimize
+    lig_path = settings.ligand.dirname
+    mol_format = settings.database.mol_format
+    if DATA_CAT:
+        database = Database(settings.database.dirname, **settings.database.mongodb)
 
     # Searches for matches between the input ligand and the database; imports the structure
-    read_data(ligand_df, database, read)
+    if read:
+        read_data(ligand_df, database, read)
+    ligand_df[OPT] = ligand_df[OPT].astype(bool, copy=False)
 
     if write:
         _ligand_to_db(ligand_df, database, opt=False)
@@ -123,6 +129,10 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
     if write and optimize:
         _ligand_to_db(ligand_df, database)
 
+    # Export ligands to .xyz, .pdb, .mol and/or .mol format
+    if 'ligand' in settings.database.write and optimize and mol_format:
+        mol_to_file(ligand_df[MOL], lig_path, mol_format=mol_format)
+
 
 def _parse_overwrite(ligand_df: SettingsDataFrame,
                      overwrite: bool) -> Tuple[pd.Series, str]:
@@ -137,13 +147,12 @@ def read_data(ligand_df: SettingsDataFrame,
               database: 'Database',
               read: bool) -> None:
     """Read ligands from the database if **read** = ``True``."""
-    if read:
-        logger.info('Pulling ligands from database')
-        database.from_csv(ligand_df, database='ligand')
-        for i, mol in zip(ligand_df[OPT], ligand_df[MOL]):
-            if i == -1:
-                continue
-            logger.info(f'{mol.properties.name} has been pulled from the database')
+    logger.info('Pulling ligands from database')
+    database.from_csv(ligand_df, database='ligand')
+    for i, mol in zip(ligand_df[OPT], ligand_df[MOL]):
+        if i == -1:
+            continue
+        logger.info(f'{mol.properties.name} has been pulled from the database')
     ligand_df[OPT] = ligand_df[OPT].astype(bool, copy=False)
 
 
@@ -183,8 +192,6 @@ def _ligand_to_db(ligand_df: SettingsDataFrame,
     # Extract arguments
     settings = ligand_df.settings.optional
     overwrite = DATA_CAT and 'ligand' in settings.database.overwrite
-    lig_path = settings.ligand.dirname
-    mol_format = settings.database.mol_format
 
     kwargs: Dict[str, Any] = {'overwrite': overwrite}
     if opt:
@@ -194,7 +201,6 @@ def _ligand_to_db(ligand_df: SettingsDataFrame,
         kwargs['columns'] = [FORMULA, HDF5_INDEX, SETTINGS1]
         kwargs['database'] = 'ligand'
         kwargs['opt'] = True
-        mol_to_file(ligand_df[MOL], lig_path, overwrite, mol_format)
     else:
         kwargs['columns'] = [FORMULA, HDF5_INDEX]
         kwargs['database'] = 'ligand_no_opt'

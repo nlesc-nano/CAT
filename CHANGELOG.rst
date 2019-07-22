@@ -5,10 +5,13 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+
 0.5.3
 *****
 
-* Increased the clarity of many exceptions.
+* Moved Molecule to file exporting (*i.e.* .xyz and .pdb creation) from data-CAT_ to CAT_.
+* Molecules can now be exported to .mol and .mol2 formats (in addition to .pdb and .xyz format).
+* Increased the clarity of many exceptions (see https://github.com/nlesc-nano/CAT/issues/45).
 * Updated the documentation.
 * Introduced a proper logger (see https://github.com/nlesc-nano/CAT/issues/46).
 

@@ -142,7 +142,7 @@ Database
         By default all structures are stored in the .hdf5 format as
         (partially) de-serialized .pdb files. Additional formats can be
         requisted with this keyword.
-        Accepted values: ``"pdb"`` and/or ``"xyz"``.
+        Accepted values: ``"pdb"``, ``"xyz"``, ``"mol"`` and/or ``"mol2"``.
 
 
     .. attribute:: optional.database.mongodb

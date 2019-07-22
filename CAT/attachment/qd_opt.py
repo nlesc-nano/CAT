@@ -39,9 +39,10 @@ from ..jobs import job_geometry_opt
 from ..utils import (restart_init, type_to_string)
 from ..mol_utils import (fix_carboxyl, fix_h, round_coords)
 from ..settings_dataframe import SettingsDataFrame
+from ..data_handling.mol_to_file import mol_to_file
 
 try:
-    from dataCAT import (Database, mol_to_file)
+    from dataCAT import Database
     DATA_CAT = True
 except ImportError:
     DATA_CAT = False
@@ -72,6 +73,8 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
     settings = qd_df.settings.optional
     write = DATA_CAT and 'qd' in settings.database.write
     overwrite = DATA_CAT and 'qd' in settings.database.overwrite
+    mol_format = settings.database.mol_format
+    qd_path = settings.qd.dirname
 
     # Prepare slices
     if overwrite and DATA_CAT:
@@ -93,6 +96,11 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
     if write and DATA_CAT:
         with pd.option_context('mode.chained_assignment', None):
             _qd_to_db(qd_df, idx)
+
+    # Export xyz/pdb files
+    if 'qd' in settings.database.write and mol_format:
+        mol_to_file(qd_df[MOL], qd_path, mol_format=mol_format)
+
     return None
 
 
@@ -139,9 +147,7 @@ def _qd_to_db(qd_df: SettingsDataFrame,
     # Extract arguments
     settings = qd_df.settings.optional
     job_recipe = settings.qd.optimize
-    overwrite = DATA_CAT and 'qd' in settings.database.overwrite
-    mol_format = settings.database.mol_format
-    qd_path = settings.qd.dirname
+    overwrite = 'qd' in settings.database.overwrite
     db_path = settings.database.dirname
 
     # Preapre the job recipe
@@ -159,14 +165,12 @@ def _qd_to_db(qd_df: SettingsDataFrame,
     database = Database(path=db_path, **settings.database.mongodb)
     database.update_csv(
         qd_df[idx],
+        overwrite=overwrite,
         columns=columns,
         job_recipe=recipe,
         database='QD',
         opt=True
     )
-
-    # Export xyz/pdb files
-    mol_to_file(qd_df[MOL], qd_path, overwrite, mol_format)
 
 
 def qd_opt(mol: Molecule,

@@ -188,6 +188,7 @@ core_schema: Schema = Schema({
 
 _db_names = ('core', 'ligand', 'qd')
 _format_names = ('pdb', 'xyz')
+_format_names2 = ('pdb', 'xyz', 'mol', 'mol2')
 
 #: Schema for validating the ``['optional']['database']`` block.
 database_schema: Schema = Schema({
@@ -265,14 +266,14 @@ database_schema: Schema = Schema({
             And(
                 str,
                 lambda n: n in _format_names,
-                error=f'allowed values for optional.database.mol_format are: {repr(_db_names)}'
+                error=f'allowed values for optional.database.mol_format are: {repr(_format_names2)}'
             ),
             And(
                 abc.Collection,
                 lambda n: all(i in _format_names for i in n),
                 lambda n: len(n) == len(set(n)),
                 Use(to_tuple),
-                error=f'allowed values for optional.database.mol_format are: {repr(_db_names)}'
+                error=f'allowed values for optional.database.mol_format are: {repr(_format_names2)}'
             ),
             error='optional.database.mol_format expects a boolean, string or list of unique strings'
         )
