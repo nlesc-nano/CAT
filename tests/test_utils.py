@@ -5,6 +5,7 @@ from os.path import join
 
 from unittest import mock
 
+from scm.plams import config
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 from scm.plams.interfaces.adfsuite.adf import ADFJob
 from scm.plams.interfaces.thirdparty.orca import ORCAJob
@@ -12,12 +13,13 @@ from scm.plams.interfaces.thirdparty.cp2k import Cp2kJob
 from scm.plams.interfaces.thirdparty.dirac import DiracJob
 from scm.plams.interfaces.thirdparty.gamess import GamessJob
 
-from CAT.assertion_functions import (assert_eq, assert_id, assert_exception)
+from CAT.assertion_functions import (assert_eq, assert_id, assert_exception, assert_isin)
 from CAT.utils import (
-    type_to_string, dict_concatenate, get_template, validate_path, check_sys_var
+    type_to_string, dict_concatenate, get_template, validate_path, check_sys_var, restart_init
 )
 
 PATH = 'tests/test_files'
+FOLDER = 'test_plams_workdir'
 
 
 def test_type_to_string() -> None:
@@ -82,3 +84,12 @@ def test_check_sys_var() -> None:
     test1()
     test2()
     test3()
+
+
+def test_restart_init() -> None:
+    """Test :func:`CAT.utils.restart_init`."""
+    restart_init(PATH, FOLDER)
+    manager = config.default_jobmanager
+
+    _hash = '0da9b13507022986d26bbc57b4c366cf1ead1fe70ff750e071e79e393b14dfb5'
+    assert_isin(_hash, manager.hashes)
