@@ -27,7 +27,6 @@ from CAT.data_handling.validation_schemas import (
 )
 from .validate_mol import validate_mol
 from ..utils import validate_path
-from ..logger import logger
 
 __all__ = ['validate_input']
 
@@ -76,5 +75,4 @@ def validate_input(s: Settings) -> None:
         validate_mol(s.input_cores, 'input_cores', join(path, 'core'))
         validate_mol(s.input_ligands, 'input_ligands', join(path, 'ligand'))
     except Exception as ex:
-        logger.critical(f'{ex.__class__.__name__}: {ex}')
         raise ex.__class__(ex)

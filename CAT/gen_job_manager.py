@@ -127,7 +127,7 @@ class GenJobManager(JobManager):
         if isfile(filename):
             filename = abspath(filename)
         else:
-            raise FileError('File {} not present'.format(filename))
+            raise FileError(f'File {filename} not present')
 
         path = dirname(filename)
         job = self._unpickle(filename)

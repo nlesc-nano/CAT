@@ -132,13 +132,9 @@ def prep_input(arg: Settings) -> Tuple[SettingsDataFrame, SettingsDataFrame]:
 
     # Raises an error if lig_list or core_list is empty
     if not lig_list:
-        err = 'No valid input ligands were found, aborting run'
-        logger.critical('MoleculeError: ' + err)
-        raise MoleculeError(err)
+        raise MoleculeError('No valid input ligands were found, aborting run')
     elif not core_list:
-        err = 'No valid input cores were found, aborting run'
-        logger.critical('MoleculeError: ' + err)
-        raise MoleculeError(err)
+        raise MoleculeError('No valid input cores were found, aborting run')
 
     # Store the molecules in dataframes
     columns = pd.MultiIndex.from_tuples([MOL], names=['index', 'sub index'])
@@ -188,10 +184,9 @@ def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
 
         # Returns an error if no dummy atoms were found
         if not dummies:
-            err = (f"{repr(to_symbol(dummy))} was specified as core dummy atom, yet no matching "
-                   f"atoms were found in {core.properties.name} (formula: {formula})")
-            logger.critical('MoleculeError: ' + err)
-            raise MoleculeError(err)
+            raise MoleculeError(f"{repr(to_symbol(dummy))} was specified as core dummy atom, yet "
+                                f"no matching atoms were found in {core.properties.name} "
+                                f"(formula: {formula})")
 
         # Delete all core dummy atoms
         for at in reversed(dummies):
@@ -241,9 +236,7 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
 
     # Check if any valid functional groups were found
     if not ligand_df[MOL].any():
-        err = 'No valid functional groups found in any of the ligands, aborting run'
-        logger.critical('MoleculeError: ' + err)
-        raise MoleculeError(err)
+        raise MoleculeError('No valid functional groups found in any of the ligands, aborting run')
 
     # Optimize the ligands
     if optimize:
@@ -324,5 +317,4 @@ def val_nano_cat(error_message: Optional[str] = None) -> None:
     """Raise an an :exc:`ImportError` if the module-level constant ``NANO_CAT`` is ``False``."""
     err = error_message or ''
     if not NANO_CAT:
-        logger.critical('ImportError: ' + err)
         raise ImportError(err)

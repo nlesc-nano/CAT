@@ -359,13 +359,11 @@ def get_frag_size(self, bond: Bond,
 
     """
     if bond not in self.bonds:
-        error = 'get_frag_size: The argument bond should be of type plams.Bond and be part'
-        error += ' of the Molecule'
-        raise MoleculeError(error)
+        raise MoleculeError('get_frag_size: The argument bond should be of type plams.Bond and '
+                            'be part of the Molecule')
     elif atom not in self.atoms:
-        error = 'get_frag_size: The argument atom should be of type plams.Atom and be part'
-        error += ' of the Molecule'
-        raise MoleculeError(error)
+        raise MoleculeError('get_frag_size: The argument atom should be of type plams.Atom and '
+                            'be part of the Molecule')
 
     for at in self:
         at._visited = False
@@ -416,9 +414,8 @@ def recombine_mol(mol_list: Sequence[Molecule]) -> Molecule:
         return mol_list[0]
     tup_list = mol_list[0].properties.mark
     if not tup_list:
-        err = 'No PLAMS atoms specified in mol_list[0].properties.mark, aborting recombine_mol()'
-        logger.critical('IndexError: ' + err)
-        raise IndexError(err)
+        raise IndexError('No PLAMS atoms specified in mol_list[0].properties.mark, '
+                         'aborting recombine_mol()')
 
     for tup in tup_list:
         # Allign mol1 & mol2

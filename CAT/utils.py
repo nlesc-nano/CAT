@@ -88,14 +88,11 @@ def check_sys_var() -> None:
             logger.warn(f"The environment variable '{sys_var[i]}' has not been set")
 
     if not all(sys_var_exists):
-        err = 'One or more ADF environment variables have not been set, aborting ADF job'
-        logger.critical('EnvironmentError: ' + err)
-        raise EnvironmentError(err)
+        raise EnvironmentError('One or more ADF environment variables have not been set, '
+                               'aborting ADF job')
 
     if '2019' not in os.environ['ADFHOME']:
-        err = f"ADF/2019 not detected in {os.environ['ADFHOME']}"
-        logger.critical('ImportError: ' + err)
-        raise ImportError(err)
+        raise ImportError(f"ADF/2019 not detected in {os.environ['ADFHOME']}")
 
 
 def dict_concatenate(dict_list: Iterable[dict]) -> dict:
@@ -146,13 +143,9 @@ def validate_path(path: Optional[str]) -> str:
     elif isdir(path):
         return path
     elif not exists(path):
-        err = f"'{path}' not found"
-        logger.critical('FileNotFoundError: ' + err)
-        raise FileNotFoundError(err)
+        raise FileNotFoundError(f"'{path}' not found")
     elif isfile(path):
-        err = f"'{path}' is not a directory"
-        logger.critical('NotADirectoryError: ' + err)
-        raise NotADirectoryError(err)
+        raise NotADirectoryError(f"'{path}' is not a directory")
 
 
 def validate_core_atom(atom: Union[str, int]) -> Union[Molecule, int]:
@@ -165,10 +158,8 @@ def validate_core_atom(atom: Union[str, int]) -> Union[Molecule, int]:
     try:
         mol = from_smiles(atom)
     except Exception as ex:
-        err = (f'Failed to recognize {repr(atom)} as a valid atomic number, '
-               f'atomic symbol or SMILES string')
-        logger.critical(ex.__class__.__name__ + err)
-        raise ex.__class__(err + f'\n\n{ex}')
+        raise ex.__class__(f'Failed to recognize {repr(atom)} as a valid atomic number, '
+                           f'atomic symbol or SMILES string\n\n{ex}')
 
     # Double check the SMILES string:
     charge_dict = {}
@@ -184,11 +175,8 @@ def validate_core_atom(atom: Union[str, int]) -> Union[Molecule, int]:
     # Only a single charged atom is allowed
     if len(charge_dict) > 1:
         charge_count = sum([v for v in charge_dict.values()])
-        err = (f'The SMILES string {repr(atom)} contains more than one charged atom: '
-               f'charged atom count: {charge_count}')
-        logger.critical('MoleculeError: ' + err)
-        raise MoleculeError(err)
-
+        raise MoleculeError(f'The SMILES string {repr(atom)} contains more than one charged atom: '
+                            f'charged atom count: {charge_count}')
     return mol
 
 
