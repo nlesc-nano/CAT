@@ -1,6 +1,6 @@
 """Tests for the :mod:`CAT.gen_job_manager.GenJobManager` class in :mod:`CAT.gen_job_manager`."""
 
-from os.path import join
+from os.path import (join, abspath)
 from collections import abc
 
 from scm.plams import Settings, JobManager, AMSJob, AMSResults
@@ -12,6 +12,7 @@ from CAT.assertion_functions import (
 
 SETTINGS = Settings({'counter_len': 3, 'hashing': 'input', 'remove_empty_directories': True})
 PATH = 'tests/test_files'
+ABSPATH = abspath(PATH)
 FOLDER = 'test_plams_workdir'
 
 
@@ -24,11 +25,11 @@ def test_init() -> None:
     assert_eq(manager.jobs, [])
     assert_eq(manager.names, {})
     assert_eq(manager.hashes, {})
-    assert_eq(manager.path, PATH)
+    assert_eq(manager.path, ABSPATH)
     assert_eq(manager.foldername, FOLDER)
-    assert_eq(manager.workdir, join(PATH, FOLDER))
-    assert_eq(manager.logfile, join(PATH, FOLDER, 'logfile'))
-    assert_eq(manager.input, join(PATH, FOLDER, SETTINGS.hashing))
+    assert_eq(manager.workdir, join(ABSPATH, FOLDER))
+    assert_eq(manager.logfile, join(ABSPATH, FOLDER, 'logfile'))
+    assert_eq(manager.input, join(ABSPATH, FOLDER, SETTINGS.hashing))
 
 
 def test_load_job() -> None:

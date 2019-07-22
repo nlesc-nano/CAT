@@ -1,7 +1,7 @@
 """Tests for :mod:`CAT.data_handling.mol_to_file`."""
 
 from os import mkdir
-from os.path import join
+from os.path import (join, isdir)
 from shutil import rmtree
 
 from CAT.assertion_functions import (assert_isfile, assert_exception, Invert)
@@ -16,6 +16,9 @@ MOL = Molecule(join(_PATH, 'Methanol.pdb'))
 
 def test_mol_to_file() -> None:
     """Test :func:`CAT.data_handling.mol_to_file.mol_to_file`."""
+    if not isdir(PATH):
+        mkdir(PATH)
+
     _ref = ('mol.xyz', 'mol.pdb', 'mol.mol', 'mol.mol2')
     ref = [join(PATH, item) for item in _ref]
 
@@ -53,4 +56,3 @@ def test_mol_to_file() -> None:
 
     finally:
         rmtree(PATH)
-        mkdir(PATH)

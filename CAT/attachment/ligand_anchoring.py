@@ -220,7 +220,7 @@ def find_substructure(ligand: Molecule,
     else:
         err = (f"No functional groups were found (optional.ligand.split = {split}) for "
                f"ligand: '{ligand.properties.name}'")
-        logger.warn(err)
+        logger.error(err)
         return []
 
 

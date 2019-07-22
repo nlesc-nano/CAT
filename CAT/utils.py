@@ -62,7 +62,7 @@ def type_to_string(job: Callable) -> str:
     try:
         return _job_dict[job]
     except KeyError:
-        logger.warn(f"No default settings available for type: '{job.__class__.__name__}'")
+        logger.error(f"No default settings available for type: '{job.__class__.__name__}'")
         return ''
 
 
@@ -84,7 +84,7 @@ def check_sys_var() -> None:
     sys_var_exists = [item in os.environ and os.environ[item] for item in sys_var]
     for i, item in enumerate(sys_var_exists):
         if not item:
-            logger.warn(f"The environment variable '{sys_var[i]}' has not been set")
+            logger.error(f"The environment variable '{sys_var[i]}' has not been set")
 
     if not all(sys_var_exists):
         raise EnvironmentError('One or more ADF environment variables have not been set, '
