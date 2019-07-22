@@ -73,7 +73,7 @@ def mol_to_file(mol_list: Iterable[Molecule],
     condition = isfile if overwrite else lambda n: True
     export_dict = {k: v for k, v in _EXPORT_DICT.items() if k in mol_format}
     if not export_dict:
-        raise ValueError("No valid values found in the mol_format argument; accepted values are"
+        raise ValueError("No valid values found in the mol_format argument; accepted values are: "
                          "'xyz', 'pdb', 'mol' and/or 'mol2'")
 
     for mol in mol_list:
