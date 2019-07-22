@@ -31,12 +31,15 @@ from typing import (Optional, Tuple)
 
 import pandas as pd
 
-from scm.plams import (Atom, Settings)
+from scm.plams import Settings
 from scm.plams.core.errors import MoleculeError
 
-from .settings_dataframe import SettingsDataFrame
+from .__version__ import __version__
 
-from .utils import (check_sys_var, get_time)
+from .utils import check_sys_var
+from .logger import logger
+from .mol_utils import to_symbol
+from .settings_dataframe import SettingsDataFrame
 
 from .data_handling.mol_import import read_mol
 from .data_handling.validate_input import validate_input
@@ -47,12 +50,22 @@ from .attachment.ligand_attach import init_qd_construction
 from .attachment.ligand_anchoring import init_ligand_anchoring
 
 try:
+    import nanoCAT
     from nanoCAT.asa import init_asa
     from nanoCAT.bde.bde_workflow import init_bde
     from nanoCAT.ligand_solvation import init_solv
     NANO_CAT = True
-except ModuleNotFoundError:
+except ImportError as ex:
+    NANO_EX = ex
     NANO_CAT = False
+
+try:
+    import dataCAT
+    DATA_CAT = True
+except ImportError as ex:
+    DATA_EX = ex
+    DATA_CAT = False
+
 
 __all__ = ['prep']
 
@@ -84,7 +97,20 @@ def prep(arg: Settings,
     """
     # The start
     time_start = time()
-    print('\n')
+    logger.info(f'Starting CAT (version: {__version__})')
+    if NANO_CAT:
+        logger.info(f'The optional Nano-CAT package was successfully found '
+                    f'(version: {nanoCAT.__version__})')
+    else:
+        logger.warning('The optional Nano-CAT package was not found')
+        logger.debug(f'{NANO_EX.__class__.__name__}: {NANO_EX}')
+
+    if DATA_CAT:
+        logger.info(f'The optional Data-CAT package was successfully found '
+                    f'(version: {dataCAT.__version__})')
+    else:
+        logger.warning('The optional Data-CAT package was not found')
+        logger.debug(f'{DATA_EX.__class__.__name__}: {DATA_EX}')
 
     # Interpret and extract the input settings
     ligand_df, core_df = prep_input(arg)
@@ -99,7 +125,8 @@ def prep(arg: Settings,
     qd_df = prep_qd(ligand_df, core_df)
 
     # The End
-    print(get_time() + 'Total elapsed time:\t\t{:.4f} sec'.format(time() - time_start))
+    delta_t = time() - time_start
+    logger.info(f'Total elapsed time: {delta_t:.4f} sec')
 
     if return_mol:
         return qd_df, core_df, ligand_df
@@ -168,32 +195,33 @@ def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
     # Unpack arguments
     dummy = core_df.settings.optional.core.dummy
 
-    formula_list = []
-    anchor_list = []
+    idx_tuples = []
     for core in core_df[MOL]:
         # Checks the if the dummy is a string (atomic symbol) or integer (atomic number)
-        formula_list.append(core.get_formula())
+        formula = core.get_formula()
 
         # Returns the indices and Atoms of all dummy atom ligand placeholders in the core
         if not core.properties.dummies:
-            idx, dummies = zip(*[(j, atom) for j, atom in enumerate(core.atoms, 1) if
-                                 atom.atnum == dummy])
+            _at_idx, core.properties.dummies = zip(*[(j, atom) for j, atom in enumerate(core, 1) if
+                                                     atom.atnum == dummy])
         else:
-            idx, dummies = zip(*[(j, core[j]) for j in core.properties.dummies])
-        core.properties.dummies = dummies
-        anchor_list.append(''.join([' ' + str(i) for i in sorted(idx)])[1:])
-
-        # Delete all core dummy atoms
-        for at in reversed(core.properties.dummies):
-            core.delete_atom(at)
+            _at_idx, core.properties.dummies = zip(*[(j, core[j]) for j in core.properties.dummies])
+        dummies = core.properties.dummies
 
         # Returns an error if no dummy atoms were found
-        if not core.properties.dummies:
-            raise MoleculeError(Atom(atnum=dummy).symbol +
-                                ' was specified as dummy atom, yet no dummy atoms were found')
+        if not dummies:
+            raise MoleculeError(f"{repr(to_symbol(dummy))} was specified as core dummy atom, yet "
+                                f"no matching atoms were found in {core.properties.name} "
+                                f"(formula: {formula})")
+
+        # Delete all core dummy atoms
+        for at in reversed(dummies):
+            core.delete_atom(at)
+
+        at_idx = ' '.join(str(i) for i in sorted(_at_idx))
+        idx_tuples.append((formula, at_idx))
 
     # Create and return a new dataframe
-    idx_tuples = list(zip(formula_list, anchor_list))
     idx = pd.MultiIndex.from_tuples(idx_tuples, names=['formula', 'anchor'])
     ret = core_df.reindex(idx)
     ret[MOL] = core_df[MOL].values
@@ -298,14 +326,14 @@ def prep_qd(ligand_df: SettingsDataFrame,
     # Calculate the interaction between ligands on the quantum dot surface
     if activation_strain:
         val_nano_cat("Quantum dot activation-strain calculations require the nano-CAT package")
-        print(get_time() + 'calculating ligand distortion and inter-ligand interaction')
+        logger.info('calculating ligand distortion and inter-ligand interaction')
         init_asa(qd_df)
 
     # Calculate the interaction between ligands on the quantum dot surface upon removal of CdX2
     if dissociate:
         val_nano_cat("Quantum dot ligand dissociation calculations require the nano-CAT package")
         # Start the BDE calculation
-        print(get_time() + 'calculating ligand dissociation energy')
+        logger.info('calculating ligand dissociation energy')
         init_bde(qd_df)
 
     return qd_df
@@ -313,6 +341,6 @@ def prep_qd(ligand_df: SettingsDataFrame,
 
 def val_nano_cat(error_message: Optional[str] = None) -> None:
     """Raise an an :exc:`ImportError` if the module-level constant ``NANO_CAT`` is ``False``."""
-    err_message = error_message or ''
+    err = error_message or ''
     if not NANO_CAT:
-        raise ImportError(err_message)
+        raise ImportError(err)

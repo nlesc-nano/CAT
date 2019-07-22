@@ -25,14 +25,15 @@ API
 """
 
 import os
-import time
+import sys
 import yaml
 import pkg_resources as pkg
 from shutil import rmtree
-from typing import (Callable, Iterable, Optional)
+from typing import (Callable, Iterable, Optional, Union)
 from os.path import (join, isdir, isfile, exists)
 
-from scm.plams import (init, config, Settings)
+from scm.plams import (config, Settings, Molecule, MoleculeError, PeriodicTable, init)
+from scm.plams.interfaces.molecule.rdkit import from_smiles
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 from scm.plams.interfaces.adfsuite.adf import ADFJob
 from scm.plams.interfaces.thirdparty.orca import ORCAJob
@@ -40,9 +41,11 @@ from scm.plams.interfaces.thirdparty.cp2k import Cp2kJob
 from scm.plams.interfaces.thirdparty.dirac import DiracJob
 from scm.plams.interfaces.thirdparty.gamess import GamessJob
 
+from .logger import logger
+from .mol_utils import to_atnum
 from .gen_job_manager import GenJobManager
 
-__all__ = ['check_sys_var', 'dict_concatenate', 'get_time', 'get_template']
+__all__ = ['check_sys_var', 'dict_concatenate', 'get_template']
 
 _job_dict = {
     ADFJob: 'adf',
@@ -59,14 +62,8 @@ def type_to_string(job: Callable) -> str:
     try:
         return _job_dict[job]
     except KeyError:
-        err = 'WARNING: No default settings available for {}'
-        print(get_time() + err.format(repr(job.__class__.__name__)))
+        logger.error(f"No default settings available for type: '{job.__class__.__name__}'")
         return ''
-
-
-def get_time() -> str:
-    """Return the current time as string."""
-    return '[{}] '.format(time.strftime('%H:%M:%S'))
 
 
 def check_sys_var() -> None:
@@ -75,31 +72,26 @@ def check_sys_var() -> None:
     Raises
     ------
     EnvironmentError
-        Raised if one or more of the following environment variables are absent:
+        Raised if an ADF version prior to 2019 is found or if one or more of the
+        following environment variables are absent:
         * ``'ADFBIN'``
         * ``'ADFHOME'``
         * ``'ADFRESOURCES'``
         * ``'SCMLICENSE'``
-
-    ImportError
-        Raised if an ADF version prior to 2019 is found.
 
     """
     sys_var = ('ADFBIN', 'ADFHOME', 'ADFRESOURCES', 'SCMLICENSE')
     sys_var_exists = [item in os.environ and os.environ[item] for item in sys_var]
     for i, item in enumerate(sys_var_exists):
         if not item:
-            err = 'WARNING: The environment variable {} has not been set'
-            print(get_time() + err.format(sys_var[i]))
+            logger.error(f"The environment variable '{sys_var[i]}' has not been set")
 
     if not all(sys_var_exists):
-        raise EnvironmentError(get_time() + 'One or more ADF environment variables have '
-                               'not been set, aborting ADF job.')
+        raise EnvironmentError('One or more ADF environment variables have not been set, '
+                               'aborting ADF job')
 
     if '2019' not in os.environ['ADFHOME']:
-        error = get_time() + 'No ADF/2019 detected in ' + os.environ['ADFHOME']
-        error += ', aborting ADF job.'
-        raise ImportError(error)
+        raise EnvironmentError(f"ADF/2019 not detected in {os.environ['ADFHOME']}")
 
 
 def dict_concatenate(dict_list: Iterable[dict]) -> dict:
@@ -150,9 +142,60 @@ def validate_path(path: Optional[str]) -> str:
     elif isdir(path):
         return path
     elif not exists(path):
-        raise FileNotFoundError(get_time() + f"'{path}' not found")
+        raise FileNotFoundError(f"'{path}' not found")
     elif isfile(path):
-        raise NotADirectoryError(get_time() + f"'{path}' is not a directory")
+        raise NotADirectoryError(f"'{path}' is not a directory")
+
+
+def validate_core_atom(atom: Union[str, int]) -> Union[Molecule, int]:
+    """Parse and validate the ``["optional"]["qd"]["dissociate"]["core_atom"]`` argument."""
+    # Potential atomic number or symbol
+    if isinstance(atom, int) or atom in PeriodicTable.symtonum:
+        return to_atnum(atom)
+
+    # Potential SMILES string
+    try:
+        mol = from_smiles(atom)
+    except Exception as ex:
+        raise ex.__class__(f'Failed to recognize {repr(atom)} as a valid atomic number, '
+                           f'atomic symbol or SMILES string\n\n{ex}')
+
+    # Double check the SMILES string:
+    charge_dict = {}
+    for at in mol:
+        charge = at.properties.charge
+        try:
+            charge_dict[charge] += 1
+        except KeyError:
+            charge_dict[charge] = 1
+    if 0 in charge_dict:
+        del charge_dict[0]
+
+    # Only a single charged atom is allowed
+    if len(charge_dict) > 1:
+        charge_count = sum([v for v in charge_dict.values()])
+        raise MoleculeError(f'The SMILES string {repr(atom)} contains more than one charged atom: '
+                            f'charged atom count: {charge_count}')
+    return mol
+
+
+class SupressPrint:
+    """A context manager for supressing :func:`print` calls."""
+
+    def __init__(self) -> None:
+        """Initialize a :class:`SupressPrint` instance."""
+        self.stdout = None
+
+    def __enter__(self) -> None:
+        """Enter the :class:`SupressPrint` context manager."""
+        self.stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+
+    def __exit__(self, *args) -> None:
+        """Exit the :class:`SupressPrint` context manager."""
+        sys.stdout.close()
+        sys.stdout = self.stdout
+        self.stdout = None
 
 
 def restart_init(path: str,
@@ -184,27 +227,25 @@ def restart_init(path: str,
         Accepted values are: ``"input"``, ``"runscript"``, ``"input+runscript"`` and ``None``.
 
     """  # noqa
-    attr_dict = {
-        'path': path,
-        'foldername': folder,
-        'workdir': join(path, folder),
-        'logfile': join(path, folder, 'logfile'),
-        'input': join(path, folder, hashing)
-    }
 
     # Create a job manager
     settings = Settings({'counter_len': 3, 'hashing': hashing, 'remove_empty_directories': True})
-    manager = GenJobManager(settings)
-    for k, v in attr_dict.items():
-        setattr(manager, k, v)
+    manager = GenJobManager(settings, path, folder, hashing)
 
     # Change the default job manager
-    init()
+    with SupressPrint():
+        init()
     rmtree(config.default_jobmanager.workdir)
     config.default_jobmanager = manager
+    config.log.file = 3
+    config.log.stdout = 0
+
+    workdir = manager.workdir
+    if not isdir(workdir):
+        os.mkdir(workdir)
+        return
 
     # Update the default job manager with previous Jobs
-    workdir = manager.workdir
     for f in os.listdir(workdir):
         job_dir = join(workdir, f)
         if not isdir(job_dir):  # Not a directory; move along

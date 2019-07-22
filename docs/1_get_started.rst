@@ -72,6 +72,7 @@ Verbose default Settings
             dirname: ligand
             optimize: True
             split: True
+            functional_groups: null
             cosmo-rs: False
 
         qd:
@@ -112,6 +113,7 @@ Maximum verbose default Settings
             dirname: ligand
             optimize: True
             split: True
+            functional_groups: null
             cosmo-rs: False
 
         qd:
@@ -121,12 +123,10 @@ Maximum verbose default Settings
             dissociate:
                 core_atom: Cd
                 lig_count: 2
+                keep_files: True
                 core_core_dist: 5.0
                 lig_core_dist: 5.0
-                topology:
-                    6: vertice
-                    7: edge
-                    9: face
+                topology: {}
 
                 job1: False
                 s1: False

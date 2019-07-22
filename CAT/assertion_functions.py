@@ -9,6 +9,8 @@ Index
 .. currentmodule:: CAT.assertion_functions
 .. autosummary::
     Invert
+    assert_isfile
+    assert_isdir
     assert_len
     assert_eq
     assert_id
@@ -26,6 +28,8 @@ Index
 API
 ---
 .. autoclass:: Invert
+.. autofunction:: assert_isfile
+.. autofunction:: assert_isdir
 .. autofunction:: assert_len
 .. autofunction:: assert_eq
 .. autofunction:: assert_id
@@ -43,6 +47,7 @@ API
 """
 
 from functools import wraps
+from os.path import (isfile, isdir)
 from typing import (Any, Callable, Tuple, Sequence, Container, Sized)
 
 
@@ -112,6 +117,24 @@ class Invert():
             else:
                 raise AssertionError(self.get_err_msg(func, tup))
         return wrapper
+
+
+def assert_isfile(value: str) -> Tuple[str, str, None]:
+    """Assert :code:`os.path.isfile(value)`; returns arguments for :func:`._err_msg`."""
+    assertion = 'assert os.path.isfile(value)'
+    assert isfile(value), _err_msg(assertion, value, None)
+
+    _assertion = 'assert not os.path.isfile(value)'
+    return _assertion, value, None
+
+
+def assert_isdir(value: str) -> Tuple[str, str, None]:
+    """Assert :code:`os.path.isdir(value)`; returns arguments for :func:`._err_msg`."""
+    assertion = 'assert os.path.isdir(value)'
+    assert isdir(value), _err_msg(assertion, value, None)
+
+    _assertion = 'assert not os.path.isdir(value)'
+    return _assertion, value, None
 
 
 def assert_len(value: Sized,

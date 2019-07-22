@@ -56,13 +56,14 @@ import rdkit
 from rdkit.Chem import AllChem
 
 from .ligand_attach import (rot_mol_angle, sanitize_dim_2)
-from ..utils import get_time
+from ..logger import logger
 from ..settings_dataframe import SettingsDataFrame
 from ..mol_utils import (to_symbol, fix_carboxyl, get_index,
                          from_mol_other, from_rdmol, separate_mod)
+from ..data_handling.mol_to_file import mol_to_file
 
 try:
-    from dataCAT import (Database, mol_to_file)
+    from dataCAT import Database
     DATA_CAT = True
 except ImportError:
     DATA_CAT = False
@@ -89,14 +90,19 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
 
     """
     settings = ligand_df.settings.optional
-    database = Database(settings.database.dirname, **settings.database.mongodb)
     overwrite = DATA_CAT and 'ligand' in settings.database.overwrite
     read = DATA_CAT and 'ligand' in settings.database.read
     write = DATA_CAT and 'ligand' in settings.database.write
     optimize = settings.ligand.optimize
+    lig_path = settings.ligand.dirname
+    mol_format = settings.database.mol_format
+    if DATA_CAT:
+        database = Database(settings.database.dirname, **settings.database.mongodb)
 
     # Searches for matches between the input ligand and the database; imports the structure
-    read_data(ligand_df, database, read)
+    if read:
+        read_data(ligand_df, database, read)
+    ligand_df[OPT] = ligand_df[OPT].astype(bool, copy=False)
 
     if write:
         _ligand_to_db(ligand_df, database, opt=False)
@@ -104,10 +110,10 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
     # Optimize all new ligands
     if optimize:
         # Identify the to be optimized ligands
-        idx, message = _parse_overwrite(ligand_df, overwrite)
+        idx = _parse_overwrite(ligand_df, overwrite)
 
         # Optimize the ligands
-        lig_new = start_ligand_jobs(ligand_df, idx, message)
+        lig_new = start_ligand_jobs(ligand_df, idx)
 
         # Update the ligand dataframe
         if lig_new:
@@ -117,54 +123,65 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
             else:
                 ligand_df.loc[idx, MOL] = lig_new
 
-    print()
     remove_duplicates(ligand_df)
 
     # Write newly optimized structures to the database
     if write and optimize:
         _ligand_to_db(ligand_df, database)
 
+    # Export ligands to .xyz, .pdb, .mol and/or .mol format
+    if 'ligand' in settings.database.write and optimize and mol_format:
+        mol_to_file(ligand_df[MOL], lig_path, mol_format=mol_format)
+
 
 def _parse_overwrite(ligand_df: SettingsDataFrame,
                      overwrite: bool) -> Tuple[pd.Series, str]:
     """Return a series for dataframe slicing and a to-be printer message."""
     if overwrite:
-        idx = pd.Series(True, index=ligand_df.index, name=MOL)
-        message = '{}\t has been (re-)optimized'
+        return pd.Series(True, index=ligand_df.index, name=MOL)
     else:
-        idx = np.invert(ligand_df[OPT])
-        message = '{}\t has been optimized'
-    return idx, message
+        return np.invert(ligand_df[OPT])
 
 
 def read_data(ligand_df: SettingsDataFrame,
               database: 'Database',
               read: bool) -> None:
     """Read ligands from the database if **read** = ``True``."""
-    if read:
-        database.from_csv(ligand_df, database='ligand')
-        for i, mol in zip(ligand_df[OPT], ligand_df[MOL]):
-            if i == -1:
-                continue
-            print(get_time() + '{}\t has been pulled from the database'.format(mol.properties.name))
+    logger.info('Pulling ligands from database')
+    database.from_csv(ligand_df, database='ligand')
+    for i, mol in zip(ligand_df[OPT], ligand_df[MOL]):
+        if i == -1:
+            continue
+        logger.info(f'{mol.properties.name} has been pulled from the database')
     ligand_df[OPT] = ligand_df[OPT].astype(bool, copy=False)
 
 
 def start_ligand_jobs(ligand_df: SettingsDataFrame,
-                      idx: pd.Series,
-                      message: str) -> List[Molecule]:
+                      idx: pd.Series) -> List[Molecule]:
     """Loop over all molecules in ``ligand_df.loc[idx]`` and perform geometry optimizations."""
+    if not idx.any():
+        logger.info(f'No new to-be optimized ligands found\n')
+        return []
+    else:
+        logger.info(f'Starting ligand optimization')
+
     lig_new = []
     for ligand in ligand_df[MOL][idx]:
-        mol_list = split_mol(ligand)
-        for mol in mol_list:
-            mol.set_dihed(180.0)
-        ligand_tmp = recombine_mol(mol_list)
-        fix_carboxyl(ligand_tmp)
-        lig_new.append(ligand_tmp)
+        logger.info(f'UFFGetMoleculeForceField: {ligand.properties.name} optimization has started')
+        try:
+            mol_list = split_mol(ligand)
+            for mol in mol_list:
+                mol.set_dihed(180.0)
+            ligand_tmp = recombine_mol(mol_list)
+            fix_carboxyl(ligand_tmp)
+            lig_new.append(ligand_tmp)
+            logger.info(f'UFFGetMoleculeForceField: {ligand.properties.name} optimization '
+                        'is successful')
+        except Exception:
+            logger.error(f'UFFGetMoleculeForceField: {ligand.properties.name} optimization '
+                         'has failed')
 
-        # Print messages
-        print(get_time() + message.format(ligand.properties.name))
+    logger.info('Finishing ligand optimization\n')
     return lig_new
 
 
@@ -175,8 +192,6 @@ def _ligand_to_db(ligand_df: SettingsDataFrame,
     # Extract arguments
     settings = ligand_df.settings.optional
     overwrite = DATA_CAT and 'ligand' in settings.database.overwrite
-    lig_path = settings.ligand.dirname
-    mol_format = settings.database.mol_format
 
     kwargs: Dict[str, Any] = {'overwrite': overwrite}
     if opt:
@@ -186,7 +201,6 @@ def _ligand_to_db(ligand_df: SettingsDataFrame,
         kwargs['columns'] = [FORMULA, HDF5_INDEX, SETTINGS1]
         kwargs['database'] = 'ligand'
         kwargs['opt'] = True
-        mol_to_file(ligand_df[MOL], lig_path, overwrite, mol_format)
     else:
         kwargs['columns'] = [FORMULA, HDF5_INDEX]
         kwargs['database'] = 'ligand_no_opt'
@@ -358,13 +372,11 @@ def get_frag_size(self, bond: Bond,
 
     """
     if bond not in self.bonds:
-        error = 'get_frag_size: The argument bond should be of type plams.Bond and be part'
-        error += ' of the Molecule'
-        raise MoleculeError(error)
+        raise MoleculeError('get_frag_size: The argument bond should be of type plams.Bond and '
+                            'be part of the Molecule')
     elif atom not in self.atoms:
-        error = 'get_frag_size: The argument atom should be of type plams.Atom and be part'
-        error += ' of the Molecule'
-        raise MoleculeError(error)
+        raise MoleculeError('get_frag_size: The argument atom should be of type plams.Atom and '
+                            'be part of the Molecule')
 
     for at in self:
         at._visited = False
@@ -415,8 +427,8 @@ def recombine_mol(mol_list: Sequence[Molecule]) -> Molecule:
         return mol_list[0]
     tup_list = mol_list[0].properties.mark
     if not tup_list:
-        error = 'No PLAMS atoms specified in mol_list[0].properties.mark, aborting recombine_mol()'
-        raise IndexError(error)
+        raise IndexError('No PLAMS atoms specified in mol_list[0].properties.mark, '
+                         'aborting recombine_mol()')
 
     for tup in tup_list:
         # Allign mol1 & mol2

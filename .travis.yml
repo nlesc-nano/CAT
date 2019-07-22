@@ -23,8 +23,10 @@ install:
     - conda install -n CAT -c conda-forge h5py rdkit
     - source activate CAT
 
-    # Install qmflows package
+    # Install tests, data-CAT and nano-CAT
     - pip install .[test]
+    - pip install nano-cat@git+https://github.com/nlesc-nano/nano-CAT@devel
+    - pip install data-cat@git+https://github.com/nlesc-nano/data-CAT@devel
 
 script:
     # Run the unitary tests excluding the expensive computations

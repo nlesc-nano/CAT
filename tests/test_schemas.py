@@ -15,7 +15,6 @@ from CAT.data_handling.validation_schemas import (
 
 from nanoCAT.crs import CRSJob
 
-
 PATH = 'tests/test_files'
 
 
