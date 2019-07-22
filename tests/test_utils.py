@@ -12,7 +12,7 @@ from scm.plams.interfaces.thirdparty.cp2k import Cp2kJob
 from scm.plams.interfaces.thirdparty.dirac import DiracJob
 from scm.plams.interfaces.thirdparty.gamess import GamessJob
 
-from CAT.assertion_functions import (assert_eq, assert_lt, assert_id, assert_exception)
+from CAT.assertion_functions import (assert_eq, assert_id, assert_exception)
 from CAT.utils import (
     type_to_string, dict_concatenate, get_template, validate_path, check_sys_var
 )
