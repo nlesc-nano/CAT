@@ -175,6 +175,7 @@ def _read_database(qd_df: SettingsDataFrame,
     mol_series = mol_series_opt.append(mol_series_no_opt[~slice_])
 
     # Update Molecule.properties
+    logger.info('Pulling quantum dots from database')
     for i, mol in mol_series.iteritems():
         mol.properties = Settings({
             'indices': _get_indices(mol, i),
@@ -322,7 +323,6 @@ def ligand_to_qd(core: Molecule,
     })
 
     # Print and return
-    logger.info(f'{qd.properties.name} has been pulled from the database')
     return qd
 
 

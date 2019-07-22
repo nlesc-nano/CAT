@@ -62,6 +62,14 @@ def get_energy(self, index: int = 0,
     return Units.convert(energy, 'Hartree', unit)
 
 
+def _get_name(name) -> str:
+    manager = config.default_jobmanager
+    if name in manager.names:
+        return name + '.' + str(1 + manager.names[name]).zfill(manager.settings.counter_len)
+    else:
+        return name
+
+
 @add_to_class(Molecule)
 def job_single_point(self, job: Callable,
                      settings: Settings,
@@ -102,23 +110,21 @@ def job_single_point(self, job: Callable,
 
     # Run the job; extract energies
     my_job = job(molecule=self, settings=s, name=name)
-    manager = config.default_jobmanager
-    if name in manager.names:
-        _name = name + '.' + str(1 + manager.names[name]).zfill(manager.settings.counter_len)
-    else:
-        _name = name
-    logger.info(f'{my_job.__class__.__name__}: {_name} started')
+    _name = _get_name(name)
+    logger.info(f'{my_job.__class__.__name__}: {self.properties.name} single point ({_name}) '
+                'has started')
     results = my_job.run()
-    results.wait()
 
     try:
         self.properties.energy.E = energy = results.get_energy(unit='kcal/mol')
         if not energy:
             raise TypeError
-        logger.info(f'{my_job.__class__.__name__}: {_name} successful')
+        logger.info(f'{results.job.__class__.__name__}: {self.properties.name} single point '
+                    f'({_name}) is successful')
     except TypeError:
         self.properties.energy.E = np.nan
-        logger.error(f'{results.__class__.__name__}: {_name} failed to retrieve results')
+        logger.error(f'{results.job.__class__.__name__}: {self.properties.name} single point '
+                     f'({_name}) has failed')
 
     inp_name = join(my_job.path, my_job.name + '.in')
     self.properties.job_path.append(inp_name)
@@ -169,24 +175,22 @@ def job_geometry_opt(self, job: Callable,
 
     # Run the job; extract geometries and energies
     my_job = job(molecule=self, settings=s, name=name)
-    manager = config.default_jobmanager
-    if name in manager.names:
-        _name = name + '.' + str(1 + manager.names[name]).zfill(manager.settings.counter_len)
-    else:
-        _name = name
-    logger.info(f'{my_job.__class__.__name__}: {_name} started')
+    _name = _get_name(name)
+    logger.info(f'{my_job.__class__.__name__}: {self.properties.name} optimization ({_name})'
+                ' has started')
     results = my_job.run()
-    results.wait()
 
     try:
         self.from_mol_other(results.get_main_molecule())
         self.properties.energy.E = energy = results.get_energy(unit='kcal/mol')
         if not energy:
             raise TypeError
-        logger.info(f'{my_job.__class__.__name__}: {_name} successful')
+        logger.info(f'{results.job.__class__.__name__}: {self.properties.name} optimization '
+                    f'({_name}) is successful')
     except TypeError:
         self.properties.energy.E = np.nan
-        logger.error(f'{results.__class__.__name__}: {_name} failed to retrieve results')
+        logger.error(f'{results.job.__class__.__name__}: {self.properties.name} optimization '
+                     f'({_name}) has failed')
 
     inp_name = join(my_job.path, my_job.name + '.in')
     self.properties.job_path.append(inp_name)
@@ -245,14 +249,10 @@ def job_freq(self, job, settings, name='Frequency_analysis', opt=True, ret_resul
 
     # Run the job; extract geometries and (Gibbs free) energies
     my_job = job(molecule=self, settings=s, name=name)
-    manager = config.default_jobmanager
-    if name in manager.names:
-        _name = name + '.' + str(1 + manager.names[name]).zfill(manager.settings.counter_len)
-    else:
-        _name = name
-    logger.info(f'{my_job.__class__.__name__}: {_name} started')
+    _name = _get_name(name)
+    logger.info(f'{my_job.__class__.__name__}: {self.properties.name} frequency analysis ({_name}) '
+                'has started')
     results = my_job.run()
-    results.wait()
 
     try:
         self.properties.frequencies = freq = results.get_frequencies()
@@ -260,11 +260,13 @@ def job_freq(self, job, settings, name='Frequency_analysis', opt=True, ret_resul
                                                      results.get_energy(unit='kcal/mol'))
         if not isinstance(freq, np.ndarray) or energy:
             raise TypeError
-        logger.info(f'{my_job.__class__.__name__}: {_name} successful')
+        logger.info(f'{results.job.__class__.__name__}: {self.properties.name} frequency analysis '
+                    f'({_name}) is successful')
     except TypeError:
         self.properties.frequencies = np.nan
         self.properties.energy = {'E': np.nan, 'H': np.nan, 'S': np.nan, 'G': np.nan}
-        logger.error(f'{results.__class__.__name__}: {_name} failed to retrieve results')
+        logger.error(f'{results.job.__class__.__name__}: {self.properties.name} frequency analysis '
+                     f'({_name}) has failed')
 
     inp_name = join(my_job.path, _name + '.in')
     self.properties.job_path.append(inp_name)

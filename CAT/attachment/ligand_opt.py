@@ -104,10 +104,10 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
     # Optimize all new ligands
     if optimize:
         # Identify the to be optimized ligands
-        idx, message = _parse_overwrite(ligand_df, overwrite)
+        idx = _parse_overwrite(ligand_df, overwrite)
 
         # Optimize the ligands
-        lig_new = start_ligand_jobs(ligand_df, idx, message)
+        lig_new = start_ligand_jobs(ligand_df, idx)
 
         # Update the ligand dataframe
         if lig_new:
@@ -128,12 +128,9 @@ def _parse_overwrite(ligand_df: SettingsDataFrame,
                      overwrite: bool) -> Tuple[pd.Series, str]:
     """Return a series for dataframe slicing and a to-be printer message."""
     if overwrite:
-        idx = pd.Series(True, index=ligand_df.index, name=MOL)
-        message = '{} has been (re-)optimized'
+        return pd.Series(True, index=ligand_df.index, name=MOL)
     else:
-        idx = np.invert(ligand_df[OPT])
-        message = '{} has been optimized'
-    return idx, message
+        return np.invert(ligand_df[OPT])
 
 
 def read_data(ligand_df: SettingsDataFrame,
@@ -141,6 +138,7 @@ def read_data(ligand_df: SettingsDataFrame,
               read: bool) -> None:
     """Read ligands from the database if **read** = ``True``."""
     if read:
+        logger.info('Pulling ligands from database')
         database.from_csv(ligand_df, database='ligand')
         for i, mol in zip(ligand_df[OPT], ligand_df[MOL]):
             if i == -1:
@@ -150,20 +148,31 @@ def read_data(ligand_df: SettingsDataFrame,
 
 
 def start_ligand_jobs(ligand_df: SettingsDataFrame,
-                      idx: pd.Series,
-                      message: str) -> List[Molecule]:
+                      idx: pd.Series) -> List[Molecule]:
     """Loop over all molecules in ``ligand_df.loc[idx]`` and perform geometry optimizations."""
+    if not idx.any():
+        logger.info(f'No new to-be optimized ligands found\n')
+        return []
+    else:
+        logger.info(f'Starting ligand optimization')
+
     lig_new = []
     for ligand in ligand_df[MOL][idx]:
-        mol_list = split_mol(ligand)
-        for mol in mol_list:
-            mol.set_dihed(180.0)
-        ligand_tmp = recombine_mol(mol_list)
-        fix_carboxyl(ligand_tmp)
-        lig_new.append(ligand_tmp)
+        logger.info(f'UFFGetMoleculeForceField: {ligand.properties.name} optimization has started')
+        try:
+            mol_list = split_mol(ligand)
+            for mol in mol_list:
+                mol.set_dihed(180.0)
+            ligand_tmp = recombine_mol(mol_list)
+            fix_carboxyl(ligand_tmp)
+            lig_new.append(ligand_tmp)
+            logger.info(f'UFFGetMoleculeForceField: {ligand.properties.name} optimization '
+                        'is successful')
+        except Exception:
+            logger.error(f'UFFGetMoleculeForceField: {ligand.properties.name} optimization '
+                         'has failed')
 
-        # Print messages
-        logger.info(message.format(ligand.properties.name))
+    logger.info('Finishing ligand optimization\n')
     return lig_new
 
 
@@ -269,9 +278,7 @@ def neighbors_mod(self, atom: Atom,
     """
     exclude = to_symbol(exclude)
     if atom.mol != self:
-        err = 'neighbors: passed atom should belong to the molecule'
-        logger.info('MoleculeError: ' + err)
-        raise MoleculeError(err)
+        raise MoleculeError('neighbors: passed atom should belong to the molecule')
     return [b.other_end(atom) for b in atom.bonds if b.other_end(atom).atnum != exclude]
 
 

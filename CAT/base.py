@@ -34,6 +34,8 @@ import pandas as pd
 from scm.plams import Settings
 from scm.plams.core.errors import MoleculeError
 
+from .__version__ import __version__
+
 from .utils import check_sys_var
 from .logger import logger
 from .mol_utils import to_symbol
@@ -48,12 +50,22 @@ from .attachment.ligand_attach import init_qd_construction
 from .attachment.ligand_anchoring import init_ligand_anchoring
 
 try:
+    import nanoCAT
     from nanoCAT.asa import init_asa
     from nanoCAT.bde.bde_workflow import init_bde
     from nanoCAT.ligand_solvation import init_solv
     NANO_CAT = True
-except ModuleNotFoundError:
+except ImportError as ex:
+    NANO_EX = ex
     NANO_CAT = False
+
+try:
+    import dataCAT
+    DATA_CAT = True
+except ImportError as ex:
+    DATA_EX = ex
+    DATA_CAT = False
+
 
 __all__ = ['prep']
 
@@ -85,6 +97,20 @@ def prep(arg: Settings,
     """
     # The start
     time_start = time()
+    logger.info(f'Starting CAT (version: {__version__})')
+    if NANO_CAT:
+        logger.info(f'The optional Nano-CAT package was successfully found '
+                    f'(version: {nanoCAT.__version__})')
+    else:
+        logger.warning('The optional Nano-CAT package was not found')
+        logger.debug(f'{NANO_EX.__class__.__name__}: {NANO_EX}')
+
+    if DATA_CAT:
+        logger.info(f'The optional Data-CAT package was successfully found '
+                    f'(version: {dataCAT.__version__})')
+    else:
+        logger.warning('The optional Data-CAT package was not found')
+        logger.debug(f'{DATA_EX.__class__.__name__}: {DATA_EX}')
 
     # Interpret and extract the input settings
     ligand_df, core_df = prep_input(arg)

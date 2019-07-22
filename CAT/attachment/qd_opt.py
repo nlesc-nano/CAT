@@ -34,9 +34,9 @@ from scm.plams.interfaces.adfsuite.ams import AMSJob
 
 import qmflows
 
+from ..logger import logger
 from ..jobs import job_geometry_opt
 from ..utils import (restart_init, type_to_string)
-from ..logger import logger
 from ..mol_utils import (fix_carboxyl, fix_h, round_coords)
 from ..settings_dataframe import SettingsDataFrame
 
@@ -76,16 +76,17 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
     # Prepare slices
     if overwrite and DATA_CAT:
         idx = pd.Series(True, index=qd_df.index, name='mol')
-        message = ' has been (re-)optimized'
     else:
         idx = qd_df[OPT] == False  # noqa
-        message = ' has been optimized'
 
     # Optimize the geometries
     if idx.any():
-        start_qd_opt(qd_df, idx, message)
+        logger.info('Starting quantum dot optimization')
+        start_qd_opt(qd_df, idx)
         qd_df[JOB_SETTINGS_QD_OPT] = get_job_settings(qd_df)
+        logger.info('Finishing quantum dot optimization\n')
     else:  # No new molecules, move along
+        logger.info('No new to-be optimized quantum dots found\n')
         return None
 
     # Export the geometries to the database
@@ -96,8 +97,7 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
 
 
 def start_qd_opt(qd_df: SettingsDataFrame,
-                 idx: pd.Series,
-                 message: str) -> None:
+                 idx: pd.Series) -> None:
     """Loop over all molecules in ``qd_df.loc[idx]`` and perform geometry optimizations."""
     # Extract arguments
     path = qd_df.settings.optional.qd.dirname
@@ -109,7 +109,6 @@ def start_qd_opt(qd_df: SettingsDataFrame,
         mol.properties.job_path = []
         mol.round_coords()
         qd_opt(mol, job_recipe)
-        logger.info(mol.properties.name + message)
     finish()
 
 

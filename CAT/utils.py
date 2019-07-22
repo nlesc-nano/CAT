@@ -25,13 +25,14 @@ API
 """
 
 import os
+import sys
 import yaml
 import pkg_resources as pkg
 from shutil import rmtree
 from typing import (Callable, Iterable, Optional, Union)
 from os.path import (join, isdir, isfile, exists)
 
-from scm.plams import (init, config, Settings, Molecule, MoleculeError, PeriodicTable)
+from scm.plams import (config, Settings, Molecule, MoleculeError, PeriodicTable, init)
 from scm.plams.interfaces.molecule.rdkit import from_smiles
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 from scm.plams.interfaces.adfsuite.adf import ADFJob
@@ -180,6 +181,25 @@ def validate_core_atom(atom: Union[str, int]) -> Union[Molecule, int]:
     return mol
 
 
+class SupressPrint:
+    """A context manager for supressing :func:`print` calls."""
+
+    def __init__(self) -> None:
+        """Initialize a :class:`SupressPrint` instance."""
+        self.stdout = None
+
+    def __enter__(self) -> None:
+        """Enter the :class:`SupressPrint` context manager."""
+        self.stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+
+    def __exit__(self, *args) -> None:
+        """Exit the :class:`SupressPrint` context manager."""
+        sys.stdout.close()
+        sys.stdout = self.stdout
+        self.stdout = None
+
+
 def restart_init(path: str,
                  folder: str,
                  hashing: Optional[str] = 'input') -> None:
@@ -209,22 +229,14 @@ def restart_init(path: str,
         Accepted values are: ``"input"``, ``"runscript"``, ``"input+runscript"`` and ``None``.
 
     """  # noqa
-    attr_dict = {
-        'path': path,
-        'foldername': folder,
-        'workdir': join(path, folder),
-        'logfile': join(path, folder, 'logfile'),
-        'input': join(path, folder, hashing)
-    }
 
     # Create a job manager
     settings = Settings({'counter_len': 3, 'hashing': hashing, 'remove_empty_directories': True})
-    manager = GenJobManager(settings)
-    for k, v in attr_dict.items():
-        setattr(manager, k, v)
+    manager = GenJobManager(settings, path, folder, hashing)
 
     # Change the default job manager
-    init()
+    with SupressPrint():
+        init()
     rmtree(config.default_jobmanager.workdir)
     config.default_jobmanager = manager
     config.log.file = 3

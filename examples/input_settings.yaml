@@ -14,7 +14,7 @@ optional:
     database:
         dirname: database
         read: True
-        write: True
+        write: False
         overwrite: False
         mol_format: [pdb]
         mongodb: False
@@ -27,7 +27,7 @@ optional:
         dirname: ligand
         optimize: True
         split: True
-        cosmo-rs: False
+        cosmo-rs: True
 
     qd:
         dirname: QD

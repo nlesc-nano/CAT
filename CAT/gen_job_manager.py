@@ -19,16 +19,17 @@ API
 
 """
 
+import os
 import threading
-from typing import (Optional, Sequence, Callable)
-from os.path import (join, isfile, abspath, dirname)
+from typing import (Optional, Callable)
+from os.path import (join, isfile, abspath, dirname, isdir, exists, normpath)
 
 try:
     import dill as pickle
 except ModuleNotFoundError:
     import pickle
 
-from scm.plams import (JobManager, log, config, FileError)
+from scm.plams import (JobManager, log, config, FileError, Settings, PlamsError)
 from scm.plams.core.basejob import (Job, MultiJob)
 
 __all__ = ['GenJobManager']
@@ -68,14 +69,35 @@ class GenJobManager(JobManager):
 
     hashes : |dict|_ [|str|_, |Callable|_]
         A dictionary working as a hash-table for jobs.
-        Values created by :meth:`GenJobManager.load_job` are stored as callables which create
-        :class:`Job` instances.
+        Values created by :meth:`GenJobManager.load_job` are stored as callables which
+        in turn create :class:`Job` instances.
 
     """
 
-    def __init__(self, *args: Sequence, **kwargs: dict) -> None:
+    def __init__(self, settings: Settings,
+                 path: Optional[str] = None,
+                 folder: Optional[str] = None,
+                 hashing: str = 'input') -> None:
         """Initialize the :class:`GenJobManager` instance."""
-        super().__init__(*args, **kwargs)
+        self.settings = settings
+        self.jobs = []
+        self.names = {}
+        self.hashes = {}
+
+        if path is None:
+            self.path = os.getcwd()
+        elif isdir(path):
+            self.path = abspath(path)
+        else:
+            raise PlamsError(f'Invalid path: {path}')
+
+        basename = normpath(folder) if folder else 'plams_workdir'
+        self.foldername = basename
+        self.workdir = join(self.path, self.foldername)
+        self.logfile = join(self.workdir, 'logfile')
+        self.input = join(self.workdir, hashing)
+        if not exists(self.workdir):
+            os.mkdir(self.workdir)
 
     @staticmethod
     def _unpickle(filename: str) -> Optional[Job]:
@@ -101,7 +123,7 @@ class GenJobManager(JobManager):
         ----------
         filename : str
             A path to a .dill file in some job folder.
-            A |Job| instance stored there is loaded and returned.
+            A :class:`Job` instance stored there is loaded and returned.
             All attributes of this instance removed before pickling are restored.
 
         """
