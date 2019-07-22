@@ -62,7 +62,7 @@ def type_to_string(job: Callable) -> str:
     try:
         return _job_dict[job]
     except KeyError:
-        logger.warn(f"No default settings available for type: '{job.__class.__name__}'")
+        logger.warn(f"No default settings available for type: '{job.__class__.__name__}'")
         return ''
 
 

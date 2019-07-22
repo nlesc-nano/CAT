@@ -153,9 +153,8 @@ mol_schema: Schema = Schema({
                 abc.Collection,
                 lambda n: all(isinstance(i, int) and i >= 0 for i in n),
                 lambda n: len(n) == len(set(n)),
-                lambda n: n <= 2,
                 Use(tuple),
-                error=".indices expects one or two unique integers larger than or equal to 0"
+                error=".indices expects one or more unique integers larger than or equal to 0"
             ),
             error=".indices expects an atomic index (int) or a list unique atomic indices"
         ),
