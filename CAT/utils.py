@@ -251,7 +251,7 @@ def restart_init(path: str,
         if not isdir(job_dir):  # Not a directory; move along
             continue
 
-        dill_file = join(job_dir, f + '.dill')
+        dill_file = join(job_dir, f + '.hash')
         if isfile(dill_file):  # Update JobManager.hashes
             manager.load_job(dill_file)
 

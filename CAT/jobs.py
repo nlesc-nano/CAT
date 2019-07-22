@@ -29,8 +29,8 @@ from typing import (Optional, Callable)
 
 import numpy as np
 
-from scm.plams import (Molecule, Settings, Results, config)
-from scm.plams.core.functions import add_to_class
+from scm.plams import (Molecule, Settings, Results, config, log, add_to_class)
+from scm.plams.core.basejob import Job
 from scm.plams.tools.units import Units
 
 from scm.plams.interfaces.adfsuite.ams import AMSJob
@@ -68,6 +68,46 @@ def _get_name(name) -> str:
         return name + '.' + str(1 + manager.names[name]).zfill(manager.settings.counter_len)
     else:
         return name
+
+
+@add_to_class(Job)
+def _finalize(self):
+    """Modified :meth:`Job._finalize` method.
+
+    1. All references to :func:`scm.plams.log` are removed.
+    2. A .hash is created which contains the hash of this instance.
+
+    Gather the results of the job execution and organize them.
+    This method collects steps 9-12 from :ref:`job-life-cycle`.
+    Should not be overridden.
+
+    """
+    if config.preview is False:
+        self.results.collect()
+        self.results.finished.set()
+        if self.status != 'crashed':
+            self.status = 'finished'
+            self._log_status(3)
+            if self.check():
+                self.results._clean(self.settings.keep)
+                self.postrun()
+                self.status = 'successful'
+                if self.settings.pickle:
+                    self.pickle()
+                    filename = join(self.path, self.name + '.hash')
+                    with open(filename, 'w') as f:
+                        f.write(self.hash())
+            else:
+                self.status = 'failed'
+    else:
+        self.status = 'preview'
+        self.results.finished.set()
+    self.results.done.set()
+
+    if self.parent and self in self.parent:
+        self.parent._notify()
+
+    self._log_status(1)
 
 
 @add_to_class(Molecule)

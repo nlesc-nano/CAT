@@ -113,7 +113,8 @@ class GenJobManager(JobManager):
     def _get_job(self, filename: str) -> Callable:
         """Return a callable which converts **filename** into a :class:`Job` instance."""
         def unpickle_job() -> Optional[Job]:
-            ret = GenJobManager._unpickle(filename)
+            _filename = filename.replace('.hash', '.dill')
+            ret = GenJobManager._unpickle(_filename)
             ret.jobmanager = self
             return ret
         return unpickle_job
@@ -124,38 +125,20 @@ class GenJobManager(JobManager):
         Parameters
         ----------
         filename : str
-            A path to a .dill file in some job folder.
+            A path to a .hash file in some job folder.
             A :class:`Job` instance stored there is loaded and returned.
             All attributes of this instance removed before pickling are restored.
 
         """
-        def setstate(job, path, parent=None):
-            job.parent = parent
-            job.jobmanager = self
-            job.default_settings = [config.job]
-            job.path = path
-            if isinstance(job, MultiJob):
-                job._lock = threading.Lock()
-                for child in job:
-                    setstate(child, join(path, child.name), job)
-                for otherjob in job.other_jobs():
-                    setstate(otherjob, join(path, otherjob.name), job)
-
-            job.results.refresh()
-            h = job.hash()
-            if h is not None:
-                filename = join(path, job.name + '.dill')
-                self.hashes[h] = self._get_job(filename)
-
         # Raise an error if **filename** cannot be found
         if isfile(filename):
             filename = abspath(filename)
         else:
             raise FileError(f'File {filename} not present')
 
-        path = dirname(filename)
-        job = self._unpickle(filename)
-        setstate(job, path)
+        with open(filename, 'r') as f:
+            h = f.read()
+        self.hashes[h] = self._get_job(filename)
 
     def remove_job(self, job: Job) -> None:
         """Remove **job** from the job manager; forget its hash."""
@@ -193,7 +176,7 @@ class GenJobManager(JobManager):
             log(f'Job {job.name} previously run as {prev.name}, using old results', 1)
             return prev
         else:
-            filename = join(job.path, job.name + '.dill')
-            func = self._get_job(filename)
+            filename = join(job.path, job.name)
+            func = self._get_job(filename + '.dill')
             self.hashes[h] = func  # Set a callable that returns a Job instance
             return None
