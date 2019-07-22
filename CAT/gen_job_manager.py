@@ -23,6 +23,7 @@ import os
 import threading
 from typing import (Optional, Callable)
 from os.path import (join, isfile, abspath, dirname, isdir, exists, normpath)
+from collections import abc
 
 try:
     import dill as pickle
@@ -109,15 +110,16 @@ class GenJobManager(JobManager):
                 log(f"Unpickling of {filename} failed. Caught the following Exception:\n{e}", 1)
                 return None
 
-    @staticmethod
-    def _get_job(filename: str) -> Callable:
+    def _get_job(self, filename: str) -> Callable:
         """Return a callable which converts **filename** into a :class:`Job` instance."""
         def unpickle_job() -> Optional[Job]:
-            return GenJobManager._unpickle(filename)
+            ret = GenJobManager._unpickle(filename)
+            ret.jobmanager = self
+            return ret
         return unpickle_job
 
     def load_job(self, filename: str) -> None:
-        """Load previously saved job from **filename**.
+        """Load a previously saved job from **filename**.
 
         Parameters
         ----------
@@ -161,7 +163,7 @@ class GenJobManager(JobManager):
             self.jobs.remove(job)
             job.jobmanager = None
         h = job.hash()
-        if h in self.hashes and self.hashes[h]() == job:
+        if h in self.hashes:
             del self.hashes[h]
 
     def _check_hash(self, job: Job) -> Optional[Job]:
