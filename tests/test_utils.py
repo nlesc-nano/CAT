@@ -74,9 +74,10 @@ def test_check_sys_var() -> None:
     def test2() -> None:
         assert_exception(EnvironmentError, check_sys_var)
 
-    @mock.patch.dict(os.environ, {'ADFHOME': '2018'})
+    @mock.patch.dict(os.environ,
+                     {'ADFBIN': 'a', 'ADFHOME': '2018', 'ADFRESOURCES': 'b', 'SCMLICENSE': 'c'})
     def test3() -> None:
-        assert_exception(ImportError, check_sys_var)
+        assert_exception(EnvironmentError, check_sys_var)
 
     test1()
     test2()

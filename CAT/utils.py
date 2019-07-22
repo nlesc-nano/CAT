@@ -72,14 +72,12 @@ def check_sys_var() -> None:
     Raises
     ------
     EnvironmentError
-        Raised if one or more of the following environment variables are absent:
+        Raised if an ADF version prior to 2019 is found or if one or more of the
+        following environment variables are absent:
         * ``'ADFBIN'``
         * ``'ADFHOME'``
         * ``'ADFRESOURCES'``
         * ``'SCMLICENSE'``
-
-    ImportError
-        Raised if an ADF version prior to 2019 is found.
 
     """
     sys_var = ('ADFBIN', 'ADFHOME', 'ADFRESOURCES', 'SCMLICENSE')
@@ -93,7 +91,7 @@ def check_sys_var() -> None:
                                'aborting ADF job')
 
     if '2019' not in os.environ['ADFHOME']:
-        raise ImportError(f"ADF/2019 not detected in {os.environ['ADFHOME']}")
+        raise EnvironmentError(f"ADF/2019 not detected in {os.environ['ADFHOME']}")
 
 
 def dict_concatenate(dict_list: Iterable[dict]) -> dict:
