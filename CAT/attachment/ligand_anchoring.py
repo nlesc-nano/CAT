@@ -68,10 +68,7 @@ def init_ligand_anchoring(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     # Unpack arguments
     settings = ligand_df.settings.optional
     split = settings.ligand.split
-    _functional_groups = settings.ligand.functional_groups
-
-    # Construct reference functional groups
-    functional_groups = get_functional_groups(_functional_groups, split)
+    functional_groups = settings.ligand.functional_groups
 
     # Find all functional groups; return a copy of each mol for each functional group
     mol_list = []

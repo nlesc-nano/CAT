@@ -13,6 +13,11 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * Cleaned up CAT.jobs.py.
 * ``check_sys_var()`` is now only called if an ADF-specific Job is requirest.
 * Job hashes are now stored in (and retrieved from) $JN.hash files (plain text).
+* Added a permanent Database_ instance to .optional.database.db.
+* Functional group SMILES_ strings are now parsed during Schema_ validation.
+
+.. _Database: https://cat.readthedocs.io/en/latest/7_database.html#class-api
+.. _Schema: https://github.com/keleshev/schema
 
 
 0.5.3

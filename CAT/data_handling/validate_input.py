@@ -25,8 +25,10 @@ from CAT.data_handling.validation_schemas import (
     core_schema, ligand_schema, qd_schema, database_schema,
     mongodb_schema, bde_schema, qd_opt_schema, crs_schema
 )
+
 from .validate_mol import validate_mol
 from ..utils import validate_path
+from ..attachment.ligand_anchoring import get_functional_groups
 
 try:
     from dataCAT import Database
@@ -81,8 +83,15 @@ def validate_input(s: Settings) -> None:
     validate_mol(s.input_ligands, 'input_ligands', join(path, 'ligand'))
 
     # Create a dataCAT.Database instance
-    if s.optional.database and DATA_CAT:
+    if DATA_CAT:
         db_path = s.optional.database.dirname
         s.optional.database.db = Database(path=db_path, **s.optional.database.mongodb)
     else:
         s.optional.database.db = False
+
+    # Create RDKit molecules representing functional groups
+    func_groups, split = s.optional.ligand.functional_groups, s.optional.ligand.split
+    if not func_groups:
+        s.optional.ligand.functional_groups = get_functional_groups(None, split)
+    else:
+        s.optional.ligand.functional_groups = get_functional_groups(func_groups)

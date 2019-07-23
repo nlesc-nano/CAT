@@ -123,7 +123,7 @@ def str_to_job_type(key: str) -> type:
 
 
 def to_tuple(collection: Collection) -> tuple:
-    """Convert a collection into a sorted tuple."""
+    """Convert a collection to a sorted tuple."""
     try:
         ret = sorted(collection)
     except TypeError:  # The collection contains a mix of sorting-incompatible objects
