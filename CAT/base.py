@@ -102,14 +102,14 @@ def prep(arg: Settings,
                     f'(version: {nanoCAT.__version__})')
     else:
         logger.warning('The optional Nano-CAT package was not found')
-        logger.debug(f'{NANO_EX.__class__.__name__}: {NANO_EX}')
+        logger.debug(f'{NANO_EX.__class__.__name__}: {NANO_EX}', exc_info=True)
 
     if DATA_CAT:
         logger.info(f'The optional Data-CAT package was successfully found '
                     f'(version: {dataCAT.__version__})')
     else:
         logger.warning('The optional Data-CAT package was not found')
-        logger.debug(f'{DATA_EX.__class__.__name__}: {DATA_EX}')
+        logger.debug(f'{DATA_EX.__class__.__name__}: {DATA_EX}', exc_info=True)
 
     # Interpret and extract the input settings
     ligand_df, core_df = prep_input(arg)

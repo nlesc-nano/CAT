@@ -54,12 +54,6 @@ from ..logger import logger
 from ..mol_utils import (merge_mol, get_index, round_coords)
 from ..data_handling.mol_to_file import mol_to_file
 
-try:
-    from dataCAT import Database
-    DATA_CAT = True
-except ImportError:
-    DATA_CAT = False
-
 __all__ = ['init_qd_construction']
 
 # Aliases for pd.MultiIndex columns
@@ -88,10 +82,10 @@ def init_qd_construction(ligand_df: SettingsDataFrame,
     """
     # Extract arguments
     settings = ligand_df.settings.optional
-    write = DATA_CAT and 'qd' in settings.database.write
-    read = DATA_CAT and 'qd' in settings.database.read
+    db = settings.database.db
+    write = db and 'qd' in settings.database.write
+    read = db and 'qd' in settings.database.read
     qd_path = settings.qd.dirname
-    db_path = settings.database.dirname
     mol_format = settings.database.mol_format
     optimize = settings.qd.optimize
 
@@ -112,8 +106,7 @@ def init_qd_construction(ligand_df: SettingsDataFrame,
 
     # Export the resulting geometries back to the database
     if write:
-        data = Database(db_path, **settings.database.mongodb)
-        data.update_csv(qd_df, columns=[HDF5_INDEX], database='QD_no_opt')
+        db.update_csv(qd_df, columns=[HDF5_INDEX], database='QD_no_opt')
 
     # Export xyz/pdb files
     if 'qd' in settings.database.write and mol_format and not optimize:
@@ -170,12 +163,12 @@ def _read_database(qd_df: SettingsDataFrame,
     # Extract arguments
     settings = qd_df.settings.optional
     path = settings.database.dirname
-    data = Database(path, **settings.database.mongodb)
+    db = settings.database.db
 
     # Extract molecules from the database and set their properties
     # If possible extract optimized structures; supplement with unoptimized structures if required
-    mol_series_opt = data.from_csv(qd_df, database='QD', inplace=False)
-    mol_series_no_opt = data.from_csv(qd_df, database='QD_no_opt', inplace=False)
+    mol_series_opt = db.from_csv(qd_df, database='QD', inplace=False)
+    mol_series_no_opt = db.from_csv(qd_df, database='QD_no_opt', inplace=False)
     slice_ = mol_series_no_opt.index.isin(mol_series_opt.index)
     mol_series = mol_series_opt.append(mol_series_no_opt[~slice_])
 

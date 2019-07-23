@@ -62,12 +62,6 @@ from ..mol_utils import (to_symbol, fix_carboxyl, get_index, round_coords,
                          from_mol_other, from_rdmol, separate_mod)
 from ..data_handling.mol_to_file import mol_to_file
 
-try:
-    from dataCAT import Database
-    DATA_CAT = True
-except ImportError:
-    DATA_CAT = False
-
 __all__ = ['init_ligand_opt']
 
 # Aliases for pd.MultiIndex columns
@@ -90,22 +84,21 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
 
     """
     settings = ligand_df.settings.optional
-    overwrite = DATA_CAT and 'ligand' in settings.database.overwrite
-    read = DATA_CAT and 'ligand' in settings.database.read
-    write = DATA_CAT and 'ligand' in settings.database.write
+    db = settings.database.db
+    overwrite = db and 'ligand' in settings.database.overwrite
+    read = db and 'ligand' in settings.database.read
+    write = db and 'ligand' in settings.database.write
     optimize = settings.ligand.optimize
     lig_path = settings.ligand.dirname
     mol_format = settings.database.mol_format
-    if DATA_CAT:
-        database = Database(settings.database.dirname, **settings.database.mongodb)
 
     # Searches for matches between the input ligand and the database; imports the structure
     if read:
-        read_data(ligand_df, database, read)
+        read_data(ligand_df, read)
     ligand_df[OPT] = ligand_df[OPT].astype(bool, copy=False)
 
     if write:
-        _ligand_to_db(ligand_df, database, opt=False)
+        _ligand_to_db(ligand_df, opt=False)
 
     # Optimize all new ligands
     if optimize:
@@ -127,7 +120,7 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
 
     # Write newly optimized structures to the database
     if write and optimize:
-        _ligand_to_db(ligand_df, database)
+        _ligand_to_db(ligand_df)
 
     # Export ligands to .xyz, .pdb, .mol and/or .mol format
     if 'ligand' in settings.database.write and optimize and mol_format:
@@ -144,11 +137,12 @@ def _parse_overwrite(ligand_df: SettingsDataFrame,
 
 
 def read_data(ligand_df: SettingsDataFrame,
-              database: 'Database',
               read: bool) -> None:
     """Read ligands from the database if **read** = ``True``."""
+    db = ligand_df.settings.optional.database.db
     logger.info('Pulling ligands from database')
-    database.from_csv(ligand_df, database='ligand')
+    db.from_csv(ligand_df, database='ligand')
+
     for i, mol in zip(ligand_df[OPT], ligand_df[MOL]):
         if i == -1:
             continue
@@ -188,12 +182,12 @@ def start_ligand_jobs(ligand_df: SettingsDataFrame,
 
 
 def _ligand_to_db(ligand_df: SettingsDataFrame,
-                  database: 'Database',
                   opt: bool = True):
     """Export ligand optimziation results to the database."""
     # Extract arguments
     settings = ligand_df.settings.optional
-    overwrite = DATA_CAT and 'ligand' in settings.database.overwrite
+    db = settings.database.db
+    overwrite = 'ligand' in settings.database.overwrite
 
     kwargs: Dict[str, Any] = {'overwrite': overwrite}
     if opt:
@@ -207,7 +201,7 @@ def _ligand_to_db(ligand_df: SettingsDataFrame,
         kwargs['columns'] = [FORMULA, HDF5_INDEX]
         kwargs['database'] = 'ligand_no_opt'
 
-    database.update_csv(ligand_df, **kwargs)
+    db.update_csv(ligand_df, **kwargs)
 
 
 def remove_duplicates(df: pd.DataFrame) -> None:

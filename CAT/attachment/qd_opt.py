@@ -41,12 +41,6 @@ from ..mol_utils import (fix_carboxyl, fix_h, round_coords)
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.mol_to_file import mol_to_file
 
-try:
-    from dataCAT import Database
-    DATA_CAT = True
-except ImportError:
-    DATA_CAT = False
-
 __all__ = ['init_qd_opt']
 
 # Aliases for pd.MultiIndex columns
@@ -71,13 +65,14 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
     """
     # Extract arguments
     settings = qd_df.settings.optional
-    write = DATA_CAT and 'qd' in settings.database.write
-    overwrite = DATA_CAT and 'qd' in settings.database.overwrite
+    db = settings.database.db
+    write = db and 'qd' in settings.database.write
+    overwrite = db and 'qd' in settings.database.overwrite
     mol_format = settings.database.mol_format
     qd_path = settings.qd.dirname
 
     # Prepare slices
-    if overwrite and DATA_CAT:
+    if overwrite and db:
         idx = pd.Series(True, index=qd_df.index, name='mol')
     else:
         idx = qd_df[OPT] == False  # noqa
@@ -93,7 +88,7 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
         return None
 
     # Export the geometries to the database
-    if write and DATA_CAT:
+    if write and db:
         with pd.option_context('mode.chained_assignment', None):
             _qd_to_db(qd_df, idx)
 
@@ -147,7 +142,7 @@ def _qd_to_db(qd_df: SettingsDataFrame,
     settings = qd_df.settings.optional
     job_recipe = settings.qd.optimize
     overwrite = 'qd' in settings.database.overwrite
-    db_path = settings.database.dirname
+    db = settings.database.db
 
     # Preapre the job recipe
     v1 = qmflows.geometry['specific'][type_to_string(job_recipe.job1)].copy()
@@ -161,8 +156,7 @@ def _qd_to_db(qd_df: SettingsDataFrame,
 
     # Update the database
     columns = [HDF5_INDEX, JOB_SETTINGS_QD_OPT, SETTINGS1, SETTINGS2]
-    database = Database(path=db_path, **settings.database.mongodb)
-    database.update_csv(
+    db.update_csv(
         qd_df[idx],
         overwrite=overwrite,
         columns=columns,

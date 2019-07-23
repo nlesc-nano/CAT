@@ -28,6 +28,12 @@ from CAT.data_handling.validation_schemas import (
 from .validate_mol import validate_mol
 from ..utils import validate_path
 
+try:
+    from dataCAT import Database
+    DATA_CAT = True
+except ImportError:
+    DATA_CAT = False
+
 __all__ = ['validate_input']
 
 
@@ -73,3 +79,10 @@ def validate_input(s: Settings) -> None:
     # Validate the input cores and ligands
     validate_mol(s.input_cores, 'input_cores', join(path, 'core'))
     validate_mol(s.input_ligands, 'input_ligands', join(path, 'ligand'))
+
+    # Create a dataCAT.Database instance
+    if s.optional.database and DATA_CAT:
+        db_path = s.optional.database.dirname
+        s.optional.database.db = Database(path=db_path, **s.optional.database.mongodb)
+    else:
+        s.optional.database.db = False
