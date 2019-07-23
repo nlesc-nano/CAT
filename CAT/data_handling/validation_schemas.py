@@ -472,7 +472,7 @@ bde_schema: Schema = Schema({
     Optional_('job1', default=_get_amsjob):
         Or(
             And(
-                And(type, Use(val_job_type)),
+                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
                 error=('optional.qd.dissociate.job1 expects a type object '
                        'that is a subclass of plams.Job')
             ),
@@ -494,7 +494,7 @@ bde_schema: Schema = Schema({
     Optional_('job2'):
         Or(
             And(
-                And(type, Use(val_job_type)),
+                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
                 error=('optional.qd.dissociate.job2 expects a type object '
                        'that is a subclass of plams.Job')
             ),
@@ -519,7 +519,7 @@ qd_opt_schema: Schema = Schema({
     Optional_('job1', default=_get_amsjob):
         Or(
             And(
-                And(type, Use(val_job_type)),
+                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
                 error=('optional.qd.opt.job1 expects a type object '
                        'that is a subclass of plams.Job')
             ),
@@ -542,7 +542,7 @@ qd_opt_schema: Schema = Schema({
     Optional_('job2', default=_get_amsjob):
         Or(
             And(
-                And(type, Use(val_job_type)),
+                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
                 error=('optional.qd.opt.job2 expects a type object '
                        'that is a subclass of plams.Job')
             ),
@@ -572,7 +572,7 @@ crs_schema: Schema = Schema({
     Optional_('job1', default=_get_amsjob):
         Or(
             And(
-                And(type, Use(val_job_type)),
+                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
                 error=('optional.ligand.cosmo-rs.job1 expects a type object '
                        'that is a subclass of plams.Job')
             ),
@@ -595,7 +595,7 @@ crs_schema: Schema = Schema({
     Optional_('job2', default=_get_crsjob):  # The job type for the actual COSMO-RS calculation
         Or(
             And(
-                And(type, Use(val_job_type)),
+                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
                 error=('optional.ligand.cosmo-rs.job2 expects a type object '
                        'that is a subclass of plams.Job')
             ),

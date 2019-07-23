@@ -9,6 +9,7 @@ from scm.plams import (Settings, AMSJob)
 
 from CAT.assertion_functions import assert_eq
 from CAT.data_handling.validate_input import validate_input
+from dataCAT import Database
 
 PATH = 'tests/test_files'
 
@@ -30,6 +31,7 @@ def test_validate_input() -> None:
     ref.database.overwrite = ()
     ref.database.read = ('core', 'ligand', 'qd')
     ref.database.write = ('core', 'ligand', 'qd')
+    ref.database.db = Database(ref.database.dirname, **ref.database.mongodb)
 
     ref.ligand['cosmo-rs'] = False
     ref.ligand.dirname = join(PATH, 'ligand')
