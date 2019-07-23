@@ -58,7 +58,7 @@ from rdkit.Chem import AllChem
 from .ligand_attach import (rot_mol_angle, sanitize_dim_2)
 from ..logger import logger
 from ..settings_dataframe import SettingsDataFrame
-from ..mol_utils import (to_symbol, fix_carboxyl, get_index,
+from ..mol_utils import (to_symbol, fix_carboxyl, get_index, round_coords,
                          from_mol_other, from_rdmol, separate_mod)
 from ..data_handling.mol_to_file import mol_to_file
 
@@ -174,12 +174,14 @@ def start_ligand_jobs(ligand_df: SettingsDataFrame,
                 mol.set_dihed(180.0)
             ligand_tmp = recombine_mol(mol_list)
             fix_carboxyl(ligand_tmp)
+            ligand_tmp.round_coords()
             lig_new.append(ligand_tmp)
             logger.info(f'UFFGetMoleculeForceField: {ligand.properties.name} optimization '
                         'is successful')
-        except Exception:
+        except Exception as ex:
             logger.error(f'UFFGetMoleculeForceField: {ligand.properties.name} optimization '
                          'has failed')
+            logger.debug(f'{ex.__class__.__name__}: {ex}', exc_info=True)
 
     logger.info('Finishing ligand optimization\n')
     return lig_new

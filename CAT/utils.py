@@ -241,9 +241,9 @@ def restart_init(path: str,
     config.log.stdout = 0
 
     workdir = manager.workdir
-    if not isdir(workdir):
+    if not isdir(workdir):  # workdir does not exist, dont bother trying to load previous jobs
         os.mkdir(workdir)
-        return
+        return None
 
     # Update the default job manager with previous Jobs
     for f in os.listdir(workdir):
@@ -251,9 +251,9 @@ def restart_init(path: str,
         if not isdir(job_dir):  # Not a directory; move along
             continue
 
-        dill_file = join(job_dir, f + '.hash')
-        if isfile(dill_file):  # Update JobManager.hashes
-            manager.load_job(dill_file)
+        hash_file = join(job_dir, f + '.hash')
+        if isfile(hash_file):  # Update JobManager.hashes
+            manager.load_job(hash_file)
 
         # Grab the job name
         try:
@@ -268,3 +268,4 @@ def restart_init(path: str,
             manager.names[name] = max(manager.names[name], num)
         except KeyError:
             manager.names[name] = num
+    return None

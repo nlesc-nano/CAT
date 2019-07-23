@@ -115,7 +115,6 @@ def start_qd_opt(qd_df: SettingsDataFrame,
     restart_init(path=path, folder='QD_optimize')
     for mol in qd_df[MOL][idx]:
         mol.properties.job_path = []
-        mol.round_coords()
         qd_opt(mol, job_recipe)
     finish()
 
@@ -202,4 +201,6 @@ def qd_opt(mol: Molecule,
     fix_carboxyl(mol)
     fix_h(mol)
     job2, s2 = job_recipe.job2, job_recipe.s2
+    mol.round_coords()
     mol.job_geometry_opt(job2, s2, name='QD_opt_part2')
+    mol.round_coords()

@@ -51,7 +51,7 @@ from scm.plams.core.settings import Settings
 
 from ..settings_dataframe import SettingsDataFrame
 from ..logger import logger
-from ..mol_utils import (merge_mol, get_index)
+from ..mol_utils import (merge_mol, get_index, round_coords)
 from ..data_handling.mol_to_file import mol_to_file
 
 try:
@@ -316,7 +316,8 @@ def ligand_to_qd(core: Molecule,
     # Attach the rotated ligands to the core, returning the resulting strucutre (PLAMS Molecule).
     lig_array = rot_mol(ligand, vec1, vec2, atoms_other=core.properties.dummies, idx=idx)
     qd = core.copy()
-    array_to_qd(ligand, lig_array, mol_other=qd)
+    array_to_qd(ligand, lig_array, mol_out=qd)
+    qd.round_coords()
 
     # Set properties
     qd.properties = Settings({
@@ -498,7 +499,7 @@ def rot_mol_angle(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=Fa
     return xyz_array
 
 
-def array_to_qd(mol, xyz_array, mol_other=False):
+def array_to_qd(mol, xyz_array, mol_out=False):
     """
     Takes a template molecule with n atoms and create m copies of this molecule, updating its
         cartesian coordinates based on a m*n*3 array.
@@ -523,9 +524,9 @@ def array_to_qd(mol, xyz_array, mol_other=False):
         mol_list.append(mol_cp)
 
     # return a list of molecules or merge the list with an existing molecule
-    if not mol_other:
+    if not mol_out:
         return mol_list
-    mol_other.merge_mol(mol_list)
+    mol_out.merge_mol(mol_list)
 
 
 def sanitize_dim_2(arg):

@@ -6,6 +6,15 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 
+0.5.4
+*****
+
+* Minor updates to the logger.
+* Cleaned up CAT.jobs.py.
+* ``check_sys_var()`` is now only called if an ADF-specific Job is requirest.
+* Job hashes are now stored in (and retrieved from) $JN.hash files (plain text).
+
+
 0.5.3
 *****
 

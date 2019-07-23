@@ -20,18 +20,13 @@ API
 """
 
 import os
-import threading
 from typing import (Optional, Callable)
-from os.path import (join, isfile, abspath, dirname, isdir, exists, normpath)
-from collections import abc
+from os.path import (join, isfile, abspath, isdir, exists, normpath)
 
-try:
-    import dill as pickle
-except ModuleNotFoundError:
-    import pickle
+import dill as pickle
 
-from scm.plams import (JobManager, log, config, FileError, Settings, PlamsError)
-from scm.plams.core.basejob import (Job, MultiJob)
+from scm.plams import (JobManager, FileError, Settings, PlamsError)
+from scm.plams.core.basejob import Job
 
 __all__ = ['GenJobManager']
 
@@ -46,19 +41,19 @@ class GenJobManager(JobManager):
     Attributes
     ----------
     foldername : str
-        The working folder name.
+        The name of the working folder (see :attr:`GenJobManager.workdir`).
 
     workdir : str
         The absolute path to the working folder.
 
     logfile : str
-        The absolute path to the logfile.
+        The absolute path+filename of the logfile.
 
     input : str
         The absolute path to the copy of the input file in the working folder.
 
     settings : |plams.Settings|_
-        A :class:`Settings` instance for this job manager.
+        A :class:`Settings` instance with settings for this job manager.
 
     jobs : |list|_ [|plams.Jobs|_]
         A list of all jobs managed with this instance (in order of run calls).
@@ -106,8 +101,7 @@ class GenJobManager(JobManager):
         with open(filename, 'rb') as f:
             try:
                 return pickle.load(f)
-            except Exception as e:
-                log(f"Unpickling of {filename} failed. Caught the following Exception:\n{e}", 1)
+            except Exception:
                 return None
 
     def _get_job(self, filename: str) -> Callable:
@@ -120,7 +114,10 @@ class GenJobManager(JobManager):
         return unpickle_job
 
     def load_job(self, filename: str) -> None:
-        """Load a previously saved job from **filename**.
+        """Load a previously saved job from **filename**, populating :attr:`GenJobManager.hashes`.
+
+        The hash of the loaded job is stored as key in :attr:`GenJobManager.hashes`,
+        the matching value being a callable that loads the actual the :class:`Job` instance.
 
         Parameters
         ----------
@@ -136,6 +133,7 @@ class GenJobManager(JobManager):
         else:
             raise FileError(f'File {filename} not present')
 
+        # Read the has from filename
         with open(filename, 'r') as f:
             h = f.read()
         self.hashes[h] = self._get_job(filename)
@@ -168,12 +166,12 @@ class GenJobManager(JobManager):
 
         """
         h = job.hash()
+        setattr(job, '_hash', h)
         if h is None:  # No hash available for **job**, move along
             return None
 
         if h in self.hashes:
             prev = self.hashes[h]()
-            log(f'Job {job.name} previously run as {prev.name}, using old results', 1)
             return prev
         else:
             filename = join(job.path, job.name)
