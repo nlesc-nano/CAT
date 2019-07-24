@@ -154,12 +154,12 @@ def _read_database(qd_df: SettingsDataFrame,
         A Series of quantum dots pulled from the database.
 
     """
-    def get_name():
+    def get_name() -> str:
         """Construct the name of a quantum dot."""
         core = core_df.at[(i[0:2]), MOL].properties.name
         res = mol[-1].properties.pdb_info.ResidueNumber - 1
         lig = ligand_df.at[(i[2:4]), MOL].properties.name
-        return '{}__{:d}_{}'.format(core, res, lig)
+        return f'{core}__{res}_{lig}'
 
     # Extract arguments
     settings = qd_df.settings.optional
@@ -294,10 +294,11 @@ def ligand_to_qd(core: Molecule,
         A quantum dot consisting of a core molecule and *n* ligands
 
     """
-    def get_name():
-        ret = core.properties.name + '__'
-        ret += str(qd[-1].properties.pdb_info.ResidueNumber - 1) + '_' + ligand.properties.name
-        return ret
+    def get_name() -> str:
+        core_name = core.properties.name
+        anchor = str(qd[-1].properties.pdb_info.ResidueNumber - 1)
+        lig_name = ligand.properties.name
+        return f'{core_name}__{anchor}_{lig_name}'
 
     dirname = settings.optional.qd.dirname
 
@@ -326,7 +327,8 @@ def ligand_to_qd(core: Molecule,
     return qd
 
 
-def _get_rotmat1(vec1, vec2):
+def _get_rotmat1(vec1: np.ndarray,
+                 vec2: np.ndarray) -> np.ndarray:
     """Calculate the rotation matrix for rotating **vec1** to **vec2**.
 
     Returns a unit matrix if the length of one of the vectors is 0.
@@ -379,7 +381,8 @@ def _get_rotmat1(vec1, vec2):
                      f'{np.asarray(vec2).shape} (vec2)')
 
 
-def _get_rotmat2(vec, step=(1/16)):
+def _get_rotmat2(vec: np.ndarray,
+                 step: float = (1/16)) -> np.ndarrray:
     r"""Calculate the rotation matrix for rotating m vectors along their axes, each vector
     yielding k = (2 / step) possible rotations.
 
@@ -416,7 +419,7 @@ def rot_mol(xyz_array: np.ndarray,
             atoms_other: Optional[np.ndarray] = None,
             bond_length: Optional[int] = None,
             step: float = 1/16,
-            dist_to_self: bool = True):
+            dist_to_self: bool = True) -> np.ndarray:
     """Rotate **xyz_array**.
 
     Paramaters
@@ -510,7 +513,7 @@ def rot_mol_angle(xyz_array: np.ndarray,
                   vec2: np.ndarray,
                   idx: int = 0,
                   atoms_other: Optional[np.ndarray] = None,
-                  bond_length: Optional[float] = None):
+                  bond_length: Optional[float] = None) -> np.ndarray:
     """Rotate one or more molecules (**xyz_array**) from **vec1** to **vec2**.
 
     Paramaters
@@ -610,11 +613,12 @@ def array_to_qd(mol: Molecule,
         return None
 
 
-def _is_sequence(item): return isinstance(item, abc.Sequence)
-def _is_atom(item): return isinstance(item, Atom)
-def _is_mol(item): return isinstance(item, Molecule)
-def _is_atom_sequence(item): return _is_mol(item) or (_is_sequence(item) and _is_atom(item[-1]))
-def _is_mol_sequence(item): return _is_sequence(item) and _is_atom_sequence(item[-1])
+def _is_sequence(item) -> bool: return isinstance(item, abc.Sequence)
+def _is_atom(item) -> bool: return isinstance(item, Atom)
+def _is_mol(item) -> bool: return isinstance(item, Molecule)
+def _is_atom_sequence(item) -> bool:
+    return _is_mol(item) or (_is_sequence(item) and _is_atom(item[-1]))
+def _is_mol_sequence(item) -> bool: return _is_sequence(item) and _is_atom_sequence(item[-1])
 
 
 def sanitize_dim_2(arg: Any) -> np.ndarray:
