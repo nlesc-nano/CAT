@@ -27,7 +27,9 @@ from typing import (Optional, List)
 import yaml
 
 from scm.plams.core.settings import Settings
-import CAT
+
+from CAT import prep
+from CAT.logger import logger
 
 
 def extract_args(args: Optional[List[str]] = None) -> Settings:
@@ -49,8 +51,7 @@ def main(args: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(
         prog='CAT',
         usage='init_cat my_settings_file.yaml',
-        description=('Description: This script initalizes '
-                     'the Compound Attachment Tool (CAT).')
+        description=('Description: This script initalizes the Compound Attachment Tool (CAT).')
     )
 
     parser.add_argument(
@@ -58,5 +59,9 @@ def main(args: Optional[List[str]] = None) -> None:
         help='Required: A .yaml file with the settings for CAT'
     )
 
-    args = parser.parse_args(args)
-    CAT.base.prep(extract_args(args), return_mol=False)
+    try:
+        args = parser.parse_args(args)
+        prep(extract_args(args), return_mol=False)
+    except Exception as ex:
+        logger.critical(f'{ex.__class__.__name__}: {ex}')
+        raise ex

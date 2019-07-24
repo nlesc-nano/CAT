@@ -43,17 +43,21 @@ API
 import os
 import itertools
 from string import ascii_letters
-from typing import (Dict, Iterable, List, Callable, Sequence, Optional)
+from typing import (Dict, Iterable, List, Sequence, Optional)
 
 from scm.plams import (Molecule, Atom, Settings)
 import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit import Chem
+from rdkit import RDLogger
 
-from ..utils import get_time
+from ..logger import logger
 from ..data_handling.validate_mol import validate_mol
 
 __all__ = ['read_mol', 'set_mol_prop']
+
+_logger = RDLogger.logger()
+_logger.setLevel(RDLogger.CRITICAL)
 
 
 def read_mol(input_mol: Iterable[Settings]) -> List[Molecule]:
@@ -90,7 +94,7 @@ def read_mol(input_mol: Iterable[Settings]) -> List[Molecule]:
         try:
             read_mol = extension_dict[mol_dict.type]
         except KeyError as ex:
-            print(get_time() + f'{ex.__class__.__name__}:\t {ex}\n')
+            logger.error(f'{ex.__class__.__name__}: {ex}')
             continue
 
         mol = read_mol(mol_dict)
@@ -114,10 +118,11 @@ def read_mol_xyz(mol_dict: Settings) -> Optional[Molecule]:
         mol = Molecule(mol_dict.mol, inputformat='xyz')
         if mol_dict.guess_bonds:
             mol.guess_bonds()
-        canonicalize_mol(mol)
+        if not mol_dict.is_core:
+            canonicalize_mol(mol)
         return mol
     except Exception as ex:
-        print_exception(read_mol_xyz.__code__, ex, mol_dict.mol)
+        print_exception('read_mol_xyz', mol_dict.name, ex)
 
 
 def read_mol_pdb(mol_dict: Settings) -> Optional[Molecule]:
@@ -126,10 +131,11 @@ def read_mol_pdb(mol_dict: Settings) -> Optional[Molecule]:
         mol = molkit.readpdb(mol_dict.mol)
         if mol_dict.guess_bonds:
             mol.guess_bonds()
-        canonicalize_mol(mol)
+        if not mol_dict.is_core:
+            canonicalize_mol(mol)
         return mol
     except Exception as ex:
-        print_exception(read_mol_pdb.__code__, ex, mol_dict.mol)
+        print_exception('read_mol_pdb', mol_dict.name, ex)
 
 
 def read_mol_mol(mol_dict: Settings) -> Optional[Molecule]:
@@ -138,10 +144,11 @@ def read_mol_mol(mol_dict: Settings) -> Optional[Molecule]:
         mol = molkit.from_rdmol(Chem.MolFromMolFile(mol_dict.mol, removeHs=False))
         if mol_dict.guess_bonds:
             mol.guess_bonds()
-        canonicalize_mol(mol)
+        if not mol_dict.is_core:
+            canonicalize_mol(mol)
         return mol
     except Exception as ex:
-        print_exception(read_mol_mol.__code__, ex, mol_dict.mol)
+        print_exception('read_mol_mol', mol_dict.name, ex)
 
 
 def read_mol_smiles(mol_dict: Settings) -> Optional[Molecule]:
@@ -152,7 +159,7 @@ def read_mol_smiles(mol_dict: Settings) -> Optional[Molecule]:
             mol.guess_bonds()
         return mol
     except Exception as ex:
-        print_exception(read_mol_smiles.__code__, ex, mol_dict.mol)
+        print_exception('read_mol_smiles', mol_dict.name, ex)
 
 
 def read_mol_plams(mol_dict: Settings) -> Optional[Molecule]:
@@ -161,10 +168,11 @@ def read_mol_plams(mol_dict: Settings) -> Optional[Molecule]:
         mol = mol_dict.mol
         if mol_dict.guess_bonds:
             mol.guess_bonds()
-        canonicalize_mol(mol)
+        if not mol_dict.is_core:
+            canonicalize_mol(mol)
         return mol
     except Exception as ex:
-        print_exception(read_mol_plams.__code__, ex, mol_dict.mol)
+        print_exception('read_mol_plams', mol_dict.name, ex)
 
 
 def read_mol_rdkit(mol_dict: Settings) -> Optional[Molecule]:
@@ -173,13 +181,14 @@ def read_mol_rdkit(mol_dict: Settings) -> Optional[Molecule]:
         mol = molkit.from_rdmol(mol_dict.mol)
         if mol_dict.guess_bonds:
             mol.guess_bonds()
-        canonicalize_mol(mol)
+        if not mol_dict.is_core:
+            canonicalize_mol(mol)
         return mol
     except Exception as ex:
-        print_exception(read_mol_rdkit.__code__, ex, mol_dict.mol)
+        print_exception('read_mol_rdkit', mol_dict.name, ex)
 
 
-def read_mol_folder(mol_dict: Settings) -> Optional[Molecule]:
+def read_mol_folder(mol_dict: Settings) -> Optional[List[Molecule]]:
     """Read all files (.xyz, .pdb, .mol, .txt or further subfolders) within a folder."""
     try:
         mol_type = 'input_cores' if mol_dict.is_core else 'input_ligands'
@@ -191,10 +200,10 @@ def read_mol_folder(mol_dict: Settings) -> Optional[Molecule]:
         validate_mol(file_list, mol_type, mol_dict.path)
         return read_mol(file_list)
     except Exception as ex:
-        print_exception(read_mol_folder.__code__, ex, mol_dict.mol)
+        print_exception('read_mol_folder', mol_dict.name, ex)
 
 
-def read_mol_txt(mol_dict: Settings) -> Optional[Molecule]:
+def read_mol_txt(mol_dict: Settings) -> Optional[List[Molecule]]:
     """Read a plain text file containing one or more SMILES strings."""
     try:
         row = 0 if 'row' not in mol_dict else mol_dict.row
@@ -210,7 +219,7 @@ def read_mol_txt(mol_dict: Settings) -> Optional[Molecule]:
         validate_mol(file_list, mol_type, mol_dict.path)
         return read_mol(file_list)
     except Exception as ex:
-        print_exception(read_mol_txt.__code__, ex, mol_dict.mol)
+        print_exception('read_mol_txt', mol_dict.name, ex)
 
 
 def canonicalize_mol(mol: Molecule,
@@ -374,15 +383,10 @@ def set_atom_prop(atom: Atom,
     return
 
 
-def print_exception(func: Callable,
-                    ex: Exception,
-                    name: str) -> None:
+def print_exception(func_name: str,
+                    mol_name: str,
+                    ex: Exception) -> None:
     """Manages the printing of exceptions upon failing to import a molecule."""
-    extension_dict = {'read_mol_xyz': '.xyz file', 'read_mol_pdb': '.pdb file',
-                      'read_mol_mol': '.mol file', 'read_mol_smiles': 'SMILES string',
-                      'read_mol_folder': 'folder', 'read_mol_txt': '.txt file',
-                      'read_mol_excel': '.xlsx file', 'read_mol_plams': 'PLAMS molecule',
-                      'read_mol_rdkit': 'RDKit molecule'}
-    print(get_time() + f'{ex.__class__.__name__}:\t {ex}')
-    filename = extension_dict[func.co_name]
-    print(get_time() + f'Warning: {name} not recognized as a valid {filename}\n')
+    ex_name = ex.__class__.__name__
+    err = f'CAT.{func_name}() failed to parse {repr(mol_name)}; Caught exception: {ex_name}'
+    logger.error(err)

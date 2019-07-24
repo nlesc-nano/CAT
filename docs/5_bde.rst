@@ -39,13 +39,11 @@ Default Settings
             dissociate:
                 core_atom: Cd
                 lig_count: 2
-                core_core_dist: 5.0
-                lig_core_dist: 5.0
+                keep_files: True
+                core_core_dist: 5.0  # Ångström
+                lig_core_dist: 5.0  # Ångström
                 core_index: False
-                topology:
-                    7: vertice
-                    8: edge
-                    10: face
+                topology: {}
 
                 job1: AMSJob
                 s1: True
@@ -66,8 +64,9 @@ Arguments
                 dissociate:
                     core_atom: Cd
                     lig_count: 2
-                    core_core_dist: 5.0
-                    lig_core_dist: 5.0
+                    keep_files: True
+                    core_core_dist: 5.0  # Ångström
+                    lig_core_dist: 5.0  # Ångström
                     core_index: False
                     topology:
                         7: vertice
@@ -76,31 +75,61 @@ Arguments
 
 |
 
-        .. attribute:: optional.qd.dissociate.core_atom
+    .. attribute:: optional.qd.dissociate.core_atom
 
-            :Parameter:     * **Type** - :class:`str` or :class:`int`
-                            * **Default value** – ``None``
+        :Parameter:     * **Type** - :class:`str` or :class:`int`
+                        * **Default value** – ``None``
 
         The atomic number or atomic symbol of the core atoms (:math:`X`) which are to be
         dissociated. The core atoms are dissociated in combination with :math:`n` ligands
         (:math:`Y`, see :attr:`optional.qd.dissociate.lig_count`).
         Yields a compound with the general formula |XYn|.
 
+        If one is interested in dissociating ligands in combination with
+        a molecular species (*e.g.* :math:`X = {NR_4}^+`) the atomic number (or symbol)
+        can be substituted for a SMILES string represting a poly-atomic ion
+        (*e.g.* tetramethyl ammonium: C[N+](C)(C)C).
 
-        .. attribute:: optional.qd.dissociate.lig_count
+        If a SMILES string is provided it must satisfy the following 2 requirements:
 
-            :Parameter:     * **Type** - :class:`int`
-                            * **Default value** – ``None``
+            1. The SMILES string *must* contain a single charged atom; unpredictable behaviour can occur otherwise.
+            2. The provided structure (including its bonds) must be present in the core.
 
-        The number of ligands, *n*, which is to be dissociated in combination
-        with a single core atom (X, see :attr:`optional.qd.dissociate.core_atom`).
+        .. warning::
+            This argument has no value be default and thus *must* be provided by the user.
+
+        .. note::
+            The yaml format uses ``null`` rather than ``None`` as in Python.
+
+
+    .. attribute:: optional.qd.dissociate.lig_count
+
+        :Parameter:     * **Type** - :class:`int`
+                        * **Default value** – ``None``
+
+        The number of ligands, :math:`n`, which is to be dissociated in combination
+        with a single core atom (:math:`X`, see :attr:`optional.qd.dissociate.core_atom`).
         Yields a compound with the general formula |XYn|.
 
+        .. warning::
+            This argument has no value be default and thus *must* be provided by the user.
 
-        .. attribute:: optional.qd.dissociate.core_core_dist
+        .. note::
+            The yaml format uses ``null`` rather than ``None`` as in Python.
 
-            :Parameter:     * **Type** - :class:`float` or :class:`int`
-                            * **Default value** – ``5.0``
+
+    .. attribute:: optional.qd.dissociate.keep_files
+
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``True``
+
+        Whether to keep or delete all BDE files after all calculations are finished.
+
+
+    .. attribute:: optional.qd.dissociate.core_core_dist
+
+        :Parameter:     * **Type** - :class:`float` or :class:`int`
+                        * **Default value** – ``0.0``
 
         The maximum to be considered distance (Ångström) between atoms in
         :attr:`optional.qd.dissociate.core_atom`.
@@ -109,13 +138,16 @@ Arguments
         surface of the core or not. It is recommended to use a radius which
         encapsulates a single (complete) shell of neighbours.
 
+        If not specified (or equal to ``0.0``) **CAT** will attempt to guess a suitable value
+        based on the cores' radial distribution function.
 
-        .. attribute:: optional.qd.dissociate.lig_core_dist
 
-            :Parameter:     * **Type** - :class:`float` or :class:`int`
-                            * **Default value** – ``5.0``
+    .. attribute:: optional.qd.dissociate.lig_core_dist
 
-        Dissociate all possible combinations of :attr:`n` ligands and a single core atom
+        :Parameter:     * **Type** - :class:`float` or :class:`int`
+                        * **Default value** – ``5.0``
+
+        Dissociate all possible combinations of :math:`n` ligands and a single core atom
         (see :attr:`optional.qd.dissociate.core_atom`) within a given radius (Ångström)
         from aforementioned core atom. The number of ligands dissociated in
         combination with a single core atom is controlled by
@@ -128,23 +160,49 @@ Arguments
 |
 
 
-        .. attribute:: optional.qd.dissociate.core_index
+    .. attribute:: optional.qd.dissociate.core_index
 
-            :Parameter:     * **Type** - :class:`int` or :class:`tuple` [:class:`int`]
-                            * **Default value** – ``None``
+        :Parameter:     * **Type** - :class:`int` or :class:`tuple` [:class:`int`]
+                        * **Default value** – ``None``
 
         Alternative to :attr:`optional.qd.dissociate.lig_core_dist` and :attr:`optional.qd.dissociate.core_atom`.
+        Manually specify the indices of all to-be dissociated atoms in the core.
+        Core atoms will be dissociated in combination with the :math:`n` closest ligands.
+
+        .. note::
+            Atom numbering follows the PLAMS [1_, 2_] convention of starting from 1 rather than 0.
+
+        .. note::
+            The yaml format uses ``null`` rather than ``None`` as in Python.
 
 
-        .. attribute:: optional.qd.dissociate.topology
+    .. attribute:: optional.qd.dissociate.topology
 
-            :Parameter:     * **Type** - :class:`dict`
-                            * **Default value** – ``{}``
+        :Parameter:     * **Type** - :class:`dict`
+                        * **Default value** – ``{}``
 
         A dictionary which translates the number neighbouring core atoms
         (see :attr:`optional.qd.dissociate.core_atom` and :attr:`optional.qd.dissociate.core_core_dist`)
         into a topology. Keys represent the number of neighbours, values represent
         the matching topology.
+
+        .. admonition:: Example
+
+            Given a :attr:`optional.qd.dissociate.core_core_dist` of ``5.0`` Ångström,
+            the following options can be interpreted as following:
+
+            .. code::
+
+                optional:
+                    qd:
+                        dissociate:
+                            7: vertice
+                            8: edge
+                            10: face
+
+            Core atoms with ``7`` other neighbouring core atoms (within a radius of ``5.0`` Ångström)
+            are marked as ``"vertice"``, the ones with ``8`` neighbours are marked as ``"edge"``
+            and the ones with ``10`` neighbours as ``"face"``.
 
 |
 
@@ -166,93 +224,93 @@ Arguments - Job Customization
 
 |
 
-        .. attribute:: optional.qd.dissociate.job1
+    .. attribute:: optional.qd.dissociate.job1
 
-            :Parameter:     * **Type** - :class:`type`, :class:`str` or :class:`bool`
-                            * **Default value** – :class:`plams.AMSJob`
+        :Parameter:     * **Type** - :class:`type`, :class:`str` or :class:`bool`
+                        * **Default value** – :class:`plams.AMSJob`
 
-            A :class:`type` object of a :class:`plams.Job` subclass, used for calculating the
-            "electronic" component (|dE_lvl1|) of the bond dissociation energy.
-            Involves single point calculations.
+        A :class:`type` object of a :class:`plams.Job` subclass, used for calculating the
+        "electronic" component (|dE_lvl1|) of the bond dissociation energy.
+        Involves single point calculations.
 
-            Alternatively, an alias can be provided for a specific
-            job type (see :ref:`Type Aliases`).
+        Alternatively, an alias can be provided for a specific
+        job type (see :ref:`Type Aliases`).
 
-            Setting it to ``True`` will default to :class:`plams.AMSJob`:,
-            while ``True`` is equivalent to :attr:`optional.qd.dissociate` = ``False``.
-
-
-        .. attribute:: optional.qd.dissociate.s1
-
-            :Parameter:     * **Type** - :class:`dict`, :class:`str` or :class:`bool`
-                            * **Default value** – See below
-
-            .. code::
-
-                s1:
-                    input:
-                        mopac:
-                            model: PM7
-                        ams:
-                            system:
-                                charge: 0
-
-            The job settings used for calculating the "electronic" component
-            (|dE_lvl1|) of the bond dissociation energy.
-
-            Alternatively, a path can be provided to .json or .yaml file
-            containing the job settings.
-
-            Setting it to ``True`` will default to the ``["MOPAC"]`` block in
-            CAT/data/templates/qd.yaml_, while ``False`` is equivalent to
-            :attr:`optional.qd.dissociate` = ``False``.
+        Setting it to ``True`` will default to :class:`plams.AMSJob`,
+        while ``False`` is equivalent to :attr:`optional.qd.dissociate` = ``False``.
 
 
-        .. attribute:: optional.qd.dissociate.job2
+    .. attribute:: optional.qd.dissociate.s1
 
-            :Parameter:     * **Type** - :class:`type`, :class:`str` or :class:`bool`
-                            * **Default value** – :class:`plams.AMSJob`
+        :Parameter:     * **Type** - :class:`dict`, :class:`str` or :class:`bool`
+                        * **Default value** – See below
 
-            A :class:`type` object of a :class:`plams.Job` subclass, used for calculating the
-            thermal component (|ddG_lvl2|) of the bond dissociation energy.
-            Involves a geometry reoptimizations and frequency analyses.
+        .. code::
 
-            Alternatively, an alias can be provided for a specific
-            job type (see :ref:`Type Aliases`).
+            s1:
+                input:
+                    mopac:
+                        model: PM7
+                    ams:
+                        system:
+                            charge: 0
+
+        The job settings used for calculating the "electronic" component
+        (|dE_lvl1|) of the bond dissociation energy.
+
+        Alternatively, a path can be provided to .json or .yaml file
+        containing the job settings.
+
+        Setting it to ``True`` will default to the ``["MOPAC"]`` block in
+        CAT/data/templates/qd.yaml_, while ``False`` is equivalent to
+        :attr:`optional.qd.dissociate` = ``False``.
 
 
-            Setting it to ``True`` will default to :class:`plams.AMSJob`,
-            while ``False`` will skip the thermochemical analysis completely.
+    .. attribute:: optional.qd.dissociate.job2
+
+        :Parameter:     * **Type** - :class:`type`, :class:`str` or :class:`bool`
+                        * **Default value** – :class:`plams.AMSJob`
+
+        A :class:`type` object of a :class:`plams.Job` subclass, used for calculating the
+        thermal component (|ddG_lvl2|) of the bond dissociation energy.
+        Involves a geometry reoptimizations and frequency analyses.
+
+        Alternatively, an alias can be provided for a specific
+        job type (see :ref:`Type Aliases`).
 
 
-        .. attribute:: optional.qd.dissociate.s1
+        Setting it to ``True`` will default to :class:`plams.AMSJob`,
+        while ``False`` will skip the thermochemical analysis completely.
 
-            :Parameter:     * **Type** - :class:`dict`, :class:`str` or :class:`bool`
-                            * **Default value** – See below
 
-            .. code::
+    .. attribute:: optional.qd.dissociate.s1
 
-                s2:
-                    input:
-                        uff:
-                            library: uff
-                        ams:
-                            system:
-                                charge: 0
-                                bondorders:
-                                    _1: null
+        :Parameter:     * **Type** - :class:`dict`, :class:`str` or :class:`bool`
+                        * **Default value** – See below
 
-            The job settings used for calculating the thermal component (|ddG_lvl2|)
-            of the bond dissociation energy.
+        .. code::
 
-            Alternatively, a path can be provided to .json or .yaml file
-            containing the job settings.
+            s2:
+                input:
+                    uff:
+                        library: uff
+                    ams:
+                        system:
+                            charge: 0
+                            bondorders:
+                                _1: null
 
-            Setting it to ``True`` will default to the the *MOPAC* block in
-            CAT/data/templates/qd.yaml_, while ``False`` will skip the
-            thermochemical analysis completely.
+        The job settings used for calculating the thermal component (|ddG_lvl2|)
+        of the bond dissociation energy.
 
-    |
+        Alternatively, a path can be provided to .json or .yaml file
+        containing the job settings.
+
+        Setting it to ``True`` will default to the the *MOPAC* block in
+        CAT/data/templates/qd.yaml_, while ``False`` will skip the
+        thermochemical analysis completely.
+
+|
 
 .. _1: https://www.scm.com/doc/MOPAC/Introduction.html
 .. _2: http://openmopac.net

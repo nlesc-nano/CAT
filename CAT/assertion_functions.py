@@ -9,6 +9,9 @@ Index
 .. currentmodule:: CAT.assertion_functions
 .. autosummary::
     Invert
+    assert_isfile
+    assert_isdir
+    assert_len
     assert_eq
     assert_id
     assert_subclass
@@ -25,6 +28,9 @@ Index
 API
 ---
 .. autoclass:: Invert
+.. autofunction:: assert_isfile
+.. autofunction:: assert_isdir
+.. autofunction:: assert_len
 .. autofunction:: assert_eq
 .. autofunction:: assert_id
 .. autofunction:: assert_subclass
@@ -41,7 +47,8 @@ API
 """
 
 from functools import wraps
-from typing import (Any, Callable, Tuple, Sequence, Container)
+from os.path import (isfile, isdir)
+from typing import (Any, Callable, Tuple, Sequence, Container, Sized)
 
 
 class Invert():
@@ -110,6 +117,34 @@ class Invert():
             else:
                 raise AssertionError(self.get_err_msg(func, tup))
         return wrapper
+
+
+def assert_isfile(value: str) -> Tuple[str, str, None]:
+    """Assert :code:`os.path.isfile(value)`; returns arguments for :func:`._err_msg`."""
+    assertion = 'assert os.path.isfile(value)'
+    assert isfile(value), _err_msg(assertion, value, None)
+
+    _assertion = 'assert not os.path.isfile(value)'
+    return _assertion, value, None
+
+
+def assert_isdir(value: str) -> Tuple[str, str, None]:
+    """Assert :code:`os.path.isdir(value)`; returns arguments for :func:`._err_msg`."""
+    assertion = 'assert os.path.isdir(value)'
+    assert isdir(value), _err_msg(assertion, value, None)
+
+    _assertion = 'assert not os.path.isdir(value)'
+    return _assertion, value, None
+
+
+def assert_len(value: Sized,
+               ref: int) -> Tuple[str, Any, Any]:
+    """Assert :code:`len(value) == ref`; returns arguments for :func:`._err_msg`."""
+    assertion = 'assert len(value) == reference'
+    assert len(value) == ref, _err_msg(assertion, value, ref)
+
+    _assertion = 'assert len(value) != reference'
+    return _assertion, value, ref
 
 
 def assert_le(value: Any,

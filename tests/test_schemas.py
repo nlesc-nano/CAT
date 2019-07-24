@@ -13,11 +13,7 @@ from CAT.data_handling.validation_schemas import (
     mongodb_schema, bde_schema, qd_opt_schema, crs_schema
 )
 
-try:
-    from nanoCAT import CRSJob
-except ModuleNotFoundError:
-    from scm.plams.core.basejob import Job
-    CRSJob = Job
+from nanoCAT.crs import CRSJob
 
 PATH = 'tests/test_files'
 
@@ -300,6 +296,7 @@ def test_crs_schema() -> None:
 
     crs_dict = Settings()
     ref = Settings({
+        'keep_files': True,
         'job1': AMSJob,
         's1': _crs_s1_default,
         'job2': CRSJob,
@@ -308,6 +305,12 @@ def test_crs_schema() -> None:
     args = SchemaError, crs_schema.validate, crs_dict
 
     assert_eq(crs_schema.validate(crs_dict), ref)
+
+    crs_dict['keep_files'] = 1  # Exception: incorrect type
+    assert_exception(*args)
+    crs_dict['keep_files'] = False
+    assert_id(crs_schema.validate(crs_dict)['keep_files'], False)
+    crs_dict['keep_files'] = True
 
     for job in ('job1', 'job2'):
         crs_dict[job] = 1  # Exception: incorrect type
@@ -341,9 +344,10 @@ def test_bde_schema() -> None:
 
     bde_dict = Settings({'core_atom': 'Cd', 'lig_count': 2})
     ref = Settings({
+        'keep_files': True,
         'core_atom': 48,
         'lig_count': 2,
-        'core_core_dist': 5.0,
+        'core_core_dist': 0.0,
         'lig_core_dist': 5.0,
         'topology': {},
         'job1': AMSJob,
@@ -352,6 +356,12 @@ def test_bde_schema() -> None:
     args = SchemaError, bde_schema.validate, bde_dict
 
     assert_eq(bde_schema.validate(bde_dict), ref)
+
+    bde_dict['keep_files'] = 1  # Exception: incorrect type
+    assert_exception(*args)
+    bde_dict['keep_files'] = False
+    assert_id(bde_schema.validate(bde_dict)['keep_files'], False)
+    bde_dict['keep_files'] = True
 
     bde_dict['core_atom'] = 5.0  # Exception: incorrect type
     assert_exception(*args)

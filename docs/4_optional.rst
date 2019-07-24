@@ -101,7 +101,7 @@ Database
     .. attribute:: optional.database.dirname
 
         :Parameter:     * **Type** - :class:`str`
-                        * **Default Value** - ``"qd"``
+                        * **Default Value** - ``"database"``
 
         The name of the directory where the database will be stored.
 
@@ -123,19 +123,24 @@ Database
         ``"ligand"`` and/or ``"qd"``), meaning that structures will be read only for a
         specific subset.
 
-        For example:
 
-        .. code::
+        .. admonition:: Example
 
-            optional:
-                database:
-                    read: (core, ligand, qd)  # is equivalent to read: True
+            Example #1:
 
-        .. code::
+            .. code::
 
-            optional:
-                database:
-                    read: ligand
+                optional:
+                    database:
+                        read: (core, ligand, qd)  # This is equivalent to read: True
+
+            Example #2:
+
+            .. code::
+
+                optional:
+                    database:
+                        read: ligand
 
 
     .. attribute:: optional.database.write
@@ -179,7 +184,7 @@ Database
         By default all structures are stored in the .hdf5 format as
         (partially) de-serialized .pdb files. Additional formats can be
         requisted with this keyword.
-        Accepted values: ``"pdb"`` and/or ``"xyz"``.
+        Accepted values: ``"pdb"``, ``"xyz"``, ``"mol"`` and/or ``"mol2"``.
 
 
     .. attribute:: optional.database.mongodb
@@ -188,6 +193,10 @@ Database
                         * **Default Value** – ``False``
 
         Options related to the MongoDB format.
+
+        .. admonition:: See also
+
+            More extensive options for this argument are provided in :ref:`Database`:.
 
 |
 
@@ -296,34 +305,41 @@ Ligand
 
         If not specified, the default functional groups of **CAT** are used.
 
+        .. note::
+            This argument has no value be default and will thus default to SMILES strings of the default
+            functional groups supported by **CAT**.
+
+        .. note::
+            The yaml format uses ``null`` rather than ``None`` as in Python.
 
     .. attribute:: optional.ligand.split
 
         :Parameter:     * **Type** - :class:`bool`
                         * **Default value** – ``True``
 
-        If the ligand should be attached in its entirety to the core or not.
+        If ``False``: The ligand is to be attached to the core in its entirety .
 
-        ``False``: The ligand in its entirety is to be attached to the core.
-
-        -   N\ :sup:`+`\ R\ :sub:`4`\                -> N\ :sup:`+`\ R\ :sub:`4`\
-
-        -   O\ :sub:`2`\CR                           -> O\ :sub:`2`\CR
-
-        -   HO\ :sub:`2`\CR                          -> HO\ :sub:`2`\CR
-
-        -   H\ :sub:`3`\CO\ :sub:`2`\CR              -> H\ :sub:`3`\CO\ :sub:`2`\CR
+        =================== ==================
+        Before              After
+        =================== ==================
+        :math:`{NR_4}^+`    :math:`{NR_4}^+`
+        :math:`O_2 CR`      :math:`O_2 CR`
+        :math:`HO_2 CR`     :math:`HO_2 CR`
+        :math:`H_3 CO_2 CR` :math:`H_3 CO_2 CR`
+        =================== ==================
 
         ``True``: A proton, counterion or functional group is to be removed from
         the ligand before attachment to the core.
 
-        -   X\ :sup:`-`\.N\ :sup:`+`\ R\ :sub:`4`\   -> N\ :sup:`+`\ R\ :sub:`4`\
-
-        -   HO\ :sub:`2`\CR                          -> O\ :sup:`-`\ :sub:`2`\CR
-
-        -   Na\ :sup:`+`\.O\ :sup:`-`\ :sub:`2`\CR	 -> O\ :sup:`-`\ :sub:`2`\CR
-
-        -   H\ :sub:`3`\CO\ :sub:`2`\CR              -> O\ :sup:`-`\ :sub:`2`\CR
+        ========================= ==================
+        Before                    After
+        ========================= ==================
+        :math:`Cl^- + {NR_4}^+`   :math:`{NR_4}^+`
+        :math:`HO_2 CR`           :math:`{O_2 CR}^-`
+        :math:`Na^+ + {O_2 CR}^-` :math:`{O_2 CR}^-`
+        :math:`HO_2 CR`           :math:`{O_2 CR}^-`
+        :math:`H_3 CO_2 CR`       :math:`{O_2 CR}^-`
+        ========================= ==================
 
 
     .. attribute:: optional.ligand.cosmo-rs
@@ -422,7 +438,7 @@ QD
 
         Calculate the ligand dissociation energy.
 
-        Calculate the ligand (bond)dissociation energy (BDE) of ligands attached to the
+        Calculate the ligand dissociation energy (BDE) of ligands attached to the
         surface of the core. See :ref:`Bond Dissociation Energy` for more details.
         The calculation consists of five distinct steps:
 
@@ -444,6 +460,11 @@ QD
             compounds used for step 3.
 
             5.  :math:`\Delta G_{tot} = \Delta E_{1} + \Delta \Delta G_{2} = \Delta E_{1} + (\Delta G_{2} - \Delta E_{2})`.
+
+        .. admonition:: See also
+
+            More extensive options for this argument are provided in :ref:`Bond Dissociation Energy`:.
+
 
 
 .. _1: http://www.rdkit.org

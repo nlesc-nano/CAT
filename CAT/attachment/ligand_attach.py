@@ -50,14 +50,9 @@ from scm.plams.mol.molecule import Molecule
 from scm.plams.core.settings import Settings
 
 from ..settings_dataframe import SettingsDataFrame
-from ..utils import get_time
-from ..mol_utils import (merge_mol, get_index)
-
-try:
-    from dataCAT import (Database, mol_to_file)
-    DATA_CAT = True
-except ImportError:
-    DATA_CAT = False
+from ..logger import logger
+from ..mol_utils import (merge_mol, get_index, round_coords)
+from ..data_handling.mol_to_file import mol_to_file
 
 __all__ = ['init_qd_construction']
 
@@ -87,12 +82,12 @@ def init_qd_construction(ligand_df: SettingsDataFrame,
     """
     # Extract arguments
     settings = ligand_df.settings.optional
-    overwrite = DATA_CAT and 'qd' in settings.database.overwrite
-    write = DATA_CAT and 'qd' in settings.database.write
-    read = DATA_CAT and 'qd' in settings.database.read
+    db = settings.database.db
+    write = db and 'qd' in settings.database.write
+    read = db and 'qd' in settings.database.read
     qd_path = settings.qd.dirname
-    db_path = settings.database.dirname
     mol_format = settings.database.mol_format
+    optimize = settings.qd.optimize
 
     # Attempt to pull structures from the database
     qd_df = _get_df(core_df.index, ligand_df.index, ligand_df.settings)
@@ -111,9 +106,12 @@ def init_qd_construction(ligand_df: SettingsDataFrame,
 
     # Export the resulting geometries back to the database
     if write:
-        data = Database(db_path, **settings.database.mongodb)
-        data.update_csv(qd_df, columns=[HDF5_INDEX], database='QD_no_opt')
-        mol_to_file(qd_df[MOL], qd_path, overwrite, mol_format)
+        db.update_csv(qd_df, columns=[HDF5_INDEX], database='QD_no_opt')
+
+    # Export xyz/pdb files
+    if 'qd' in settings.database.write and mol_format and not optimize:
+        mol_to_file(qd_df[MOL], qd_path, mol_format=mol_format)
+
     return qd_df
 
 
@@ -165,16 +163,17 @@ def _read_database(qd_df: SettingsDataFrame,
     # Extract arguments
     settings = qd_df.settings.optional
     path = settings.database.dirname
-    data = Database(path, **settings.database.mongodb)
+    db = settings.database.db
 
     # Extract molecules from the database and set their properties
     # If possible extract optimized structures; supplement with unoptimized structures if required
-    mol_series_opt = data.from_csv(qd_df, database='QD', inplace=False)
-    mol_series_no_opt = data.from_csv(qd_df, database='QD_no_opt', inplace=False)
+    mol_series_opt = db.from_csv(qd_df, database='QD', inplace=False)
+    mol_series_no_opt = db.from_csv(qd_df, database='QD_no_opt', inplace=False)
     slice_ = mol_series_no_opt.index.isin(mol_series_opt.index)
     mol_series = mol_series_opt.append(mol_series_no_opt[~slice_])
 
     # Update Molecule.properties
+    logger.info('Pulling quantum dots from database')
     for i, mol in mol_series.iteritems():
         mol.properties = Settings({
             'indices': _get_indices(mol, i),
@@ -182,7 +181,7 @@ def _read_database(qd_df: SettingsDataFrame,
             'job_path': [],
             'name': get_name()
         })
-        print(get_time() + '{}\t has been pulled from the database'.format(mol.properties.name))
+        logger.info(f'{mol.properties.name} has been pulled from the database')
     return mol_series
 
 
@@ -310,7 +309,8 @@ def ligand_to_qd(core: Molecule,
     # Attach the rotated ligands to the core, returning the resulting strucutre (PLAMS Molecule).
     lig_array = rot_mol(ligand, vec1, vec2, atoms_other=core.properties.dummies, idx=idx)
     qd = core.copy()
-    array_to_qd(ligand, lig_array, mol_other=qd)
+    array_to_qd(ligand, lig_array, mol_out=qd)
+    qd.round_coords()
 
     # Set properties
     qd.properties = Settings({
@@ -322,7 +322,6 @@ def ligand_to_qd(core: Molecule,
     })
 
     # Print and return
-    print(get_time() + qd.properties.name + '\t has been constructed')
     return qd
 
 
@@ -493,7 +492,7 @@ def rot_mol_angle(xyz_array, vec1, vec2, idx=0, atoms_other=None, bond_length=Fa
     return xyz_array
 
 
-def array_to_qd(mol, xyz_array, mol_other=False):
+def array_to_qd(mol, xyz_array, mol_out=False):
     """
     Takes a template molecule with n atoms and create m copies of this molecule, updating its
         cartesian coordinates based on a m*n*3 array.
@@ -518,9 +517,9 @@ def array_to_qd(mol, xyz_array, mol_other=False):
         mol_list.append(mol_cp)
 
     # return a list of molecules or merge the list with an existing molecule
-    if not mol_other:
+    if not mol_out:
         return mol_list
-    mol_other.merge_mol(mol_list)
+    mol_out.merge_mol(mol_list)
 
 
 def sanitize_dim_2(arg):

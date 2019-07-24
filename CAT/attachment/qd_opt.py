@@ -29,21 +29,17 @@ from typing import List
 import pandas as pd
 
 from scm.plams import (Molecule, Settings)
-from scm.plams.core.functions import (init, finish)
+from scm.plams.core.functions import finish
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 
 import qmflows
 
+from ..logger import logger
 from ..jobs import job_geometry_opt
-from ..utils import (get_time, type_to_string)
-from ..mol_utils import (fix_carboxyl, fix_h)
+from ..utils import (restart_init, type_to_string)
+from ..mol_utils import (fix_carboxyl, fix_h, round_coords)
 from ..settings_dataframe import SettingsDataFrame
-
-try:
-    from dataCAT import (Database, mol_to_file)
-    DATA_CAT = True
-except ImportError:
-    DATA_CAT = False
+from ..data_handling.mol_to_file import mol_to_file
 
 __all__ = ['init_qd_opt']
 
@@ -69,46 +65,52 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
     """
     # Extract arguments
     settings = qd_df.settings.optional
-    write = DATA_CAT and 'qd' in settings.database.write
-    overwrite = DATA_CAT and 'qd' in settings.database.overwrite
+    db = settings.database.db
+    write = db and 'qd' in settings.database.write
+    overwrite = db and 'qd' in settings.database.overwrite
+    mol_format = settings.database.mol_format
+    qd_path = settings.qd.dirname
 
     # Prepare slices
-    if overwrite and DATA_CAT:
+    if overwrite and db:
         idx = pd.Series(True, index=qd_df.index, name='mol')
-        message = '\t has been (re-)optimized'
     else:
         idx = qd_df[OPT] == False  # noqa
-        message = '\t has been optimized'
 
     # Optimize the geometries
     if idx.any():
-        start_qd_opt(qd_df, idx, message)
+        logger.info('Starting quantum dot optimization')
+        start_qd_opt(qd_df, idx)
         qd_df[JOB_SETTINGS_QD_OPT] = get_job_settings(qd_df)
-        print()
+        logger.info('Finishing quantum dot optimization\n')
     else:  # No new molecules, move along
+        logger.info('No new to-be optimized quantum dots found\n')
         return None
 
     # Export the geometries to the database
-    if write and DATA_CAT:
+    if write and db:
         with pd.option_context('mode.chained_assignment', None):
             _qd_to_db(qd_df, idx)
+
+    # Export xyz/pdb files
+    if 'qd' in settings.database.write and mol_format:
+        mol_to_file(qd_df[MOL], qd_path, mol_format=mol_format)
+
     return None
 
 
 def start_qd_opt(qd_df: SettingsDataFrame,
-                 idx: pd.Series,
-                 message: str) -> None:
+                 idx: pd.Series) -> None:
     """Loop over all molecules in ``qd_df.loc[idx]`` and perform geometry optimizations."""
     # Extract arguments
-    path = qd_df.properties.optional.qd.dirname
-    job_recipe = qd_df.properties.optional.qd.optimize
+    path = qd_df.settings.optional.qd.dirname
+    job_recipe = qd_df.settings.optional.qd.optimize
 
     # Perform the main optimization loop
-    init(path=path, folder='QD_optimize')
+    restart_init(path=path, folder='QD_optimize')
     for mol in qd_df[MOL][idx]:
         mol.properties.job_path = []
         qd_opt(mol, job_recipe)
-        print(get_time() + mol.properties.name + message)
     finish()
 
 
@@ -139,10 +141,8 @@ def _qd_to_db(qd_df: SettingsDataFrame,
     # Extract arguments
     settings = qd_df.settings.optional
     job_recipe = settings.qd.optimize
-    overwrite = DATA_CAT and 'qd' in settings.database.overwrite
-    mol_format = settings.database.mol_format
-    qd_path = settings.qd.dirname
-    db_path = settings.database.dirname
+    overwrite = 'qd' in settings.database.overwrite
+    db = settings.database.db
 
     # Preapre the job recipe
     v1 = qmflows.geometry['specific'][type_to_string(job_recipe.job1)].copy()
@@ -156,17 +156,14 @@ def _qd_to_db(qd_df: SettingsDataFrame,
 
     # Update the database
     columns = [HDF5_INDEX, JOB_SETTINGS_QD_OPT, SETTINGS1, SETTINGS2]
-    database = Database(path=db_path, **settings.database.mongodb)
-    database.update_csv(
+    db.update_csv(
         qd_df[idx],
+        overwrite=overwrite,
         columns=columns,
         job_recipe=recipe,
         database='QD',
         opt=True
     )
-
-    # Export xyz/pdb files
-    mol_to_file(qd_df[MOL], qd_path, overwrite, mol_format)
 
 
 def qd_opt(mol: Molecule,
@@ -198,4 +195,6 @@ def qd_opt(mol: Molecule,
     fix_carboxyl(mol)
     fix_h(mol)
     job2, s2 = job_recipe.job2, job_recipe.s2
+    mol.round_coords()
     mol.job_geometry_opt(job2, s2, name='QD_opt_part2')
+    mol.round_coords()
