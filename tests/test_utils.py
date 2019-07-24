@@ -18,7 +18,7 @@ from CAT.utils import (
     type_to_string, dict_concatenate, get_template, validate_path, check_sys_var, restart_init
 )
 
-PATH = 'tests/test_files'
+PATH = join('tests', 'test_files')
 FOLDER = 'test_plams_workdir'
 
 

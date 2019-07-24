@@ -6,7 +6,7 @@ from shutil import rmtree
 from CAT.assertion_functions import assert_exception
 from CAT.data_handling.entry_points import main
 
-PATH = 'tests/test_files'
+PATH = join('tests', 'test_files')
 
 
 def test_main() -> None:

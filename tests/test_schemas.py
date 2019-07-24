@@ -15,7 +15,7 @@ from CAT.data_handling.validation_schemas import (
 
 from nanoCAT.crs import CRSJob
 
-PATH = 'tests/test_files'
+PATH = join('tests', 'test_files')
 
 
 def test_mol_schema() -> None:

@@ -10,7 +10,7 @@ from CAT.data_handling.validate_mol import (
     validate_mol, santize_smiles, _parse_name_type, _parse_mol_type
 )
 
-PATH = 'tests/test_files'
+PATH = join('tests', 'test_files')
 MOL_PATH = join(PATH, 'Methanol.xyz')
 MOL = Molecule(MOL_PATH)
 MOL.guess_bonds()

@@ -15,7 +15,7 @@ from CAT.attachment.ligand_anchoring import (
     get_functional_groups, _smiles_to_rdmol, find_substructure, init_ligand_anchoring
 )
 
-PATH = 'tests/test_files'
+PATH = join('tests', 'test_files')
 
 
 def test_get_functional_groups() -> None:

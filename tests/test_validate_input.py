@@ -12,7 +12,7 @@ from CAT.assertion_functions import (assert_eq, assert_instance)
 from CAT.data_handling.validate_input import validate_input
 from dataCAT import Database
 
-PATH = 'tests/test_files'
+PATH = join('tests', 'test_files')
 
 
 def test_validate_input() -> None:

@@ -11,7 +11,7 @@ from CAT.assertion_functions import (
 )
 
 SETTINGS = Settings({'counter_len': 3, 'hashing': 'input', 'remove_empty_directories': True})
-PATH = 'tests/test_files'
+PATH = join('tests', 'test_files')
 ABSPATH = abspath(PATH)
 FOLDER = 'test_plams_workdir'
 
