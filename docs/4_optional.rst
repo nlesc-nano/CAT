@@ -10,6 +10,34 @@ overview is provided.
 Note: Inclusion of this section in the input file is not required,
 assuming one is content with the default settings.
 
+Index
+~~~~~
+
+========================================= ==================================================================================
+Option                                    Description
+========================================= ==================================================================================
+:attr:`optional.database.dirname`         The name of the directory where the database will be stored.
+:attr:`optional.database.read`            Attempt to read results from the database before starting calculations.
+:attr:`optional.database.write`           Export results to the database.
+:attr:`optional.database.overwrite`       Allow previous results in the database to be overwritten.
+:attr:`optional.database.mol_format`      The file format(s) for exporting moleculair structures.
+:attr:`optional.database.mongodb`         Options related to the MongoDB format.
+
+:attr:`optional.core.dirname`             The name of the directory where all cores will be stored.
+:attr:`optional.core.dummy`               Atomic number of symbol of the core dummy atoms.
+
+:attr:`optional.ligand.dirname`           The name of the directory where all ligands will be stored.
+:attr:`optional.ligand.optimize`          Optimize the geometry of the to-be attached ligands.
+:attr:`optional.ligand.functional_groups` Manually specify SMILES strings representing functional groups.
+:attr:`optional.ligand.split`             If the ligand should be attached in its entirety to the core or not.
+:attr:`optional.ligand.cosmo-rs`          Perform a property calculation with COSMO-RS on the ligand.
+
+:attr:`optional.qd.dirname`               The name of the directory where all quantum dots will be stored.
+:attr:`optional.qd.optimize`              Optimize the quantum dot (i.e. core + all ligands) .
+:attr:`optional.qd.activation_strain`     Perform an activation strain analyses.
+:attr:`optional.qd.dissociate`            Calculate the ligand dissociation energy.
+========================================= ==================================================================================
+
 Default Settings
 ~~~~~~~~~~~~~~~~
 
@@ -31,6 +59,7 @@ Default Settings
         ligand:
             dirname: ligand
             optimize: True
+            functional_groups: null
             split: True
             cosmo-rs: False
 
@@ -48,6 +77,13 @@ Database
 --------
 
 .. attribute:: optional.database
+
+    All database-related settings.
+
+    .. note::
+        For :attr:`optional.database` settings to take effect the `Data-CAT <https://github.com/nlesc-nano/data-CAT>`_ package has to be installed.
+
+    Example:
 
     .. code::
 
@@ -68,6 +104,7 @@ Database
                         * **Default Value** - ``"qd"``
 
         The name of the directory where the database will be stored.
+
         The database directory will be created (if it does not yet exist)
         at the path specified in :ref:`Path`.
 
@@ -76,6 +113,8 @@ Database
 
         :Parameter:     * **Type** - :class:`bool`, :class:`str` or :class:`tuple` [:class:`str`]
                         * **Default value** - ``("core", "ligand", "qd")``
+
+        Attempt to read results from the database before starting calculations.
 
         Before optimizing a structure, check if a geometry is available from
         previous calculations. If a match is found, use that structure and
@@ -104,7 +143,8 @@ Database
         :Parameter:     * **Type** - :class:`bool`, :class:`str` or :class:`tuple` [:class:`str`]
                         * **Default value** - ``("core", "ligand", "qd")``
 
-        Export the optimized structures to the database of results.
+        Export results to the database.
+
         Previous results will **not** be overwritten unless
         :attr:`optional.database.overwrite` = ``True``. If one wants more control then
         the boolean can be substituted for a list of strings (*i.e.* ``"core"``,
@@ -119,7 +159,8 @@ Database
         :Parameter:     * **Type** - :class:`bool`, :class:`str` or :class:`tuple` [:class:`str`]
                         * **Default value** - ``False``
 
-        Allows previous results in the database to be overwritten.
+        Allow previous results in the database to be overwritten.
+
         Only apllicable if :attr:`optional.database.write` = ``True``.
         If one wants more control then the boolean can be substituted for
         a list of strings (*i.e.* ``"core"``, ``"ligand"`` and/or ``"qd"``), meaning
@@ -133,7 +174,8 @@ Database
         :Parameter:     * **Type** - :class:`bool`, :class:`str` or :class:`tuple` [:class:`str`]
                         * **Default value** - ``("pdb", "xyz")``
 
-        The file format(s) for storing moleculair structures.
+        The file format(s) for exporting moleculair structures.
+
         By default all structures are stored in the .hdf5 format as
         (partially) de-serialized .pdb files. Additional formats can be
         requisted with this keyword.
@@ -145,7 +187,7 @@ Database
         :Parameter:     * **Type** - :class:`bool` or :class:`dict`
                         * **Default Value** – ``False``
 
-        Handles convertion of the database to the mongoDB format.
+        Options related to the MongoDB format.
 
 |
 
@@ -153,6 +195,10 @@ Core
 ----
 
 .. attribute:: optional.core
+
+    All settings related to the core.
+
+    Example:
 
     .. code::
 
@@ -169,6 +215,7 @@ Core
                         * **Default value** – ``"core"``
 
         The name of the directory where all cores will be stored.
+
         The core directory will be created (if it does not yet exist)
         at the path specified in :ref:`Path`.
 
@@ -177,6 +224,9 @@ Core
 
         :Parameter:     * **Type** - :class:`str` or :class:`int`
                         * **Default value** – ``17``
+
+
+        Atomic number of symbol of the core dummy atoms.
 
         The atomic number or atomic symbol of the atoms in the core which are to be
         replaced with ligands. Alternatively, dummy atoms can be manually specified
@@ -188,6 +238,10 @@ Ligand
 ------
 
 .. attribute:: optional.ligand
+
+    All settings related to the ligands.
+
+    Example:
 
     .. code::
 
@@ -207,6 +261,7 @@ Ligand
                         * **Default value** – ``"ligand"``
 
         The name of the directory where all ligands will be stored.
+
         The ligand directory will be created (if it does not yet exist)
         at the path specified in :ref:`Path`.
 
@@ -216,7 +271,8 @@ Ligand
         :Parameter:     * **Type** - :class:`bool`
                         * **Default value** – ``True``
 
-        Optimize the geometry of the to be attached ligands.
+        Optimize the geometry of the to-be attached ligands.
+
         The ligand is split into one or multiple (more or less) linear fragments,
         which are subsequently optimized (RDKit UFF [1_, 2_, 3_]) and reassembled
         while checking for the optimal dihedral angle. The ligand fragments are
@@ -230,6 +286,7 @@ Ligand
                         * **Default value** – ``None``
 
         Manually specify SMILES strings representing functional groups.
+
         For example, with :attr:`optional.ligand.functional_groups` = ``("O[H]", "[N+].[Cl-]")`` all
         ligands will be searched for the presence of hydroxides and ammonium chlorides.
 
@@ -245,7 +302,9 @@ Ligand
         :Parameter:     * **Type** - :class:`bool`
                         * **Default value** – ``True``
 
-        If ``False``: The ligand in its entirety is to be attached to the core.
+        If the ligand should be attached in its entirety to the core or not.
+
+        ``False``: The ligand in its entirety is to be attached to the core.
 
         -   N\ :sup:`+`\ R\ :sub:`4`\                -> N\ :sup:`+`\ R\ :sub:`4`\
 
@@ -255,7 +314,7 @@ Ligand
 
         -   H\ :sub:`3`\CO\ :sub:`2`\CR              -> H\ :sub:`3`\CO\ :sub:`2`\CR
 
-        If ``True``: A proton, counterion or functional group is to be removed from
+        ``True``: A proton, counterion or functional group is to be removed from
         the ligand before attachment to the core.
 
         -   X\ :sup:`-`\.N\ :sup:`+`\ R\ :sub:`4`\   -> N\ :sup:`+`\ R\ :sub:`4`\
@@ -272,8 +331,10 @@ Ligand
         :Parameter:     * **Type** - :class:`bool` or :class:`dict`
                         * **Default value** – ``False``
 
-        Perform a property calculation with COSMO-RS [4_, 5_, 6_, 7_]; the COSMO
-        surfaces are constructed using ADF MOPAC [8_, 9_, 10_].
+
+        Perform a property calculation with COSMO-RS [4_, 5_, 6_, 7_] on the ligand.
+
+        The COSMO surfaces are by default constructed using ADF MOPAC [8_, 9_, 10_].
 
         The solvation energy of the ligand and its activity coefficient are
         calculated in the following solvents: acetone, acetonitrile,
@@ -287,6 +348,9 @@ QD
 
 .. attribute:: optional.qd
 
+    All settings related to the quantum dots.
+
+    Example:
 
     .. code::
 
@@ -305,6 +369,7 @@ QD
                         * **Default value** – ``"qd"``
 
         The name of the directory where all quantum dots will be stored.
+
         The quantum dot directory will be created (if it does not yet exist)
         at the path specified in :ref:`Path`.
 
@@ -314,7 +379,9 @@ QD
         :Parameter:     * **Type** - :class:`bool` or :class:`dict`
                         * **Default value** – ``False``
 
-        Optimize the quantum dot (i.e. core + all ligands) with ADF UFF [3_, 11_].
+        Optimize the quantum dot (i.e. core + all ligands) .
+
+        By default the calculation is performed with ADF UFF [3_, 11_].
         The geometry of the core and ligand atoms directly attached to the core
         are frozen during this optimization.
 
@@ -324,9 +391,10 @@ QD
         :Parameter:     * **Type** - :class:`bool`
                         * **Default value** – ``False``
 
-        Perform an activation strain analyses [12_, 13_, 14_]
-        (kcal mol\ :sup:`-1`\) on the ligands attached to the quantum dot surface
-        with RDKit UFF [1_, 2_, 3_].
+        Perform an activation strain analyses [12_, 13_, 14_].
+
+        The activation strain analyses (kcal mol\ :sup:`-1`\) is performed
+        on the ligands attached to the quantum dot surface with RDKit UFF [1_, 2_, 3_].
 
         The core is removed during this process; the analyses is thus exclusively
         focused on ligand deformation and inter-ligand interaction.
@@ -352,7 +420,9 @@ QD
         :Parameter:     * **Type** - :class:`bool` or :class:`dict`
                         * **Default value** – ``False``
 
-        Calculate the bond dissociation energy (BDE) of ligands attached to the
+        Calculate the ligand dissociation energy.
+
+        Calculate the ligand (bond)dissociation energy (BDE) of ligands attached to the
         surface of the core. See :ref:`Bond Dissociation Energy` for more details.
         The calculation consists of five distinct steps:
 
