@@ -8,7 +8,6 @@ from CAT.assertion_functions import assert_exception
 from CAT.attachment.ligand_attach import (_get_rotmat1, _get_rotmat2)
 
 PATH = join('tests', 'test_files')
-PATH = r'D:\hardd\Documents\GitHub\CAT\tests\test_files'
 
 
 def test_get_rotmat1() -> None:

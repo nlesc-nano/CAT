@@ -41,18 +41,17 @@ API
 """
 
 from collections import abc
-from typing import (List, Tuple, Any)
+from typing import (List, Tuple, Any, Optional)
 
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
 
-from scm.plams.mol.molecule import Molecule
-from scm.plams.core.settings import Settings
+from scm.plams import (Molecule, Atom, Settings)
 
-from ..settings_dataframe import SettingsDataFrame
 from ..logger import logger
 from ..mol_utils import (merge_mol, get_index, round_coords)
+from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.mol_to_file import mol_to_file
 
 __all__ = ['init_qd_construction']
@@ -370,19 +369,19 @@ def _get_rotmat1(vec1: np.ndarray,
                   [v3, v0, -v1],
                   [-v2, v1, v0]]).T
 
-    if vec1.ndim == vec2.ndim == 2:
+    if len(_vec1) > 1 and len(_vec2) > 1:
         return np.identity(3) + M + ((M@M).T / (1 + u_vec2.T@u_vec1).T[..., None]).T
-    elif vec1.ndim == 1:
+    elif len(_vec1) == 1:
         return np.identity(3) + M + ((M@M).T / (1 + u_vec2@u_vec1[0].T).T).T
-    elif vec2.ndim == 1:
+    elif len(_vec2) == 1:
         return np.identity(3) + M + ((M@M).T / (1 + u_vec2[0]@u_vec1.T).T).T
     raise ValueError('vec1 and vec2 expect 1- or 2-dimensional array-like objects; '
-                     f'observed shapes: {np.asarray(vec1).shape} (vec1) and '
-                     f'{np.asarray(vec2).shape} (vec2)')
+                     f'observed shapes: vec1: {np.asarray(vec1).shape} and vec2: '
+                     f'{np.asarray(vec2).shape}')
 
 
 def _get_rotmat2(vec: np.ndarray,
-                 step: float = (1/16)) -> np.ndarrray:
+                 step: float = (1/16)) -> np.ndarray:
     r"""Calculate the rotation matrix for rotating m vectors along their axes, each vector
     yielding k = (2 / step) possible rotations.
 
@@ -420,7 +419,7 @@ def rot_mol(xyz_array: np.ndarray,
             bond_length: Optional[int] = None,
             step: float = 1/16,
             dist_to_self: bool = True) -> np.ndarray:
-    """Rotate **xyz_array**.
+    r"""Rotate **xyz_array**.
 
     Paramaters
     ----------
@@ -574,25 +573,25 @@ def rot_mol_angle(xyz_array: np.ndarray,
 
 def array_to_qd(mol: Molecule,
                 xyz_array: np.ndarray,
-                inplace: bool = True) -> Optional[List[Molecule]]:
+                mol_out: Optional[Molecule] = None) -> Optional[List[Molecule]]:
     """Create :math:`n` copies of **mol** and update their Cartesian coordinates with **xyz_array**.
 
     Parameters
     ----------
-    mol : |plams.Molecule|_:
+    mol : |plams.Molecule|_
         A template PLAMS molecule consisting of :math:`n` atoms.
 
     xyz_array : :math:`m*n*3` |np.ndarray|_:
         A 3D array-like object representing the cartesian coordinates of
         :math:`m` molecules each with :math:`n` atoms.
 
-    inplace : bool
-        If ``True``, perform an inplace update of **mol** rather than returning a list of copies.
+    mol_out : |plams.Molecule|_
+        Optional: If not ``None`` merge the to-be returned molecules with **mol_out**.
 
     Returns
     -------
     |list|_ [|Molecule|_]
-        Optional: if **inplace** = ``True`` return a list **mol** copies, each with its
+        Optional: if **mol_out** = ``None`` return a list **mol** copies, each with its
         Cartesian coordinates replaced with a set of coordinates from **xyz_array**.
 
     """
@@ -606,19 +605,31 @@ def array_to_qd(mol: Molecule,
         mol_list.append(mol_cp)
 
     # return a list of molecules or merge the list with an existing molecule
-    if not inplace:
+    if mol_out is None:
         return mol_list
     else:
         mol_out.merge_mol(mol_list)
         return None
 
 
-def _is_sequence(item) -> bool: return isinstance(item, abc.Sequence)
-def _is_atom(item) -> bool: return isinstance(item, Atom)
-def _is_mol(item) -> bool: return isinstance(item, Molecule)
+def _is_sequence(item) -> bool:
+    return isinstance(item, abc.Sequence)
+
+
+def _is_atom(item) -> bool:
+    return isinstance(item, Atom)
+
+
+def _is_mol(item) -> bool:
+    return isinstance(item, Molecule)
+
+
 def _is_atom_sequence(item) -> bool:
     return _is_mol(item) or (_is_sequence(item) and _is_atom(item[-1]))
-def _is_mol_sequence(item) -> bool: return _is_sequence(item) and _is_atom_sequence(item[-1])
+
+
+def _is_mol_sequence(item) -> bool:
+    return _is_sequence(item) and _is_atom_sequence(item[-1])
 
 
 def sanitize_dim_2(arg: Any) -> np.ndarray:
@@ -701,7 +712,7 @@ def sanitize_dim_3(arg: Any,
     if _is_atom(arg):
         return np.array(arg.coords)[None, None, :]
 
-    elif _is_atom_sequence(item):
+    elif _is_atom_sequence(arg):
         return MOL.as_array(atom_subset=arg)[None, :]
 
     elif _is_mol_sequence(arg):
