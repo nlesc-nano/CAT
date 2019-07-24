@@ -477,7 +477,7 @@ bde_schema: Schema = Schema({
                        'that is a subclass of plams.Job')
             ),
             And(
-                str, lambda n: n.lower() in _class_dict, Use(str_to_job_type),
+                str, Use(str_to_job_type),
                 error='optional.qd.dissociate.job1 expects a string that is a valid plams.Job alias'
             ),
             error='optional.qd.dissociate.job1 expects a string or a type object'
@@ -499,7 +499,7 @@ bde_schema: Schema = Schema({
                        'that is a subclass of plams.Job')
             ),
             And(
-                str, lambda n: n.lower() in _class_dict, Use(str_to_job_type),
+                str, Use(str_to_job_type),
                 error='optional.qd.dissociate.job2 expects a string that is a valid plams.Job alias'
             ),
             error='optional.qd.dissociate.job2 expects a string or a type object'
@@ -524,7 +524,7 @@ qd_opt_schema: Schema = Schema({
                        'that is a subclass of plams.Job')
             ),
             And(
-                str, lambda n: n.lower() in _class_dict, Use(str_to_job_type),
+                str, Use(str_to_job_type),
                 error='optional.qd.opt.job1 expects a string that is a valid plams.Job alias'
             ),
             error='optional.qd.opt.job1 expects a string or a type object'
@@ -547,7 +547,7 @@ qd_opt_schema: Schema = Schema({
                        'that is a subclass of plams.Job')
             ),
             And(
-                str, lambda n: n.lower() in _class_dict, Use(str_to_job_type),
+                str, Use(str_to_job_type),
                 error='optional.qd.opt.job2 expects a string that is a valid plams.Job alias'
             ),
             error='optional.qd.opt.job2 expects a string or a type object'
@@ -577,7 +577,7 @@ crs_schema: Schema = Schema({
                        'that is a subclass of plams.Job')
             ),
             And(
-                str, lambda n: n.lower() in _class_dict, Use(str_to_job_type),
+                str, Use(str_to_job_type),
                 error=('optional.ligand.cosmo-rs.job1 expects a string '
                        'that is a valid plams.Job alias')
             ),
@@ -600,7 +600,7 @@ crs_schema: Schema = Schema({
                        'that is a subclass of plams.Job')
             ),
             And(
-                str, lambda n: n.lower() in _class_dict, Use(str_to_job_type),
+                str, Use(str_to_job_type),
                 error=('optional.ligand.cosmo-rs.job2 expects a string '
                        'that is a valid plams.Job alias')
             ),

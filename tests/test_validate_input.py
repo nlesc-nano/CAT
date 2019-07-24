@@ -5,9 +5,10 @@ from shutil import rmtree
 
 import yaml
 
+from rdkit import Chem
 from scm.plams import (Settings, AMSJob)
 
-from CAT.assertion_functions import assert_eq
+from CAT.assertion_functions import (assert_eq, assert_instance)
 from CAT.data_handling.validate_input import validate_input
 from dataCAT import Database
 
@@ -35,7 +36,6 @@ def test_validate_input() -> None:
 
     ref.ligand['cosmo-rs'] = False
     ref.ligand.dirname = join(PATH, 'ligand')
-    ref.ligand.functional_groups = None
     ref.ligand.optimize = True
     ref.ligand.split = True
 
@@ -44,7 +44,11 @@ def test_validate_input() -> None:
     ref.qd.dissociate = False
     ref.qd.optimize = {'job1': AMSJob, 's2': {'description': 'UFF with the default forcefield', 'input': {'uff': {'library': 'uff'}, 'ams': {'system': {'bondorders': {'_1': None}}}}}, 's1': {'description': 'UFF with the default forcefield', 'input': {'uff': {'library': 'uff'}, 'ams': {'system': {'bondorders': {'_1': None}}}}}, 'job2': AMSJob}  # noqa
 
+    func_groups = s.optional.ligand.pop('functional_groups')
+
     try:
+        for mol in func_groups:
+            assert_instance(mol, Chem.Mol)
         assert_eq(s.optional, ref)
     finally:
         rmtree(join(PATH, 'ligand'))

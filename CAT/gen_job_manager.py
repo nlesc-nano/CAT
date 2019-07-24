@@ -135,7 +135,7 @@ class GenJobManager(JobManager):
 
         # Read the has from filename
         with open(filename, 'r') as f:
-            h = f.read()
+            h = f.read().rstrip('\n')
         self.hashes[h] = self._get_job(filename)
 
     def remove_job(self, job: Job) -> None:

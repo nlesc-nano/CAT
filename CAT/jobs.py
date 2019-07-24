@@ -109,14 +109,12 @@ def retrieve_results(results: Results,
 
     """
     if job_preset not in ('geometry optimization', 'frequency analysis', 'single point'):
-        raise ValueError(f'Invalid value for job_preset: {job_preset}')
+        raise ValueError(f'Invalid value for job_preset: {repr(job_preset)}')
 
     # Unpack arguments
     job = results.job
     name = job.name
     mol = job.molecule
-
-    # import pdb; pdb.set_trace()
 
     # Define more arguments
     freq = np.empty(1)
@@ -161,10 +159,10 @@ def retrieve_results(results: Results,
 
 @add_to_class(Job)
 def _finalize(self):
-    """Modified :meth:`Job._finalize` method.
+    """Modified PLAMS :meth:`Job._finalize` method.
 
-    1. All references to :func:`scm.plams.log` are removed.
-    2. A .hash is created which contains the hash of this instance.
+    1. All references to the :func:`scm.plams.log` function are removed.
+    2. A $JN.hash file is created which contains the hash of this instance.
 
     Gather the results of the job execution and organize them.
     This method collects steps 9-12 from :ref:`job-life-cycle`.
