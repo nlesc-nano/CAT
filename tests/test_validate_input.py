@@ -1,9 +1,11 @@
 """Tests for :mod:`CAT.data_handling.validate_input`."""
 
+import os
 from os.path import join
 from shutil import rmtree
 
 import yaml
+from unittest import mock
 
 from rdkit import Chem
 from scm.plams import (Settings, AMSJob)
@@ -15,6 +17,8 @@ from dataCAT import Database
 PATH = join('tests', 'test_files')
 
 
+@mock.patch.dict(os.environ,
+                 {'ADFBIN': 'a', 'ADFHOME': '2019', 'ADFRESOURCES': 'b', 'SCMLICENSE': 'c'})
 def test_validate_input() -> None:
     """Test :func:`CAT.data_handling.validate_input.validate_input`."""
     with open(join(PATH, 'input1.yaml'), 'r') as f:

@@ -53,6 +53,8 @@ from collections import abc
 from schema import (Or, And, Use, Schema)
 from schema import Optional as Optional_
 
+from scm.plams.core.basejob import Job
+
 from scm.plams.interfaces.adfsuite.adf import ADFJob
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 from scm.plams.interfaces.adfsuite.uff import UFFJob
@@ -66,8 +68,6 @@ from scm.plams.interfaces.thirdparty.orca import ORCAJob
 from scm.plams.interfaces.thirdparty.dirac import DiracJob
 from scm.plams.interfaces.thirdparty.gamess import GamessJob
 from scm.plams.interfaces.thirdparty.dftbplus import DFTBPlusJob
-
-from scm.plams.core.basejob import Job
 
 from ..utils import (get_template, validate_path, validate_core_atom, check_sys_var)
 from ..mol_utils import to_atnum
@@ -358,7 +358,7 @@ ligand_schema: Schema = Schema({
     Optional_('cosmo-rs', default=False):  # Settings specific to ligand COSMO-RS calculations
         Or(
             dict,
-            And(bool, Use(lambda n: {'job1': AMSJob} if n else False)),
+            And(bool, Use(lambda n: {'job1': 'AMSJob'} if n else False)),
             error='optional.ligand.cosmo-rs expects a boolean or dictionary'
         ),
 })
@@ -377,7 +377,7 @@ qd_schema: Schema = Schema({
     Optional_('optimize', default=False):  # Settings for quantum dot geometry optimizations
         Or(
             dict,
-            And(bool, Use(lambda n: ({'job1': AMSJob} if n else False))),
+            And(bool, Use(lambda n: ({'job1': 'AMSJob'} if n else False))),
             error='optional.ligand.optimize expects a boolean or dictionary'
         ),
 

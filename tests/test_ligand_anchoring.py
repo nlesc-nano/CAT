@@ -1,9 +1,11 @@
 """Tests for :mod:`CAT.attachment.ligand_anchoring`."""
 
+import os
 from shutil import rmtree
 from os.path import join
 
 import numpy as np
+from unittest import mock
 
 from rdkit import Chem
 from scm.plams.interfaces.molecule.rdkit import from_smiles
@@ -128,6 +130,8 @@ def test_find_substructure() -> None:
             assert_not_id(m, mol)
 
 
+@mock.patch.dict(os.environ,
+                 {'ADFBIN': 'a', 'ADFHOME': '2019', 'ADFRESOURCES': 'b', 'SCMLICENSE': 'c'})
 def test_init_ligand_anchoring() -> None:
     """Tests for :meth:`CAT.attachment.ligand_anchoring.init_ligand_anchoring`."""
     try:

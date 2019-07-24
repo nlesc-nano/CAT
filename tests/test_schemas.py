@@ -1,8 +1,10 @@
 """Tests for :mod:`CAT.data_handling.validation_schemas`."""
 
+import os
 from os.path import join
 
 from schema import SchemaError
+from unittest import mock
 
 from scm.plams import AMSJob, ADFJob, Settings
 
@@ -147,7 +149,7 @@ def test_ligand_schema() -> None:
     lig_dict['cosmo-rs'] = False
     assert_id(ligand_schema.validate(lig_dict)['cosmo-rs'], False)
     lig_dict['cosmo-rs'] = True
-    assert_eq(ligand_schema.validate(lig_dict)['cosmo-rs'], {'job1': AMSJob})
+    assert_eq(ligand_schema.validate(lig_dict)['cosmo-rs'], {'job1': 'AMSJob'})
 
     lig_dict['functional_groups'] = 1  # Exception: incorrect type
     assert_exception(*args)
@@ -198,7 +200,7 @@ def test_qd_schema() -> None:
     qd_dict['optimize'] = 1  # Exception: incorrect type
     assert_exception(*args)
     qd_dict['optimize'] = True
-    assert_eq(qd_schema.validate(qd_dict)['optimize'], {'job1': AMSJob})
+    assert_eq(qd_schema.validate(qd_dict)['optimize'], {'job1': 'AMSJob'})
     qd_dict['optimize'] = False
     assert_id(qd_schema.validate(qd_dict)['optimize'], False)
 
@@ -247,6 +249,8 @@ def test_mongodb_schema() -> None:
     assert_eq(mongodb_schema.validate(mongodb_dict)['password'], 53)
 
 
+@mock.patch.dict(os.environ,
+                 {'ADFBIN': 'a', 'ADFHOME': '2019', 'ADFRESOURCES': 'b', 'SCMLICENSE': 'c'})
 def test_qd_opt_schema() -> None:
     """Test :data:`CAT.data_handling.validation_schemas.qd_opt_schema`."""
     _qd_opt_s1_default = get_template('qd.yaml')['UFF']
@@ -288,6 +292,8 @@ def test_qd_opt_schema() -> None:
         assert_eq(qd_opt_schema.validate(qd_opt_dict)[s], ref)
 
 
+@mock.patch.dict(os.environ,
+                 {'ADFBIN': 'a', 'ADFHOME': '2019', 'ADFRESOURCES': 'b', 'SCMLICENSE': 'c'})
 def test_crs_schema() -> None:
     """Test :data:`CAT.data_handling.validation_schemas.crs_schema`."""
     _crs_s1_default = get_template('qd.yaml')['COSMO-MOPAC']
@@ -337,6 +343,8 @@ def test_crs_schema() -> None:
         assert_eq(crs_schema.validate(crs_dict)[s], ref)
 
 
+@mock.patch.dict(os.environ,
+                 {'ADFBIN': 'a', 'ADFHOME': '2019', 'ADFRESOURCES': 'b', 'SCMLICENSE': 'c'})
 def test_bde_schema() -> None:
     """Test :data:`CAT.data_handling.validation_schemas.bde_schema`."""
     _bde_s1_default = get_template('qd.yaml')['MOPAC']
