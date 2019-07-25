@@ -9,6 +9,7 @@ Index
 .. currentmodule:: CAT.assertion_functions
 .. autosummary::
     Invert
+    assert_hasattr
     assert_isfile
     assert_isdir
     assert_len
@@ -28,6 +29,7 @@ Index
 API
 ---
 .. autoclass:: Invert
+.. autofunction:: assert_hasattr
 .. autofunction:: assert_isfile
 .. autofunction:: assert_isdir
 .. autofunction:: assert_len
@@ -96,7 +98,7 @@ class Invert():
         return
 
     @staticmethod
-    def get_err_msg(self, func: Callable,
+    def get_err_msg(func: Callable,
                     args: Tuple[str, Any, Any]) -> str:
         """Create an error message for :meth:`Invert.invert`."""
         if not args:
@@ -117,6 +119,19 @@ class Invert():
             else:
                 raise AssertionError(self.get_err_msg(func, tup))
         return wrapper
+
+
+def assert_hasattr(value: str, ref: Any) -> Tuple[str, str, str]:
+    """Assert :code:`hasattr(ref, value); returns arguments for :func:`._err_msg`."""
+    assertion = 'assert hasattr(ref, value)'
+    if callable(ref):
+        _ref = str(ref)
+    else:
+        _ref = f'<{ref.__class__.__module__}.{ref.__class__.__name__} at {hex(id(ref))}>'
+    assert hasattr(ref, value), _err_msg(assertion, value, _ref)
+
+    _assertion = 'assert not hasattr(ref, value)'
+    return _assertion, value, _ref
 
 
 def assert_isfile(value: str) -> Tuple[str, str, None]:
@@ -232,10 +247,9 @@ def assert_eq(value: Any,
 
 
 def assert_id(value: Any,
-              ref: Any) -> Tuple[str, int, int]:
+              ref: Any) -> Tuple[str, str, str]:
     """Assert :code:`value is ref`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert value is reference'
-    assert_eq(ref, value)
     value_id = f'{id(value)} = id({value})'
     ref_id = f'{id(ref)} = id({ref})'
     assert ref is value, _err_msg(assertion, value_id, ref_id)
@@ -244,7 +258,7 @@ def assert_id(value: Any,
     return _assertion, value_id, ref_id
 
 
-def assert_exception(exc: Exception,
+def assert_exception(exc: Callable[..., Exception],
                      func: Callable,
                      *args: Sequence,
                      **kwargs: dict) -> Tuple[str, str, str]:
