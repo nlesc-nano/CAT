@@ -53,9 +53,10 @@ from reprlib import Repr
 from os.path import (isfile, isdir)
 from textwrap import TextWrapper
 from functools import wraps
+from contextlib import AbstractContextManager
 
 
-class Invert():
+class Invert(AbstractContextManager):
     """Context manager for inverting assertion result.
 
     Instances of :exc:`AssertionError` raised by the passed callables are supressed and
