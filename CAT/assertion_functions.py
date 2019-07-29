@@ -48,9 +48,11 @@ API
 
 """
 
-from functools import wraps
+from typing import (Any, Callable, Tuple, Container, Sized)
+from reprlib import Repr
 from os.path import (isfile, isdir)
-from typing import (Any, Callable, Tuple, Sequence, Container, Sized)
+from textwrap import TextWrapper
+from functools import wraps
 
 
 class Invert():
@@ -246,12 +248,17 @@ def assert_eq(value: Any,
     return _assertion, value, ref
 
 
+def _str(value: Any) -> str:
+    args = value.__class__.__module__, value.__class__.__name__, hex(id(value))
+    return '<{}.{} at {}>'.format(*args)
+
+
 def assert_id(value: Any,
               ref: Any) -> Tuple[str, str, str]:
     """Assert :code:`value is ref`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert value is reference'
-    value_id = f'{id(value)} = id({value})'
-    ref_id = f'{id(ref)} = id({ref})'
+    value_id = f'{_str(value)}'
+    ref_id = f'{_str(ref)}'
     assert ref is value, _err_msg(assertion, value_id, ref_id)
 
     _assertion = 'assert value is not reference'
@@ -259,19 +266,24 @@ def assert_id(value: Any,
 
 
 def assert_exception(exc: Callable[..., Exception],
-                     func: Callable,
-                     *args: Sequence,
-                     **kwargs: dict) -> Tuple[str, str, str]:
+                     func: Callable[..., Any],
+                     *args: Any,
+                     **kwargs: Any) -> Tuple[str, str, str]:
     """Assert **exc** is raised by :code:`func(*args, **kwargs)`."""
     err_ref = exc.__name__
-    err = None.__class__.__name__
+    err = 'None'
+
+    # Prepare arguments (as str) for **func**
     arguments = ''
     if args is not None:
         arguments += ', '.join(repr(i) for i in args)
     if kwargs is not None:
         arguments += ', '.join(f'{k}={v}' for k, v in kwargs.items())
+
+    # Construct the assertion as str
     assertion = f'assert {func.__qualname__}({arguments}) -> {exc.__name__}'
 
+    # Conduct the assertion
     try:
         func(*args, **kwargs)
     except exc:  # The desired exception is raised
@@ -286,17 +298,36 @@ def assert_exception(exc: Callable[..., Exception],
     return _assertion, err, err_ref
 
 
+class FloatRepr(Repr):
+    """A subclass of :class:`reprlib.Repr` with an additional method for handling floats."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.maxstring = 65
+
+    def repr_float(self, x: float, level: int) -> str:
+        """Create a :class:`str`-represenation of a :class:`float` with 4 decimals."""
+        try:
+            return f'{x:4.4f}'
+        except ValueError:  # x is somehow not a float; convert into a string and try again.
+            return self.repr(str(x))
+
+
+WRAPPER: TextWrapper = TextWrapper(width=70, initial_indent='    ', subsequent_indent='     ')
+FLOATREPR: FloatRepr = FloatRepr()
+
+
 def _err_msg(assertion: Any,
              value: Any,
              ref: Any) -> str:
     """Return a formatted error message."""
-    i, j, k = repr(assertion), repr(value), repr(ref)
-    return f'{i}\nSupplied value:\n\t{j}\n\nSupplied reference:\n\t{k}'
+    args = repr(assertion), WRAPPER.fill(FLOATREPR.repr(value)), WRAPPER.fill(FLOATREPR.repr(ref))
+    return '{}\nSupplied value:\n{}\n\nSupplied reference:\n{}'.format(*args)
 
 
 def _exc_msg(assertion: Any,
              value: Any,
              ref: Any) -> str:
     """Return a formatted error message for :func:`.assert_exception`."""
-    i, j, k = repr(assertion), repr(value), repr(ref)
-    return f'{i}\nSupplied exception:\n\t{j}\n\nReference exception:\n\t{k}'
+    args = repr(assertion), WRAPPER.fill(FLOATREPR.repr(value)), WRAPPER.fill(FLOATREPR.repr(ref))
+    return '{}\nObserved exception:\n{}\n\nExpected exception:\n{}'.format(*args)
