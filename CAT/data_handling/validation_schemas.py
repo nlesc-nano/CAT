@@ -17,6 +17,8 @@ Index
     bde_schema
     qd_opt_schema
     crs_schema
+    _class_dict
+    _class_dict_scm
 
 API
 ---
@@ -38,6 +40,10 @@ API
     :annotation: = schema.Schema
 .. autodata:: crs_schema
     :annotation: = schema.Schema
+.. autodata:: _class_dict
+    :annotation: = dict[str, type]
+.. autodata:: _class_dict_scm
+    :annotation: = dict[str, type]
 
 """
 
@@ -46,6 +52,8 @@ from collections import abc
 
 from schema import (Or, And, Use, Schema)
 from schema import Optional as Optional_
+
+from scm.plams.core.basejob import Job
 
 from scm.plams.interfaces.adfsuite.adf import ADFJob
 from scm.plams.interfaces.adfsuite.ams import AMSJob
@@ -61,9 +69,7 @@ from scm.plams.interfaces.thirdparty.dirac import DiracJob
 from scm.plams.interfaces.thirdparty.gamess import GamessJob
 from scm.plams.interfaces.thirdparty.dftbplus import DFTBPlusJob
 
-from scm.plams.core.basejob import Job
-
-from ..utils import (get_template, validate_path, validate_core_atom)
+from ..utils import (get_template, validate_path, validate_core_atom, check_sys_var)
 from ..mol_utils import to_atnum
 
 try:
@@ -77,8 +83,47 @@ __all__ = ['mol_schema', 'core_schema', 'ligand_schema', 'qd_schema', 'database_
            'mongodb_schema', 'bde_schema', 'qd_opt_schema', 'crs_schema']
 
 
+def val_job_type(value: type) -> type:
+    """Call :func:`.check_sys_var` if value is in :data:`._class_dict_scm`"""
+    if value in _class_dict_scm.values():
+        check_sys_var()
+    return value
+
+
+def str_to_job_type(key: str) -> type:
+    """Convert a string into a type object.
+
+    Parameters
+    ----------
+    key : str
+        An alias for a :class:`type` object of a PLAMS :class:`Job`.
+        **key** is converted by passing it into :data:`._class_dict` or :data:`._class_dict_scm`.
+        The :func:`check_sys_var` function is called if **key** is present
+        in :data:`._class_dict_scm`.
+
+    Returns
+    -------
+    |type|_
+        A type object constructed from **key**.
+
+    Raises
+    ------
+    KeyError
+        Raised if the decapitalized **key** is available in neither :data:`._class_dict` nor
+        :data:`._class_dict_scm`.
+
+    """
+    _key = key.lower()
+    if _key in _class_dict:
+        return _class_dict[_key]
+    elif _key in _class_dict_scm:
+        check_sys_var()
+        return _class_dict_scm[_key]
+    raise KeyError(f'No Job type alias available for {repr(_key)}')
+
+
 def to_tuple(collection: Collection) -> tuple:
-    """Convert a collection into a sorted tuple."""
+    """Convert a collection to a sorted tuple."""
     try:
         ret = sorted(collection)
     except TypeError:  # The collection contains a mix of sorting-incompatible objects
@@ -111,8 +156,17 @@ _crs_s2_default = get_template('qd.yaml')['COSMO-RS activity coefficient']
 _crs_s2_default.update(get_template('crs.yaml')['MOPAC PM6'])
 
 
-# A dictionary for translating strings into :class:`plams.Job` types
+#: A dictionary for translating strings into :class:`plams.Job` types for third party software
 _class_dict: Dict[str, type] = {
+    'cp2k': Cp2kJob, 'cp2kjob': Cp2kJob,
+    'orca': ORCAJob, 'orcajob': ORCAJob,
+    'dirac': DiracJob, 'diracjob': DiracJob,
+    'gamess': GamessJob, 'gamessjob': GamessJob,
+    'dftbplus': DFTBPlusJob, 'dftbplusjob': DFTBPlusJob,
+}
+
+#: A dictionary for translating strings into :class:`plams.Job` types for ADF
+_class_dict_scm: Dict[str, type] = {
     'adf': ADFJob, 'adfjob': ADFJob,
     'ams': AMSJob, 'amsjob': AMSJob,
     'uff': UFFJob, 'uffjob': UFFJob,
@@ -120,11 +174,6 @@ _class_dict: Dict[str, type] = {
     'dftb': DFTBJob, 'dftbjob': DFTBJob,
     'mopac': MOPACJob, 'mopacjob': MOPACJob,
     'reaxff': ReaxFFJob, 'reaxffjob': ReaxFFJob,
-    'cp2k': Cp2kJob, 'cp2kjob': Cp2kJob,
-    'orca': ORCAJob, 'orcajob': ORCAJob,
-    'dirac': DiracJob, 'diracjob': DiracJob,
-    'gamess': GamessJob, 'gamessjob': GamessJob,
-    'dftbplus': DFTBPlusJob, 'dftbplusjob': DFTBPlusJob,
     'crs': CRSJob, 'cosmo-rs': CRSJob, 'crsjob': CRSJob
 }
 
@@ -309,7 +358,7 @@ ligand_schema: Schema = Schema({
     Optional_('cosmo-rs', default=False):  # Settings specific to ligand COSMO-RS calculations
         Or(
             dict,
-            And(bool, Use(lambda n: {'job1': AMSJob} if n else False)),
+            And(bool, Use(lambda n: {'job1': 'AMSJob'} if n else False)),
             error='optional.ligand.cosmo-rs expects a boolean or dictionary'
         ),
 })
@@ -328,7 +377,7 @@ qd_schema: Schema = Schema({
     Optional_('optimize', default=False):  # Settings for quantum dot geometry optimizations
         Or(
             dict,
-            And(bool, Use(lambda n: ({'job1': AMSJob} if n else False))),
+            And(bool, Use(lambda n: ({'job1': 'AMSJob'} if n else False))),
             error='optional.ligand.optimize expects a boolean or dictionary'
         ),
 
@@ -423,19 +472,19 @@ bde_schema: Schema = Schema({
     Optional_('job1', default=_get_amsjob):
         Or(
             And(
-                type, lambda n: issubclass(n, Job),
+                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
                 error=('optional.qd.dissociate.job1 expects a type object '
                        'that is a subclass of plams.Job')
             ),
             And(
-                str, lambda n: n.lower() in _class_dict, Use(lambda n: _class_dict[n.lower()]),
+                str, Use(str_to_job_type),
                 error='optional.qd.dissociate.job1 expects a string that is a valid plams.Job alias'
             ),
             error='optional.qd.dissociate.job1 expects a string or a type object'
 
         ),
 
-    Optional_('s1', default=_bde_s1_default):
+    Optional_('s1', default=_bde_s1_default.copy()):
         Or(
             dict,
             And(str, Use(lambda n: get_template(n, from_cat_data=False))),
@@ -445,12 +494,12 @@ bde_schema: Schema = Schema({
     Optional_('job2'):
         Or(
             And(
-                type, lambda n: issubclass(n, Job),
+                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
                 error=('optional.qd.dissociate.job2 expects a type object '
                        'that is a subclass of plams.Job')
             ),
             And(
-                str, lambda n: n.lower() in _class_dict, Use(lambda n: _class_dict[n.lower()]),
+                str, Use(str_to_job_type),
                 error='optional.qd.dissociate.job2 expects a string that is a valid plams.Job alias'
             ),
             error='optional.qd.dissociate.job2 expects a string or a type object'
@@ -470,19 +519,19 @@ qd_opt_schema: Schema = Schema({
     Optional_('job1', default=_get_amsjob):
         Or(
             And(
-                type, lambda n: issubclass(n, Job),
+                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
                 error=('optional.qd.opt.job1 expects a type object '
                        'that is a subclass of plams.Job')
             ),
             And(
-                str, lambda n: n.lower() in _class_dict, Use(lambda n: _class_dict[n.lower()]),
+                str, Use(str_to_job_type),
                 error='optional.qd.opt.job1 expects a string that is a valid plams.Job alias'
             ),
             error='optional.qd.opt.job1 expects a string or a type object'
         ),
 
     # The job settings for the first half of the optimization
-    Optional_('s1', default=_qd_opt_s1_default):
+    Optional_('s1', default=_qd_opt_s1_default.copy()):
         Or(
             dict,
             And(str, Use(lambda n: get_template(n, from_cat_data=False))),
@@ -493,19 +542,19 @@ qd_opt_schema: Schema = Schema({
     Optional_('job2', default=_get_amsjob):
         Or(
             And(
-                type, lambda n: issubclass(n, Job),
+                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
                 error=('optional.qd.opt.job2 expects a type object '
                        'that is a subclass of plams.Job')
             ),
             And(
-                str, lambda n: n.lower() in _class_dict, Use(lambda n: _class_dict[n.lower()]),
+                str, Use(str_to_job_type),
                 error='optional.qd.opt.job2 expects a string that is a valid plams.Job alias'
             ),
             error='optional.qd.opt.job2 expects a string or a type object'
         ),
 
     # The job settings for the second half of the optimization
-    Optional_('s2', default=_qd_opt_s2_default):
+    Optional_('s2', default=_qd_opt_s2_default.copy()):
         Or(
             dict,
             And(str, Use(lambda n: get_template(n, from_cat_data=False))),
@@ -523,12 +572,12 @@ crs_schema: Schema = Schema({
     Optional_('job1', default=_get_amsjob):
         Or(
             And(
-                type, lambda n: issubclass(n, Job),
+                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
                 error=('optional.ligand.cosmo-rs.job1 expects a type object '
                        'that is a subclass of plams.Job')
             ),
             And(
-                str, lambda n: n.lower() in _class_dict, Use(lambda n: _class_dict[n.lower()]),
+                str, Use(str_to_job_type),
                 error=('optional.ligand.cosmo-rs.job1 expects a string '
                        'that is a valid plams.Job alias')
             ),
@@ -536,7 +585,7 @@ crs_schema: Schema = Schema({
         ),
 
     # The settings for constructing the COSMO surface
-    Optional_('s1', default=_crs_s1_default):
+    Optional_('s1', default=_crs_s1_default.copy()):
         Or(
             dict,
             And(str, Use(lambda n: get_template(n, from_cat_data=False))),
@@ -546,19 +595,20 @@ crs_schema: Schema = Schema({
     Optional_('job2', default=_get_crsjob):  # The job type for the actual COSMO-RS calculation
         Or(
             And(
-                type, lambda n: issubclass(n, Job),
+                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
                 error=('optional.ligand.cosmo-rs.job2 expects a type object '
                        'that is a subclass of plams.Job')
             ),
             And(
-                str, lambda n: n.lower() in _class_dict, Use(lambda n: _class_dict[n.lower()]),
+                str, Use(str_to_job_type),
                 error=('optional.ligand.cosmo-rs.job2 expects a string '
                        'that is a valid plams.Job alias')
             ),
             error='optional.ligand.cosmo-rs.job2 expects a string or a type object'
         ),
 
-    Optional_('s2', default=_crs_s2_default):  # The settings for the actual COSMO-RS calculation
+    # The settings for the actual COSMO-RS calculation
+    Optional_('s2', default=_crs_s2_default.copy()):
         Or(
             dict,
             And(str, Use(lambda n: get_template(n, from_cat_data=False))),

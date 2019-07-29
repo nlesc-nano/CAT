@@ -25,8 +25,16 @@ from CAT.data_handling.validation_schemas import (
     core_schema, ligand_schema, qd_schema, database_schema,
     mongodb_schema, bde_schema, qd_opt_schema, crs_schema
 )
+
 from .validate_mol import validate_mol
 from ..utils import validate_path
+from ..attachment.ligand_anchoring import get_functional_groups
+
+try:
+    from dataCAT import Database
+    DATA_CAT = True
+except ImportError:
+    DATA_CAT = False
 
 __all__ = ['validate_input']
 
@@ -45,34 +53,45 @@ def validate_input(s: Settings) -> None:
     # Validate the path
     s.path = path = validate_path(s.path)
 
-    try:
-        # Set the various working directories
-        dirnames = ('database', 'ligand', 'core', 'qd')
-        for key in dirnames:
-            value = join(path, key)
-            s.optional[key].dirname = value
-            if not isdir(value):
-                mkdir(value)
+    # Set the various working directories
+    dirnames = ('database', 'ligand', 'core', 'qd')
+    for key in dirnames:
+        value = join(path, key)
+        s.optional[key].dirname = value
+        if not isdir(value):
+            mkdir(value)
 
-        # Validate optional argument
-        s.optional.database = database_schema.validate(s.optional.database)
-        s.optional.ligand = ligand_schema.validate(s.optional.ligand)
-        s.optional.core = core_schema.validate(s.optional.core)
-        s.optional.qd = qd_schema.validate(s.optional.qd)
+    # Validate optional argument
+    s.optional.database = database_schema.validate(s.optional.database)
+    s.optional.ligand = ligand_schema.validate(s.optional.ligand)
+    s.optional.core = core_schema.validate(s.optional.core)
+    s.optional.qd = qd_schema.validate(s.optional.qd)
 
-        # Validate some of the more complex optionala rguments
-        if s.optional.database.mongodb:
-            s.optional.database.mongodb = mongodb_schema.validate(s.optional.database.mongodb)
-        if s.optional.qd.optimize:
-            s.optional.qd.optimize = qd_opt_schema.validate(s.optional.qd.optimize)
-        if s.optional.qd.dissociate:
-            s.optional.qd.dissociate = bde_schema.validate(s.optional.qd.dissociate)
-        if s.optional.ligand['cosmo-rs']:
-            crs = s.optional.ligand.pop('cosmo-rs')
-            s.optional.ligand.crs = crs_schema.validate(crs)
+    # Validate some of the more complex optionala rguments
+    if s.optional.database.mongodb:
+        s.optional.database.mongodb = mongodb_schema.validate(s.optional.database.mongodb)
+    if s.optional.qd.optimize:
+        s.optional.qd.optimize = qd_opt_schema.validate(s.optional.qd.optimize)
+    if s.optional.qd.dissociate:
+        s.optional.qd.dissociate = bde_schema.validate(s.optional.qd.dissociate)
+    if s.optional.ligand['cosmo-rs']:
+        crs = s.optional.ligand.pop('cosmo-rs')
+        s.optional.ligand.crs = crs_schema.validate(crs)
 
-        # Validate the input cores and ligands
-        validate_mol(s.input_cores, 'input_cores', join(path, 'core'))
-        validate_mol(s.input_ligands, 'input_ligands', join(path, 'ligand'))
-    except Exception as ex:
-        raise ex.__class__(ex)
+    # Validate the input cores and ligands
+    validate_mol(s.input_cores, 'input_cores', join(path, 'core'))
+    validate_mol(s.input_ligands, 'input_ligands', join(path, 'ligand'))
+
+    # Create a dataCAT.Database instance
+    if DATA_CAT:
+        db_path = s.optional.database.dirname
+        s.optional.database.db = Database(path=db_path, **s.optional.database.mongodb)
+    else:
+        s.optional.database.db = False
+
+    # Create RDKit molecules representing functional groups
+    func_groups, split = s.optional.ligand.functional_groups, s.optional.ligand.split
+    if not func_groups:
+        s.optional.ligand.functional_groups = get_functional_groups(None, split)
+    else:
+        s.optional.ligand.functional_groups = get_functional_groups(func_groups)

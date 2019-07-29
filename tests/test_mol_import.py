@@ -14,7 +14,7 @@ from CAT.data_handling.mol_import import (
     read_mol_folder, read_mol_txt, get_charge_dict, set_mol_prop, canonicalize_mol
 )
 
-PATH = 'tests/test_files'
+PATH = join('tests', 'test_files')
 REF_MOL = Molecule(join(PATH, 'Methanol.xyz'))
 REF_MOL.guess_bonds()
 canonicalize_mol(REF_MOL)

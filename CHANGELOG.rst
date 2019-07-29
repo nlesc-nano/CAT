@@ -6,6 +6,22 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 
+0.5.4
+*****
+
+* Minor updates to the logger.
+* Cleaned up CAT.jobs.py.
+* ``check_sys_var()`` is now only called if an ADF-specific Job is requirest.
+* Job hashes are now stored in (and retrieved from) $JN.hash files (plain text).
+* Added a permanent Database_ instance to .optional.database.db.
+* Parsing of functional group SMILES_ strings is now carried out during the Schema_ validation.
+* Updated Data-CAT_ to 0.1.2; changed status from pre-alpha to alpha
+  (see https://github.com/nlesc-nano/data-CAT/pull/13).
+
+.. _Database: https://cat.readthedocs.io/en/latest/7_database.html#class-api
+.. _Schema: https://github.com/keleshev/schema
+
+
 0.5.3
 *****
 

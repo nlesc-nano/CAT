@@ -25,8 +25,8 @@ install:
 
     # Install tests, data-CAT and nano-CAT
     - pip install .[test]
-    - pip install nano-cat@git+https://github.com/nlesc-nano/nano-CAT@devel
-    - pip install data-cat@git+https://github.com/nlesc-nano/data-CAT@devel
+    - pip install nano-cat@git+https://github.com/nlesc-nano/nano-CAT@devel --upgrade
+    - pip install data-cat@git+https://github.com/nlesc-nano/data-CAT@devel --upgrade
 
 script:
     # Run the unitary tests excluding the expensive computations

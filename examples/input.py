@@ -16,5 +16,5 @@ with open(yaml_path, 'r') as file:
 try:
     qd_df, core_df, ligand_df = base.prep(arg)
 except Exception as ex:
-    logger.critical(f'{ex.__class__.__name__}: {ex}')
+    logger.critical(f'{ex.__class__.__name__}: {ex}', exc_info=True)
     raise ex

@@ -36,7 +36,6 @@ from scm.plams.core.errors import MoleculeError
 
 from .__version__ import __version__
 
-from .utils import check_sys_var
 from .logger import logger
 from .mol_utils import to_symbol
 from .settings_dataframe import SettingsDataFrame
@@ -103,14 +102,14 @@ def prep(arg: Settings,
                     f'(version: {nanoCAT.__version__})')
     else:
         logger.warning('The optional Nano-CAT package was not found')
-        logger.debug(f'{NANO_EX.__class__.__name__}: {NANO_EX}')
+        logger.debug(f'{NANO_EX.__class__.__name__}: {NANO_EX}', exc_info=True)
 
     if DATA_CAT:
         logger.info(f'The optional Data-CAT package was successfully found '
                     f'(version: {dataCAT.__version__})')
     else:
         logger.warning('The optional Data-CAT package was not found')
-        logger.debug(f'{DATA_EX.__class__.__name__}: {DATA_EX}')
+        logger.debug(f'{DATA_EX.__class__.__name__}: {DATA_EX}', exc_info=True)
 
     # Interpret and extract the input settings
     ligand_df, core_df = prep_input(arg)
@@ -271,7 +270,6 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     # Perform a COSMO-RS calculation on the ligands
     if crs:
         val_nano_cat("Ligand COSMO-RS calculations require the nano-CAT package")
-        check_sys_var()
         init_solv(ligand_df)
 
     return ligand_df
@@ -320,7 +318,6 @@ def prep_qd(ligand_df: SettingsDataFrame,
 
     # Optimize the qd with the core frozen
     if optimize:
-        check_sys_var()
         init_qd_opt(qd_df)
 
     # Calculate the interaction between ligands on the quantum dot surface

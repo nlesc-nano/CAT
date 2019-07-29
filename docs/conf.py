@@ -200,10 +200,6 @@ intersphinx_mapping = {
 }
 
 
-# File formats to generate. List of tuples or strings:
-plot_formats = [('png', 300)]
-
-
 # This value selects if automatically documented members are sorted alphabetical (value 'alphabetical'),
 # by member type (value 'groupwise') or by source order (value 'bysource').
 autodoc_member_order = 'bysource'

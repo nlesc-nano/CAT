@@ -9,7 +9,7 @@ from scm.plams import (Molecule, Units)
 from CAT.assertion_functions import assert_eq
 from CAT.thermo_chem import (get_entropy, get_thermo)
 
-PATH = 'tests/test_files'
+PATH = join('tests', 'test_files')
 MOL = Molecule(join(PATH, 'Methanol.xyz'))  # Methanol; BP86/QZ4P
 FREQ = np.load(join(PATH, 'freq.npy'))  # cm**-1
 
