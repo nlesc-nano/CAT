@@ -53,7 +53,7 @@ def test_validate_input() -> None:
     try:
         for mol in func_groups:
             assert_instance(mol, Chem.Mol)
-        assert_eq(s.optional, ref)
+        assert_eq(s.optional, ref, verbose=True)
     finally:
         rmtree(join(PATH, 'ligand'))
         rmtree(join(PATH, 'qd'))

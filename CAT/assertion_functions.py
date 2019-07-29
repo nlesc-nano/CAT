@@ -124,126 +124,163 @@ class Invert(AbstractContextManager):
         return wrapper
 
 
-def assert_hasattr(value: str, ref: Any) -> Tuple[str, str, str]:
+def assert_hasattr(value: str,
+                   ref: Any,
+                   verbose: bool = False) -> Tuple[str, str, str]:
     """Assert :code:`hasattr(ref, value); returns arguments for :func:`._err_msg`."""
     assertion = 'assert hasattr(ref, value)'
     if callable(ref):
         _ref = str(ref)
     else:
         _ref = f'<{ref.__class__.__module__}.{ref.__class__.__name__} at {hex(id(ref))}>'
-    assert hasattr(ref, value), _err_msg(assertion, value, _ref)
+
+    msg = _err_msg_verbose if verbose else _err_msg
+    assert hasattr(ref, value), msg(assertion, value, _ref)
 
     _assertion = 'assert not hasattr(ref, value)'
     return _assertion, value, _ref
 
 
-def assert_isfile(value: str) -> Tuple[str, str, None]:
+def assert_isfile(value: str,
+                  verbose: bool = False) -> Tuple[str, str, None]:
     """Assert :code:`os.path.isfile(value)`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert os.path.isfile(value)'
-    assert isfile(value), _err_msg(assertion, value, None)
+
+    msg = _err_msg_verbose if verbose else _err_msg
+    assert isfile(value), msg(assertion, value, None)
 
     _assertion = 'assert not os.path.isfile(value)'
     return _assertion, value, None
 
 
-def assert_isdir(value: str) -> Tuple[str, str, None]:
+def assert_isdir(value: str,
+                 verbose: bool = False) -> Tuple[str, str, None]:
     """Assert :code:`os.path.isdir(value)`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert os.path.isdir(value)'
-    assert isdir(value), _err_msg(assertion, value, None)
+
+    msg = _err_msg_verbose if verbose else _err_msg
+    assert isdir(value), msg(assertion, value, None)
 
     _assertion = 'assert not os.path.isdir(value)'
     return _assertion, value, None
 
 
 def assert_len(value: Sized,
-               ref: int) -> Tuple[str, Any, Any]:
+               ref: int,
+               verbose: bool = False) -> Tuple[str, Any, Any]:
     """Assert :code:`len(value) == ref`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert len(value) == reference'
-    assert len(value) == ref, _err_msg(assertion, value, ref)
+
+    msg = _err_msg_verbose if verbose else _err_msg
+    assert len(value) == ref, msg(assertion, value, ref)
 
     _assertion = 'assert len(value) != reference'
     return _assertion, value, ref
 
 
 def assert_le(value: Any,
-              ref: Any) -> Tuple[str, Any, Any]:
+              ref: Any,
+              verbose: bool = False) -> Tuple[str, Any, Any]:
     """Assert :code:`value <= ref`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert value <= reference'
-    assert value <= ref, _err_msg(assertion, value, ref)
+
+    msg = _err_msg_verbose if verbose else _err_msg
+    assert value <= ref, msg(assertion, value, ref)
 
     _assertion = 'assert value > reference'
     return _assertion, value, ref
 
 
 def assert_ge(value: Any,
-              ref: Any) -> Tuple[str, Any, Any]:
+              ref: Any,
+              verbose: bool = False) -> Tuple[str, Any, Any]:
     """Assert :code:`value >= ref`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert value => reference'
-    assert value >= ref, _err_msg(assertion, value, ref)
+
+    msg = _err_msg_verbose if verbose else _err_msg
+    assert value >= ref, msg(assertion, value, ref)
 
     _assertion = 'assert value < reference'
     return _assertion, value, ref
 
 
 def assert_lt(value: Any,
-              ref: Any) -> Tuple[str, Any, Any]:
+              ref: Any,
+              verbose: bool = False) -> Tuple[str, Any, Any]:
     """Assert :code:`value < ref`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert value < reference'
-    assert value < ref, _err_msg(assertion, value, ref)
+
+    msg = _err_msg_verbose if verbose else _err_msg
+    assert value < ref, msg(assertion, value, ref)
 
     _assertion = 'assert value >= reference'
     return _assertion, value, ref
 
 
 def assert_gt(value: Any,
-              ref: Any) -> Tuple[str, Any, Any]:
+              ref: Any,
+              verbose: bool = False) -> Tuple[str, Any, Any]:
     """Assert :code:`value > ref`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert value > reference'
-    assert value > ref, _err_msg(assertion, value, ref)
+
+    msg = _err_msg_verbose if verbose else _err_msg
+    assert value > ref, msg(assertion, value, ref)
 
     _assertion = 'assert value <= reference'
     return _assertion, value, ref
 
 
 def assert_isin(value: Any,
-                ref: Container) -> Tuple[str, Any, Container]:
+                ref: Container,
+                verbose: bool = False) -> Tuple[str, Any, Container]:
     """Assert :code:`value in ref`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert value in reference'
-    assert value in ref, _err_msg(assertion, value, ref)
+
+    msg = _err_msg_verbose if verbose else _err_msg
+    assert value in ref, msg(assertion, value, ref)
 
     _assertion = 'assert value not in reference'
     return _assertion, value, ref
 
 
 def assert_instance(value: Any,
-                    ref: type) -> Tuple[str, str, str]:
+                    ref: type,
+                    verbose: bool = False) -> Tuple[str, str, str]:
     """Assert :code:`isinstance(value, ref)`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert isinstance(value, reference)'
     ref_name = ref.__name__
     value_name = value.__class__.__name__
-    assert isinstance(value, ref), _err_msg(assertion, ref_name, value_name)
+
+    msg = _err_msg_verbose if verbose else _err_msg
+    assert isinstance(value, ref), msg(assertion, ref_name, value_name)
 
     _assertion = 'assert not isinstance(value, reference)'
     return _assertion, ref_name, value_name
 
 
 def assert_subclass(value: type,
-                    ref: type) -> Tuple[str, str, str]:
+                    ref: type,
+                    verbose: bool = False) -> Tuple[str, str, str]:
     """Assert :code:`issubclass(value, ref)`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert issubclass(value, reference)'
     ref_name = ref.__name__
     value_name = value.__name__
-    assert issubclass(value, ref), _err_msg(assertion, ref_name, value_name)
+
+    msg = _err_msg_verbose if verbose else _err_msg
+    assert issubclass(value, ref), msg(assertion, ref_name, value_name)
 
     _assertion = 'assert not issubclass(value, reference)'
     return _assertion, ref_name, value_name
 
 
 def assert_eq(value: Any,
-              ref: Any) -> Tuple[str, Any, Any]:
+              ref: Any,
+              verbose: bool = False) -> Tuple[str, Any, Any]:
     """Assert :code:`value == ref`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert value == reference'
-    assert value == ref, _err_msg(assertion, value, ref)
+
+    msg = _err_msg_verbose if verbose else _err_msg
+    assert value == ref, msg(assertion, value, ref)
 
     _assertion = 'assert value != reference'
     return _assertion, value, ref
@@ -255,12 +292,15 @@ def _str(value: Any) -> str:
 
 
 def assert_id(value: Any,
-              ref: Any) -> Tuple[str, str, str]:
+              ref: Any,
+              verbose: bool = False) -> Tuple[str, str, str]:
     """Assert :code:`value is ref`; returns arguments for :func:`._err_msg`."""
     assertion = 'assert value is reference'
     value_id = f'{_str(value)}'
     ref_id = f'{_str(ref)}'
-    assert ref is value, _err_msg(assertion, value_id, ref_id)
+
+    msg = _err_msg_verbose if verbose else _err_msg
+    assert ref is value, msg(assertion, value_id, ref_id)
 
     _assertion = 'assert value is not reference'
     return _assertion, value_id, ref_id
@@ -323,6 +363,14 @@ def _err_msg(assertion: Any,
              ref: Any) -> str:
     """Return a formatted error message."""
     args = repr(assertion), WRAPPER.fill(FLOATREPR.repr(value)), WRAPPER.fill(FLOATREPR.repr(ref))
+    return '{}\nSupplied value:\n{}\n\nSupplied reference:\n{}'.format(*args)
+
+
+def _err_msg_verbose(assertion: Any,
+                     value: Any,
+                     ref: Any) -> str:
+    """Return a formatted error message."""
+    args = repr(assertion), repr(value), repr(ref)
     return '{}\nSupplied value:\n{}\n\nSupplied reference:\n{}'.format(*args)
 
 
