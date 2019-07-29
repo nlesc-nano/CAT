@@ -15,28 +15,28 @@ accoring to their functionality:
 
 -   Opening & closing the database - these methods serve as context managers
     for loading and unloading parts of the database from the harddrive.
-    These methods should be used in conjunction with |with|_ statements:
+
+    The context managers can be accessed via the :meth:`.MetaManager.open`
+    method of :attr:`.Database.csv_lig`, :attr:`.Database.csv_qd`,
+    :attr:`.Database.yaml` or :attr:`.Database.hdf5`, with the option
+    of passing additional positional or keyword arguments.
 
     .. code:: python
 
         >>> import CAT
 
         >>> database = CAT.Database()
-        >>> with database.OpenCsvLig(database.csv_lig) as db:
-        >>>     print(type(db))
-        <class 'pandas.core.frame.DataFrame'>
+        >>> with database.csv_lig.open(write=False) as db:
+        >>>     print(repr(db))
+        DFCollection(df=<pandas.core.frame.DataFrame at 0x7ff8e958ce80>)
 
-        >>> with database.OpenYaml(database.yaml) as db:
-        >>>     print('my job settings database')
+        >>> with database.yaml.open() as db:
+        >>>     print(type(db))
         <class 'scm.plams.core.settings.Settings'>
 
-        >>> with h5py.File(database.hdf5) as db:
+        >>> with database.hdf5.open('r') as db:
         >>>     print(type(db))
         <class 'h5py._hl.files.File'>
-
-    ====================  ===================  ==================  ==================
-    :class:`.OpenCsvLig`  :class:`.OpenCsvQd`  :class:`.OpenYaml`  :class:`h5py.File`
-    ====================  ===================  ==================  ==================
 
 -   Importing to the database - these methods handle the importing of new data
     from python objects to the Database class:
@@ -54,15 +54,18 @@ accoring to their functionality:
 
 
 Index
-~~~~~
+-----
 
 .. currentmodule:: dataCAT.database.Database
 .. autosummary::
 
-    OpenYaml
-    OpenCsvLig
-    OpenCsvQd
-    DF
+    dirname
+    csv_lig
+    csv_qd
+    hdf5
+    yaml
+    mongodb
+
     update_mongodb
     update_csv
     update_yaml
@@ -70,27 +73,64 @@ Index
     from_csv
     from_hdf5
 
-
-.. currentmodule:: dataCAT.database_functions
+.. currentmodule:: dataCAT
 .. autosummary::
 
-    mol_to_file
-    as_pdb_array
-    from_pdb_array
-    sanitize_yaml_settings
+    df_collection.get_df_collection
+    database_functions.as_pdb_array
+    database_functions.from_pdb_array
+    database_functions.sanitize_yaml_settings
 
 
 Class API
-~~~~~~~~~
+---------
+
+Database
+~~~~~~~~
 
 .. autoclass:: dataCAT.database.Database
     :members:
 
 
-Function API
+DFCollection
 ~~~~~~~~~~~~
 
-.. autofunction:: dataCAT.database_functions.mol_to_file
+.. autoclass:: dataCAT.df_collection._DFCollection
+    :members:
+
+
+MetaManager
+~~~~~~~~~~~
+
+.. autoclass:: dataCAT.context_managers.MetaManager
+    :members:
+
+
+OpenLig
+~~~~~~~
+
+.. autoclass:: dataCAT.context_managers.OpenLig
+    :members:
+
+
+OpenQD
+~~~~~~
+
+.. autoclass:: dataCAT.context_managers.OpenQD
+    :members:
+
+
+OpenYaml
+~~~~~~~~
+
+.. autoclass:: dataCAT.context_managers.OpenYaml
+    :members:
+
+
+Function API
+------------
+
+.. autofunction:: dataCAT.df_collection.get_df_collection
 
 .. autofunction:: dataCAT.database_functions.as_pdb_array
 
@@ -99,6 +139,8 @@ Function API
 .. autofunction:: dataCAT.database_functions.sanitize_yaml_settings
 
 
+.. _dataCAT.DFCollection: 7_database.html#dfcollection
+.. _dataCAT.MetaManager: 7_database.html#metamanager
 .. _rdkit.Chem.Mol: http://rdkit.org/docs/source/rdkit.Chem.rdchem.html#rdkit.Chem.rdchem.Mol
 .. _h5py.File: http://docs.h5py.org/en/stable/high/file.html
 .. _plams.Settings: https://www.scm.com/doc/plams/components/settings.html
@@ -118,8 +160,12 @@ Function API
 .. _None: https://docs.python.org/3.7/library/constants.html#None
 .. _bool: https://docs.python.org/3/library/functions.html?highlight=bool#bool
 .. _with: https://docs.python.org/3/reference/compound_stmts.html#with
+.. _type: https://docs.python.org/3/library/functions.html#type
 .. _Sequence: https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence
+.. _AbstractContextManager: https://docs.python.org/3/library/contextlib.html#contextlib.AbstractContextManager
 
+.. |dataCAT.DFCollection| replace:: *dataCAT.DFCollection*
+.. |dataCAT.MetaManager| replace:: *dataCAT.MetaManager*
 .. |rdkit.Chem.Mol| replace:: *rdkit.Chem.Mol*
 .. |h5py.File| replace:: *h5py.File*
 .. |plams.Molecule| replace:: *plams.Molecule*
@@ -139,4 +185,6 @@ Function API
 .. |None| replace:: *None*
 .. |bool| replace:: *bool*
 .. |with| replace:: ``with``
+.. |type| replace:: *type*
 .. |Sequence| replace:: *Sequence*
+.. |AbstractContextManager| replace:: *AbstractContextManager*

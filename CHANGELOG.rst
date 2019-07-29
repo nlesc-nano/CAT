@@ -15,7 +15,8 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * Job hashes are now stored in (and retrieved from) $JN.hash files (plain text).
 * Added a permanent Database_ instance to .optional.database.db.
 * Parsing of functional group SMILES_ strings is now carried out during the Schema_ validation.
-* Multiple updates to Data-CAT_ (see https://github.com/nlesc-nano/data-CAT/pull/13).
+* Updated Data-CAT_ to 0.1.2; changed status from pre-alpha to alpha
+  (see https://github.com/nlesc-nano/data-CAT/pull/13).
 
 .. _Database: https://cat.readthedocs.io/en/latest/7_database.html#class-api
 .. _Schema: https://github.com/keleshev/schema
