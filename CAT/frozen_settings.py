@@ -21,8 +21,6 @@ API
 
 """
 
-from __future__ import annotations
-
 from typing import (Any, Union, Iterable)
 
 from scm.plams import Settings
@@ -51,7 +49,7 @@ class FrozenSettings(Settings):
                 value = [FrozenSettings(i) if isinstance(i, dict) else i for i in value]
                 Settings.__setitem__(self, key, value)
 
-    def __missing__(self, name: Immutable) -> FrozenSettings:
+    def __missing__(self, name: Immutable) -> 'FrozenSettings':
         """Return a new (empty) :class:`FrozenSettings` instance."""
         return FrozenSettings()
 
@@ -63,7 +61,7 @@ class FrozenSettings(Settings):
         """Raise a :exc:`TypeError`; :class:`FrozenSettings` instances are immutable."""
         raise TypeError("'FrozenSettings' object does not support item assignment")
 
-    def copy(self) -> FrozenSettings:
+    def copy(self) -> 'FrozenSettings':
         """Create a copy of this instance."""
         ret = FrozenSettings()
         for key, value in self.items():
@@ -73,6 +71,6 @@ class FrozenSettings(Settings):
                 Settings.__setitem__(ret, key, value)
         return ret
 
-    def __copy__(self) -> FrozenSettings:
+    def __copy__(self) -> 'FrozenSettings':
         """Create a copy of this instance by calling :meth:`FrozenSettings.copy`."""
         return self.copy()
