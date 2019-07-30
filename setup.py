@@ -84,16 +84,16 @@ setup(
         'pytest-cov',
         'pytest-mock',
         'pycodestyle',
-        'data-CAT@git+https://github.com/nlesc-nano/data-CAT@master',
-        'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@master'
+        'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel',
+        'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel'
     ],
     extras_require={
         'test': ['pytest',
                  'pytest-cov',
                  'pytest-mock',
                  'pycodestyle',
-                 'data-CAT@git+https://github.com/nlesc-nano/data-CAT@master',
-                 'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@master'],
+                 'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel',
+                 'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel'],
         'doc': ['sphinx>=2.0', 'sphinx_rtd_theme', 'sphinx-autodoc-typehints']
     }
 )
