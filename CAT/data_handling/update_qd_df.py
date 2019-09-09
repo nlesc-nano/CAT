@@ -27,6 +27,7 @@ __all__ = ['update_qd_df']
 # Aliases for pd.MultiIndex columns
 MOL = ('mol', '')
 OPT = ('opt', '')
+HDF5_INDEX = ('hdf5 index', '')
 
 
 def update_qd_df(qd_df: pd.DataFrame) -> None:
@@ -44,6 +45,7 @@ def update_qd_df(qd_df: pd.DataFrame) -> None:
 
     # Set the ('opt', '') column to False
     qd_df[OPT] = False
+    qd_df[HDF5_INDEX] = -1
 
 
 def _get_core_formula(mol: Molecule) -> str:
