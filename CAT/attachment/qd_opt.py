@@ -127,7 +127,7 @@ def get_job_settings(qd_df: SettingsDataFrame) -> List[str]:
 
 def _qd_to_db(qd_df: SettingsDataFrame,
               idx: pd.Series) -> None:
-    """Export quantum dot optimziation results to the database.
+    """Export quantum dot optimization results to the database.
 
     Parameters
     ----------
@@ -138,6 +138,7 @@ def _qd_to_db(qd_df: SettingsDataFrame,
         A Series for slicing **qd_df**.
 
     """
+
     # Extract arguments
     settings = qd_df.settings.optional
     job_recipe = settings.qd.optimize
