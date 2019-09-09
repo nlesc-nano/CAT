@@ -52,7 +52,7 @@ def santize_smiles(smiles: str) -> str:
 def validate_mol(args: Sequence[Union[Any, Settings]],
                  mol_type: str,
                  path: Optional[str] = None) -> None:
-    r"""Validate the ``"input_ligands"`` or ``"input_cores"`` blocks in the CAT input.
+    r"""Validate the ``"input_ligands"``, ``"input_cores"`` and ``"input_qd"`` blocks in the input.
 
     Performs an inpalce update of **args**.
 
@@ -144,16 +144,18 @@ def validate_mol(args: Sequence[Union[Any, Settings]],
 
     """
     # Validate arguments
-    is_core = _parse_mol_type(mol_type)
+    is_core = _check_core(mol_type)
+    is_qd = _check_qd(mol_type)
     _path = validate_path(path)
 
     for i, dict_ in enumerate(args):
         if not isinstance(dict_, dict):  # No optional arguments provided
             mol = dict_
-            mol_dict = Settings({'path': _path, 'is_core': is_core})
+            mol_dict = Settings({'path': _path, 'is_core': is_core, 'is_qd': is_qd})
         else:  # Optional arguments have been provided: parse and validate them
             mol, mol_dict = next(iter(dict_.items()))
             mol_dict.setdefault('is_core', is_core)
+            mol_dict.setdefault('is_qd', is_qd)
             mol_dict = mol_schema.validate(mol_dict)
             mol_dict.setdefault('path', _path)
 
@@ -212,12 +214,23 @@ def _parse_name_type(mol_dict: Settings) -> None:
                         f"observed type: '{mol.__class__.__name__}'")
 
 
-def _parse_mol_type(mol_type: str) -> bool:
-    """Parse the **mol_type** parameter of :func:`.validate_mol`."""
+def _check_core(mol_type: str) -> bool:
+    """Check the **mol_type** parameter of :func:`.validate_mol`."""
     if mol_type.lower() == 'input_cores':
         return True
-    elif mol_type.lower() == 'input_ligands':
+    elif mol_type.lower() in ('input_ligands', 'input_qd'):
         return False
     else:
-        raise ValueError(f"accepted values for mol_type are 'input_cores' and input_ligands; "
+        raise ValueError(f"accepted values for mol_type are 'input_cores', 'input_ligands' and "
+                         f"'input_qd'; observed value: {repr(mol_type)}")
+
+
+def _check_qd(mol_type: str) -> bool:
+    """Parse the **mol_type** parameter of :func:`.validate_mol`."""
+    if mol_type.lower() == 'input_qd':
+        return True
+    elif mol_type.lower() in ('input_ligands', 'input_cores'):
+        return False
+    else:
+        raise ValueError(f"accepted values for mol_type are 'input_qd' and input_ligands; "
                          f"observed value: {repr(mol_type)}")

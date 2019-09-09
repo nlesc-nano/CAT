@@ -43,7 +43,10 @@ API
 import os
 import itertools
 from string import ascii_letters
-from typing import (Dict, Iterable, List, Sequence, Optional)
+from typing import (Dict, Iterable, List, Sequence, Optional, Tuple)
+
+import numpy as np
+from scipy.spatial.distance import cdist
 
 from scm.plams import (Molecule, Atom, Settings)
 import scm.plams.interfaces.molecule.rdkit as molkit
@@ -52,7 +55,7 @@ from rdkit import Chem
 from rdkit import RDLogger
 
 from ..logger import logger
-from ..data_handling.validate_mol import validate_mol
+from ..data_handling.validate_mol import (validate_mol, santize_smiles)
 
 __all__ = ['read_mol', 'set_mol_prop']
 
@@ -101,13 +104,18 @@ def read_mol(input_mol: Iterable[Settings]) -> List[Molecule]:
         if not mol:  # Failed to import any molecules
             continue
 
-        if isinstance(mol, Molecule):  # if mol is a PLAMS molecule
+        if isinstance(mol, list):  # if mol is a list of molecules
+            mol_list += mol
+
+        elif mol_dict.is_qd:  # A quantum dot molecule
+            set_qd(mol, mol_dict)
+            mol_list.append(mol)
+
+        else:  # A core or ligand molecule
             if mol_dict.guess_bonds:
                 mol.guess_bonds()
             set_mol_prop(mol, mol_dict)
             mol_list.append(mol)
-        else:  # if mol is a list of molecules
-            mol_list += mol
 
     return mol_list
 
@@ -381,6 +389,38 @@ def set_atom_prop(atom: Atom,
     elif total_bonds >= abs_charge + 6:
         atom.properties.charge += 6 * sign
     return
+
+
+def set_qd(qd: Molecule, mol_dict: Settings) -> Molecule:
+    """Placeholder."""
+    # Create ligand (and anchor) molecules
+    ligand = molkit.from_smiles(mol_dict.ligand_smiles)
+    ligand_rdmol = molkit.to_rdmol(ligand)
+    anchor = molkit.from_smiles(mol_dict.ligand_anchor)
+    anchor_rdmol = molkit.to_rdmol(anchor)
+    qd_rdmol = molkit.to_rdmol(qd)
+
+    # Create arrays of atomic indices
+    ligand_idx = 1 + np.array(qd_rdmol.GetSubstructMatches(ligand_rdmol))
+    core_idx = [i for i, _ in enumerate(qd, 1) if i not in ligand_idx]
+
+    # Reorder all atoms
+    qd.atoms = [qd[i] for i in core_idx] + [qd[int(j)] for i in ligand_idx for j in i]
+
+    core_idx_max = 1 + len(core_idx)
+    _anchor_idx = ligand_rdmol.GetSubstructMatch(anchor_rdmol)[0]
+    start = core_idx_max + _anchor_idx
+    stop = core_idx_max + _anchor_idx + np.product(ligand_idx.shape)
+    step = len(ligand)
+    anchor_idx = list(range(start, stop, step))
+
+    # Update the properties of **qd**
+    for i in anchor_idx:
+        qd[i].properties.anchor = True
+    qd.properties.indices = list(range(1, 1 + len(core_idx_max))) + anchor_idx
+    qd.properties.job_path = []
+    qd.properties.name = mol_dict.name
+    qd.properties.path = mol_dict.path
 
 
 def print_exception(func_name: str,
