@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 
+0.5.6
+*****
+
+* Added an option the import pre-built quantum dots.
+
+
 0.5.5
 *****
 

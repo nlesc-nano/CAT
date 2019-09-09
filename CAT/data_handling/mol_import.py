@@ -407,6 +407,7 @@ def set_qd(qd: Molecule, mol_dict: Settings) -> Molecule:
     # Reorder all atoms
     qd.atoms = [qd[i] for i in core_idx] + [qd[int(j)] for i in ligand_idx for j in i]
 
+    # Construct a list with the indices of all ligand anchor atoms
     core_idx_max = 1 + len(core_idx)
     _anchor_idx = ligand_rdmol.GetSubstructMatch(anchor_rdmol)[0]
     start = core_idx_max + _anchor_idx
