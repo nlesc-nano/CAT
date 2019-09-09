@@ -43,10 +43,9 @@ API
 import os
 import itertools
 from string import ascii_letters
-from typing import (Dict, Iterable, List, Sequence, Optional, Tuple)
+from typing import (Dict, Iterable, List, Sequence, Optional)
 
 import numpy as np
-from scipy.spatial.distance import cdist
 
 from scm.plams import (Molecule, Atom, Settings)
 import scm.plams.interfaces.molecule.rdkit as molkit
@@ -59,6 +58,7 @@ from ..data_handling.validate_mol import (validate_mol, santize_smiles)
 
 __all__ = ['read_mol', 'set_mol_prop']
 
+# Supress the logger of rdkit
 _logger = RDLogger.logger()
 _logger.setLevel(RDLogger.CRITICAL)
 
@@ -418,10 +418,12 @@ def set_qd(qd: Molecule, mol_dict: Settings) -> Molecule:
     # Update the properties of **qd**
     for i in anchor_idx:
         qd[i].properties.anchor = True
-    qd.properties.indices = list(range(1, 1 + len(core_idx_max))) + anchor_idx
+    qd.properties.indices = list(range(1, core_idx_max)) + anchor_idx
     qd.properties.job_path = []
     qd.properties.name = mol_dict.name
     qd.properties.path = mol_dict.path
+    qd.properties.ligand_smiles = Chem.CanonSmiles(mol_dict.ligand_smiles)
+    qd.properties.ligand_anchor = f'{ligand[_anchor_idx].symbol}{_anchor_idx}'
 
 
 def print_exception(func_name: str,

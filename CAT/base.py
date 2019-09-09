@@ -41,6 +41,7 @@ from .mol_utils import to_symbol
 from .settings_dataframe import SettingsDataFrame
 
 from .data_handling.mol_import import read_mol
+from .data_handling.update_qd_df import update_qd_df
 from .data_handling.validate_input import validate_input
 
 from .attachment.qd_opt import init_qd_opt
@@ -122,8 +123,8 @@ def prep(arg: Settings,
         # and read/write the results
         ligand_df = prep_ligand(ligand_df)
 
-        # Combine the cores and ligands; analyze the resulting quantum dots
-        qd_df = prep_qd(ligand_df, core_df, qd_df)
+    # Combine the cores and ligands; analyze the resulting quantum dots
+    qd_df = prep_qd(ligand_df, core_df, qd_df)
 
     # The End
     delta_t = time() - time_start
@@ -303,8 +304,8 @@ def prep_qd(ligand_df: Optional[SettingsDataFrame],
     .. _Nano-CAT: https://github.com/nlesc-nano/nano-CAT
 
     Has two allowed signatures:
-        * ``ligand_df = core_df = None``: Construct the quantum dot dataframe.
-        * ``qd_df = None``: Update the existing quantum dot dataframe.
+        * ``ligand_df = core_df = None``: Update an existing quantum dot dataframe.
+        * ``qd_df = None``: Construct a new quantum dot dataframe.
 
     Parameters
     ----------
@@ -329,8 +330,16 @@ def prep_qd(ligand_df: Optional[SettingsDataFrame],
         installing the Nano-CAT_ package.
 
     """
-    # Unpack arguments and construct the quantum dots
-    qd_df = qd_df if qd_df is not None else init_qd_construction(ligand_df, core_df)
+    if qd_df is None:  # Construct new quantum dots
+        qd_df = init_qd_construction(ligand_df, core_df)
+    elif ligand_df is core_df is None:  # Update existing quantum dots
+        update_qd_df(qd_df)
+    else:
+        raise TypeError(f"Either qd_df ('{type(qd_df)}') must be 'None' or ligand_df "
+                        f"('{type(ligand_df)}') and core_df ('{type(core_df)}') must "
+                        "both be 'None'")
+
+    # Unpack arguments
     optimize = qd_df.settings.optional.qd.optimize
     dissociate = qd_df.settings.optional.qd.dissociate
     activation_strain = qd_df.settings.optional.qd.activation_strain
