@@ -303,9 +303,10 @@ def prep_qd(ligand_df: Optional[SettingsDataFrame],
 
     .. _Nano-CAT: https://github.com/nlesc-nano/nano-CAT
 
-    Has two allowed signatures:
-        * ``ligand_df = core_df = None``: Update an existing quantum dot dataframe.
-        * ``qd_df = None``: Construct a new quantum dot dataframe.
+    Has two accepted signatures:
+        * ``ligand_df = core_df = None``: Update an existing quantum dot dataframe (**qd_df**).
+        * ``qd_df = None``: Construct a new quantum dot dataframe from
+          **ligand_df** and **core_df**.
 
     Parameters
     ----------

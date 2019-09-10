@@ -20,6 +20,7 @@ Index
     get_charge_dict
     set_mol_prop
     set_atom_prop
+    set_qd
     print_exception
 
 API
@@ -36,6 +37,7 @@ API
 .. autofunction:: get_charge_dict
 .. autofunction:: set_mol_prop
 .. autofunction:: set_atom_prop
+.. autofunction:: set_qd
 .. autofunction:: print_exception
 
 """
@@ -54,11 +56,11 @@ from rdkit import Chem
 from rdkit import RDLogger
 
 from ..logger import logger
-from ..data_handling.validate_mol import (validate_mol, santize_smiles)
+from ..data_handling.validate_mol import validate_mol
 
 __all__ = ['read_mol', 'set_mol_prop']
 
-# Supress the logger of rdkit
+# Supress the rdkit logger
 _logger = RDLogger.logger()
 _logger.setLevel(RDLogger.CRITICAL)
 
@@ -124,7 +126,7 @@ def read_mol_xyz(mol_dict: Settings) -> Optional[Molecule]:
     """Read an .xyz file."""
     try:
         mol = Molecule(mol_dict.mol, inputformat='xyz')
-        if mol_dict.guess_bonds:
+        if mol_dict.guess_bonds and not mol_dict.is_qd:
             mol.guess_bonds()
         if not mol_dict.is_core:
             canonicalize_mol(mol)
@@ -137,7 +139,7 @@ def read_mol_pdb(mol_dict: Settings) -> Optional[Molecule]:
     """Read a .pdb file."""
     try:
         mol = molkit.readpdb(mol_dict.mol)
-        if mol_dict.guess_bonds:
+        if mol_dict.guess_bonds and not mol_dict.is_qd:
             mol.guess_bonds()
         if not mol_dict.is_core:
             canonicalize_mol(mol)
@@ -150,7 +152,7 @@ def read_mol_mol(mol_dict: Settings) -> Optional[Molecule]:
     """Read a .mol file."""
     try:
         mol = molkit.from_rdmol(Chem.MolFromMolFile(mol_dict.mol, removeHs=False))
-        if mol_dict.guess_bonds:
+        if mol_dict.guess_bonds and not mol_dict.is_qd:
             mol.guess_bonds()
         if not mol_dict.is_core:
             canonicalize_mol(mol)
@@ -163,7 +165,7 @@ def read_mol_smiles(mol_dict: Settings) -> Optional[Molecule]:
     """Read a SMILES string."""
     try:
         mol = molkit.from_smiles(mol_dict.mol)
-        if mol_dict.guess_bonds:
+        if mol_dict.guess_bonds and not mol_dict.is_qd:
             mol.guess_bonds()
         return mol
     except Exception as ex:
@@ -174,7 +176,7 @@ def read_mol_plams(mol_dict: Settings) -> Optional[Molecule]:
     """Read a PLAMS molecule."""
     try:
         mol = mol_dict.mol
-        if mol_dict.guess_bonds:
+        if mol_dict.guess_bonds and not mol_dict.is_qd:
             mol.guess_bonds()
         if not mol_dict.is_core:
             canonicalize_mol(mol)
@@ -187,7 +189,7 @@ def read_mol_rdkit(mol_dict: Settings) -> Optional[Molecule]:
     """Read a RDKit molecule."""
     try:
         mol = molkit.from_rdmol(mol_dict.mol)
-        if mol_dict.guess_bonds:
+        if mol_dict.guess_bonds and not mol_dict.is_qd:
             mol.guess_bonds()
         if not mol_dict.is_core:
             canonicalize_mol(mol)
@@ -392,7 +394,8 @@ def set_atom_prop(atom: Atom,
 
 
 def set_qd(qd: Molecule, mol_dict: Settings) -> Molecule:
-    """Placeholder."""
+    """Update quantum dots imported by :func:`.read_mol`."""
+
     # Create ligand (and anchor) molecules
     ligand = molkit.from_smiles(mol_dict.ligand_smiles)
     ligand_rdmol = molkit.to_rdmol(ligand)
@@ -400,11 +403,17 @@ def set_qd(qd: Molecule, mol_dict: Settings) -> Molecule:
     anchor_rdmol = molkit.to_rdmol(anchor)
     qd_rdmol = molkit.to_rdmol(qd)
 
-    # Create arrays of atomic indices
+    # Guess bonds
+    if mol_dict.guess_bonds:
+        symbol_set = {at.symbol for at in ligand}
+        atom_list = [at for at in qd if at.symbol in symbol_set]
+        qd.guess_bonds(atom_subset=atom_list)
+
+    # Create arrays of atomic indices of the core and ligands
     ligand_idx = 1 + np.array(qd_rdmol.GetSubstructMatches(ligand_rdmol))
     core_idx = [i for i, _ in enumerate(qd, 1) if i not in ligand_idx]
 
-    # Reorder all atoms
+    # Reorder all atoms: core atoms first followed by ligands
     qd.atoms = [qd[i] for i in core_idx] + [qd[int(j)] for i in ligand_idx for j in i]
 
     # Construct a list with the indices of all ligand anchor atoms
@@ -424,6 +433,15 @@ def set_qd(qd: Molecule, mol_dict: Settings) -> Molecule:
     qd.properties.path = mol_dict.path
     qd.properties.ligand_smiles = Chem.CanonSmiles(mol_dict.ligand_smiles)
     qd.properties.ligand_anchor = f'{ligand[_anchor_idx].symbol}{_anchor_idx}'
+
+    # Update the pdb_info of all atoms
+    for i, at in enumerate(qd, 1):
+        at.properties.pdb_info.SerialNumber = i
+        if i <= core_idx_max:  # A core atom
+            at.properties.pdb_info.ResidueNumber = 1
+        else:  # A ligand atom
+            j = 2 + int((i - core_idx_max) / len(ligand))
+            at.properties.pdb_info.ResidueNumber = j
 
 
 def print_exception(func_name: str,
