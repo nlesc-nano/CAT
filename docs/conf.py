@@ -242,3 +242,26 @@ autodoc_mock_imports = [
     'rdkit',
     'h5py',
 ]
+
+rst_epilog = """
+.. _CAT.MetaManager: 7_database.html#metamanager
+.. _nanoCAT.psf: 9_psf.html#nanoCAT.ff.psf.PSF
+.. _plams.Molecule: https://www.scm.com/doc/plams/components/mol_api.html
+.. _np.str_: https://docs.scipy.org/doc/numpy/reference/arrays.dtypes.html#specifying-and-constructing-data-types
+.. _np.int64: https://docs.scipy.org/doc/numpy/reference/arrays.dtypes.html#specifying-and-constructing-data-types
+.. _np.ndarray: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html?highlight=ndarray#numpy.ndarray
+.. _pd.DataFrame: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html
+.. _str: https://docs.python.org/3/library/stdtypes.html#str
+.. _dict: https://docs.python.org/3/library/stdtypes.html#dict
+
+.. |CAT.MetaManager| replace:: *CAT.MetaManager*
+.. |nanoCAT.psf| replace:: *nanoCAT.PSF*
+.. |plams.Molecule| replace:: *plams.Molecule*
+.. |np.str_| replace:: *np.str_*
+.. |np.int64| replace:: *np.int64*
+.. |np.ndarray| replace:: *np.ndarray*
+.. |pd.DataFrame| replace:: *pd.DataFrame*
+.. |str| replace:: *str*
+.. |dict| replace:: *dict*
+
+"""

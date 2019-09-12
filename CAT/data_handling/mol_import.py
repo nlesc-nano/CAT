@@ -52,8 +52,7 @@ import numpy as np
 from scm.plams import (Molecule, Atom, Settings)
 import scm.plams.interfaces.molecule.rdkit as molkit
 
-from rdkit import Chem
-from rdkit import RDLogger
+from rdkit import (Chem, RDLogger)
 
 from ..logger import logger
 from ..data_handling.validate_mol import validate_mol
