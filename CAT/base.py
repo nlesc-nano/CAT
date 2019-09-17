@@ -53,23 +53,27 @@ try:
     from nanoCAT.asa import init_asa
     from nanoCAT.bde.bde_workflow import init_bde
     from nanoCAT.ligand_solvation import init_solv
-    NANO_CAT = True
+    from nanoCAT.ff.ff_assignment import init_ff_assignment
+
+    NANO_EX: Optional[ImportError] = None
+    NANO_CAT: bool = True
 except ImportError as ex:
-    NANO_EX = ex
-    NANO_CAT = False
+    NANO_EX: Optional[ImportError] = ex
+    NANO_CAT: bool = False
 
 try:
     import dataCAT
-    DATA_CAT = True
+    DATA_EX: Optional[ImportError] = None
+    DATA_CAT: bool = True
 except ImportError as ex:
-    DATA_EX = ex
-    DATA_CAT = False
+    DATA_EX: Optional[ImportError] = ex
+    DATA_CAT: bool = False
 
 
 __all__ = ['prep']
 
 # Aliases for pd.MultiIndex columns
-MOL = ('mol', '')
+MOL: Tuple[str, str] = ('mol', '')
 
 
 def prep(arg: Settings,
@@ -253,6 +257,7 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
 
     """
     # Unpack arguments
+    forcefield = ligand_df.settings.optional.forcefield
     optimize = ligand_df.settings.optional.ligand.optimize
     crs = ligand_df.settings.optional.ligand.crs
 
@@ -271,6 +276,12 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     if crs:
         val_nano_cat("Ligand COSMO-RS calculations require the nano-CAT package")
         init_solv(ligand_df)
+
+    # Assign CHARMM CGenFF atom types to all ligands
+    if forcefield:
+        val_nano_cat("Automatic ligand forcefield assignment requires MATCH "
+                     "(Multipurpose Atom-Typer for CHARMM) and the nano-CAT package")
+        init_ff_assignment(ligand_df, 'ligand')
 
     return ligand_df
 
@@ -308,6 +319,7 @@ def prep_qd(ligand_df: SettingsDataFrame,
     """
     # Unpack arguments
     optimize = ligand_df.settings.optional.qd.optimize
+    forcefield = ligand_df.settings.optional.forcefield
     dissociate = ligand_df.settings.optional.qd.dissociate
     activation_strain = ligand_df.settings.optional.qd.activation_strain
 
@@ -315,6 +327,10 @@ def prep_qd(ligand_df: SettingsDataFrame,
     qd_df = init_qd_construction(ligand_df, core_df)
     if not qd_df[MOL].any():
         raise MoleculeError('No valid quantum dots found, aborting')
+
+    if forcefield:
+        val_nano_cat("Automatic ligand forcefield assignment requires MATCH "
+                     "(Multipurpose Atom-Typer for CHARMM) and the nano-CAT package")
 
     # Optimize the qd with the core frozen
     if optimize:

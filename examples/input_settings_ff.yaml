@@ -1,0 +1,58 @@
+path: /Users/basvanbeek/Documents/CdSe/Week_5
+
+input_cores:
+    - Cd68Se55.xyz:
+        guess_bonds: False
+
+input_ligands:
+    - OC(=O)C
+
+optional:
+    database:
+        dirname: database
+        read: False
+        write: False
+        overwrite: False
+        mol_format: [pdb]
+        mongodb: False
+
+    core:
+        dirname: core
+        dummy: Cl
+
+    ligand:
+        dirname: ligand
+        optimize: True
+        split: True
+        cosmo-rs: False
+
+    qd:
+        dirname: QD
+        optimize:
+            use_ff: True
+            job1: cp2kjob
+            job2: cp2kjob
+
+    forcefield:
+        charge:
+            keys: [input, force_eval, mm, forcefield, charge]
+            Cd: 0.9768
+            Se: -0.9768
+            OG2D2: -0.4704
+            CG2O3: 0.4524
+        epsilon:
+            unit: kjmol
+            keys: [input, force_eval, mm, forcefield, nonbonded, lennard-jones]
+            Cd Cd: 0.3101
+            Se Se: 0.4266
+            Cd Se: 1.5225
+            Cd OG2D2: 1.8340
+            Se OG2D2: 1.6135
+        sigma:
+            unit: nm
+            keys: [input, force_eval, mm, forcefield, nonbonded, lennard-jones]
+            Cd Cd: 0.1234
+            Se Se: 0.4852
+            Cd Se: 0.2940
+            Cd OG2D2: 0.2471
+            Se OG2D2: 0.3526

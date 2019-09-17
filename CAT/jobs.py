@@ -56,14 +56,13 @@ def get_main_molecule(self) -> Optional[Molecule]:
 
 
 @add_to_class(Cp2kResults)
-def get_energy(self, index: int = 0,
-               unit: str = 'Hartree') -> float:
+def get_energy(self, index: int = 0, unit: str = 'Hartree') -> float:
     """Returns last occurence of 'Total energy:' in the output."""
     energy = self._get_energy_type('Total', index=index)
     return Units.convert(energy, 'Hartree', unit)
 
 
-def _get_name(name) -> str:
+def _get_name(name: str) -> str:
     manager = config.default_jobmanager
     if name in manager.names:
         return name + '.' + str(1 + manager.names[name]).zfill(manager.settings.counter_len)
@@ -71,10 +70,8 @@ def _get_name(name) -> str:
         return name
 
 
-def pre_process_settings(mol: Molecule,
-                         s: Settings,
-                         job_type: type,
-                         template_name: str) -> Settings:
+def pre_process_settings(mol: Molecule, s: Settings,
+                         job_type: type, template_name: str) -> Settings:
     """Update all :class:`Settings`, **s**, with those from a QMFlows template (see **job**)."""
     ret = Settings()
     ret.input = getattr(qmflows, template_name)['specific'][type_to_string(job_type)].copy()
@@ -87,8 +84,7 @@ def pre_process_settings(mol: Molecule,
     return ret
 
 
-def retrieve_results(results: Results,
-                     job_preset: str) -> None:
+def retrieve_results(results: Results, job_preset: str) -> None:
     """Unpack the :class:`results` from a PLAMS-facilitated calculation.
 
     Performs an inplace update of **results**:
@@ -134,7 +130,8 @@ def retrieve_results(results: Results,
 
         # Evaluate all results
         if not (energy and isinstance(freq, np.ndarray)):
-            raise ResultsError(f'Failed to retrieve results of {name}')
+            with open(results['$JN.err'], 'r') as f:
+                raise ResultsError(f.read().rstrip('\n'))
         log_succes(job, mol, job_preset, name)
 
     except Exception as ex:  # Failed to retrieve results
@@ -198,10 +195,11 @@ def _finalize(self):
 
 
 @add_to_class(Molecule)
-def job_single_point(self, job_type: Callable,
+def job_single_point(self, job_type: Callable[..., Job],
                      settings: Settings,
                      name: str = 'Single_point',
-                     ret_results: bool = False) -> Optional[Results]:
+                     ret_results: bool = False,
+                     read_template: bool = True) -> Optional[Results]:
     """Function for running an arbritrary jobs, extracting total energies.
 
     Paramaters
@@ -219,6 +217,9 @@ def job_single_point(self, job_type: Callable,
     ret_results : bool
         Whether or not the :class:`Results` instance should be returned or not.
 
+    read_template : bool
+        Whether or not to update **settings** using a QMFlows template or not.
+
     Returns
     -------
     |plams.Results|_
@@ -226,7 +227,8 @@ def job_single_point(self, job_type: Callable,
 
     """
     # Grab the default settings for a specific job and update them with user provided settings
-    s = pre_process_settings(self, settings, job_type, 'singlepoint')
+    _sp = 'singlepoint'
+    s = settings if not read_template else pre_process_settings(self, settings, job_type, _sp)
 
     # Run the job; extract energies
     job = job_type(molecule=self, settings=s, name=name)
@@ -246,10 +248,11 @@ def job_single_point(self, job_type: Callable,
 
 
 @add_to_class(Molecule)
-def job_geometry_opt(self, job_type: Callable,
+def job_geometry_opt(self, job_type: Callable[..., Job],
                      settings: Settings,
                      name: str = 'Geometry_optimization',
-                     ret_results: bool = False) -> Optional[Results]:
+                     ret_results: bool = False,
+                     read_template: bool = True) -> Optional[Results]:
     """Function for running an arbritrary jobs, extracting total energies and final geometries.
 
     Paramaters
@@ -267,6 +270,9 @@ def job_geometry_opt(self, job_type: Callable,
     ret_results : bool
         Whether or not the :class:`Results` instance should be returned or not.
 
+    read_template : bool
+        Whether or not to update **settings** using a QMFlows template or not.
+
     Returns
     -------
     |plams.Results|_
@@ -274,7 +280,8 @@ def job_geometry_opt(self, job_type: Callable,
 
     """
     # Grab the default settings for a specific job and update them with user provided settings
-    s = pre_process_settings(self, settings, job_type, 'geometry')
+    _geo = 'geometry'
+    s = settings if not read_template else pre_process_settings(self, settings, job_type, _geo)
 
     # Run the job; extract geometries and energies
     job = job_type(molecule=self, settings=s, name=name)
@@ -294,11 +301,12 @@ def job_geometry_opt(self, job_type: Callable,
 
 
 @add_to_class(Molecule)
-def job_freq(self, job_type: Callable,
+def job_freq(self, job_type: Callable[..., Job],
              settings: Settings,
              name: str = 'Frequency_analysis',
              opt: bool = True,
-             ret_results: bool = False) -> Optional[Results]:
+             ret_results: bool = False,
+             read_template: bool = True) -> Optional[Results]:
     """Function for running an arbritrary Jobs
 
     Extracts total energies, final geometries and
@@ -323,6 +331,9 @@ def job_freq(self, job_type: Callable,
     ret_results : bool
         Whether or not the :class:`Results` instance should be returned or not.
 
+    read_template : bool
+        Whether or not to update **settings** using a QMFlows template or not.
+
     Returns
     -------
     |plams.Results|_
@@ -334,7 +345,7 @@ def job_freq(self, job_type: Callable,
         self.job_geometry_opt(job_type, settings)
 
     # Grab the default settings for a specific job and update them with user provided settings
-    s = pre_process_settings(self, settings, job_type, 'freq')
+    s = settings if not read_template else pre_process_settings(self, settings, job_type, 'freq')
 
     # Run the job; extract geometries and (Gibbs free) energies
     job = job_type(molecule=self, settings=s, name=name)

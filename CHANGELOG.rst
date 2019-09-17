@@ -5,16 +5,22 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+0.5.6
+*****
+* Implemented an interface to MATCH_ (Multipurpose Atom-Typer for CHARMM) in Nano-CAT.
+* Added a workflow for creating CP2K input files with the MATCH-assigned atom types & charges.
+
+.. _MATCH: http://brooks.chem.lsa.umich.edu/index.php?page=match&subdir=articles/resources/software
+.. _CP2K: https://www.cp2k.org/
+
 
 0.5.5
 *****
-
 * Lowered Python version requirement from >=3.7 to >=3.6.
 
 
 0.5.4
 *****
-
 * Minor updates to the logger.
 * Cleaned up CAT.jobs.py.
 * ``check_sys_var()`` is now only called if an ADF-specific Job is requirest.
@@ -30,7 +36,6 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.5.3
 *****
-
 * Moved Molecule to file exporting (*i.e.* .xyz and .pdb creation) from data-CAT_ to CAT_.
 * Molecules can now be exported to .mol and .mol2 formats (in addition to .pdb and .xyz format).
 * Increased the clarity of many exceptions (see https://github.com/nlesc-nano/CAT/issues/45).
@@ -42,14 +47,12 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.5.2
 *****
-
 * Added more tests.
 * Added a more explicit error message to ``_smiles_to_rdmol()``.
 
 
 0.5.1
 *****
-
 * Documentation update.
 * Updated to the ligand dissociation module in nano-CAT_ (see https://github.com/nlesc-nano/nano-CAT/issues/1).
 * Added the ``keep_files`` keyword to the cosmo-rs and ligand dissociation workflows.
@@ -59,7 +62,6 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.5.0
 *****
-
 * CAT_ has been split into 3 seperate packages (see https://github.com/nlesc-nano/CAT/issues/39):
 
   * CAT_: A collection of tools designed for the automatic construction of composite chemical compounds.
@@ -82,7 +84,6 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.4.6
 *****
-
 * Added an interface between MongoDB_ and the CAT.Database_ class (see https://github.com/nlesc-nano/CAT/issues/11).
 
 .. _MongoDB: https://www.mongodb.com/
@@ -91,14 +92,12 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.4.5
 *****
-
 * All raw input scripts are now stored in the structures.hdf5 file
   (see: https://github.com/nlesc-nano/CAT/issues/36).
 
 
 0.4.4
 *****
-
 * Split CAT_database.py into database.py and database_functions.py.
 * Unoptimized starting structures are now exported to the database.
 * Added the sphinx autosummary extension.
@@ -106,7 +105,6 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.4.3
 *****
-
 * Improved interaction between the database and BDE module.
 * Cleaned up BDE module.
 * HDF5 indices are now always sorted when itneraction with the database.
@@ -114,21 +112,18 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.4.2
 *****
-
 * Numerous bug fixes.
 * A couple of code-style changes.
 
 
 0.4.1
 *****
-
 * COSMO-RS calculations now allow for COSMO-surface construction
   at the DFT level.
 
 
 0.4.0
 *****
-
 * Introduction of the CAT.Database class.
 * Central object of CAT has been changed into a dataframe of
   molecules rather than lists molecules.
@@ -137,14 +132,12 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.3.3
 *****
-
 * Changed qmflows template import syntax (see: https://github.com/SCM-NV/qmflows/pull/132).
 * Changed yaml loader.
 
 
 0.3.2
 *****
-
 * Further (minor) updates and bug fixes to the database interaction.
 * Overhaul of the bond dissociation energy (BDE) module.
 * Job settings are now stored in the database.
@@ -152,7 +145,6 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.3.0
 *****
-
 * Massive overhaul of the CAT database interaction.
 * Moved functions related to functiona group recognizition to
   CAT.attachment.ligand_anchoring.py.

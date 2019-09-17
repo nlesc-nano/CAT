@@ -26,6 +26,7 @@ from CAT.data_handling.validation_schemas import (
     mongodb_schema, bde_schema, qd_opt_schema, crs_schema
 )
 
+from .validate_ff import validate_ff, update_ff_jobs
 from .validate_mol import validate_mol
 from ..utils import validate_path
 from ..attachment.ligand_anchoring import get_functional_groups
@@ -70,13 +71,18 @@ def validate_input(s: Settings) -> None:
     # Validate some of the more complex optionala rguments
     if s.optional.database.mongodb:
         s.optional.database.mongodb = mongodb_schema.validate(s.optional.database.mongodb)
+    if s.optional.ligand['cosmo-rs']:
+        crs = s.optional.ligand.pop('cosmo-rs')
+        s.optional.ligand.crs = crs_schema.validate(crs)
     if s.optional.qd.optimize:
         s.optional.qd.optimize = qd_opt_schema.validate(s.optional.qd.optimize)
     if s.optional.qd.dissociate:
         s.optional.qd.dissociate = bde_schema.validate(s.optional.qd.dissociate)
-    if s.optional.ligand['cosmo-rs']:
-        crs = s.optional.ligand.pop('cosmo-rs')
-        s.optional.ligand.crs = crs_schema.validate(crs)
+
+    # Forcefield stuff
+    if s.optional.forcefield:
+        s.optional.forcefield = validate_ff(s.optional.forcefield)
+        update_ff_jobs(s)
 
     # Validate the input cores and ligands
     validate_mol(s.input_cores, 'input_cores', join(path, 'core'))
