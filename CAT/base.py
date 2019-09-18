@@ -55,18 +55,18 @@ try:
     from nanoCAT.ligand_solvation import init_solv
     from nanoCAT.ff.ff_assignment import init_ff_assignment
 
-    NANO_EX: Optional[ImportError] = None
+    _NANO_EX: Optional[ImportError] = None
     NANO_CAT: bool = True
 except ImportError as ex:
-    NANO_EX: Optional[ImportError] = ex
+    _NANO_EX: Optional[ImportError] = ex
     NANO_CAT: bool = False
 
 try:
     import dataCAT
-    DATA_EX: Optional[ImportError] = None
+    _DATA_EX: Optional[ImportError] = None
     DATA_CAT: bool = True
 except ImportError as ex:
-    DATA_EX: Optional[ImportError] = ex
+    _DATA_EX: Optional[ImportError] = ex
     DATA_CAT: bool = False
 
 
@@ -106,14 +106,14 @@ def prep(arg: Settings,
                     f'(version: {nanoCAT.__version__})')
     else:
         logger.warning('The optional Nano-CAT package was not found')
-        logger.debug(f'{NANO_EX.__class__.__name__}: {NANO_EX}', exc_info=True)
+        logger.debug(f'{_NANO_EX.__class__.__name__}: {_NANO_EX}', exc_info=True)
 
     if DATA_CAT:
         logger.info(f'The optional Data-CAT package was successfully found '
                     f'(version: {dataCAT.__version__})')
     else:
         logger.warning('The optional Data-CAT package was not found')
-        logger.debug(f'{DATA_EX.__class__.__name__}: {DATA_EX}', exc_info=True)
+        logger.debug(f'{_DATA_EX.__class__.__name__}: {_DATA_EX}', exc_info=True)
 
     # Interpret and extract the input settings
     ligand_df, core_df = prep_input(arg)

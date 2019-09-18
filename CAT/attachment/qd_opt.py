@@ -27,6 +27,7 @@ API
 import os
 from typing import List, Tuple
 
+import numpy as np
 import pandas as pd
 
 from scm.plams import (Molecule, Settings)
@@ -44,7 +45,7 @@ from ..data_handling.mol_to_file import mol_to_file
 
 try:
     from nanoCAT.ff.cp2k_utils import set_cp2k_element
-    from nanoCAT.ff.psf import write_psf
+    from nanoCAT.ff.psf import PSF
     NANO_CAT: bool = True
 except ImportError:
     NANO_CAT: bool = False
@@ -214,16 +215,52 @@ def qd_opt(mol: Molecule, job_recipe: Settings, forcefield: bool = False) -> Non
 
 
 def qd_opt_ff(mol: Molecule, job_recipe: Settings) -> None:
-    psf = os.path.join(mol.properties.path, mol.properties.name + '.psf')
+    """Perform an optimization of the quantum dot using CP2Ks' classical forcefields."""
+    psf_name = os.path.join(mol.properties.path, mol.properties.name + '.psf')
+    name = 'QD_opt'
 
     # Prepare the job settings
-    job1, s1 = job_recipe.job1, job_recipe.s1.copy()
-    s1.input.force_eval.subsys.topology.conn_file_name = psf
-    s1.input.force_eval.mm.forcefield.parm_file_name = mol.properties.prm
-    set_cp2k_element(s1, mol)
-    write_psf(mol, psf)
+    job, s = job_recipe.job1, job_recipe.s1.copy()
+    s.runscript.pre = f'mv "{psf_name}" ./"{name}.psf"' + '\n'
+    s.runscript.pre += f'cp "{mol.properties.prm}" ./"{name}.prm"'
+    s.input.force_eval.subsys.topology.conn_file_name = f'{name}.psf'
+    s.input.force_eval.mm.forcefield.parm_file_name = f'{name}.prm'
+    set_cp2k_element(s, mol)
+
+    psf = get_psf(mol, s)
+    psf.write(psf_name)
 
     # Run the first job and fix broken angles
-    mol.job_geometry_opt(job1, s1, name='QD_opt_part1', read_template=False)
+    mol.job_geometry_opt(job, s, name=name, read_template=False)
     mol.round_coords()
-    return None
+
+
+def get_psf(mol: Molecule, s: Settings) -> PSF:
+    """Construct and return a :class:`PSF` instance."""
+    # Construct a PSF instance
+    psf = PSF()
+    psf.generate_bonds(mol)
+    psf.generate_angles(mol)
+    psf.generate_dihedrals(mol)
+    psf.generate_impropers(mol)
+    psf.generate_atoms(mol)
+
+    # Update charges based on charges which have been explictly specified by the user
+    initial_charge = psf.charge.sum()
+    charge_dict = {i.atom: i.charge for i in s.input.force_eval.mm.forcefield.charge}
+    for at, charge in charge_dict.items():
+        psf.update_atom_charge(at, float(charge))
+
+    # Check if the molecular charge has remained unchanged
+    new_charge = psf.charge.sum()
+    if (abs(new_charge) - abs(initial_charge)) < 10**-8:
+        return psf
+
+    # Update atomic charges in order to reset the molecular charge to its initial value
+    atom_subset = np.array([at not in charge_dict for at in psf.atom_type])
+    charge_correction = initial_charge - psf.charge[atom_subset].sum()
+    charge_correction /= np.count_nonzero(atom_subset)
+    with pd.option_context('mode.chained_assignment', None):
+        psf.charge[atom_subset] += charge_correction
+
+    return psf
