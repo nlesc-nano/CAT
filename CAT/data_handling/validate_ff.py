@@ -108,5 +108,5 @@ def update_ff_jobs(s: Settings) -> None:
     dissociate = s.optional.qd.dissociate
     if dissociate and dissociate.use_ff:
         if dissociate.job1 and str(optimize.job1) == str(Cp2kJob):
-            dissociate.s2 = get_template('qd.yaml')['CP2K_CHARM_opt']
-            dissociate.s2.soft_update(ff)
+            dissociate.s1 = get_template('qd.yaml')['CP2K_CHARM_opt']
+            dissociate.s1.soft_update(ff)

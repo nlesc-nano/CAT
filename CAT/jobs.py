@@ -51,14 +51,34 @@ __all__ = ['job_single_point', 'job_geometry_opt', 'job_freq']
 def get_main_molecule(self) -> Optional[Molecule]:
     for file in self.files:
         if '.xyz' in file:
-            return Molecule(join(self.job.path, file))
+            filename = join(self.job.path, file)
+            return _xyz_to_mol(filename)
     return None
+
+
+def _xyz_to_mol(filename: str) -> Molecule:
+    """Grab the last geometry from an .xyz file and return it as a :class:`Molecule` instance."""
+    with open(filename, 'r') as f:
+        atom_count = int(next(f))
+        for line_count, _ in enumerate(f, 2):
+            pass
+
+    mol_count = line_count // (2 + atom_count)
+    return Molecule(filename, geometry=mol_count)
 
 
 @add_to_class(Cp2kResults)
 def get_energy(self, index: int = 0, unit: str = 'Hartree') -> float:
     """Returns last occurence of 'Total energy:' in the output."""
-    energy = self._get_energy_type('Total', index=index)
+    try:
+        energy = self._get_energy_type('Total', index=index)
+
+    # Because for some unfathomable reason CP2K doesn't print the final energy in a
+    # conviently accessible manner when running geometry optimizations
+    except IndexError:
+        mol = self.get_main_molecule()
+        energy = float(mol.properties.comment.split()[-1])
+
     return Units.convert(energy, 'Hartree', unit)
 
 
@@ -66,8 +86,7 @@ def _get_name(name: str) -> str:
     manager = config.default_jobmanager
     if name in manager.names:
         return name + '.' + str(1 + manager.names[name]).zfill(manager.settings.counter_len)
-    else:
-        return name
+    return name
 
 
 def pre_process_settings(mol: Molecule, s: Settings,
@@ -124,6 +143,7 @@ def retrieve_results(results: Results, job_preset: str) -> None:
         energy = mol.properties.energy.E = results.get_energy(unit='kcal/mol')
         if job_preset in ('geometry optimization', 'frequency analysis'):
             mol.from_mol_other(results.get_main_molecule())
+
         if job_preset == 'frequency analysis':
             freq = mol.properties.frequencies = results.get_frequencies()
             energy = mol.properties.energy = get_thermo(mol, freq, energy)
