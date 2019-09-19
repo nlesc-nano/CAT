@@ -37,7 +37,7 @@ except ImportError:
 __all__ = ['qd_opt_ff']
 
 
-def qd_opt_ff(mol: Molecule, job_recipe: Settings) -> None:
+def qd_opt_ff(mol: Molecule, job_recipe: Settings, name: str = 'QD_opt') -> None:
     """Alternative implementation of :func:`.qd_opt` using CP2Ks' classical forcefields.
 
     Performs an inplace update of **mol**.
@@ -51,6 +51,9 @@ def qd_opt_ff(mol: Molecule, job_recipe: Settings) -> None:
         A Settings instance containing all jon settings.
         Expects 4 keys: ``"job1"``, ``"job2"``, ``"s1"``, ``"s2"``.
 
+    name : str
+        The name of the job.
+
     See also
     --------
     :func:`CAT.attachment.qd_opt.qd_opt`
@@ -58,7 +61,6 @@ def qd_opt_ff(mol: Molecule, job_recipe: Settings) -> None:
 
     """
     psf_name = os.path.join(mol.properties.path, mol.properties.name + '.psf')
-    name = 'QD_opt'
 
     # Prepare the job settings
     job, s = job_recipe.job1, job_recipe.s1.copy()
