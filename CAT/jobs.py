@@ -9,7 +9,11 @@ Index
 .. currentmodule:: CAT.jobs
 .. autosummary::
     get_main_molecule
+    _xyz_to_mol
     get_energy
+    _get_name
+    pre_process_settings
+    retrieve_results
     job_single_point
     job_geometry_opt
     job_freq
@@ -17,7 +21,11 @@ Index
 API
 ---
 .. automethod:: get_main_molecule
+.. autofunction:: _xyz_to_mol
 .. automethod:: get_energy
+.. autofunction:: _get_name
+.. autofunction:: pre_process_settings
+.. autofunction:: retrieve_results
 .. autofunction:: job_single_point
 .. autofunction:: job_geometry_opt
 .. autofunction:: job_freq
@@ -103,7 +111,7 @@ def pre_process_settings(mol: Molecule, s: Settings,
     return ret
 
 
-def retrieve_results(results: Results, job_preset: str) -> None:
+def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
     """Unpack the :class:`results` from a PLAMS-facilitated calculation.
 
     Performs an inplace update of **results**:
@@ -114,6 +122,9 @@ def retrieve_results(results: Results, job_preset: str) -> None:
 
     Paramaters
     ----------
+    mol : |plams.Molecule|_
+        A PLAMS molecule.
+
     results : |plams.Results|_
         A PLAMS :class:`Results` instance.
 
@@ -129,7 +140,6 @@ def retrieve_results(results: Results, job_preset: str) -> None:
     # Unpack arguments
     job = results.job
     name = job.name
-    mol = job.molecule
 
     # Define more arguments
     freq = np.empty(1)
@@ -256,7 +266,7 @@ def job_single_point(self, job_type: Callable[..., Job],
     log_start(job, self, 'single point', _name)
 
     results = job.run()
-    retrieve_results(results, 'single point')
+    retrieve_results(self, results, 'single point')
 
     inp_name = join(job.path, job.name + '.in')
     self.properties.job_path.append(inp_name)
@@ -309,7 +319,7 @@ def job_geometry_opt(self, job_type: Callable[..., Job],
     log_start(job, self, 'geometry optimization', _name)
 
     results = job.run()
-    retrieve_results(results, 'geometry optimization')
+    retrieve_results(self, results, 'geometry optimization')
 
     inp_name = join(job.path, job.name + '.in')
     self.properties.job_path.append(inp_name)
@@ -373,7 +383,7 @@ def job_freq(self, job_type: Callable[..., Job],
     log_start(job, self, 'frequency analysis', _name)
 
     results = job.run()
-    retrieve_results(results, 'frequency analysis')
+    retrieve_results(self, results, 'frequency analysis')
 
     inp_name = join(job.path, _name + '.in')
     self.properties.job_path.append(inp_name)
