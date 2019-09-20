@@ -32,6 +32,7 @@ try:
     from nanoCAT.ff.psf import PSF
     NANO_CAT: bool = True
 except ImportError:
+    PSF = 'PSF'
     NANO_CAT: bool = False
 
 __all__ = ['qd_opt_ff']
