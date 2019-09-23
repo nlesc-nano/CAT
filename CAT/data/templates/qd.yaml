@@ -72,7 +72,7 @@ CP2K_CHARM_opt:
             geo_opt:
                 type: minimization
                 optimizer: LBFGS
-                max_iter: 100
+                max_iter: 200
 
         force_eval:
             method: FIST
