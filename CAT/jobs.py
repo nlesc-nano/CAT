@@ -57,11 +57,17 @@ __all__ = ['job_single_point', 'job_geometry_opt', 'job_freq']
 
 @add_to_class(Cp2kResults)
 def get_main_molecule(self) -> Optional[Molecule]:
+    try:
+        filename = self.files['cp2k-pos-1.xyz']
+        return _xyz_to_mol(filename)
+    except TypeError:
+        pass
+
     for file in self.files:
         if '.xyz' in file:
             filename = join(self.job.path, file)
             return _xyz_to_mol(filename)
-    return None
+    raise ResultsError(f'Failed to retrieve main molecule from {self.job.name}')
 
 
 def _xyz_to_mol(filename: str) -> Molecule:
@@ -80,6 +86,8 @@ def get_energy(self, index: int = 0, unit: str = 'Hartree') -> float:
     """Returns last occurence of 'Total energy:' in the output."""
     try:
         energy = self._get_energy_type('Total', index=index)
+        if energy is None:
+            raise IndexError
 
     # Because for some unfathomable reason CP2K doesn't print the final energy in a
     # conviently accessible manner when running geometry optimizations

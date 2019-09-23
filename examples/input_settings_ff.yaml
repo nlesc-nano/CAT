@@ -1,4 +1,4 @@
-path: /Users/bvanbeek/Documents/CdSe/Week_5
+path: /Users/basvanbeek/Documents/CdSe/Week_5
 
 input_cores:
     - Cd68Se55.xyz:
@@ -11,7 +11,7 @@ optional:
     database:
         dirname: database
         read: False
-        write: False
+        write: True
         overwrite: False
         mol_format: [pdb]
         mongodb: False
@@ -30,6 +30,12 @@ optional:
         dirname: QD
         optimize:
             use_ff: True
+            job1: cp2kjob
+        dissociate:
+            keep_files: True
+            use_ff: True
+            core_atom: Cd
+            lig_count: 2
             job1: cp2kjob
 
     forcefield:

@@ -65,14 +65,16 @@ def qd_opt_ff(mol: Molecule, job_recipe: Settings, name: str = 'QD_opt') -> None
 
     # Prepare the job settings
     job, s = job_recipe.job1, job_recipe.s1.copy()
-    s.runscript.pre = f'cp "{psf_name}" ./"{name}.psf"' + '\n'
-    s.runscript.pre += f'cp "{mol.properties.prm}" ./"{name}.prm"'
+
+    s.runscript.pre = (f'ln "{psf_name}" ./"{name}.psf"\n'
+                       f'ln "{mol.properties.prm}" ./"{name}.prm"')
     s.input.force_eval.subsys.topology.conn_file_name = f'{name}.psf'
     s.input.force_eval.mm.forcefield.parm_file_name = f'{name}.prm'
     set_cp2k_element(s, mol)
 
-    psf = get_psf(mol, s.input.force_eval.mm.forcefield.charge)
-    psf.write(psf_name)
+    if not os.path.isfile(psf_name):
+        psf = get_psf(mol, s.input.force_eval.mm.forcefield.charge)
+        psf.write(psf_name)
 
     # Run the first job and fix broken angles
     mol.job_geometry_opt(job, s, name=name, read_template=False)
