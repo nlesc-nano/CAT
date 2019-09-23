@@ -194,7 +194,7 @@ def finalize_lj(mol: Molecule, s: List[Settings]) -> None:
                 continue
 
             s.append(Settings({
-                'atoms': ' '.join(iter(at1_at2)),
+                'atoms': f'{at1} {at2}',
                 'epsilon':  f'[kcalmol] {round(combine_di(symbol1, symbol2), 4)}',
                 'sigma':  f'[angstrom] {round(combine_xi(symbol1, symbol2), 4)}'
             }))

@@ -200,7 +200,10 @@ texinfo_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'python': ('https://docs.python.org/', None),
-    'h5py': ('http://docs.h5py.org/en/latest/', None)
+    'h5py': ('http://docs.h5py.org/en/latest/', None),
+    'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+    'plams': ('https://www.scm.com/doc/plams/', None)
 }
 
 
@@ -246,3 +249,12 @@ autodoc_mock_imports = [
     'rdkit',
     'h5py',
 ]
+
+# A string of reStructuredText that will be included at the end of every source file that is read.
+# This is a possible place to add substitutions that should be available in every file (another being rst_prolog).
+rst_epilog = """
+.. |plams.Molecule| replace:: :class:`plams.Molecule<scm.plams.mol.molecule.Molecule>`
+.. |Atom.properties| replace:: :class:`plams.Atom.properties<scm.plams.mol.atom.Atom>`
+.. |Atom.symbol| replace:: :class:`plams.Atom.symbol<scm.plams.mol.atom.Atom>`
+.. |Atom.mass| replace:: :class:`plams.Atom.mass<scm.plams.mol.atom.Atom>`
+"""

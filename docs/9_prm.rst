@@ -1,12 +1,17 @@
-The PRM class
-=============
+The PRMContainer class
+======================
 
 Index
 -----
-Placeholder.
+.. currentmodule:: nanoCAT.ff.prm
+.. autosummary::
+
+    PRMContainer
+    PRMContainer.read
+    PRMContainer.write
 
 API
 ---
-.. autoclass:: nanoCAT.ff.prm.PRM
-.. automethod:: nanoCAT.ff.prm.PRM.read
-.. automethod:: nanoCAT.ff.prm.PRM.write
+.. autoclass:: PRMContainer
+.. automethod:: PRMContainer.read
+.. automethod:: PRMContainer.write
