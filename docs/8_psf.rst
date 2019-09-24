@@ -4,18 +4,20 @@ The PSFContainer class
 Index
 -----
 .. currentmodule:: nanoCAT
+.. currentmodule:: nanoCAT.ff
+.. currentmodule:: nanoCAT.ff.psf
 .. autosummary::
 
-    ff.psf.PSFContainer
+    PSFContainer
     ff.psf.PSFContainer.read
     ff.psf.PSFContainer.write
-    PSFContainer.update_atom_charge
-    PSFContainer.update_atom_type
-    PSFContainer.generate_bonds
-    PSFContainer.generate_angles
-    PSFContainer.generate_dihedrals
-    PSFContainer.generate_impropers
-    PSFContainer.generate_atoms
+    ff.psf.PSFContainer.update_atom_charge
+    ff.psf.PSFContainer.update_atom_type
+    ff.psf.PSFContainer.generate_bonds
+    ff.psf.PSFContainer.generate_angles
+    ff.psf.PSFContainer.generate_dihedrals
+    ff.psf.PSFContainer.generate_impropers
+    ff.psf.PSFContainer.generate_atoms
 
 API
 ---
