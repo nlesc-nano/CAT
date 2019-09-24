@@ -3,12 +3,12 @@ The PSFContainer class
 
 Index
 -----
-.. currentmodule:: nanoCAT
+.. currentmodule:: nanoCAT.ff.psf
 .. autosummary::
 
-    ff.psf.PSFContainer
-    ff.psf.PSFContainer.read
-    ff.psf.PSFContainer.write
+    PSFContainer
+    PSFContainer.read
+    PSFContainer.write
     PSFContainer.update_atom_charge
     PSFContainer.update_atom_type
     PSFContainer.generate_bonds
