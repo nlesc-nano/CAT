@@ -9,6 +9,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 *****
 * Implemented an interface to MATCH_ (Multipurpose Atom-Typer for CHARMM) in Nano-CAT.
 * Added a workflow for creating CP2K input files with the MATCH-assigned atom types & charges.
+* Updated the handling of assertions, see ``CAT.assertions.assertion_manager``.
 
 .. _MATCH: http://brooks.chem.lsa.umich.edu/index.php?page=match&subdir=articles/resources/software
 .. _CP2K: https://www.cp2k.org/
