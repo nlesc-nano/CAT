@@ -19,7 +19,6 @@ API
 
 import reprlib
 from typing import Any, Dict, Union
-from textwrap import indent
 from itertools import chain
 
 try:
@@ -56,7 +55,7 @@ class NDRepr(reprlib.Repr):
     Attributes
     ----------
     maxfloat : :class:`int`
-        The maximum number of to-be displayed :class:`float` decimals.
+        The number of to-be displayed :class:`float` decimals.
 
     maxndarray : :class:`int`
         The maximum number of items in a :class:`numpy.ndarray` row.
@@ -97,6 +96,7 @@ class NDRepr(reprlib.Repr):
     def __init__(self, **kwargs) -> None:
         """Initialize a :class:`NDRepr` instance."""
         super().__init__()
+        self.maxstring = 60
         self.maxfloat: int = 4
         self.maxndarray: int = 6
         self.maxseries: int = 12
@@ -107,8 +107,8 @@ class NDRepr(reprlib.Repr):
         # Update attributes based on **kwargs; raise an error if a key is unrecognized
         for k, v in kwargs.items():
             if not hasattr(self, k):
-                err = f'{repr(self.__class__.__name__)} object has no attribute {repr(k)}'
-                raise AttributeError(err)
+                raise AttributeError(f'{repr(self.__class__.__name__)} instance '
+                                     f'has no attribute {repr(k)}')
             setattr(self, k, v)
 
     """################################ Non-magic methods ################################"""
