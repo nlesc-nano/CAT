@@ -26,6 +26,8 @@ setup(
     url='https://github.com/nlesc-nano/CAT',
     packages=[
         'CAT',
+        'CAT.abc',
+        'CAT.assertion',
         'CAT.attachment',
         'CAT.data',
         'CAT.data.coskf',
