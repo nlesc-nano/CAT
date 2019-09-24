@@ -413,6 +413,9 @@ mongodb_schema: Schema = Schema({
 
 #: Schema for validating the ``['optional']['qd']['dissociate']`` block.
 bde_schema: Schema = Schema({
+    Optional_('use_ff', default=False):
+        bool,
+
     # Atom type of the to-be dissociated core atom
     'core_atom':
         And(
@@ -515,6 +518,9 @@ bde_schema: Schema = Schema({
 
 #: Schema for validating the ``['optional']['qd']['optimize']`` block.
 qd_opt_schema: Schema = Schema({
+    Optional_('use_ff', default=False):
+        bool,
+
     # The job type for the first half of the optimization
     Optional_('job1', default=_get_amsjob):
         Or(

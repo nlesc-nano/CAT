@@ -24,7 +24,7 @@ API
 
 """
 
-from typing import List
+from typing import List, Tuple
 
 import pandas as pd
 
@@ -34,6 +34,7 @@ from scm.plams.interfaces.adfsuite.ams import AMSJob
 
 import qmflows
 
+from .qd_opt_ff import qd_opt_ff
 from ..logger import logger
 from ..jobs import job_geometry_opt
 from ..utils import (restart_init, type_to_string)
@@ -44,12 +45,12 @@ from ..data_handling.mol_to_file import mol_to_file
 __all__ = ['init_qd_opt']
 
 # Aliases for pd.MultiIndex columns
-MOL = ('mol', '')
-OPT = ('opt', '')
-HDF5_INDEX = ('hdf5 index', '')
-JOB_SETTINGS_QD_OPT = ('job_settings_QD_opt', '')
-SETTINGS1 = ('settings', '1')
-SETTINGS2 = ('settings', '2')
+MOL: Tuple[str, str] = ('mol', '')
+OPT: Tuple[str, str] = ('opt', '')
+HDF5_INDEX: Tuple[str, str] = ('hdf5 index', '')
+JOB_SETTINGS_QD_OPT: Tuple[str, str] = ('job_settings_QD_opt', '')
+SETTINGS1: Tuple[str, str] = ('settings', '1')
+SETTINGS2: Tuple[str, str] = ('settings', '2')
 
 
 def init_qd_opt(qd_df: SettingsDataFrame) -> None:
@@ -99,18 +100,18 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
     return None
 
 
-def start_qd_opt(qd_df: SettingsDataFrame,
-                 idx: pd.Series) -> None:
+def start_qd_opt(qd_df: SettingsDataFrame, idx: pd.Series) -> None:
     """Loop over all molecules in ``qd_df.loc[idx]`` and perform geometry optimizations."""
     # Extract arguments
     path = qd_df.settings.optional.qd.dirname
     job_recipe = qd_df.settings.optional.qd.optimize
+    forcefield = bool(qd_df.settings.optional.forcefield)
 
     # Perform the main optimization loop
     restart_init(path=path, folder='QD_optimize')
     for mol in qd_df[MOL][idx]:
         mol.properties.job_path = []
-        qd_opt(mol, job_recipe)
+        qd_opt(mol, job_recipe, forcefield=forcefield)
     finish()
 
 
@@ -125,8 +126,7 @@ def get_job_settings(qd_df: SettingsDataFrame) -> List[str]:
     return job_settings
 
 
-def _qd_to_db(qd_df: SettingsDataFrame,
-              idx: pd.Series) -> None:
+def _qd_to_db(qd_df: SettingsDataFrame, idx: pd.Series) -> None:
     """Export quantum dot optimziation results to the database.
 
     Parameters
@@ -166,8 +166,7 @@ def _qd_to_db(qd_df: SettingsDataFrame,
     )
 
 
-def qd_opt(mol: Molecule,
-           job_recipe: Settings) -> None:
+def qd_opt(mol: Molecule, job_recipe: Settings, forcefield: bool = False) -> None:
     """Perform an optimization of the quantum dot.
 
     Performs an inplace update of **mol**.
@@ -181,6 +180,9 @@ def qd_opt(mol: Molecule,
         A Settings instance containing all jon settings.
         Expects 4 keys: ``"job1"``, ``"job2"``, ``"s1"``, ``"s2"``.
 
+    forcefield : bool
+        If ``True``, perform the job with CP2K with a user-specified forcefield.
+
     """
     if job_recipe.job1 is AMSJob:
         job_recipe.s1.input.ams.constraints.atom = mol.properties.indices
@@ -188,13 +190,20 @@ def qd_opt(mol: Molecule,
         job_recipe.s2.input.ams.constraints.atom = mol.properties.indices
 
     # Prepare the job settings
-    job1, s1 = job_recipe.job1, job_recipe.s1
-    mol.job_geometry_opt(job1, s1, name='QD_opt_part1')
+    if forcefield:
+        qd_opt_ff(mol, job_recipe)
+        return None
 
-    # Fix broken angles
+    job1, s1 = job_recipe.job1, job_recipe.s1
+    job2, s2 = job_recipe.job2, job_recipe.s2
+
+    # Run the first job and fix broken angles
+    mol.job_geometry_opt(job1, s1, name='QD_opt_part1')
     fix_carboxyl(mol)
     fix_h(mol)
-    job2, s2 = job_recipe.job2, job_recipe.s2
     mol.round_coords()
+
+    # Run the second job
     mol.job_geometry_opt(job2, s2, name='QD_opt_part2')
     mol.round_coords()
+    return None

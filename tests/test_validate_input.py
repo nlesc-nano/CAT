@@ -10,7 +10,7 @@ from unittest import mock
 from rdkit import Chem
 from scm.plams import (Settings, AMSJob)
 
-from CAT.assertion_functions import (assert_eq, assert_instance)
+from CAT.assertion.assertion_manager import assertion
 from CAT.data_handling.validate_input import validate_input
 from dataCAT import Database
 
@@ -46,14 +46,16 @@ def test_validate_input() -> None:
     ref.qd.activation_strain = False
     ref.qd.dirname = join(PATH, 'qd')
     ref.qd.dissociate = False
-    ref.qd.optimize = {'job1': AMSJob, 's2': {'description': 'UFF with the default forcefield', 'input': {'uff': {'library': 'uff'}, 'ams': {'system': {'bondorders': {'_1': None}}}}}, 's1': {'description': 'UFF with the default forcefield', 'input': {'uff': {'library': 'uff'}, 'ams': {'system': {'bondorders': {'_1': None}}}}}, 'job2': AMSJob}  # noqa
+    ref.qd.optimize = {'job1': AMSJob, 'use_ff': False, 's2': {'description': 'UFF with the default forcefield', 'input': {'uff': {'library': 'uff'}, 'ams': {'system': {'bondorders': {'_1': None}}}}}, 's1': {'description': 'UFF with the default forcefield', 'input': {'uff': {'library': 'uff'}, 'ams': {'system': {'bondorders': {'_1': None}}}}}, 'job2': AMSJob}  # noqa
+
+    ref.forcefield = Settings()
 
     func_groups = s.optional.ligand.pop('functional_groups')
 
     try:
         for mol in func_groups:
-            assert_instance(mol, Chem.Mol)
-        assert_eq(s.optional, ref, verbose=True)
+            assertion.isinstance(mol, Chem.Mol)
+        assertion.eq(s.optional, ref)
     finally:
         rmtree(join(PATH, 'ligand'))
         rmtree(join(PATH, 'qd'))

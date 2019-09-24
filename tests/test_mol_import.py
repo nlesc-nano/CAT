@@ -8,7 +8,7 @@ import numpy as np
 from scm.plams import (Settings, Molecule)
 import scm.plams.interfaces.molecule.rdkit as molkit
 
-from CAT.assertion_functions import (assert_eq, assert_lt, assert_instance)
+from CAT.assertion.assertion_manager import assertion
 from CAT.data_handling.mol_import import (
     read_mol_xyz, read_mol_pdb, read_mol_mol, read_mol_smiles, read_mol_plams, read_mol_rdkit,
     read_mol_folder, read_mol_txt, get_charge_dict, set_mol_prop, canonicalize_mol
@@ -26,9 +26,9 @@ def test_read_mol_xyz() -> None:
     mol_dict = Settings({'mol': xyz, 'guess_bonds': True})
     mol = read_mol_xyz(mol_dict)
 
-    assert_instance(mol, Molecule)
+    assertion.isinstance(mol, Molecule)
     np.testing.assert_allclose(mol.as_array(), REF_MOL.as_array())
-    assert_eq([at.symbol for at in mol], [at.symbol for at in REF_MOL])
+    assertion.eq([at.symbol for at in mol], [at.symbol for at in REF_MOL])
 
 
 def test_read_mol_pdb() -> None:
@@ -37,9 +37,9 @@ def test_read_mol_pdb() -> None:
     mol_dict = Settings({'mol': pdb, 'guess_bonds': False})
     mol = read_mol_pdb(mol_dict)
 
-    assert_instance(mol, Molecule)
-    assert_lt(mol.as_array().sum() - REF_MOL.as_array().sum(), 0.01)
-    assert_eq([at.symbol for at in mol], [at.symbol for at in REF_MOL])
+    assertion.isinstance(mol, Molecule)
+    assertion.lt(mol.as_array().sum() - REF_MOL.as_array().sum(), 0.01)
+    assertion.eq([at.symbol for at in mol], [at.symbol for at in REF_MOL])
 
 
 def test_read_mol_mol() -> None:
@@ -48,9 +48,9 @@ def test_read_mol_mol() -> None:
     mol_dict = Settings({'mol': mol_file, 'guess_bonds': False})
     mol = read_mol_mol(mol_dict)
 
-    assert_instance(mol, Molecule)
-    assert_lt(mol.as_array().sum() - REF_MOL.as_array().sum(), 0.01)
-    assert_eq([at.symbol for at in mol], [at.symbol for at in REF_MOL])
+    assertion.isinstance(mol, Molecule)
+    assertion.lt(mol.as_array().sum() - REF_MOL.as_array().sum(), 0.01)
+    assertion.eq([at.symbol for at in mol], [at.symbol for at in REF_MOL])
 
 
 def test_read_mol_smiles() -> None:
@@ -59,8 +59,8 @@ def test_read_mol_smiles() -> None:
     mol_dict = Settings({'mol': smiles, 'guess_bonds': False})
     mol = read_mol_smiles(mol_dict)
 
-    assert_instance(mol, Molecule)
-    assert_eq([at.symbol for at in mol], [at.symbol for at in REF_MOL])
+    assertion.isinstance(mol, Molecule)
+    assertion.eq([at.symbol for at in mol], [at.symbol for at in REF_MOL])
 
 
 def test_read_mol_plams() -> None:
@@ -70,9 +70,9 @@ def test_read_mol_plams() -> None:
     mol_dict = Settings({'mol': mol, 'guess_bonds': False})
     mol = read_mol_plams(mol_dict)
 
-    assert_instance(mol, Molecule)
-    assert_lt(mol.as_array().sum() - REF_MOL.as_array().sum(), 0.01)
-    assert_eq([at.symbol for at in mol], [at.symbol for at in REF_MOL])
+    assertion.isinstance(mol, Molecule)
+    assertion.lt(mol.as_array().sum() - REF_MOL.as_array().sum(), 0.01)
+    assertion.eq([at.symbol for at in mol], [at.symbol for at in REF_MOL])
 
 
 def test_read_mol_rdkit() -> None:
@@ -83,9 +83,9 @@ def test_read_mol_rdkit() -> None:
     mol_dict = Settings({'mol': rdmol, 'guess_bonds': False})
     mol = read_mol_rdkit(mol_dict)
 
-    assert_instance(mol, Molecule)
-    assert_lt(mol.as_array().sum() - REF_MOL.as_array().sum(), 0.01)
-    assert_eq([at.symbol for at in mol], [at.symbol for at in REF_MOL])
+    assertion.isinstance(mol, Molecule)
+    assertion.lt(mol.as_array().sum() - REF_MOL.as_array().sum(), 0.01)
+    assertion.eq([at.symbol for at in mol], [at.symbol for at in REF_MOL])
 
 
 def test_read_mol_folder() -> None:
@@ -95,9 +95,9 @@ def test_read_mol_folder() -> None:
     mol_list = [mol for mol in _mol_list if mol.get_formula() == 'C1H4O1']
 
     for mol in mol_list:
-        assert_instance(mol, Molecule)
-        assert_lt(mol.as_array().sum() - REF_MOL.as_array().sum(), 0.01)
-        assert_eq([at.symbol for at in mol], [at.symbol for at in REF_MOL])
+        assertion.isinstance(mol, Molecule)
+        assertion.lt(mol.as_array().sum() - REF_MOL.as_array().sum(), 0.01)
+        assertion.eq([at.symbol for at in mol], [at.symbol for at in REF_MOL])
 
 
 def test_read_mol_txt() -> None:
@@ -107,12 +107,12 @@ def test_read_mol_txt() -> None:
     mol_list = read_mol_txt(mol_dict)
 
     for mol in mol_list[:-1]:
-        assert_instance(mol, Molecule)
-        assert_lt(mol.as_array().sum() - REF_MOL.as_array().sum(), 0.01)
-        assert_eq([at.symbol for at in mol], [at.symbol for at in REF_MOL])
+        assertion.isinstance(mol, Molecule)
+        assertion.lt(mol.as_array().sum() - REF_MOL.as_array().sum(), 0.01)
+        assertion.eq([at.symbol for at in mol], [at.symbol for at in REF_MOL])
 
-    assert_instance(mol_list[-1], Molecule)
-    assert_eq([at.symbol for at in mol_list[-1]], [at.symbol for at in REF_MOL])
+    assertion.isinstance(mol_list[-1], Molecule)
+    assertion.eq([at.symbol for at in mol_list[-1]], [at.symbol for at in REF_MOL])
 
 
 def test_get_charge_dict() -> None:
@@ -127,7 +127,7 @@ def test_get_charge_dict() -> None:
         'Cd': 2, 'Pb': 2
     }
 
-    assert_eq(charge_dict, ref)
+    assertion.eq(charge_dict, ref)
 
 
 def test_set_mol_prop() -> None:
@@ -138,7 +138,7 @@ def test_set_mol_prop() -> None:
 
     set_mol_prop(mol, mol_dict)
     ref = {'name': 'CO', 'dummies': {}, 'path': PATH, 'job_path': [], 'smiles': 'CO'}
-    assert_eq(mol.properties, ref)
+    assertion.eq(mol.properties, ref)
 
     ref1 = Settings({
         'stereo': {}, 'charge': 0,
@@ -153,6 +153,6 @@ def test_set_mol_prop() -> None:
     for at in mol:
         del at.properties.pdb_info.Name
         if at.symbol == 'O':
-            assert_eq(at.properties, ref2)
+            assertion.eq(at.properties, ref2)
         else:
-            assert_eq(at.properties, ref1)
+            assertion.eq(at.properties, ref1)

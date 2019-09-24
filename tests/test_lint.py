@@ -1,4 +1,5 @@
 """Test CAT for pep8 compliance."""
+
 import os
 import textwrap
 

@@ -3,7 +3,7 @@
 from os.path import join
 from shutil import rmtree
 
-from CAT.assertion_functions import assert_exception
+from CAT.assertion.assertion_manager import assertion
 from CAT.data_handling.entry_points import main
 
 PATH = join('tests', 'test_files')
@@ -19,4 +19,4 @@ def test_main() -> None:
         rmtree(join(PATH, 'qd'))
         rmtree(join(PATH, 'database'))
 
-    assert_exception(FileNotFoundError, main, [filename + 'bob'])
+    assertion.exception(FileNotFoundError, main, [filename + 'bob'])
