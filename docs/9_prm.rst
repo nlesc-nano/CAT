@@ -3,6 +3,8 @@ The PRMContainer class
 
 Index
 -----
+.. currentmodule:: nanoCAT.
+.. currentmodule:: nanoCAT.ff
 .. currentmodule:: nanoCAT.ff.prm
 .. autosummary::
 
