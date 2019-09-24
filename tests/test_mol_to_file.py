@@ -4,7 +4,7 @@ from os import mkdir
 from os.path import (join, isdir)
 from shutil import rmtree
 
-from CAT.assertion_functions import (assert_isfile, assert_exception, Invert)
+from CAT.assertion.assertion_manager import assertion
 from CAT.data_handling.mol_to_file import mol_to_file
 
 from scm.plams import Molecule
@@ -32,7 +32,7 @@ def test_mol_to_file() -> None:
     try:
         mol_to_file(mol_list, **kwargs)
         for file in ref:
-            assert_isfile(file)
+            assertion.isfile(file)
 
         rmtree(PATH)
         mkdir(PATH)
@@ -41,18 +41,17 @@ def test_mol_to_file() -> None:
         for file in ref[:2]:
             assert_isfile(file)
         for file in ref[2:]:
-            with Invert(assert_isfile) as func:
-                func(file)
+            assertion.isfile(file, invert=True)
 
         kwargs['path'] = join(PATH, 'bob')
-        assert_exception(FileNotFoundError, mol_to_file, mol_list, **kwargs)
+        assertion.exception(FileNotFoundError, mol_to_file, mol_list, **kwargs)
 
         kwargs['path'] = join(PATH, 'mol.xyz')
-        assert_exception(NotADirectoryError, mol_to_file, mol_list, **kwargs)
+        assertion.exception(NotADirectoryError, mol_to_file, mol_list, **kwargs)
 
         kwargs['path'] = PATH
         kwargs['mol_format'] = ('bob')
-        assert_exception(ValueError, mol_to_file, mol_list, **kwargs)
+        assertion.exception(ValueError, mol_to_file, mol_list, **kwargs)
 
     finally:
         rmtree(PATH)

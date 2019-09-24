@@ -6,9 +6,7 @@ from collections import abc
 from scm.plams import Settings, JobManager, AMSJob, AMSResults
 
 from CAT.gen_job_manager import GenJobManager
-from CAT.assertion_functions import (
-    assert_eq, assert_instance, assert_subclass, assert_isin, Invert
-)
+from CAT.assertion.assertion_manager import assertion
 
 SETTINGS = Settings({'counter_len': 3, 'hashing': 'input', 'remove_empty_directories': True})
 PATH = join('tests', 'test_files')
@@ -19,17 +17,17 @@ FOLDER = 'test_plams_workdir'
 def test_init() -> None:
     """Test :meth:`CAT.gen_job_manager.GenJobManager.__init__`."""
     manager = GenJobManager(SETTINGS, PATH, FOLDER)
-    assert_instance(manager, GenJobManager)
-    assert_subclass(manager.__class__, JobManager)
-    assert_eq(manager.settings, SETTINGS)
-    assert_eq(manager.jobs, [])
-    assert_eq(manager.names, {})
-    assert_eq(manager.hashes, {})
-    assert_eq(manager.path, ABSPATH)
-    assert_eq(manager.foldername, FOLDER)
-    assert_eq(manager.workdir, join(ABSPATH, FOLDER))
-    assert_eq(manager.logfile, join(ABSPATH, FOLDER, 'logfile'))
-    assert_eq(manager.input, join(ABSPATH, FOLDER, SETTINGS.hashing))
+    assertion.isinstance(manager, GenJobManager)
+    assertion.issubclass(manager.__class__, JobManager)
+    assertion.eq(manager.settings, SETTINGS)
+    assertion.eq(manager.jobs, [])
+    assertion.eq(manager.names, {})
+    assertion.eq(manager.hashes, {})
+    assertion.eq(manager.path, ABSPATH)
+    assertion.eq(manager.foldername, FOLDER)
+    assertion.eq(manager.workdir, join(ABSPATH, FOLDER))
+    assertion.eq(manager.logfile, join(ABSPATH, FOLDER, 'logfile'))
+    assertion.eq(manager.input, join(ABSPATH, FOLDER, SETTINGS.hashing))
 
 
 def test_load_job() -> None:
@@ -39,20 +37,20 @@ def test_load_job() -> None:
     manager.load_job(filename)
 
     k, v = next(iter(manager.hashes.items()))
-    assert_eq(k, '0da9b13507022986d26bbc57b4c366cf1ead1fe70ff750e071e79e393b14dfb5')
-    assert_instance(v, abc.Callable)
-    assert_eq(v.__name__, 'unpickle_job')
+    assertion.eq(k, '0da9b13507022986d26bbc57b4c366cf1ead1fe70ff750e071e79e393b14dfb5')
+    assertion.isinstance(v, abc.Callable)
+    assertion.eq(v.__name__, 'unpickle_job')
 
     job = v()
-    assert_instance(job, AMSJob)
-    assert_eq(job.status, 'successful')
-    assert_instance(job.results, AMSResults)
-    assert_eq(job.name, 'QD_opt_part1')
-    assert_eq(job.path, '/Users/basvanbeek/Documents/CdSe/Week_5/qd/QD_optimize/QD_opt_part1')
-    assert_instance(job.settings, Settings)
-    assert_eq(job.depend, [])
-    assert_eq(job._dont_pickle, [])
-    assert_eq(job.molecule.get_formula(), 'C78Cd68H182O26Se55')
+    assertion.isinstance(job, AMSJob)
+    assertion.eq(job.status, 'successful')
+    assertion.isinstance(job.results, AMSResults)
+    assertion.eq(job.name, 'QD_opt_part1')
+    assertion.eq(job.path, '/Users/basvanbeek/Documents/CdSe/Week_5/qd/QD_optimize/QD_opt_part1')
+    assertion.isinstance(job.settings, Settings)
+    assertion.eq(job.depend, [])
+    assertion.eq(job._dont_pickle, [])
+    assertion.eq(job.molecule.get_formula(), 'C78Cd68H182O26Se55')
 
 
 def test_check_hash() -> None:
@@ -65,13 +63,12 @@ def test_check_hash() -> None:
     j1 = v()
     j2 = manager._check_hash(j1)
 
-    with Invert(assert_eq) as func:
-        func(j2, j1)
+    assertion.ne(j2, j1)
     for k in vars(j1):
         if k in ('results', 'molecule', '_hash'):
             continue
         attr1, attr2 = getattr(j1, k), getattr(j2, k)
-        assert_eq(attr1, attr2)
+        assertion.eq(attr1, attr2)
 
 
 def test_remove_job() -> None:
@@ -83,6 +80,6 @@ def test_remove_job() -> None:
     k, v = next(iter(manager.hashes.items()))
     job = v()
 
-    assert_isin(k, manager.hashes)
+    assertion.contains(k, manager.hashes)
     manager.remove_job(job)
-    assert_eq(manager.hashes, {})
+    assertion.eq(manager.hashes, {})

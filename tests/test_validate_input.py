@@ -10,7 +10,7 @@ from unittest import mock
 from rdkit import Chem
 from scm.plams import (Settings, AMSJob)
 
-from CAT.assertion_functions import (assert_eq, assert_instance)
+from CAT.assertion.assertion_manager import assertion
 from CAT.data_handling.validate_input import validate_input
 from dataCAT import Database
 
@@ -52,8 +52,8 @@ def test_validate_input() -> None:
 
     try:
         for mol in func_groups:
-            assert_instance(mol, Chem.Mol)
-        assert_eq(s.optional, ref, verbose=True)
+            assertion.isinstance(mol, Chem.Mol)
+        assertion.eq(s.optional, ref, verbose=True)
     finally:
         rmtree(join(PATH, 'ligand'))
         rmtree(join(PATH, 'qd'))

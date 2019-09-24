@@ -48,6 +48,8 @@ API
 
 """
 
+import textwrap
+import reprlib
 from typing import (Any, Callable, Tuple, Container, Sized)
 from reprlib import Repr
 from os.path import (isfile, isdir)
@@ -124,6 +126,24 @@ class Invert(AbstractContextManager):
         return wrapper
 
 
+class Asserter:
+    def __init__(self):
+        self._repr = reprlib.aRepr
+
+    @property
+    def repr(self) -> Callable[[Any], str]: return self._repr.repr
+
+    def assertion(self, func: Callable, a: Any, b: Any) -> None:
+        assert func(a, b), self.get_error(func, a, b)
+
+    def get_error(self, func, a , b) -> str:
+        indent = 4 * ' '
+        return (f'assert {func.__name__}(a, b)'
+                f'Value a:\n{textwrap.indent(self.repr(a), indent)}'
+                f'Value b:\n{textwrap.indent(self.repr(b), indent)}')
+
+
+
 def assert_hasattr(value: str,
                    ref: Any,
                    verbose: bool = False) -> Tuple[str, str, str]:
@@ -132,7 +152,7 @@ def assert_hasattr(value: str,
     if callable(ref):
         _ref = str(ref)
     else:
-        _ref = f'<{ref.__class__.__module__}.{ref.__class__.__name__} at {hex(id(ref))}>'
+        _ref = object.__repr__(ref)
 
     msg = _err_msg_verbose if verbose else _err_msg
     assert hasattr(ref, value), msg(assertion, value, _ref)
@@ -345,13 +365,12 @@ class FloatRepr(Repr):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.maxstring = 65
+        self.maxfloat = 4
 
-    def repr_float(self, x: float, level: int) -> str:
+    def repr_float(self, obj: float, level: int) -> str:
         """Create a :class:`str`-represenation of a :class:`float` with 4 decimals."""
-        try:
-            return f'{x:4.4f}'
-        except ValueError:  # x is somehow not a float; convert into a string and try again.
-            return self.repr(str(x))
+        i = self.maxfloat
+        return f'{obj:{i}.{i}f}'
 
 
 WRAPPER: TextWrapper = TextWrapper(width=70, initial_indent='    ', subsequent_indent='     ')
@@ -362,7 +381,7 @@ def _err_msg(assertion: Any,
              value: Any,
              ref: Any) -> str:
     """Return a formatted error message."""
-    args = repr(assertion), WRAPPER.fill(FLOATREPR.repr(value)), WRAPPER.fill(FLOATREPR.repr(ref))
+    args = str(assertion), WRAPPER.fill(FLOATREPR.repr(value)), WRAPPER.fill(FLOATREPR.repr(ref))
     return '{}\nSupplied value:\n{}\n\nSupplied reference:\n{}'.format(*args)
 
 
@@ -370,7 +389,7 @@ def _err_msg_verbose(assertion: Any,
                      value: Any,
                      ref: Any) -> str:
     """Return a formatted error message."""
-    args = repr(assertion), repr(value), repr(ref)
+    args = str(assertion), repr(value), repr(ref)
     return '{}\nSupplied value:\n{}\n\nSupplied reference:\n{}'.format(*args)
 
 

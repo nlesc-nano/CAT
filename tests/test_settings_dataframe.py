@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from CAT.assertion_functions import assert_eq
+from CAT.assertion.assertion_manager import assertion
 from CAT.frozen_settings import FrozenSettings
 from CAT.settings_dataframe import (SettingsDataFrame, SettingsSeries)
 
@@ -15,9 +15,9 @@ def test_df_and_series() -> None:
     """Tests for :class:`.SettingsDataFrame` and :class:`.SettingsSeries`."""
     settings = FrozenSettings(_DICT)
 
-    assert_eq(DF.settings, settings)
-    assert_eq(SERIES.settings, settings)
-    assert_eq(DF[0].settings, settings)
-    assert_eq(SERIES.to_frame().settings, settings)
-    assert_eq(DF.copy().settings, settings)
-    assert_eq(SERIES.copy().settings, settings)
+    assertion.eq(DF.settings, settings)
+    assertion.eq(SERIES.settings, settings)
+    assertion.eq(DF[0].settings, settings)
+    assertion.eq(SERIES.to_frame().settings, settings)
+    assertion.eq(DF.copy().settings, settings)
+    assertion.eq(SERIES.copy().settings, settings)
