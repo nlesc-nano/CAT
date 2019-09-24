@@ -3,6 +3,8 @@ The PSFContainer class
 
 Index
 -----
+.. currentmodule:: nanoCAT
+.. currentmodule:: nanoCAT.ff
 .. currentmodule:: nanoCAT.ff.psf
 .. autosummary::
 
