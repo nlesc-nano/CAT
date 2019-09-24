@@ -234,22 +234,25 @@ class AssertionManager(AbstractDataClass, metaclass=_MetaAM):
             A newly-formatted exception message to-be raised by :meth:`AssertionManager.assert_`.
 
         """
+        __tracebackhide__ = True
+
         indent = 4 * ' '
 
         name = func.__qualname__ if hasattr(func, '__qualname__') else func.__name__
-        _assertion = f'{name}(a'
-        for _, j in zip(args, ascii_lowercase):
-            _assertion += f', {j}'
+        ret = f'{name}('
+        for i, (_, j) in enumerate(zip(args, ascii_lowercase)):
+            ret += f', {j}' if i >= 1 else j
         if kwargs:
-            _assertion += ', **kwargs'
-        _assertion += ')'
+            ret += ', **kwargs'
+        ret += ')'
 
         if invert:
-            _assertion = 'not ' + _assertion
+            ret = 'not ' + ret
 
-        ret = f'Exception: {repr(ex)}\n'
+        ret += f'\nException: {repr(ex)}'
         for i, j in zip(args, ascii_lowercase):
             ret += '\n\nValue {}:\n{}'.format(j, textwrap.indent(self.repr(i), indent))
+
         return ret
 
     def assert_(self, func: Callable, *args: Any, invert: bool = False, **kwargs: Any) -> None:
@@ -275,6 +278,8 @@ class AssertionManager(AbstractDataClass, metaclass=_MetaAM):
             Keyword arguments for **func**.
 
         """
+        __tracebackhide__ = True
+
         try:
             if invert:
                 assert not func(*args, **kwargs)
@@ -282,7 +287,9 @@ class AssertionManager(AbstractDataClass, metaclass=_MetaAM):
                 assert func(*args, **kwargs)
         except Exception as ex:
             err = self._get_exc_message(ex, func, *args, invert=invert, **kwargs)
-            raise AssertionError(err)
+            ex_new = AssertionError(err)
+            ex_new.__traceback__ = ex.__traceback__
+            raise ex_new
 
     def add_to_instance(self, func: Callable, override_attr: bool = False,
                         name: Optional[str] = None) -> None:
