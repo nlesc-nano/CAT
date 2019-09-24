@@ -39,7 +39,7 @@ def test_mol_to_file() -> None:
         kwargs['mol_format'] = kwargs['mol_format'][0:2]
         mol_to_file(mol_list, **kwargs)
         for file in ref[:2]:
-            assert_isfile(file)
+            assertion.isfile(file)
         for file in ref[2:]:
             assertion.isfile(file, invert=True)
 

@@ -9,7 +9,7 @@ SETTINGS = FrozenSettings({'a': True, 'b': False, 'c': [1, 2, 3, 4]})
 def test_missing() -> None:
     """Tests for :meth:`CAT.frozen_settings.FrozenSettings.__missing__`."""
     item = SETTINGS.d
-    assertion.is_(item, FrozenSettings())
+    assertion.eq(item, FrozenSettings())
 
 
 def test_delitem() -> None:

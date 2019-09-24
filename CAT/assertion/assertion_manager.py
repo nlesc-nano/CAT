@@ -103,6 +103,7 @@ def _bind_callable(class_type: Union[type, Any], func: Callable,
     # Create the to-be added method
 
     def method(self, *args, invert=False, **kwargs):
+        __tracebackhide__ = True
         self.assert_(func, *args, invert=invert, **kwargs)
 
     # Update docstrings and annotations
@@ -233,7 +234,7 @@ class AssertionManager(AbstractDataClass, metaclass=_MetaAM):
         :class:`str`
             A newly-formatted exception message to-be raised by :meth:`AssertionManager.assert_`.
 
-        """
+        """  # noqa
         __tracebackhide__ = True
 
         indent = 4 * ' '
@@ -277,7 +278,7 @@ class AssertionManager(AbstractDataClass, metaclass=_MetaAM):
         \**kwargs : :class:`Any<typing.Any>`, optional
             Keyword arguments for **func**.
 
-        """
+        """  # noqa
         __tracebackhide__ = True
 
         try:
@@ -345,7 +346,9 @@ class AssertionManager(AbstractDataClass, metaclass=_MetaAM):
         :exc:`Exception`
             Common base class for all non-exit exceptions.
 
-        """
+        """  # noqa
+        __tracebackhide__ = True
+
         if exception is AssertionError:  # AssertionError
             raise TypeError("'AssertionError' is a disallowed value for the 'exception' parameter")
 

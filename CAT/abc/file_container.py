@@ -73,7 +73,7 @@ class AbstractFileContainer(abc.ABC, Container):
             Only relevant when a file object is supplied to **filename** and
             the datastream is *not* in text mode.
 
-        \**kwargs : optional
+        /**kwargs : optional
             Optional keyword arguments that will be passed to both
             :meth:`AbstractFileContainer._read_iterate` and
             :meth:`AbstractFileContainer._read_postprocess`.
@@ -86,7 +86,7 @@ class AbstractFileContainer(abc.ABC, Container):
         :meth:`AbstractFileContainer._read_postprocess`
             Post processing the class instance created by :meth:`AbstractFileContainer.read`.
 
-        """
+        """  # noqa
 
         # filename is an actual filename
         if isinstance(filename, (bytes, str, os.PathLike)):
@@ -129,7 +129,7 @@ class AbstractFileContainer(abc.ABC, Container):
         :meth:`.read`
             The main method for reading files.
 
-        """
+        """  # noqa
         raise NotImplementedError('Trying to call an abstract method')
 
     def _read_postprocess(self, filename: Union[AnyStr, os.PathLike, Iterable[AnyStr]],
@@ -158,7 +158,7 @@ class AbstractFileContainer(abc.ABC, Container):
         :meth:`AbstractFileContainer.read`
             The main method for reading files.
 
-        """
+        """  # noqa
         pass
 
     """########################### methods for writing files. ##############################"""
@@ -192,7 +192,7 @@ class AbstractFileContainer(abc.ABC, Container):
         :meth:`AbstractFileContainer._get_writer`
             Take a :meth:`write` method and ensure its first argument is properly encoded.
 
-        """
+        """  # noqa
         # filename is an actual filename
         if isinstance(filename, (bytes, str, os.PathLike)):
             with open(filename, 'w') as f:
@@ -281,7 +281,7 @@ class AbstractFileContainer(abc.ABC, Container):
         :meth:`AbstractFileContainer.write`:
             The main method for writing files.
 
-        """
+        """  # noqa
         raise NotImplementedError('Trying to call an abstract method')
 
     @classmethod

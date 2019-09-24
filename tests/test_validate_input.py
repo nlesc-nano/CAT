@@ -46,14 +46,16 @@ def test_validate_input() -> None:
     ref.qd.activation_strain = False
     ref.qd.dirname = join(PATH, 'qd')
     ref.qd.dissociate = False
-    ref.qd.optimize = {'job1': AMSJob, 's2': {'description': 'UFF with the default forcefield', 'input': {'uff': {'library': 'uff'}, 'ams': {'system': {'bondorders': {'_1': None}}}}}, 's1': {'description': 'UFF with the default forcefield', 'input': {'uff': {'library': 'uff'}, 'ams': {'system': {'bondorders': {'_1': None}}}}}, 'job2': AMSJob}  # noqa
+    ref.qd.optimize = {'job1': AMSJob, 'use_ff': False, 's2': {'description': 'UFF with the default forcefield', 'input': {'uff': {'library': 'uff'}, 'ams': {'system': {'bondorders': {'_1': None}}}}}, 's1': {'description': 'UFF with the default forcefield', 'input': {'uff': {'library': 'uff'}, 'ams': {'system': {'bondorders': {'_1': None}}}}}, 'job2': AMSJob}  # noqa
+
+    ref.forcefield = Settings()
 
     func_groups = s.optional.ligand.pop('functional_groups')
 
     try:
         for mol in func_groups:
             assertion.isinstance(mol, Chem.Mol)
-        assertion.eq(s.optional, ref, verbose=True)
+        assertion.eq(s.optional, ref)
     finally:
         rmtree(join(PATH, 'ligand'))
         rmtree(join(PATH, 'qd'))

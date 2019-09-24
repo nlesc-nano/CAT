@@ -21,6 +21,7 @@ API
 
 """
 
+import textwrap
 from typing import (Any, Union, Iterable)
 
 from scm.plams import Settings
@@ -48,6 +49,16 @@ class FrozenSettings(Settings):
             elif isinstance(value, list):
                 value = [FrozenSettings(i) if isinstance(i, dict) else i for i in value]
                 Settings.__setitem__(self, key, value)
+
+    def __str__(self) -> str:
+        """Return a string representation of this instance."""
+        if not self:
+            return f'{self.__class__.__name__}()'
+        indent = 4 * ' '
+        ret = super().__str__()[:-1]
+        return f'{self.__class__.__name__}(\n{textwrap.indent(ret, indent)}\n)'
+
+    __repr__ = __str__
 
     def __missing__(self, name: Immutable) -> 'FrozenSettings':
         """Return a new (empty) :class:`FrozenSettings` instance."""

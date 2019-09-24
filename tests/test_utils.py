@@ -92,4 +92,4 @@ def test_restart_init() -> None:
     manager = config.default_jobmanager
 
     _hash = '0da9b13507022986d26bbc57b4c366cf1ead1fe70ff750e071e79e393b14dfb5'
-    assertion.contains(_hash, manager.hashes)
+    assertion.contains(manager.hashes, _hash)

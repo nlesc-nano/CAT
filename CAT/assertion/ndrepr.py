@@ -17,23 +17,17 @@ API
 
 """
 
+import types
 import reprlib
 from typing import Any, Dict, Union
 from itertools import chain
 
-try:
-    import numpy as np
-    ndarray: Union[type, str] = np.ndarray
-except ImportError:
-    ndarray: Union[type, str] = 'numpy.ndarray'
+from scm.plams import Settings
 
-try:
-    import pandas as pd
-    DataFrame: Union[type, str] = pd.DataFrame
-    Series: Union[type, str] = pd.Series
-except ImportError:
-    DataFrame: Union[type, str] = 'pandas.DataFrame'
-    Series: Union[type, str] = 'pandas.Series'
+from CAT.frozen_settings import FrozenSettings
+
+import numpy as np
+import pandas as pd
 
 
 class NDRepr(reprlib.Repr):
@@ -118,7 +112,13 @@ class NDRepr(reprlib.Repr):
         i = self.maxfloat
         return f'{obj:{i}.{i}f}'
 
-    def repr_ndarray(self, obj: ndarray, level: int) -> str:
+    def repr_method(self, obj: types.MethodType, level: int) -> str:
+        return f'<bound method {obj.__qualname__} of {object.__repr__(obj.__self__)}>'
+
+    def repr_Settings(self, obj: Settings, level: int) -> str: return repr(obj)
+    def repr_FrozenSettings(self, obj: FrozenSettings, level: int) -> str: return repr(obj)
+
+    def repr_ndarray(self, obj: np.ndarray, level: int) -> str:
         """Create a :class:`str` represenation of a :class:`numpy.ndarray` instance."""
         if level <= 0:
             return f'{obj.__class__.__name__}(...)'
@@ -131,7 +131,7 @@ class NDRepr(reprlib.Repr):
         with np.printoptions(**kwargs):
             return repr(obj)
 
-    def repr_DataFrame(self, obj: DataFrame, level: int) -> str:
+    def repr_DataFrame(self, obj: pd.DataFrame, level: int) -> str:
         """Create a :class:`str` represenation of a :class:`pandas.DataFrame` instance."""
         if level <= 0:
             return f'{obj.__class__.__name__}(...)'
@@ -144,7 +144,7 @@ class NDRepr(reprlib.Repr):
         with pd.option_context(*args):
             return repr(obj)
 
-    def repr_Series(self, obj: Series, level: int) -> str:
+    def repr_Series(self, obj: pd.Series, level: int) -> str:
         """Create a :class:`str` represenation of a :class:`pandas.Series` instance."""
         if level <= 0:
             return f'{obj.__class__.__name__}(...)'
@@ -156,7 +156,7 @@ class NDRepr(reprlib.Repr):
         with pd.option_context(*args):
             return repr(obj)
 
-    def _get_ndformatter(self, obj: ndarray) -> dict:
+    def _get_ndformatter(self, obj: np.ndarray) -> dict:
         """Return a value for the **formatter** argument in :func:`numpy.printoptions`."""
         if obj.dtype not in (np.dtype(float), np.dtype(int)):
             return {}

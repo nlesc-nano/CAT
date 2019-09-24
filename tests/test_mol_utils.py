@@ -66,9 +66,9 @@ def test_merge_mol() -> None:
     assertion.eq(len(mol.atoms), len(atom_list))
     assertion.eq(len(mol.bonds), len(bond_list))
     for at in mol.atoms:
-        assertion.contains(at, atom_list)
+        assertion.contains(atom_list, at)
     for bond in mol.bonds:
-        assertion.contains(bond, bond_list)
+        assertion.contains(bond_list, bond)
 
 
 def test_separate_mod() -> None:
@@ -78,10 +78,10 @@ def test_separate_mod() -> None:
 
     for m in mol_list:
         for at in m.atoms:
-            assertion.contains(at, mol)
-            assertion.contains(at, mol.atoms)
+            assertion.contains(mol, at)
+            assertion.contains(mol.atoms, at)
         for bond in m.bonds:
-            assertion.contains(bond, mol.bonds)
+            assertion.contains(mol.bonds, bond)
 
 
 def test_to_atnum() -> None:

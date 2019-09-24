@@ -80,6 +80,6 @@ def test_remove_job() -> None:
     k, v = next(iter(manager.hashes.items()))
     job = v()
 
-    assertion.contains(k, manager.hashes)
+    assertion.contains(manager.hashes, k)
     manager.remove_job(job)
     assertion.eq(manager.hashes, {})

@@ -261,7 +261,8 @@ def test_qd_opt_schema() -> None:
         'job1': AMSJob,
         's1': _qd_opt_s1_default,
         'job2': AMSJob,
-        's2': _qd_opt_s2_default
+        's2': _qd_opt_s2_default,
+        'use_ff': False
     })
     args = SchemaError, qd_opt_schema.validate, qd_opt_dict
 
@@ -353,6 +354,7 @@ def test_bde_schema() -> None:
     bde_dict = Settings({'core_atom': 'Cd', 'lig_count': 2})
     ref = Settings({
         'keep_files': True,
+        'use_ff': False,
         'core_atom': 48,
         'lig_count': 2,
         'core_core_dist': 0.0,
