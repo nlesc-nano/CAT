@@ -319,7 +319,8 @@ def ligand_to_qd(core: Molecule,
                     at.properties.pdb_info.ResidueName == 'COR' or at.properties.anchor],
         'path': dirname,
         'name': get_name(),
-        'job_path': []
+        'job_path': [],
+        'prm': ligand.properties.prm
     })
 
     # Print and return

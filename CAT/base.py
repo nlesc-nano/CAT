@@ -54,23 +54,27 @@ try:
     from nanoCAT.asa import init_asa
     from nanoCAT.bde.bde_workflow import init_bde
     from nanoCAT.ligand_solvation import init_solv
-    NANO_CAT = True
+    from nanoCAT.ff.ff_assignment import init_ff_assignment
+
+    _NANO_EX: Optional[ImportError] = None
+    NANO_CAT: bool = True
 except ImportError as ex:
-    NANO_EX = ex
-    NANO_CAT = False
+    _NANO_EX: Optional[ImportError] = ex
+    NANO_CAT: bool = False
 
 try:
     import dataCAT
-    DATA_CAT = True
+    _DATA_EX: Optional[ImportError] = None
+    DATA_CAT: bool = True
 except ImportError as ex:
-    DATA_EX = ex
-    DATA_CAT = False
+    _DATA_EX: Optional[ImportError] = ex
+    DATA_CAT: bool = False
 
 
 __all__ = ['prep']
 
 # Aliases for pd.MultiIndex columns
-MOL = ('mol', '')
+MOL: Tuple[str, str] = ('mol', '')
 
 
 def prep(arg: Settings,
@@ -103,14 +107,14 @@ def prep(arg: Settings,
                     f'(version: {nanoCAT.__version__})')
     else:
         logger.warning('The optional Nano-CAT package was not found')
-        logger.debug(f'{NANO_EX.__class__.__name__}: {NANO_EX}', exc_info=True)
+        logger.debug(f'{_NANO_EX.__class__.__name__}: {_NANO_EX}', exc_info=True)
 
     if DATA_CAT:
         logger.info(f'The optional Data-CAT package was successfully found '
                     f'(version: {dataCAT.__version__})')
     else:
         logger.warning('The optional Data-CAT package was not found')
-        logger.debug(f'{DATA_EX.__class__.__name__}: {DATA_EX}', exc_info=True)
+        logger.debug(f'{_DATA_EX.__class__.__name__}: {_DATA_EX}', exc_info=True)
 
     # Interpret and extract the input settings
     ligand_df, core_df, qd_df = prep_input(arg)
@@ -269,6 +273,7 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
 
     """
     # Unpack arguments
+    forcefield = ligand_df.settings.optional.forcefield
     optimize = ligand_df.settings.optional.ligand.optimize
     crs = ligand_df.settings.optional.ligand.crs
 
@@ -287,6 +292,12 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     if crs:
         val_nano_cat("Ligand COSMO-RS calculations require the nano-CAT package")
         init_solv(ligand_df)
+
+    # Assign CHARMM CGenFF atom types to all ligands
+    if forcefield:
+        val_nano_cat("Automatic ligand forcefield assignment requires MATCH "
+                     "(Multipurpose Atom-Typer for CHARMM) and the nano-CAT package")
+        init_ff_assignment(ligand_df, 'ligand')
 
     return ligand_df
 
@@ -341,12 +352,17 @@ def prep_qd(ligand_df: Optional[SettingsDataFrame],
                         "both be 'None'")
 
     # Unpack arguments
-    optimize = qd_df.settings.optional.qd.optimize
-    dissociate = qd_df.settings.optional.qd.dissociate
-    activation_strain = qd_df.settings.optional.qd.activation_strain
+    optimize = ligand_df.settings.optional.qd.optimize
+    forcefield = ligand_df.settings.optional.forcefield
+    dissociate = ligand_df.settings.optional.qd.dissociate
+    activation_strain = ligand_df.settings.optional.qd.activation_strain
 
     if not qd_df[MOL].any():
         raise MoleculeError('No valid quantum dots found, aborting')
+
+    if forcefield:
+        val_nano_cat("Automatic ligand forcefield assignment requires MATCH "
+                     "(Multipurpose Atom-Typer for CHARMM) and the nano-CAT package")
 
     # Optimize the qd with the core frozen
     if optimize:

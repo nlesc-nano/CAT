@@ -14,5 +14,5 @@ look into the customization of the various jobs.
     5_bde
     6_type_aliases
     7_database
-    8_import_qd
-    9_psf
+    8_psf
+    9_prm

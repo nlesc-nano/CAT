@@ -9,7 +9,11 @@ Index
 .. currentmodule:: CAT.jobs
 .. autosummary::
     get_main_molecule
+    _xyz_to_mol
     get_energy
+    _get_name
+    pre_process_settings
+    retrieve_results
     job_single_point
     job_geometry_opt
     job_freq
@@ -17,7 +21,11 @@ Index
 API
 ---
 .. automethod:: get_main_molecule
+.. autofunction:: _xyz_to_mol
 .. automethod:: get_energy
+.. autofunction:: _get_name
+.. autofunction:: pre_process_settings
+.. autofunction:: retrieve_results
 .. autofunction:: job_single_point
 .. autofunction:: job_geometry_opt
 .. autofunction:: job_freq
@@ -49,32 +57,56 @@ __all__ = ['job_single_point', 'job_geometry_opt', 'job_freq']
 
 @add_to_class(Cp2kResults)
 def get_main_molecule(self) -> Optional[Molecule]:
+    try:
+        filename = self.files['cp2k-pos-1.xyz']
+        return _xyz_to_mol(filename)
+    except TypeError:
+        pass
+
     for file in self.files:
         if '.xyz' in file:
-            return Molecule(join(self.job.path, file))
-    return None
+            filename = join(self.job.path, file)
+            return _xyz_to_mol(filename)
+    raise ResultsError(f'Failed to retrieve main molecule from {self.job.name}')
+
+
+def _xyz_to_mol(filename: str) -> Molecule:
+    """Grab the last geometry from an .xyz file and return it as a :class:`Molecule` instance."""
+    with open(filename, 'r') as f:
+        atom_count = int(next(f))
+        for line_count, _ in enumerate(f, 2):
+            pass
+
+    mol_count = line_count // (2 + atom_count)
+    return Molecule(filename, geometry=mol_count)
 
 
 @add_to_class(Cp2kResults)
-def get_energy(self, index: int = 0,
-               unit: str = 'Hartree') -> float:
+def get_energy(self, index: int = 0, unit: str = 'Hartree') -> float:
     """Returns last occurence of 'Total energy:' in the output."""
-    energy = self._get_energy_type('Total', index=index)
+    try:
+        energy = self._get_energy_type('Total', index=index)
+        if energy is None:
+            raise IndexError
+
+    # Because for some unfathomable reason CP2K doesn't print the final energy in a
+    # conviently accessible manner when running geometry optimizations
+    except IndexError:
+        mol = self.get_main_molecule()
+        energy = float(mol.properties.comment.split()[-1])
+
     return Units.convert(energy, 'Hartree', unit)
 
 
-def _get_name(name) -> str:
+def _get_name(name: str) -> str:
     manager = config.default_jobmanager
     if name in manager.names:
         return name + '.' + str(1 + manager.names[name]).zfill(manager.settings.counter_len)
-    else:
-        return name
+    return name
 
 
-def pre_process_settings(mol: Molecule,
-                         s: Settings,
-                         job_type: type,
-                         template_name: str) -> Settings:
+def pre_process_settings(mol: Molecule, s: Settings,
+                         job_type: type, template_name: str) -> Settings:
     """Update all :class:`Settings`, **s**, with those from a QMFlows template (see **job**)."""
     ret = Settings()
     ret.input = getattr(qmflows, template_name)['specific'][type_to_string(job_type)].copy()
@@ -87,8 +119,7 @@ def pre_process_settings(mol: Molecule,
     return ret
 
 
-def retrieve_results(results: Results,
-                     job_preset: str) -> None:
+def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
     """Unpack the :class:`results` from a PLAMS-facilitated calculation.
 
     Performs an inplace update of **results**:
@@ -99,6 +130,9 @@ def retrieve_results(results: Results,
 
     Paramaters
     ----------
+    mol : |plams.Molecule|_
+        A PLAMS molecule.
+
     results : |plams.Results|_
         A PLAMS :class:`Results` instance.
 
@@ -114,7 +148,6 @@ def retrieve_results(results: Results,
     # Unpack arguments
     job = results.job
     name = job.name
-    mol = job.molecule
 
     # Define more arguments
     freq = np.empty(1)
@@ -128,13 +161,15 @@ def retrieve_results(results: Results,
         energy = mol.properties.energy.E = results.get_energy(unit='kcal/mol')
         if job_preset in ('geometry optimization', 'frequency analysis'):
             mol.from_mol_other(results.get_main_molecule())
+
         if job_preset == 'frequency analysis':
             freq = mol.properties.frequencies = results.get_frequencies()
             energy = mol.properties.energy = get_thermo(mol, freq, energy)
 
         # Evaluate all results
         if not (energy and isinstance(freq, np.ndarray)):
-            raise ResultsError(f'Failed to retrieve results of {name}')
+            with open(results['$JN.err'], 'r') as f:
+                raise ResultsError(f.read().rstrip('\n'))
         log_succes(job, mol, job_preset, name)
 
     except Exception as ex:  # Failed to retrieve results
@@ -198,10 +233,11 @@ def _finalize(self):
 
 
 @add_to_class(Molecule)
-def job_single_point(self, job_type: Callable,
+def job_single_point(self, job_type: Callable[..., Job],
                      settings: Settings,
                      name: str = 'Single_point',
-                     ret_results: bool = False) -> Optional[Results]:
+                     ret_results: bool = False,
+                     read_template: bool = True) -> Optional[Results]:
     """Function for running an arbritrary jobs, extracting total energies.
 
     Paramaters
@@ -219,6 +255,9 @@ def job_single_point(self, job_type: Callable,
     ret_results : bool
         Whether or not the :class:`Results` instance should be returned or not.
 
+    read_template : bool
+        Whether or not to update **settings** using a QMFlows template or not.
+
     Returns
     -------
     |plams.Results|_
@@ -226,7 +265,8 @@ def job_single_point(self, job_type: Callable,
 
     """
     # Grab the default settings for a specific job and update them with user provided settings
-    s = pre_process_settings(self, settings, job_type, 'singlepoint')
+    _sp = 'singlepoint'
+    s = settings if not read_template else pre_process_settings(self, settings, job_type, _sp)
 
     # Run the job; extract energies
     job = job_type(molecule=self, settings=s, name=name)
@@ -234,7 +274,7 @@ def job_single_point(self, job_type: Callable,
     log_start(job, self, 'single point', _name)
 
     results = job.run()
-    retrieve_results(results, 'single point')
+    retrieve_results(self, results, 'single point')
 
     inp_name = join(job.path, job.name + '.in')
     self.properties.job_path.append(inp_name)
@@ -246,10 +286,11 @@ def job_single_point(self, job_type: Callable,
 
 
 @add_to_class(Molecule)
-def job_geometry_opt(self, job_type: Callable,
+def job_geometry_opt(self, job_type: Callable[..., Job],
                      settings: Settings,
                      name: str = 'Geometry_optimization',
-                     ret_results: bool = False) -> Optional[Results]:
+                     ret_results: bool = False,
+                     read_template: bool = True) -> Optional[Results]:
     """Function for running an arbritrary jobs, extracting total energies and final geometries.
 
     Paramaters
@@ -267,6 +308,9 @@ def job_geometry_opt(self, job_type: Callable,
     ret_results : bool
         Whether or not the :class:`Results` instance should be returned or not.
 
+    read_template : bool
+        Whether or not to update **settings** using a QMFlows template or not.
+
     Returns
     -------
     |plams.Results|_
@@ -274,7 +318,8 @@ def job_geometry_opt(self, job_type: Callable,
 
     """
     # Grab the default settings for a specific job and update them with user provided settings
-    s = pre_process_settings(self, settings, job_type, 'geometry')
+    _geo = 'geometry'
+    s = settings if not read_template else pre_process_settings(self, settings, job_type, _geo)
 
     # Run the job; extract geometries and energies
     job = job_type(molecule=self, settings=s, name=name)
@@ -282,7 +327,7 @@ def job_geometry_opt(self, job_type: Callable,
     log_start(job, self, 'geometry optimization', _name)
 
     results = job.run()
-    retrieve_results(results, 'geometry optimization')
+    retrieve_results(self, results, 'geometry optimization')
 
     inp_name = join(job.path, job.name + '.in')
     self.properties.job_path.append(inp_name)
@@ -294,11 +339,12 @@ def job_geometry_opt(self, job_type: Callable,
 
 
 @add_to_class(Molecule)
-def job_freq(self, job_type: Callable,
+def job_freq(self, job_type: Callable[..., Job],
              settings: Settings,
              name: str = 'Frequency_analysis',
              opt: bool = True,
-             ret_results: bool = False) -> Optional[Results]:
+             ret_results: bool = False,
+             read_template: bool = True) -> Optional[Results]:
     """Function for running an arbritrary Jobs
 
     Extracts total energies, final geometries and
@@ -323,6 +369,9 @@ def job_freq(self, job_type: Callable,
     ret_results : bool
         Whether or not the :class:`Results` instance should be returned or not.
 
+    read_template : bool
+        Whether or not to update **settings** using a QMFlows template or not.
+
     Returns
     -------
     |plams.Results|_
@@ -334,7 +383,7 @@ def job_freq(self, job_type: Callable,
         self.job_geometry_opt(job_type, settings)
 
     # Grab the default settings for a specific job and update them with user provided settings
-    s = pre_process_settings(self, settings, job_type, 'freq')
+    s = settings if not read_template else pre_process_settings(self, settings, job_type, 'freq')
 
     # Run the job; extract geometries and (Gibbs free) energies
     job = job_type(molecule=self, settings=s, name=name)
@@ -342,7 +391,7 @@ def job_freq(self, job_type: Callable,
     log_start(job, self, 'frequency analysis', _name)
 
     results = job.run()
-    retrieve_results(results, 'frequency analysis')
+    retrieve_results(self, results, 'frequency analysis')
 
     inp_name = join(job.path, _name + '.in')
     self.properties.job_path.append(inp_name)

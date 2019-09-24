@@ -64,3 +64,79 @@ MOPAC:
         ams:
             system:
                 charge: 0
+
+CP2K_CHARM_opt:
+    description: CP2K geometry optimization with CHARMM forcefields
+    input:
+        motion:
+            geo_opt:
+                type: minimization
+                optimizer: LBFGS
+                max_iter: 200
+
+        force_eval:
+            method: FIST
+            mm:
+                forcefield:
+                    ignore_missing_critical_params: ''
+                    parmtype: CHM
+                    parm_file_name: null
+                    do_nonbonded: ''
+                    shift_cutoff: .TRUE.
+                    spline:
+                        emax_spline: 10e10
+                poisson:
+                    ewald:
+                        ewald_type: spme
+                        alpha: .44
+                        gmax: 24
+            subsys:
+                cell:
+                    abc: '[angstrom] 50.0 50.0 50.0'
+                    periodic: NONE
+                topology:
+                    conn_file_format: PSF
+                    conn_file_name: null
+                    coord_file_format: 'OFF'
+                    center_coordinates:
+                        center_point: 0.0 0.0 0.0
+
+        global:
+            print_level: low
+            project: cp2k
+            run_type: geometry_optimization
+
+CP2K_CHARM_singlepoint:
+    description: CP2K single points with CHARMM forcefields
+    input:
+        force_eval:
+            method: FIST
+            mm:
+                forcefield:
+                    ignore_missing_critical_params: ''
+                    parmtype: CHM
+                    parm_file_name: null
+                    do_nonbonded: ''
+                    shift_cutoff: .TRUE.
+                    spline:
+                        emax_spline: 10e10
+                poisson:
+                    ewald:
+                        ewald_type: spme
+                        alpha: .44
+                        gmax: 24
+            subsys:
+                cell:
+                    abc: '[angstrom] 50.0 50.0 50.0'
+                    periodic: NONE
+                topology:
+                    conn_file_format: PSF
+                    conn_file_name: null
+                    coord_file_format: 'OFF'
+                    center_coordinates:
+                        center_point: 0.0 0.0 0.0
+
+        global:
+            print_level: low
+            project: cp2k
+            run_type: energy
