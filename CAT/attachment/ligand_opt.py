@@ -95,7 +95,6 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
     # Searches for matches between the input ligand and the database; imports the structure
     if read:
         read_data(ligand_df, read)
-    ligand_df[OPT] = ligand_df[OPT].astype(bool, copy=False)
 
     if write:
         _ligand_to_db(ligand_df, opt=False)
@@ -144,7 +143,7 @@ def read_data(ligand_df: SettingsDataFrame,
     db.from_csv(ligand_df, database='ligand')
 
     for i, mol in zip(ligand_df[OPT], ligand_df[MOL]):
-        if i == -1:
+        if not i:
             continue
         logger.info(f'{mol.properties.name} has been pulled from the database')
     ligand_df[OPT] = ligand_df[OPT].astype(bool, copy=False)
@@ -160,7 +159,7 @@ def start_ligand_jobs(ligand_df: SettingsDataFrame,
         logger.info(f'Starting ligand optimization')
 
     lig_new = []
-    for ligand in ligand_df[MOL][idx]:
+    for ligand in ligand_df.loc[idx, MOL]:
         logger.info(f'UFFGetMoleculeForceField: {ligand.properties.name} optimization has started')
         try:
             mol_list = split_mol(ligand)
@@ -176,7 +175,7 @@ def start_ligand_jobs(ligand_df: SettingsDataFrame,
             logger.error(f'UFFGetMoleculeForceField: {ligand.properties.name} optimization '
                          'has failed')
             logger.debug(f'{ex.__class__.__name__}: {ex}', exc_info=True)
-
+    import pdb; pdb.set_trace()
     logger.info('Finishing ligand optimization\n')
     return lig_new
 
@@ -324,7 +323,7 @@ def split_mol(plams_mol: Molecule) -> List[Molecule]:
         plams_mol.add_atom(atom)
         plams_mol.add_bond(bond)
 
-    atom_list = itertools.chain.from_iterable((bond.atom1, bond.atom2) for bond in bond_list)
+    atom_list = list(itertools.chain.from_iterable((bond.atom1, bond.atom2) for bond in bond_list))
     atom_set = {atom for atom in atom_list if atom_list.count(atom) >= 3}
     atom_dict = {atom: [bond for bond in atom.bonds if bond in bond_list] for atom in atom_set}
 
@@ -422,6 +421,7 @@ def recombine_mol(mol_list: Sequence[Molecule]) -> Molecule:
     if len(mol_list) == 1:
         return mol_list[0]
     tup_list = mol_list[0].properties.mark
+
     if not tup_list:
         raise IndexError('No PLAMS atoms specified in mol_list[0].properties.mark, '
                          'aborting recombine_mol()')
@@ -431,7 +431,7 @@ def recombine_mol(mol_list: Sequence[Molecule]) -> Molecule:
         mol1, mol2 = tup[0].mol, tup[2].mol
         vec1 = sanitize_dim_2(tup[3]) - sanitize_dim_2(tup[2])
         vec2 = sanitize_dim_2(tup[0]) - sanitize_dim_2(tup[1])
-        idx = tup[2].get_atom_index() - 1
+        idx = mol2.get_index(tup[2]) - 1
         mol_array = rot_mol_angle(mol2, vec1, vec2, atoms_other=tup[0], idx=idx, bond_length=1.5)
         mol2.from_array(mol_array)
 
@@ -440,7 +440,7 @@ def recombine_mol(mol_list: Sequence[Molecule]) -> Molecule:
         mol1.delete_atom(tup[1])
         mol1.delete_atom(tup[3])
         mol1.add_bond(tup[0], tup[2])
-        bond_tup = mol1.get_bond_index(mol1.bonds[-1])
+        bond_tup = mol1.get_index(mol1.bonds[-1])
         mol1.from_mol_other(global_minimum_scan_rdkit(mol1, bond_tup))
 
     del mol1.properties.mark
