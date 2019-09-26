@@ -123,6 +123,11 @@ def len_eq(a: Sized, b: int) -> bool:
     return len(a) == b
 
 
+def allclose(a: float, b: float, rtol: float = 1e-07) -> bool:
+    """CHeck if the absolute differnce between **a** and **b** is smaller than **rtol**."""
+    return (abs(a) - abs(b)) < rtol
+
+
 class _MetaAM(type):
     """The meta-class of :class:`AssertionManager`.
 
@@ -135,7 +140,7 @@ class _MetaAM(type):
 
     #: A :class:`frozenset` of callables which need an assertion function.
     INCLUDE: FrozenSet[Callable] = frozenset({
-        os.path.isfile, os.path.isdir, isinstance, issubclass, callable, hasattr, len_eq
+        os.path.isfile, os.path.isdir, isinstance, issubclass, callable, hasattr, len_eq, allclose
     })
 
     def __new__(cls, name, bases, namespace, **kwargs) -> type:
