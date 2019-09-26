@@ -23,6 +23,7 @@ import os
 import io
 import abc
 import functools
+from contextlib import AbstractContextManager
 from codecs import iterdecode
 from typing import (Dict, Optional, Any, Iterable, Iterator, Union, AnyStr, Callable)
 from collections.abc import Container
@@ -87,20 +88,16 @@ class AbstractFileContainer(abc.ABC, Container):
             Post processing the class instance created by :meth:`AbstractFileContainer.read`.
 
         """  # noqa
-
-        # filename is an actual filename
-        if isinstance(filename, (bytes, str, os.PathLike)):
-            with open(filename, 'r') as f:
-                iterator = iter(f) if encoding is None else iterdecode(f, encoding)
-                class_dict = cls._read_iterate(iterator, **kwargs)
-
-        # filename is a data stream
-        elif isinstance(filename, Iterable):
-            iterator = iter(filename) if encoding is None else iterdecode(filename, encoding)
-            class_dict = cls._read_iterate(iterator, **kwargs)
-
-        else:  # filename is neither an actual filename nor a data stream
+        if isinstance(filename, (bytes, str, os.PathLike)):  # A file
+            context_manager = open
+        elif isinstance(filename, Iterable):  # A file object
+            context_manager = NullContext
+        else:  # Neither file nor file object
             raise TypeError(f"The 'filename' parameter is of invalid type: {repr(type(filename))}")
+
+        with context_manager(filename, 'r') as f:
+            iterator = iter(f) if encoding is None else iterdecode(f, encoding)
+            class_dict = cls._read_iterate(iterator, **kwargs)
 
         ret = cls(**class_dict)
         ret._read_postprocess(filename, encoding, **kwargs)
@@ -193,19 +190,16 @@ class AbstractFileContainer(abc.ABC, Container):
             Take a :meth:`write` method and ensure its first argument is properly encoded.
 
         """  # noqa
-        # filename is an actual filename
-        if isinstance(filename, (bytes, str, os.PathLike)):
-            with open(filename, 'w') as f:
-                writer = self._get_writer(f.write, encoding)
-                self._write_iterate(writer, **kwargs)
-
-        # filename is a data stream
-        elif isinstance(filename, io.IOBase) or hasattr(filename, 'write'):
-            writer = self._get_writer(filename.write, encoding)
-            self._write_iterate(writer, **kwargs)
-
-        else:  # filename is neither an actual filename nor a data stream
+        if isinstance(filename, (bytes, str, os.PathLike)):  # A file
+            context_manager = open
+        elif isinstance(filename, io.IOBase) or hasattr(filename, 'write'):  # A file object
+            context_manager = NullContext
+        else:  # Neither file nor file object
             raise TypeError(f"The 'filename' parameter is of invalid type: {repr(type(filename))}")
+
+        with context_manager(filename, 'w') as f:
+            writer = self._get_writer(f.write, encoding)
+            self._write_iterate(writer, **kwargs)
 
     @staticmethod
     def _get_writer(writer: Callable[[str], None],
@@ -324,3 +318,24 @@ class AbstractFileContainer(abc.ABC, Container):
 
             return sub_attr
         return decorator
+
+
+class NullContext(AbstractContextManager):
+    """Context manager that does no additional processing.
+    Used as a stand-in for a normal context manager, when a particular
+    block of code is only sometimes used with a normal context manager:
+
+    cm = optional_cm if condition else nullcontext()
+    with cm:
+        # Perform operation, using optional_cm if condition is True
+
+    """
+
+    def __init__(self, enter_result: Any, *args: Any, **kwargs: Any) -> None:
+        self.enter_result = enter_result
+
+    def __enter__(self) -> Any:
+        return self.enter_result
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        pass

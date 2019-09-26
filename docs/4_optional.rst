@@ -31,6 +31,7 @@ Option                                    Description
 :attr:`optional.ligand.functional_groups` Manually specify SMILES strings representing functional groups.
 :attr:`optional.ligand.split`             If the ligand should be attached in its entirety to the core or not.
 :attr:`optional.ligand.cosmo-rs`          Perform a property calculation with COSMO-RS on the ligand.
+:attr:`optional.ligand.bulkiness`         Perform a ligand bulkiness calculation.
 
 :attr:`optional.qd.dirname`               The name of the directory where all quantum dots will be stored.
 :attr:`optional.qd.optimize`              Optimize the quantum dot (i.e. core + all ligands) .
@@ -62,6 +63,7 @@ Default Settings
             functional_groups: null
             split: True
             cosmo-rs: False
+            bulkiness: False
 
         qd:
             dirname: qd
@@ -261,6 +263,7 @@ Ligand
                 functional_groups: null
                 split: True
                 cosmo-rs: False
+                bulkiness: False
 
 |
 
@@ -356,6 +359,34 @@ Ligand
         calculated in the following solvents: acetone, acetonitrile,
         dimethyl formamide (DMF), dimethyl sulfoxide (DMSO), ethyl acetate,
         ethanol, *n*-hexane, toluene and water.
+
+
+    .. attribute:: optional.ligand.bulkiness
+
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``False``
+
+
+        Calculate the ligand dissociation energy.
+
+        Given a set of angles :math:`\phi`, the bulkiness factor :math:`V_{bulk}` is defined below.
+        Angles are constructed according to :math:`\phi = \angle_{ABC}`,
+        where :math:`A` represents a set of all ligand atoms,
+        :math:`B` is the ligand anchor atom and
+        :math:`C` is the mean position of all ligand atoms (*i.e.* the ligand center).
+
+        .. math::
+            W_{bulk} = \frac{1}{n} \sum_{i}^{n} e^{\sin \phi_{i}}
+
+        Conceptually, the bulkiness factor :math:`V_{bulk}` is related to ligand (half-)cones angles,
+        with the key difference that :math:`V_{bulk}` builds on top of it,
+        representing an estimate of mean inter-ligand steric interactions.
+
+        See also
+        --------
+        `Ligand cone angle <https://en.wikipedia.org/wiki/Ligand_cone_angle>`_:
+            The ligand cone angle is a measure of the steric bulk of a ligand in
+            a transition metal complex.
 
 |
 

@@ -51,22 +51,31 @@ class AbstractDataClass:
 
     def _str_iterator(self) -> Iterable[Tuple[str, Any]]:
         """Return an iterable for the :meth:`AbstractDataClass.__str__` method."""
-        return self.as_dict(copy=False).items()
+        return ((k, v) for k, v in vars(self).items() if k not in self._PRIVATE_ATTR)
 
     def __eq__(self, value: Any) -> bool:
         """Check if this instance is equivalent to **value**."""
         if type(self) is not type(value):
             return False
-        return self.as_dict(copy=False) == self.as_dict(copy=False)
 
-    def copy(self, deep: bool = False, copy_private: bool = False) -> 'AbstractDataClass':
+        try:
+            for k, v1 in vars(self).items():
+                if k in self._PRIVATE_ATTR:
+                    continue
+                v2 = vars(value)[k]
+                assert v1 == v2
+        except (AttributeError, AssertionError):
+            return False
+        else:
+            return True
+
+    def copy(self, deep: bool = False) -> 'AbstractDataClass':
         """Return a deep or shallow copy of this instance.
 
         Parameters
         ----------
-        copy_private : :class:`bool`
-            If ``True``, copy both public and private instance variables.
-            Private instance variables are defined in :data:`AbstractDataClass._PRIVATE_ATTR`.
+        deep : :class:`bool`
+            Whether or not to return a deep or shallow copy.
 
         Returns
         -------
@@ -74,8 +83,10 @@ class AbstractDataClass:
             A new instance constructed from this instance.
 
         """
-        kwargs = self.as_dict(copy=deep, return_private=copy_private)
-        return self.from_dict(kwargs)
+        cls = type(self)
+        ret = cls.__new__(cls)
+        ret.__dict__ = vars(self).copy() if not deep else deepcopy(vars(self))
+        return ret
 
     def __copy__(self) -> 'AbstractDataClass':
         """Return a shallow copy of this instance."""
@@ -85,7 +96,7 @@ class AbstractDataClass:
         """Return a deep copy of this instance."""
         return self.copy(deep=True)
 
-    def as_dict(self, copy: bool = True, return_private: bool = False) -> Dict[str, Any]:
+    def as_dict(self, return_private: bool = False) -> Dict[str, Any]:
         """Construct a dictionary from this instance with all non-private instance variables.
 
         No attributes specified in :data:`AbstractDataClass._PRIVATE_ATTR` will be included in
@@ -93,9 +104,6 @@ class AbstractDataClass:
 
         Parameters
         ----------
-        copy : :class:`bool`
-            If ``True``, return a copy of the to-be returned instance variables rather than a view.
-
         return_private : :class:`bool`
             If ``True``, return both public and private instance variables.
             Private instance variables are defined in :data:`AbstractDataClass._PRIVATE_ATTR`.
@@ -112,7 +120,7 @@ class AbstractDataClass:
             Construct a instance of this objects' class from a dictionary with keyword arguments.
 
         """
-        ret = vars(self).copy() if not copy else deepcopy(vars(self))
+        ret = deepcopy(vars(self))
         if not return_private:
             for key in self._PRIVATE_ATTR:
                 del ret[key]

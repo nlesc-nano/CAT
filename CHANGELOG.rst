@@ -5,6 +5,12 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+
+0.6.1
+*****
+* Added a workflow for calculating ligand bulkiness in `nano-CAT`_ 0.2.1.
+
+
 0.6.0
 *****
 * Implemented an interface to MATCH_ (Multipurpose Atom-Typer for CHARMM) in Nano-CAT.
