@@ -75,7 +75,7 @@ setup(
         'pandas',
         'pyyaml>=5.1',
         'schema',
-        'plams@git+https://github.com/SCM-NV/PLAMS@Minor-changes',
+        'plams@git+https://github.com/SCM-NV/PLAMS@master',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master'
     ],
     setup_requires=[
