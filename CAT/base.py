@@ -51,6 +51,7 @@ from .attachment.ligand_anchoring import init_ligand_anchoring
 try:
     import nanoCAT
     from nanoCAT.asa import init_asa
+    from nanoCAT.mol_bulk import init_lig_bulkiness
     from nanoCAT.bde.bde_workflow import init_bde
     from nanoCAT.ligand_solvation import init_solv
     from nanoCAT.ff.ff_assignment import init_ff_assignment
@@ -181,6 +182,7 @@ def prep_input(arg: Settings) -> Tuple[SettingsDataFrame, SettingsDataFrame]:
     return ligand_df, core_df
 
 
+# TODO: Move this function to its own module; this is a workflow and NOT a workflow manager
 def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
     """Function that handles the identification and marking of all core dummy atoms.
 
@@ -236,6 +238,7 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
 
     * Ligand function group identification
     * Ligand geometry optimization
+    * Ligand bulkiness calculations
     * Ligand COSMO-RS calculations
 
     .. _Nano-CAT: https://github.com/nlesc-nano/nano-CAT
@@ -257,6 +260,7 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
 
     """
     # Unpack arguments
+    bulk = ligand_df.settings.optional.ligand.bulkiness
     forcefield = ligand_df.settings.optional.forcefield
     optimize = ligand_df.settings.optional.ligand.optimize
     crs = ligand_df.settings.optional.ligand.crs
@@ -271,6 +275,11 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     # Optimize the ligands
     if optimize:
         init_ligand_opt(ligand_df)
+
+    # Perform a COSMO-RS calculation on the ligands
+    if bulk:
+        val_nano_cat("Ligand bulkiness calculations require the nano-CAT package")
+        init_lig_bulkiness(ligand_df)
 
     # Perform a COSMO-RS calculation on the ligands
     if crs:

@@ -355,6 +355,9 @@ ligand_schema: Schema = Schema({
     Optional_('split', default=True):  # Remove a counterion from the function group
         And(bool, error='optional.ligand.split expects a boolean'),
 
+    Optional_('bulkiness', default=False):  # Ligand bulkiness workflow
+        And(bool, error='optional.ligand.bulkiness expects a boolean'),
+
     Optional_('cosmo-rs', default=False):  # Settings specific to ligand COSMO-RS calculations
         Or(
             dict,

@@ -128,7 +128,8 @@ def test_ligand_schema() -> None:
         'functional_groups': None,
         'optimize': True,
         'split': True,
-        'cosmo-rs': False
+        'cosmo-rs': False,
+        'bulkiness': False
     }
     args = SchemaError, ligand_schema.validate, lig_dict
 
@@ -141,6 +142,10 @@ def test_ligand_schema() -> None:
     lig_dict['split'] = 1  # Exception: incorrect type
     assertion.exception(*args)
     lig_dict['split'] = True
+
+    lig_dict['bulkiness'] = 1  # Exception: incorrect type
+    assertion.exception(*args)
+    lig_dict['bulkiness'] = False
 
     lig_dict['cosmo-rs'] = 1  # Exception: incorrect type
     assertion.exception(*args)

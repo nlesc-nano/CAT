@@ -74,6 +74,7 @@ Verbose default Settings
             split: True
             functional_groups: null
             cosmo-rs: False
+            bulkiness: False
 
         qd:
             dirname: QD
@@ -115,6 +116,7 @@ Maximum verbose default Settings
             split: True
             functional_groups: null
             cosmo-rs: False
+            bulkiness: False
 
         qd:
             dirname: QD
