@@ -153,7 +153,7 @@ def merge_mol(self, mol_list: Union[Molecule, Iterable[Molecule]]) -> None:
 
     """
     if isinstance(mol_list, Molecule):
-        mol_list = [mol_list]
+        mol_list = (mol_list,)
 
     for mol in mol_list:
         for atom in mol.atoms:
@@ -225,7 +225,7 @@ def round_coords(self, decimals: int = 3) -> None:
 
     """
     xyz = self.as_array()
-    np.round(xyz, decimals=decimals, out=xyz)
+    xyz[:] = np.round(xyz, decimals=decimals)
     self.from_array(xyz)
 
 

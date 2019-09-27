@@ -46,17 +46,18 @@ class SplitMol(AbstractContextManager):
 
         >>> from scm.plams import Molecule, Bond
 
-        >>> mol: Molecule = ...  # Placeholder for a random molecule
+        >>> mol: Molecule = ...  # A random molecule
         >>> bond: Bond = mol[1, 2]
 
         # A backup of all bonds and atoms
         >>> bonds_backup = mol.bonds.copy()
         >>> atoms_backup = mol.atoms.copy()
 
-        >>> with SplitMol(mol, bond) as mol_list:
-        ...     mol1, mol2 = mol_list
-        ...     fancy_operation1(mol1)
-        ...     fancy_operation2(mol2)
+        # The context manager is opened; the bond is removed and the molecule is fragmented
+        >>> with SplitMol(mol, bond) as fragment_tuple:
+        ...     for fragment in fragment_tuple:
+        ...         fancy_operation(fragment)
+        ...
         ...     print(
         ...         mol.bonds == bonds_backup,
         ...         mol.atoms == atoms_backup,
@@ -83,7 +84,7 @@ class SplitMol(AbstractContextManager):
         All bonds must be part of **mol**.
         See :attr:`SplitMol.bonds`.
 
-    cap_type : :class:`str` or :class:`int`
+    cap_type : :class:`str`, :class:`int` or |plams.Atom|
         An atomic number or symbol of the atom type used for capping the to-be split molecule.
         See :attr:`SplitMol.cap_type`.
 
@@ -101,8 +102,8 @@ class SplitMol(AbstractContextManager):
 
     _at_pairs : :class:`list` [:class:`dict` [|plams.Atom|, |plams.Atom|]], optional
         A list of dictionaries.
-        Each dictionary contains an atom (see :attr:`SplitMol.bond_list`) and its respective
-        capping atom as value.
+        Each dictionary contains two atoms as keys (see :attr:`SplitMol.bond_list`) and
+        their respective capping atom as values.
         Used for reassembling :attr:`SplitMol.mol` once the context manager is closed.
         Set internally by :meth:`SplitMol.__enter__`.
 
@@ -133,7 +134,7 @@ class SplitMol(AbstractContextManager):
 
     @property
     def bonds(self) -> Dict[Bond, int]:
-        """Getter: Return :attr:`SplitMol.bonds`. Setter: Convert the provided value into a dictionary with bonds as keys and their matching index as value."""  # noqa
+        """Getter: Return :attr:`SplitMol.bonds`. Setter: Assign the provided value as a dictionary with bonds as keys and their matching index as value."""  # noqa
         return self._bonds
 
     @bonds.setter
@@ -146,19 +147,22 @@ class SplitMol(AbstractContextManager):
 
     @property
     def cap_type(self) -> str:
-        """Getter: Return :attr:`SplitMol.cap_type`. Setter: Convert the provided value into a valid atom type (:class:`str`)."""  # noqa
+        """Getter: Return :attr:`SplitMol.cap_type`. Setter: Assign the provided value after parsing the atom type (:class:`str`)."""  # noqa
         return self._cap_type
 
     @cap_type.setter
     def cap_type(self, value: Union[str, int, Atom]) -> None:
         if isinstance(value, int):
             self._cap_type = PT.get_symbol(value)
+
         elif isinstance(value, Atom):
             self._cap_type = value.symbol
+
         elif isinstance(value, str):
             if value.capitalize() not in PT.symtonum:
                 raise PTError(f"Trying to convert an invalid atomic symbol: {reprlib.repr(value)}")
             self._cap_type = value
+
         else:
             raise TypeError(f"Invalid atom type: {repr(type(value))}")
 
@@ -183,21 +187,21 @@ class SplitMol(AbstractContextManager):
         symbol = self.cap_type
 
         # Construct the capping atoms
-        at_1a, at_2a = bond.atom1, bond.atom2
-        at_1b = Atom(symbol=symbol, coords=at_2a.coords)
-        at_2b = Atom(symbol=symbol, coords=at_1a.coords)
-        mol.add_atom(at_1b, adjacent=[at_1a])
-        mol.add_atom(at_2b, adjacent=[at_2a])
+        atom1, atom2 = bond.atom1, bond.atom2
+        atom1_cap = Atom(symbol=symbol, coords=atom2.coords)
+        atom2_cap = Atom(symbol=symbol, coords=atom1.coords)
+        mol.add_atom(atom1_cap, adjacent=[atom1])
+        mol.add_atom(atom2_cap, adjacent=[atom2])
 
         # Resize the capping atom bond
-        length1 = at_1a.radius + at_1b.radius
-        length2 = at_2a.radius + at_2b.radius
-        mol.bonds[-2].resize(at_1b, length1)
-        mol.bonds[-1].resize(at_2b, length2)
+        length1 = atom1.radius + atom1_cap.radius
+        length2 = atom2.radius + atom2_cap.radius
+        mol.bonds[-2].resize(atom1_cap, length1)
+        mol.bonds[-1].resize(atom2_cap, length2)
 
         # Delete the old bond and return a dictionary containg marking all new bonds
         mol.delete_bond(bond)
-        return {at_1a: at_1b, at_2a: at_2b}
+        return {atom1: atom2_cap, atom2: atom1_cap}
 
     def reassemble(self) -> None:
         """Reassemble :attr:`SplitMol.mol` from its consitituent components in :attr:`SplitMol._tmp_mol_list`.
@@ -213,17 +217,17 @@ class SplitMol(AbstractContextManager):
         for atom_dict, (bond, idx) in zip(mark, bond_iterator):
             # Extract atoms
             iterator = iter(atom_dict.items())
-            at_1a, at_1b = next(iterator)
-            at_2a, at_2b = next(iterator)
+            atom1, atom1_cap = next(iterator)
+            atom2, atom2_cap = next(iterator)
 
             # Allign the molecules
-            vec1 = at_2a.vector_to(at_2b)
-            vec2 = at_1a.vector_to(at_1b)
+            vec1 = atom2.vector_to(atom2_cap)
+            vec2 = atom1.vector_to(atom1_cap)
             rotmat = rotation_matrix(vec1, vec2)
-            at_2a.mol.rotate(rotmat)
+            atom2.mol.rotate(rotmat)
 
             # Delete the capping atoms and bonds
-            self._uncap_mol(at_1b, at_2b)
+            self._uncap_mol(atom1_cap, atom2_cap)
 
             # Add a new bond
             bond.atom1.mol = bond.atom2.mol = mol
@@ -231,8 +235,8 @@ class SplitMol(AbstractContextManager):
             mol.bonds.insert(idx, mol.bonds.pop())
 
             # Resize the bond
-            length = at_1a.radius + at_2a.radius
-            bond.resize(at_1a, length)
+            length = atom1.radius + atom2.radius
+            bond.resize(atom1, length)
 
         # Ensure all atoms and bonds belong to mol
         for at in mol.atoms:
@@ -292,7 +296,7 @@ class SplitMol(AbstractContextManager):
 
         # Delete all instance variables of the temporary molecules
         for mol_tmp in self._tmp_mol_list:
-            mol_tmp.__dict__.update({'atoms': [], 'bonds': []})
+            vars(mol_tmp).update({'atoms': [], 'bonds': []})
 
         # Reset all private instance variables of the context manager
         self._mark = self._vars_backup = self._tmp_mol_list = None

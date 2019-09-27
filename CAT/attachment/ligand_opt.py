@@ -113,8 +113,7 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
         mol_to_file(ligand_df[MOL], lig_path, mol_format=mol_format)
 
 
-def _parse_overwrite(ligand_df: SettingsDataFrame,
-                     overwrite: bool) -> Tuple[pd.Series, str]:
+def _parse_overwrite(ligand_df: SettingsDataFrame, overwrite: bool) -> Tuple[pd.Series, str]:
     """Return a series for dataframe slicing and a to-be printer message."""
     if overwrite:
         return pd.Series(True, index=ligand_df.index, name=MOL)
@@ -122,8 +121,7 @@ def _parse_overwrite(ligand_df: SettingsDataFrame,
         return np.invert(ligand_df[OPT])
 
 
-def read_data(ligand_df: SettingsDataFrame,
-              read: bool) -> None:
+def read_data(ligand_df: SettingsDataFrame, read: bool) -> None:
     """Read ligands from the database if **read** = ``True``."""
     db = ligand_df.settings.optional.database.db
     logger.info('Pulling ligands from database')
@@ -136,8 +134,7 @@ def read_data(ligand_df: SettingsDataFrame,
     ligand_df[OPT] = ligand_df[OPT].astype(bool, copy=False)
 
 
-def start_ligand_jobs(ligand_df: SettingsDataFrame,
-                      idx: pd.Series) -> None:
+def start_ligand_jobs(ligand_df: SettingsDataFrame, idx: pd.Series) -> None:
     """Loop over all molecules in ``ligand_df.loc[idx]`` and perform geometry optimizations."""
     if not idx.any():
         logger.info(f'No new to-be optimized ligands found\n')
@@ -164,7 +161,7 @@ def start_ligand_jobs(ligand_df: SettingsDataFrame,
 def optimize_ligand(ligand: Molecule) -> None:
     """Optimize a ligand molecule."""
     bonds = split_mol(ligand)
-    if not bonds:  # Ligand is linear; do a UFF optimization
+    if not bonds:  # Ligand is linear-ish; do a UFF optimization with fragmenting the ligand
         rdmol = molkit.to_rdmol(ligand)
         AllChem.UFFGetMoleculeForceField(rdmol).Minimize()
         ligand.from_rdmol(rdmol)
@@ -174,15 +171,18 @@ def optimize_ligand(ligand: Molecule) -> None:
     with SplitMol(ligand, bonds) as mol_frags:
         for mol in mol_frags:
             mol.set_dihed(180.0)
+
+    # Find the optimal dihedrals angle between the fragments
     for bond in bonds:
-        global_minimum_scan_rdkit(ligand, get_index(bond))
+        global_minimum_scan_rdkit(ligand, ligand.get_index(bond))
+
+    # RDKit UFF can sometimes mess up the geometries of carboxylates: fix them
     fix_carboxyl(ligand)
     ligand.round_coords()
     return None
 
 
-def _ligand_to_db(ligand_df: SettingsDataFrame,
-                  opt: bool = True):
+def _ligand_to_db(ligand_df: SettingsDataFrame, opt: bool = True):
     """Export ligand optimziation results to the database."""
     # Extract arguments
     settings = ligand_df.settings.optional
@@ -205,8 +205,7 @@ def _ligand_to_db(ligand_df: SettingsDataFrame,
 
 
 @add_to_class(Molecule)
-def neighbors_mod(self, atom: Atom,
-                  exclude: Union[int, str] = 1) -> List[Atom]:
+def neighbors_mod(self, atom: Atom, exclude: Union[int, str] = 1) -> List[Atom]:
     """A modified PLAMS function: Allows the exlucison of specific elements from the return list.
 
     Return a list of neighbors of **atom** within the molecule.
@@ -246,7 +245,7 @@ def split_mol(plams_mol: Molecule) -> List[Bond]:
     Returns
     -------
     :class:`list` [|plams.Bond|]
-        A list of one or plams bonds.
+        A list of plams bonds.
 
     """
     # Temporary remove hydrogen atoms
@@ -278,20 +277,19 @@ def split_mol(plams_mol: Molecule) -> List[Bond]:
     atom_dict = {atom: [bond for bond in atom.bonds if bond in bond_list] for atom in atom_set}
 
     # Fragment the molecule such that the functional group is on the largest fragment
-    bond_list = []
+    ret = []
     for at in atom_dict:
         for _ in atom_dict[at][2:]:
             len_atom = [plams_mol.get_frag_size(bond, plams_mol.properties.dummies) for
                         bond in atom_dict[at]]
             idx = len_atom.index(max(len_atom))
             bond = atom_dict[at][idx]
-            bond_list.append(bond)
-    return bond_list
+            ret.append(bond)
+    return ret
 
 
 @add_to_class(Molecule)
-def get_frag_size(self, bond: Bond,
-                  atom: Atom) -> int:
+def get_frag_size(self, bond: Bond, atom: Atom) -> int:
     """Return the size of the fragment containing **atom** if **self** was split into two
     molecules by the breaking of **bond**.
 
