@@ -166,7 +166,7 @@ def merge_mol(self, mol_list: Union[Molecule, Iterable[Molecule]]) -> None:
 
 
 @add_to_class(Molecule)
-def separate_mod(self) -> List[Molecule]:
+def separate_mod(self) -> Tuple[Molecule]:
     """Modified PLAMS function: creates new molecules out of this instance rather than
     a copy of this instance. Atoms, bonds and properties are *not* copied.
 
@@ -179,11 +179,11 @@ def separate_mod(self) -> List[Molecule]:
 
     Returns
     -------
-    |list|_ [|plams.Molecule|_]
+    |tuple|_ [|plams.Molecule|_]
         A list of molecules with atoms and bonds from **self**.
 
     """
-    frags = []
+    frags = ()
     for at in self:
         at._visited = False
 
@@ -200,7 +200,8 @@ def separate_mod(self) -> List[Molecule]:
         if not src._visited:
             m = Molecule()
             dfs(src, m)
-            frags.append(m)
+            frags += (m,)
+            m.properties = self.properties.copy()
 
     for at in self.atoms:
         del at._visited
