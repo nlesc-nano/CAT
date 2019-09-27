@@ -12,13 +12,10 @@ Index
     _parse_overwrite
     read_data
     start_ligand_jobs
+    optimize_ligand
     _ligand_to_db
-    remove_duplicates
-    split_bond
-    neighbors_mod
     split_mol
     get_frag_size
-    recombine_mol
     get_dihed
     set_dihed
 
@@ -28,27 +25,22 @@ API
 .. autofunction:: _parse_overwrite
 .. autofunction:: read_data
 .. autofunction:: start_ligand_jobs
+.. autofunction:: optimize_ligand
 .. autofunction:: _ligand_to_db
-.. autofunction:: remove_duplicates
-.. autofunction:: split_bond
-.. autofunction:: neighbors_mod
 .. autofunction:: get_frag_size
-.. autofunction:: recombine_mol
+.. autofunction:: split_bond
 .. autofunction:: get_dihed
 .. autofunction:: set_dihed
 
 """
 
 import itertools
-from typing import (Union, List, Tuple, Dict, Any)
+from typing import (List, Tuple, Dict, Any)
 
 import numpy as np
 import pandas as pd
 
-from scm.plams import (Molecule, Atom, Bond, Settings)
-from scm.plams.core.errors import MoleculeError
-from scm.plams.core.functions import add_to_class
-from scm.plams.tools.units import Units
+from scm.plams import (Molecule, Atom, Bond, Settings, MoleculeError, add_to_class, Units)
 from scm.plams.recipes.global_minimum import global_minimum_scan_rdkit
 import scm.plams.interfaces.molecule.rdkit as molkit
 
@@ -58,9 +50,8 @@ from rdkit.Chem import AllChem
 from .mol_split_cm import SplitMol
 from .remove_atoms_cm import RemoveAtoms
 from ..logger import logger
+from ..mol_utils import (to_symbol, fix_carboxyl, get_index, round_coords, from_rdmol)
 from ..settings_dataframe import SettingsDataFrame
-from ..mol_utils import (to_symbol, fix_carboxyl, get_index, round_coords,
-                         from_mol_other, from_rdmol, separate_mod)
 from ..data_handling.mol_to_file import mol_to_file
 
 __all__ = ['init_ligand_opt']
@@ -205,34 +196,6 @@ def _ligand_to_db(ligand_df: SettingsDataFrame, opt: bool = True):
     db.update_csv(ligand_df, **kwargs)
 
 
-@add_to_class(Molecule)
-def neighbors_mod(self, atom: Atom, exclude: Union[int, str] = 1) -> List[Atom]:
-    """A modified PLAMS function: Allows the exlucison of specific elements from the return list.
-
-    Return a list of neighbors of **atom** within the molecule.
-    Atoms with **atom** has to belong to the molecule.
-    Returned list follows the same order as the **atom.bond** attribute.
-
-    Parameters
-    ----------
-    atom : |plams.Atom|
-        The plams atom whose neighbours will be returned.
-
-    exclude : :class:`str` or :class:`int`
-        Exclude all neighbours with a specific atomic number or symbol.
-
-    Returns
-    -------
-    :class:`list` [|plams.Atom|]
-        A list of all neighbours of **atom**.
-
-    """
-    exclude = to_symbol(exclude)
-    if atom.mol != self:
-        raise MoleculeError('neighbors: passed atom should belong to the molecule')
-    return [b.other_end(atom) for b in atom.bonds if b.other_end(atom).atnum != exclude]
-
-
 def split_mol(plams_mol: Molecule) -> List[Bond]:
     """Split a molecule into multiple smaller fragments; returning the bonds that have to be broken.
 
@@ -249,17 +212,28 @@ def split_mol(plams_mol: Molecule) -> List[Bond]:
         A list of plams bonds.
 
     """
+    def _in_ring(bond: Bond) -> bool:
+        """Check if one of the atoms in **bond** is part of a ring system."""
+        return (plams_mol.in_ring(bond.atom1) or plams_mol.in_ring(bond.atom2))
+
+    def _is_valid_bond(bond: Bond) -> bool:
+        """Check if one atom in **bond** has at least 3 neighbours and the other at least 2."""
+        n1, n2 = plams_mol.neighbors(bond.atom1), plams_mol.neighbors(bond.atom2)
+        return (len(n1) >= 3 and len(n2) >= 2) or (len(n1) >= 2 and len(n2) >= 3)
+
+    def _get_frag_size(bond: Bond) -> int:
+        """Return the size of the largest fragment were **plams_mol** to be split along **bond**."""
+        return plams_mol.get_frag_size(bond, plams_mol.properties.dummies)
+
     # Temporary remove hydrogen atoms
     atom_gen = (at for at in plams_mol if at.atnum == 1)
     with RemoveAtoms(plams_mol, atom_gen):
         # Remove undesired bonds
-        bond_list = [bond for bond in plams_mol.bonds if not plams_mol.in_ring(bond.atom1) and not
-                     plams_mol.in_ring(bond.atom2)]
+        bond_list = [bond for bond in plams_mol.bonds if not _in_ring(bond)]
 
         # Remove even more undesired bonds
         for bond in reversed(bond_list):
-            n1, n2 = plams_mol.neighbors_mod(bond.atom1), plams_mol.neighbors_mod(bond.atom2)
-            if not (len(n1) >= 3 and len(n2) >= 2) and not (len(n1) >= 2 and len(n2) >= 3):
+            if not _is_valid_bond(bond):
                 bond_list.remove(bond)
 
     atom_list = list(itertools.chain.from_iterable((bond.atom1, bond.atom2) for bond in bond_list))
@@ -268,11 +242,10 @@ def split_mol(plams_mol: Molecule) -> List[Bond]:
 
     # Fragment the molecule such that the functional group is on the largest fragment
     ret = []
-    for at in atom_dict:
+    for at, bond_list in atom_dict.items():
         for _ in atom_dict[at][2:]:
-            len_atom = [plams_mol.get_frag_size(bond, plams_mol.properties.dummies) for
-                        bond in atom_dict[at]]
-            idx = len_atom.index(max(len_atom))
+            frag_size = [_get_frag_size(bond) for bond in bond_list]
+            idx = np.argmax(frag_size)  # The index of the largest fragment
             bond = atom_dict[at][idx]
             ret.append(bond)
     return ret
