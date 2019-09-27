@@ -56,6 +56,7 @@ import rdkit
 from rdkit.Chem import AllChem
 
 from .mol_split_cm import SplitMol
+from .remove_atoms_cm import RemoveAtoms
 from ..logger import logger
 from ..settings_dataframe import SettingsDataFrame
 from ..mol_utils import (to_symbol, fix_carboxyl, get_index, round_coords,
@@ -249,28 +250,17 @@ def split_mol(plams_mol: Molecule) -> List[Bond]:
 
     """
     # Temporary remove hydrogen atoms
-    h_atoms = []
-    h_bonds = []
-    for atom in reversed(plams_mol.atoms):
-        if atom.atnum == 1:
-            h_atoms.append(atom)
-            h_bonds.append(atom.bonds[0])
-            plams_mol.delete_atom(atom)
+    atom_gen = (at for at in plams_mol if at.atnum == 1)
+    with RemoveAtoms(plams_mol, atom_gen):
+        # Remove undesired bonds
+        bond_list = [bond for bond in plams_mol.bonds if not plams_mol.in_ring(bond.atom1) and not
+                     plams_mol.in_ring(bond.atom2)]
 
-    # Remove undesired bonds
-    bond_list = [bond for bond in plams_mol.bonds if not plams_mol.in_ring(bond.atom1) and not
-                 plams_mol.in_ring(bond.atom2)]
-
-    # Remove even more undesired bonds
-    for bond in reversed(bond_list):
-        n1, n2 = plams_mol.neighbors_mod(bond.atom1), plams_mol.neighbors_mod(bond.atom2)
-        if not (len(n1) >= 3 and len(n2) >= 2) and not (len(n1) >= 2 and len(n2) >= 3):
-            bond_list.remove(bond)
-
-    # Add the hydrogen atoms and bonds back to the molecule
-    for atom, bond in zip(reversed(h_atoms), reversed(h_bonds)):
-        plams_mol.add_atom(atom)
-        plams_mol.add_bond(bond)
+        # Remove even more undesired bonds
+        for bond in reversed(bond_list):
+            n1, n2 = plams_mol.neighbors_mod(bond.atom1), plams_mol.neighbors_mod(bond.atom2)
+            if not (len(n1) >= 3 and len(n2) >= 2) and not (len(n1) >= 2 and len(n2) >= 3):
+                bond_list.remove(bond)
 
     atom_list = list(itertools.chain.from_iterable((bond.atom1, bond.atom2) for bond in bond_list))
     atom_set = {atom for atom in atom_list if atom_list.count(atom) >= 3}
