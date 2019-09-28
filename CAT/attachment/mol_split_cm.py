@@ -19,13 +19,16 @@ API
 
 """
 
+import copy
 import reprlib
-from typing import Iterable, Union, Dict, Tuple
+from typing import Iterable, Union, Dict, Tuple, NoReturn, Any
 from contextlib import AbstractContextManager
+
+import numpy as np
 
 from scm.plams import Molecule, Atom, PT, Bond, MoleculeError, PTError, rotation_matrix
 
-from ..mol_utils import separate_mod
+from CAT.mol_utils import separate_mod
 
 
 class SplitMol(AbstractContextManager):
@@ -93,9 +96,8 @@ class SplitMol(AbstractContextManager):
     mol : |plams.Molecule|
         A PLAMS molecule.
 
-    bonds : :class:`dict` [|plams.Bond|, :class:`int`]
-        An dictionary with PLAMS bonds as key and their (0-based) index as value.
-        All bonds must be part of **mol**.
+    bonds : :class:`set` [|plams.Bond|]
+        A set of PLAMS bonds.
 
     cap_type : :class:`str`
         An atomic symbol of the atom type used for capping the to-be split molecule.
@@ -114,6 +116,12 @@ class SplitMol(AbstractContextManager):
     _tmp_mol_list : :class:`tuple` [|plams.Molecule|], optional
         A list of PLAMS molecules obtained by splitting :attr:`SplitMol.mol`.
         Set internally by :meth:`SplitMol.__enter__`.
+
+    Raises
+    ------
+    |MoleculeError|
+        Raised when one attempts to access or manipulate the instance variables of
+        :attr:`SplitMol.mol` when the context manager is opened.
 
     """
 
@@ -139,11 +147,7 @@ class SplitMol(AbstractContextManager):
 
     @bonds.setter
     def bonds(self, value: Union[Bond, Iterable[Bond]]) -> None:
-        bonds = (value,) if isinstance(value, Bond) else value
-        try:
-            self._bonds = {bond: self.mol.bonds.index(bond) for bond in bonds}
-        except ValueError:
-            raise MoleculeError('Passed bonds should belong to mol')
+        self._bonds = {value} if isinstance(value, Bond) else set(value)
 
     @property
     def cap_type(self) -> str:
@@ -200,7 +204,6 @@ class SplitMol(AbstractContextManager):
         mol.bonds[-1].resize(atom2_cap, length2)
 
         # Delete the old bond and return a dictionary containg marking all new bonds
-        mol.delete_bond(bond)
         return {atom1: atom2_cap, atom2: atom1_cap}
 
     def reassemble(self) -> None:
@@ -212,9 +215,9 @@ class SplitMol(AbstractContextManager):
         """  # noqa
         mol = self.mol
         mark = self._at_pairs
-        bond_iterator = sorted(self.bonds.items(), key=lambda x: x[-1])
+        bonds = self.bonds
 
-        for atom_dict, (bond, idx) in zip(mark, bond_iterator):
+        for atom_dict, bond in zip(mark, bonds):
             # Extract atoms
             iterator = iter(atom_dict.items())
             atom1, atom1_cap = next(iterator)
@@ -223,20 +226,21 @@ class SplitMol(AbstractContextManager):
             # Allign the molecules
             vec1 = atom2.vector_to(atom2_cap)
             vec2 = atom1.vector_to(atom1_cap)
-            rotmat = rotation_matrix(vec1, vec2)
-            atom2.mol.rotate(rotmat)
-
-            # Delete the capping atoms and bonds
-            self._uncap_mol(atom1_cap, atom2_cap)
-
-            # Add a new bond
-            bond.atom1.mol = bond.atom2.mol = mol
-            mol.add_bond(bond)
-            mol.bonds.insert(idx, mol.bonds.pop())
+            with np.errstate(divide='raise'):
+                try:
+                    rotmat = rotation_matrix(vec1, vec2)
+                except FloatingPointError:
+                    pass  # Raised when (vec1 == vec2).all(); i.e. no rotation is possible
+                else:
+                    atom2.mol.rotate(rotmat)
 
             # Resize the bond
             length = atom1.radius + atom2.radius
             bond.resize(atom1, length)
+
+            # Replace the capping atom bonds with the previously broken bond
+            atom1.bonds[-1] = bond
+            atom2.bonds[-1] = bond
 
         # Ensure all atoms and bonds belong to mol
         for at in mol.atoms:
@@ -244,59 +248,83 @@ class SplitMol(AbstractContextManager):
         for bond in mol.bonds:
             bond.mol = mol
 
-    def _uncap_mol(self, *cap_atoms: Atom) -> None:
-        """Remove the specified capping atoms (and their respective bonds) from :attr:`SplitMol.mol`.
+    def lock_mol(self) -> None:
+        """Lock :attr:`SplitMol.mol`, preventing any access to the instance."""
+        value = RaiseMoleculeError()
+        vars_dct = self.mol.__dict__
+        for k in vars_dct:
+            vars_dct[k] = value
+
+    def unlock_mol(self) -> None:
+        """Unlock :attr:`SplitMol.mol`, restoring access to the instance."""
+        self.mol.__dict__ = self._vars_backup
+
+    @staticmethod
+    def reset_vars(obj: Any) -> None:
+        """Replace all instance variables of **obj** with empty instances of their respective class.
+
+        A value will be substituted for ``None`` if a :exc:`TypeError` is encountered during
+        instance creation.
 
         Parameters
         ----------
-        \*cap_atoms : |plams.Atom|
-            The capping atoms which are to-be removed.
+        obj : |Any|
+            A class instance with the :attr:`__dict__` attribute.
 
-        """  # noqa
-        mol = self.mol
-        for atom in cap_atoms:
-            bond = atom.bonds[0]
-            other_end = bond.other_end(atom)
-
-            mol.atoms.remove(atom)
-            mol.bonds.remove(bond)
-            other_end.bonds.remove(bond)
-
-    def reset_vars(self) -> None:
-        """Reset :attr:`Molecule.__dict__` and assign a backup to :attr:`SplitMol._vars_backup`."""
-        mol = self.mol
-
-        self._vars_backup = vars(mol)
-        mol.__dict__ = vars(mol).copy()
-        mol.bonds = []
-        mol.atoms = []
+        """
+        vars_dct = vars(obj)
+        for k, v in vars_dct.items():
+            cls = type(v)
+            try:  # More foolproof than .__init__(), especially for empty class instances
+                vars_dct[k] = cls.__new__(cls)
+            except TypeError:
+                # For some classes even the .__new__ method fails (e.g. range or np.ndarray objects)
+                vars_dct[k] = None
 
     """############################# Context manager magic methods #############################"""
 
     def __enter__(self) -> Tuple[Molecule]:
         """Enter the :class:`SplitMol` context manager; return a list of molecules."""
-        # Break bonds and add capping atoms to mol
-        # Split mol into multiple seperate molecules without copying atoms
+        # Create a backup of mols' instance variables
         mol = self.mol
+        self._vars_backup = vars(mol)
+        mol.__dict__ = {k: copy.copy(v) for k, v in vars(mol).items()}
+
+        # Add capping atoms along the to-be split bonds
         self._at_pairs = [self.split_bond(bond) for bond in self.bonds]
+
+        # Actually delete the to-be split bonds and split the molecule
+        for bond in self.bonds:
+            mol.delete_bond(bond)
         self._tmp_mol_list = mol.separate_mod()
 
-        # Pop all instance variables of mol and return a list of temporary molecules
-        self.reset_vars()
+        # Lock al instance variables of mol
+        # Accessing mol will now raise a MoleculeError for as long as the context manager is open
+        self.lock_mol()
         return self._tmp_mol_list
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         """Exit the :class:`SplitMol` context manager."""
         # Restore all instance variables of mol
-        mol = self.mol
-        vars(mol).update(self._vars_backup)
+        self.unlock_mol()
 
-        # Delete all capping atoms recreate the previously broken bond
+        # Delete all capping atoms recreate the previously broken bond(s)
         self.reassemble()
 
         # Delete all instance variables of the temporary molecules
+        # All variables are replaced with empty instance of their respective class
         for mol_tmp in self._tmp_mol_list:
-            vars(mol_tmp).update({'atoms': [], 'bonds': []})
+            self.reset_vars(mol_tmp)
 
-        # Reset all private instance variables of the context manager
-        self._mark = self._vars_backup = self._tmp_mol_list = None
+
+class RaiseMoleculeError:
+    """A class that will raise |MoleculeError| with, effectively, all its operations."""
+
+    def raise_exception(self, *args: Any, **kwargs: Any) -> NoReturn:
+        """Raise a |MoleculeError|."""
+        raise MoleculeError(RaiseMoleculeError.ERR)
+
+    ERR: str = "'Molecule' objects are inaccessible while opened in the 'SplitMol' context manager"
+    __delitem__ = __setitem__ = __getattribute__ = __setattr__ = __len__ = raise_exception
+    __contains__ = __reversed__ = __str__ = __repr__ = __getitem__ = raise_exception
+    __add__ = __iadd__ = __eq__ = __copy__ = __iter__ = raise_exception
