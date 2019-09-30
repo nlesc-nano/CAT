@@ -29,6 +29,13 @@ from scm.plams import Molecule, Atom, MoleculeError
 class RemoveAtoms(AbstractContextManager):
     """A context manager for temporary removing a set of atoms from a molecule.
 
+    The *relative* ordering of the to-be removed atoms (and matching bonds),
+    as specified in **atoms**, is preserved during the removal and reattachment process.
+    Note that reattaching will (re-)append the removed atoms/bonds,
+    a process which is thus likelly to affect the *absolute* ordering of
+    atoms/bonds within the entire molecule.
+
+
     Examples
     --------
     .. code:: python
@@ -83,7 +90,7 @@ class RemoveAtoms(AbstractContextManager):
         """Enter the :class:`RemoveAtoms` context manager."""
         mol = self.mol
         self.bonds = bonds_set = OrderedDict()  # An improvised "OrderedSet"
-        for atom in reversed(self.atoms):
+        for atom in self.atoms:
             for bond in atom.bonds:
                 bonds_set[bond] = None
             mol.delete_atom(atom)
@@ -91,7 +98,7 @@ class RemoveAtoms(AbstractContextManager):
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         """Exit the :class:`RemoveAtoms` context manager."""
         mol = self.mol
-        for atom in self.atoms:
+        for atom in reversed(self.atoms):
             mol.add_atom(atom)
         for bond in reversed(self.bonds):
             try:
