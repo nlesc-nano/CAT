@@ -21,14 +21,14 @@ API
 
 import copy
 import reprlib
-from typing import Iterable, Union, Dict, Tuple, NoReturn, Any
+from typing import Iterable, Union, Dict, Tuple, NoReturn, Any, Type
 from contextlib import AbstractContextManager
 
 import numpy as np
 
 from scm.plams import Molecule, Atom, PT, Bond, MoleculeError, PTError, rotation_matrix
 
-from CAT.mol_utils import separate_mod
+from ..mol_utils import separate_mod
 
 
 class SplitMol(AbstractContextManager):
@@ -172,7 +172,7 @@ class SplitMol(AbstractContextManager):
 
     """Methods for manipulating the molecule."""
 
-    def split_bond(self, bond: Bond) -> Dict[Atom, Atom]:
+    def cap_fragments(self, bond: Bond) -> Dict[Atom, Atom]:
         """Delete a bond from :attr:`SplitMol.mol` and cap the resulting fragments with :attr:`SplitMol.cap_type`.
 
         Parameters
@@ -226,13 +226,8 @@ class SplitMol(AbstractContextManager):
             # Allign the molecules
             vec1 = atom2.vector_to(atom2_cap)
             vec2 = atom1.vector_to(atom1_cap)
-            with np.errstate(divide='raise'):
-                try:
-                    rotmat = rotation_matrix(vec1, vec2)
-                except FloatingPointError:
-                    pass  # Raised when (vec1 == vec2).all(); i.e. no rotation is possible
-                else:
-                    atom2.mol.rotate(rotmat)
+            rotmat = rotation_matrix(vec1, vec2)
+            atom2.mol.rotate(rotmat)
 
             # Resize the bond
             length = atom1.radius + atom2.radius
@@ -250,10 +245,8 @@ class SplitMol(AbstractContextManager):
 
     def lock_mol(self) -> None:
         """Lock :attr:`SplitMol.mol`, preventing any access to the instance."""
-        value = RaiseMoleculeError()
-        vars_dct = self.mol.__dict__
-        for k in vars_dct:
-            vars_dct[k] = value
+        mol = self.mol
+        mol.atoms = mol.bonds = FrozenList()
 
     def unlock_mol(self) -> None:
         """Unlock :attr:`SplitMol.mol`, restoring access to the instance."""
@@ -291,7 +284,7 @@ class SplitMol(AbstractContextManager):
         mol.__dict__ = {k: copy.copy(v) for k, v in vars(mol).items()}
 
         # Add capping atoms along the to-be split bonds
-        self._at_pairs = [self.split_bond(bond) for bond in self.bonds]
+        self._at_pairs = [self.cap_fragments(bond) for bond in self.bonds]
 
         # Actually delete the to-be split bonds and split the molecule
         for bond in self.bonds:
@@ -317,14 +310,18 @@ class SplitMol(AbstractContextManager):
             self.reset_vars(mol_tmp)
 
 
-class RaiseMoleculeError:
-    """A class that will raise |MoleculeError| with, effectively, all its operations."""
+class FrozenList(list):
+    """A list subclass that will raise a |MoleculeError| upon modification of an instance."""
 
-    def raise_exception(self, *args: Any, **kwargs: Any) -> NoReturn:
-        """Raise a |MoleculeError|."""
-        raise MoleculeError(RaiseMoleculeError.ERR)
+    def __init__(self, *args,
+                 exc_type: Type[Exception] = MoleculeError,
+                 exc_msg: str = ("'Molecule' objects are inaccessible while opened in "
+                                 "the 'SplitMol' context manager"),
+                 **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.exc_type = exc_type
+        self.exc_msg = exc_msg
 
-    ERR: str = "'Molecule' objects are inaccessible while opened in the 'SplitMol' context manager"
-    __delitem__ = __setitem__ = __getattribute__ = __setattr__ = __len__ = raise_exception
-    __contains__ = __reversed__ = __str__ = __repr__ = __getitem__ = raise_exception
-    __add__ = __iadd__ = __eq__ = __copy__ = __iter__ = raise_exception
+    def raise_exception(self, *args, **kwargs) -> NoReturn: raise self.exc_type(self.exc_msg)
+    __delitem__ = __iadd__ = __setitem__ = raise_exception
+    append = clear = extend = insert = pop = remove = reverse = sort = raise_exception

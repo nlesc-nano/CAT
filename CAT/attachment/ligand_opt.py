@@ -35,7 +35,7 @@ API
 """
 
 import itertools
-from typing import (List, Tuple, Dict, Any)
+from typing import (List, Tuple, Dict, Any, Union)
 
 import numpy as np
 import pandas as pd
@@ -50,7 +50,7 @@ from rdkit.Chem import AllChem
 from .mol_split_cm import SplitMol
 from .remove_atoms_cm import RemoveAtoms
 from ..logger import logger
-from ..mol_utils import (to_symbol, fix_carboxyl, get_index, round_coords, from_rdmol)
+from ..mol_utils import (to_symbol, fix_carboxyl, get_index, round_coords, from_rdmol, to_atnum)
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.mol_to_file import mol_to_file
 
@@ -109,8 +109,7 @@ def _parse_overwrite(ligand_df: SettingsDataFrame, overwrite: bool) -> Tuple[pd.
     """Return a series for dataframe slicing and a to-be printer message."""
     if overwrite:
         return pd.Series(True, index=ligand_df.index, name=MOL)
-    else:
-        return np.invert(ligand_df[OPT])
+    return np.invert(ligand_df[OPT])
 
 
 def read_data(ligand_df: SettingsDataFrame, read: bool) -> None:
@@ -154,9 +153,8 @@ def optimize_ligand(ligand: Molecule) -> None:
     """Optimize a ligand molecule."""
     bonds = split_mol(ligand)
     if not bonds:  # Ligand is linear-ish; do a UFF optimization with fragmenting the ligand
-        rdmol = molkit.to_rdmol(ligand)
-        AllChem.UFFGetMoleculeForceField(rdmol).Minimize()
-        ligand.from_rdmol(rdmol)
+        ligand.set_dihed(180.0)
+        ligand.round_coords()
         return None
 
     # Split the branched ligand into linear fragments and optimize them individually
@@ -333,6 +331,34 @@ def get_dihed(atoms: Tuple[Atom, Atom, Atom, Atom], unit: str = 'degree') -> flo
     epsilon = np.arctan2(v1v2_v2v3@v2_norm_v2, v1v2@v2v3)
 
     return Units.convert(epsilon, 'radian', unit)
+
+
+@add_to_class(Molecule)
+def neighbors_mod(self, atom: Atom, exclude: Union[int, str] = 1) -> List[Atom]:
+    """A modified PLAMS function: Allows the exlucison of specific elements from the return list.
+
+    Return a list of neighbors of **atom** within the molecule.
+    Atoms with **atom** has to belong to the molecule.
+    Returned list follows the same order as the **atom.bond** attribute.
+
+    Parameters
+    ----------
+    atom : |plams.Atom|_
+        The plams atom whose neighbours will be returned.
+
+    exclude : |str|_ or |int|_
+        Exclude all neighbours with a specific atomic number or symbol.
+
+    Returns
+    -------
+    |list|_ [|plams.Atom|_]
+        A list of all neighbours of **atom**.
+
+    """
+    exclude = to_atnum(exclude)
+    if atom.mol != self:
+        raise MoleculeError('neighbors: passed atom should belong to the molecule')
+    return [b.other_end(atom) for b in atom.bonds if b.other_end(atom).atnum != exclude]
 
 
 @add_to_class(Molecule)
