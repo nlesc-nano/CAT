@@ -229,10 +229,6 @@ class SplitMol(AbstractContextManager):
             rotmat = rotation_matrix(vec1, vec2)
             atom2.mol.rotate(rotmat)
 
-            # Resize the bond
-            length = atom1.radius + atom2.radius
-            bond.resize(atom1, length)
-
             # Replace the capping atom bonds with the previously broken bond
             atom1.bonds[-1] = bond
             atom2.bonds[-1] = bond
@@ -242,6 +238,12 @@ class SplitMol(AbstractContextManager):
             at.mol = mol
         for bond in mol.bonds:
             bond.mol = mol
+
+        # Resize bonds
+        for atom_dict, bond in zip(mark, bonds):
+            atom1, atom2 = atom_dict
+            length = atom1.radius + atom2.radius
+            bond.resize(atom1, length)
 
     def lock_mol(self) -> None:
         """Lock :attr:`SplitMol.mol`, preventing any access to the instance."""
