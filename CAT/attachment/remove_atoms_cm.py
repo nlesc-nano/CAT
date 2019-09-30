@@ -21,6 +21,7 @@ API
 
 from typing import Iterable
 from contextlib import AbstractContextManager
+from collections import OrderedDict
 
 from scm.plams import Molecule, Atom, MoleculeError
 
@@ -64,8 +65,10 @@ class RemoveAtoms(AbstractContextManager):
     atoms : :class:`tuple` [|plams.Atom|]
         A tuple of PLAMS atoms belonging to :attr:`RemoveAtoms.mol`.
 
-    bonds : :class:`set` [|plams.Bond|], optional
-        A set of PLAMS bonds connected to one or more atoms in :attr:`RemoveAtoms.atoms`.
+    bonds : :class:`OrderedDict` [|plams.Bond|, ``None``], optional
+        A ordered dictionary of PLAMS bonds connected to one or more atoms in
+        :attr:`RemoveAtoms.atoms`.
+        All values are ``None``, the dictionary serving as an improvised ``OrderedSet``.
         Set to ``None`` until :meth:`RemoveAtoms.__enter__` is called.
 
     """
@@ -79,10 +82,10 @@ class RemoveAtoms(AbstractContextManager):
     def __enter__(self) -> None:
         """Enter the :class:`RemoveAtoms` context manager."""
         mol = self.mol
-        self.bonds = bonds_set = set()
+        self.bonds = bonds_set = OrderedDict()  # An improvised "OrderedSet"
         for atom in reversed(self.atoms):
             for bond in atom.bonds:
-                bonds_set.add(bond)
+                bonds_set[bond] = None
             mol.delete_atom(atom)
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
@@ -90,7 +93,7 @@ class RemoveAtoms(AbstractContextManager):
         mol = self.mol
         for atom in self.atoms:
             mol.add_atom(atom)
-        for bond in self.bonds:
+        for bond in reversed(self.bonds):
             try:
                 mol.add_bond(bond)
             except MoleculeError:
