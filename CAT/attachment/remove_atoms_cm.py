@@ -52,7 +52,7 @@ class RemoveAtoms(AbstractContextManager):
         A PLAMS molecule.
         See :attr:`RemoveAtoms.mol`.
 
-    atom_set : |Iterable| [|plams.Atom|]
+    atoms : |Iterable| [|plams.Atom|]
         An iterable with PLAMS atoms beloning to **mol**.
         See :attr:`RemoveAtoms.atoms`.
 
@@ -61,8 +61,8 @@ class RemoveAtoms(AbstractContextManager):
     mol : |plams.Molecule|
         A PLAMS molecule.
 
-    atoms : :class:`set` [|plams.Atom|]
-        A set of PLAMS atoms beloning to :attr:`RemoveAtoms.mol`.
+    atoms : :class:`tuple` [|plams.Atom|]
+        A tuple of PLAMS atoms belonging to :attr:`RemoveAtoms.mol`.
 
     bonds : :class:`set` [|plams.Bond|], optional
         A set of PLAMS bonds connected to one or more atoms in :attr:`RemoveAtoms.atoms`.
@@ -70,17 +70,17 @@ class RemoveAtoms(AbstractContextManager):
 
     """
 
-    def __init__(self, mol: Molecule, atom_set: Iterable[Atom]) -> None:
+    def __init__(self, mol: Molecule, atoms: Iterable[Atom]) -> None:
         """Initialize a :class:`RemoveAtoms` instance."""
         self.mol = mol
-        self.atoms = set(atom_set)
+        self.atoms = tuple(atoms)  # This should be a collection to preserve atom ordering
         self.bonds = None
 
     def __enter__(self) -> None:
         """Enter the :class:`RemoveAtoms` context manager."""
         mol = self.mol
         self.bonds = bonds_set = set()
-        for atom in self.atoms:
+        for atom in reversed(self.atoms):
             for bond in atom.bonds:
                 bonds_set.add(bond)
             mol.delete_atom(atom)
