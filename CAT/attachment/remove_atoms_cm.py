@@ -83,7 +83,7 @@ class RemoveAtoms(AbstractContextManager):
     def __init__(self, mol: Molecule, atoms: Iterable[Atom]) -> None:
         """Initialize a :class:`RemoveAtoms` instance."""
         self.mol = mol
-        self.atoms = tuple(atoms)  # This should be a collection to preserve atom ordering
+        self.atoms = tuple(atoms)  # This should be a Collection in order to preserve atom ordering
         self.bonds = None
 
     def __enter__(self) -> None:

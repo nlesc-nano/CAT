@@ -24,8 +24,6 @@ import reprlib
 from typing import Iterable, Union, Dict, Tuple, NoReturn, Any, Type
 from contextlib import AbstractContextManager
 
-import numpy as np
-
 from scm.plams import Molecule, Atom, PT, Bond, MoleculeError, PTError, rotation_matrix
 
 from ..mol_utils import separate_mod
@@ -204,7 +202,7 @@ class SplitMol(AbstractContextManager):
         mol.bonds[-1].resize(atom2_cap, length2)
 
         # Delete the old bond and return a dictionary containg marking all new bonds
-        return {atom1: atom2_cap, atom2: atom1_cap}
+        return {atom1: atom1_cap, atom2: atom2_cap}
 
     def reassemble(self) -> None:
         """Reassemble :attr:`SplitMol.mol` from its consitituent components in :attr:`SplitMol._tmp_mol_list`.
@@ -223,11 +221,15 @@ class SplitMol(AbstractContextManager):
             atom1, atom1_cap = next(iterator)
             atom2, atom2_cap = next(iterator)
 
-            # Allign the molecules
+            # Allign the molecules by rotation
             vec1 = atom2.vector_to(atom2_cap)
-            vec2 = atom1.vector_to(atom1_cap)
+            vec2 = atom1_cap.vector_to(atom1)
             rotmat = rotation_matrix(vec1, vec2)
             atom2.mol.rotate(rotmat)
+
+            # Allign the molecules by translation
+            vec_trans = atom2.vector_to(atom1_cap)
+            atom2.mol.translate(vec_trans)
 
             # Replace the capping atom bonds with the previously broken bond
             atom1.bonds[-1] = bond
