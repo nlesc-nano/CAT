@@ -21,7 +21,7 @@ API
 
 from typing import Iterable
 from contextlib import AbstractContextManager
-from collections import OrderedDict
+from collections import OrderedDict, abc
 
 from scm.plams import Molecule, Atom, MoleculeError
 
@@ -61,7 +61,7 @@ class RemoveAtoms(AbstractContextManager):
         See :attr:`RemoveAtoms.mol`.
 
     atoms : |Iterable| [|plams.Atom|]
-        An iterable with PLAMS atoms beloning to **mol**.
+        An iterable consisting of unique PLAMS atoms beloning to **mol**.
         See :attr:`RemoveAtoms.atoms`.
 
     Attributes
@@ -69,8 +69,8 @@ class RemoveAtoms(AbstractContextManager):
     mol : |plams.Molecule|
         A PLAMS molecule.
 
-    atoms : :class:`tuple` [|plams.Atom|]
-        A tuple of PLAMS atoms belonging to :attr:`RemoveAtoms.mol`.
+    atoms : |Sequence| [|plams.Atom|]
+        A sequence of PLAMS atoms belonging to :attr:`RemoveAtoms.mol`.
 
     bonds : :class:`OrderedDict` [|plams.Bond|, ``None``], optional
         A ordered dictionary of PLAMS bonds connected to one or more atoms in
@@ -83,7 +83,7 @@ class RemoveAtoms(AbstractContextManager):
     def __init__(self, mol: Molecule, atoms: Iterable[Atom]) -> None:
         """Initialize a :class:`RemoveAtoms` instance."""
         self.mol = mol
-        self.atoms = tuple(atoms)  # This should be a Collection in order to preserve atom ordering
+        self.atoms = tuple(atoms) if not isinstance(atoms, abc.Sequence) else atoms
         self.bonds = None
 
     def __enter__(self) -> None:

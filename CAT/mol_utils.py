@@ -323,6 +323,22 @@ def adf_connectivity(mol: Molecule) -> List[str]:
     return bonds
 
 
+def _smiles_to_rdmol(smiles: str) -> Chem.Mol:
+    """Convert a SMILES string into an rdkit Mol; supports explicit hydrogens."""
+    # RDKit tends to remove explicit hydrogens if SANITIZE_ADJUSTHS is enabled
+    sanitize = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_ADJUSTHS
+    try:
+        mol = Chem.MolFromSmiles(smiles, sanitize=False)
+        Chem.rdmolops.SanitizeMol(mol, sanitizeOps=sanitize)
+    except Exception as ex:
+        raise ex.__class__(f'Failed to parse the following SMILES string: {repr(smiles)}\n\n{ex}')
+    return mol
+
+
+#: A carboxylate
+_CARBOXYLATE: Chem.Mol = _smiles_to_rdmol('[O-]C(C)=O')
+
+
 def fix_carboxyl(mol: Molecule) -> None:
     """Resets carboxylate OCO angles if it is smaller than :math:`60` degrees.
 
@@ -334,10 +350,10 @@ def fix_carboxyl(mol: Molecule) -> None:
         A PLAMS molecule.
 
     """
+
     rdmol = molkit.to_rdmol(mol)
     conf = rdmol.GetConformer()
-    carboxylate = Chem.MolFromSmarts('[O-]C(C)=O')
-    matches = rdmol.GetSubstructMatches(carboxylate)
+    matches = rdmol.GetSubstructMatches(_CARBOXYLATE)
 
     if matches:
         get_angle = rdMolTransforms.GetAngleDeg

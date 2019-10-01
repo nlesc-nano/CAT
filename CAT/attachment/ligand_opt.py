@@ -151,13 +151,8 @@ def start_ligand_jobs(ligand_df: SettingsDataFrame, idx: pd.Series) -> None:
 
 def optimize_ligand(ligand: Molecule) -> None:
     """Optimize a ligand molecule."""
-    bonds = split_mol(ligand)
-    if not bonds:  # Ligand is linear-ish; do a UFF optimization with fragmenting the ligand
-        ligand.set_dihed(180.0)
-        ligand.round_coords()
-        return None
-
     # Split the branched ligand into linear fragments and optimize them individually
+    bonds = split_mol(ligand)
     with SplitMol(ligand, bonds) as mol_frags:
         for mol in mol_frags:
             mol.set_dihed(180.0)
@@ -383,17 +378,19 @@ def set_dihed(self, angle: float, opt: bool = True, unit: str = 'degree') -> Non
     bond_list = [bond for bond in self.bonds if bond.atom1.atnum != 1 and bond.atom2.atnum != 1
                  and bond.order == 1 and not self.in_ring(bond)]
 
+    anchor = self.properties.dummies
     for bond in bond_list:
         n1, n2 = self.neighbors_mod(bond.atom1), self.neighbors_mod(bond.atom2)
         n1 = [atom for atom in n1 if atom != bond.atom2]
         n2 = [atom for atom in n2 if atom != bond.atom1]
         if len(n1) > 1:
-            n1 = [atom for atom in n1 if len(self.neighbors_mod(atom)) > 1]
+            n1 = [atom for atom in n1 if (len(self.neighbors_mod(atom)) > 1 or atom is anchor)]
         if len(n2) > 1:
-            n2 = [atom for atom in n2 if len(self.neighbors_mod(atom)) > 1]
+            n2 = [atom for atom in n2 if (len(self.neighbors_mod(atom)) > 1 or atom is anchor)]
+
         if n1 and n2:
             dihed = get_dihed((n1[0], bond.atom1, bond.atom2, n2[0]))
-            if self.properties.dummies not in bond:
+            if anchor not in bond:
                 self.rotate_bond(bond, bond.atom1, angle - dihed, unit='degree')
             else:
                 self.rotate_bond(bond, bond.atom1, -dihed, unit='degree')
