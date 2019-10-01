@@ -376,11 +376,15 @@ Ligand
         :math:`C` is the mean position of all ligand atoms (*i.e.* the ligand center).
 
         .. math::
-            V_{bulk} = \sum_{i}^{n} \frac {e^{\sin \phi_{i}}} {h_{i}^2}
+            V_{bulk} = \sum_{i}^{n} \frac {e^{\sin \phi_{i}}} {r_{i}^2}
 
         Conceptually, the bulkiness factor :math:`V_{bulk}` is related to ligand (half-)cones angles,
         with the key difference that :math:`V_{bulk}` builds on top of it,
         representing an estimate of inter-ligand steric interactions.
+
+        .. image:: _images/V_bulk.png
+            :scale: 35 %
+            :align: center
 
         See also
         --------
