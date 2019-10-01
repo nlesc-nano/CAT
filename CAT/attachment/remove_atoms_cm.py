@@ -19,7 +19,7 @@ API
 
 """
 
-from typing import Iterable
+from typing import Iterable, Union, Sequence
 from contextlib import AbstractContextManager
 from collections import OrderedDict, abc
 
@@ -34,7 +34,6 @@ class RemoveAtoms(AbstractContextManager):
     Note that reattaching will (re-)append the removed atoms/bonds,
     a process which is thus likelly to affect the *absolute* ordering of
     atoms/bonds within the entire molecule.
-
 
     Examples
     --------
@@ -60,8 +59,9 @@ class RemoveAtoms(AbstractContextManager):
         A PLAMS molecule.
         See :attr:`RemoveAtoms.mol`.
 
-    atoms : |Iterable| [|plams.Atom|]
-        An iterable consisting of unique PLAMS atoms beloning to **mol**.
+    atoms : |plams.Atom| or |Iterable| [|plams.Atom|]
+        A PLAMS atom or an iterable consisting of unique PLAMS atoms.
+        All supplied atoms should belong to **mol**.
         See :attr:`RemoveAtoms.atoms`.
 
     Attributes
@@ -71,6 +71,7 @@ class RemoveAtoms(AbstractContextManager):
 
     atoms : |Sequence| [|plams.Atom|]
         A sequence of PLAMS atoms belonging to :attr:`RemoveAtoms.mol`.
+        Setting a value will convert it into a sequence of atoms.
 
     bonds : :class:`OrderedDict` [|plams.Bond|, ``None``], optional
         A ordered dictionary of PLAMS bonds connected to one or more atoms in
@@ -80,14 +81,28 @@ class RemoveAtoms(AbstractContextManager):
 
     """
 
-    def __init__(self, mol: Molecule, atoms: Iterable[Atom]) -> None:
+    @property
+    def atoms(self) -> Sequence[Atom]:
+        """Get or set :attr:`RemoveAtoms.atoms`. Setting will convert the supplied value into a sequence of atoms."""  # noqa
+        return self._atoms
+
+    @atoms.setter
+    def atoms(self, value: Union[Atom, Iterable[Atom]]) -> None:
+        if isinstance(value, Atom):
+            self._atoms = (value,)
+        elif not isinstance(value, abc.Sequence):
+            self._atoms = tuple(value)
+        else:
+            self._atoms = value
+
+    def __init__(self, mol: Molecule, atoms: Union[Atom, Iterable[Atom]]) -> None:
         """Initialize a :class:`RemoveAtoms` instance."""
         self.mol = mol
-        self.atoms = tuple(atoms) if not isinstance(atoms, abc.Sequence) else atoms
+        self.atoms = atoms
         self.bonds = None
 
     def __enter__(self) -> None:
-        """Enter the :class:`RemoveAtoms` context manager."""
+        """Enter the context manager; delete all atoms in :class:`RemoveAtoms.atoms`."""
         mol = self.mol
         self.bonds = bonds_set = OrderedDict()  # An improvised "OrderedSet"
         for atom in self.atoms:
@@ -96,7 +111,7 @@ class RemoveAtoms(AbstractContextManager):
             mol.delete_atom(atom)
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
-        """Exit the :class:`RemoveAtoms` context manager."""
+        """Exit the context manager; reassign all atoms in :class:`RemoveAtoms.atoms`."""
         mol = self.mol
         for atom in reversed(self.atoms):
             mol.add_atom(atom)

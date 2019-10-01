@@ -236,10 +236,10 @@ def split_mol(plams_mol: Molecule) -> List[Bond]:
     # Fragment the molecule such that the functional group is on the largest fragment
     ret = []
     for at, bond_list in atom_dict.items():
-        for _ in atom_dict[at][2:]:
+        for _ in bond_list[2:]:
             frag_size = [_get_frag_size(bond) for bond in bond_list]
             idx = np.argmax(frag_size)  # The index of the largest fragment
-            bond = atom_dict[at][idx]
+            bond = bond_list[idx]
             ret.append(bond)
     return ret
 
