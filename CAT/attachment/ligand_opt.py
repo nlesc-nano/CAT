@@ -41,7 +41,6 @@ import numpy as np
 import pandas as pd
 
 from scm.plams import (Molecule, Atom, Bond, Settings, MoleculeError, add_to_class, Units)
-from scm.plams.recipes.global_minimum import global_minimum_scan_rdkit
 import scm.plams.interfaces.molecule.rdkit as molkit
 
 import rdkit
@@ -49,6 +48,8 @@ from rdkit.Chem import AllChem
 
 from .mol_split_cm import SplitMol
 from .remove_atoms_cm import RemoveAtoms
+from .optimize_rotmat import optimize_rotmat
+from .as_array import AsArray
 from ..logger import logger
 from ..mol_utils import (to_symbol, fix_carboxyl, get_index, round_coords, from_rdmol, to_atnum)
 from ..settings_dataframe import SettingsDataFrame
@@ -96,6 +97,8 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
         idx = _parse_overwrite(ligand_df, overwrite)
         start_ligand_jobs(ligand_df, idx)
 
+    allign_axis(ligand_df)
+
     # Write newly optimized structures to the database
     if write and optimize:
         _ligand_to_db(ligand_df)
@@ -123,6 +126,19 @@ def read_data(ligand_df: SettingsDataFrame, read: bool) -> None:
             continue
         logger.info(f'{mol.properties.name} has been pulled from the database')
     ligand_df[OPT] = ligand_df[OPT].astype(bool, copy=False)
+
+
+def allign_axis(ligand_df: pd.DataFrame):
+    """Allign all molecules with the Cartesian X-axis."""
+    for mol in ligand_df[MOL]:
+        with AsArray(mol) as xyz:
+            i = mol.atoms.index(mol.properties.dummies)
+
+            # Allign the molecule with the X-axis
+            rotmat = optimize_rotmat(xyz, i)
+            xyz[:] = xyz@rotmat.T
+            xyz -= xyz[i]
+            xyz[:] = xyz.round(decimals=3)
 
 
 def start_ligand_jobs(ligand_df: SettingsDataFrame, idx: pd.Series) -> None:
@@ -159,11 +175,10 @@ def optimize_ligand(ligand: Molecule) -> None:
 
     # Find the optimal dihedrals angle between the fragments
     for bond in bonds:
-        global_minimum_scan_rdkit(ligand, ligand.get_index(bond))
+        modified_minimum_scan_rdkit(ligand, ligand.get_index(bond))
 
     # RDKit UFF can sometimes mess up the geometries of carboxylates: fix them
     fix_carboxyl(ligand)
-    ligand.round_coords()
     return None
 
 
@@ -295,6 +310,8 @@ def get_frag_size(self, bond: Bond, atom: Atom) -> int:
 
     if has_atom1:
         return size1
+
+    bond.atom1, bond.atom2 = bond.atom2, bond.atom1
     return size2
 
 
@@ -399,3 +416,76 @@ def set_dihed(self, angle: float, opt: bool = True, unit: str = 'degree') -> Non
         rdmol = molkit.to_rdmol(self)
         AllChem.UFFGetMoleculeForceField(rdmol).Minimize()
         self.from_rdmol(rdmol)
+
+
+def rdmol_as_array(rdmol: rdkit.Chem.Mol) -> np.ndarray:
+    """Convert an rdkit molecule into an array of Cartesian coordinates."""
+    def get_xyz(atom: rdkit.Chem.Atom) -> Tuple[float, float, float]:
+        pos = conf.GetAtomPosition(atom.GetIdx())
+        return (pos.x, pos.y, pos.z)
+
+    conf = rdmol.GetConformer(id=-1)
+    x, y, z = zip(*[get_xyz(at) for at in rdmol.GetAtoms()])
+    return np.array((x, y, z)).T
+
+
+def find_idx(mol: Molecule, bond: Bond, atom: Atom) -> List[int]:
+    ret = []
+    mol.set_atoms_id(start=0)
+    for at in mol:
+        at._visited = False
+
+    def dfs(at1, mol):
+        at1._visited = True
+        ret.append(at1.id)
+        for bond in at1.bonds:
+            at2 = bond.other_end(at1)
+            if not at2._visited:
+                dfs(at2, mol)
+
+    bond.atom1._visited = bond.atom2._visited = True
+    for src in mol.atoms:
+        if not src._visited:
+            dfs(src, mol)
+
+    mol.unset_atoms_id()
+    return ret
+
+
+def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int]) -> None:
+    # Define a number of variables and create 3 copies of the ligand
+    angles = (-120, 0, 120)
+    mol_list = [ligand.copy() for _ in range(3)]
+    for angle, mol in zip(angles, mol_list):
+        bond = mol[bond_tuple]
+        atom = mol[bond_tuple[0]]
+        mol.rotate_bond(bond, atom, angle, unit='degree')
+    mol_list = [molkit.to_rdmol(mol, properties=False) for mol in mol_list]
+
+    # Optimize the (constrained) geometry for all dihedral angles in angle_list
+    # The geometry that yields the minimum energy is returned
+    uff = AllChem.UFFGetMoleculeForceField
+    fixed = find_idx(mol, bond, atom)
+    for rdmol in mol_list:
+        ff = uff(rdmol)
+        for f in fixed:
+            ff.AddFixedPoint(f)
+        ff.Minimize()
+
+    # Find the conformation with the optimal ligand vector
+    cost_list = []
+    i = ligand.atoms.index(ligand.properties.dummies)
+    for rdmol in mol_list:
+        xyz = rdmol_as_array(rdmol)
+        rotmat = optimize_rotmat(xyz, i)
+        xyz[:] = xyz@rotmat.T
+        xyz -= xyz[i]
+        cost = np.exp(xyz[:, 1:]).sum()
+        cost_list.append(cost)
+
+    # Perform an unconstrained optimization on the best geometry and update the geometry of ligand
+    i = np.argmin(cost_list)
+    rdmol_best = mol_list[i]
+    mol_list = [molkit.from_rdmol(m) for m in mol_list]
+    uff(rdmol_best).Minimize()
+    ligand.from_rdmol(rdmol_best)

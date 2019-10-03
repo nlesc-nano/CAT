@@ -302,7 +302,7 @@ def ligand_to_qd(core: Molecule,
     dirname = settings.optional.qd.dirname
 
     # Define vectors and indices used for rotation and translation the ligands
-    vec1 = sanitize_dim_2(ligand.properties.dummies) - np.array(ligand.get_center_of_mass())
+    vec1 = np.array([-1, 0, 0], dtype=float)  # All ligands are already alligned along the X-axis
     vec2 = np.array(core.get_center_of_mass()) - sanitize_dim_2(core.properties.dummies)
     idx = ligand.get_index(ligand.properties.dummies) - 1
     ligand.properties.dummies.properties.anchor = True
@@ -572,8 +572,7 @@ def rot_mol_angle(xyz_array: np.ndarray,
     return ret
 
 
-def array_to_qd(mol: Molecule,
-                xyz_array: np.ndarray,
+def array_to_qd(mol: Molecule, xyz_array: np.ndarray,
                 mol_out: Optional[Molecule] = None) -> Optional[List[Molecule]]:
     """Create :math:`n` copies of **mol** and update their Cartesian coordinates with **xyz_array**.
 
