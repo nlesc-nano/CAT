@@ -21,15 +21,13 @@ API
 
 """
 
+import copy
 import textwrap
-from typing import (Any, Union, Iterable)
+from typing import (NoReturn, Hashable)
 
 from scm.plams import Settings
 
 __all__ = ['FrozenSettings']
-
-# Various immutable objects suited as dictionary keys
-Immutable = Union[tuple, int, float, str, frozenset]
 
 
 class FrozenSettings(Settings):
@@ -38,50 +36,89 @@ class FrozenSettings(Settings):
     .. _plams.Settings: https://www.scm.com/doc/plams/components/settings.html
     """
 
-    def __init__(self, *args: Iterable, **kwargs: dict) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """Initialize the construction of a :class:`FrozenSettings` instance."""
         dict.__init__(self, *args, **kwargs)
+        cls = type(self)
 
         # Fill the FrozenSettings instance by means of the dict.__setitem__ method
         for key, value in self.items():
             if isinstance(value, dict):
-                Settings.__setitem__(self, key, FrozenSettings(value))
+                value_new = cls(value)
             elif isinstance(value, list):
-                value = [FrozenSettings(i) if isinstance(i, dict) else i for i in value]
-                Settings.__setitem__(self, key, value)
+                value_new = [cls(i) if isinstance(i, dict) else i for i in value]
+            else:
+                continue
+            Settings.__setitem__(self, key, value_new)
+
+        # An attribute for caching the hash of this instance
+        dict.__setattr__(self, '_hash', None)
 
     def __str__(self) -> str:
         """Return a string representation of this instance."""
         if not self:
             return f'{self.__class__.__name__}()'
+
         indent = 4 * ' '
         ret = super().__str__()[:-1]
         return f'{self.__class__.__name__}(\n{textwrap.indent(ret, indent)}\n)'
 
     __repr__ = __str__
 
-    def __missing__(self, name: Immutable) -> 'FrozenSettings':
-        """Return a new (empty) :class:`FrozenSettings` instance."""
-        return FrozenSettings()
+    def __missing__(self, key: Hashable) -> 'FrozenSettings': return _frozen_settings
+    def __bool__(self) -> bool: return bool(len(self))
 
-    def __delitem__(self, name: Immutable) -> None:
-        """Raise a :exc:`TypeError`; :class:`FrozenSettings` instances are immutable."""
-        raise TypeError("'FrozenSettings' object does not support item deletion")
+    @classmethod
+    def _raise_exc(cls, *args, **kwargs) -> NoReturn:
+        """Method unsupported; raise a :exc:`TypeError`."""
+        raise TypeError(f"'{cls.__name__}' object does not support item assignment or deletion")
 
-    def __setitem__(self, name: Immutable, value: Any) -> None:
-        """Raise a :exc:`TypeError`; :class:`FrozenSettings` instances are immutable."""
-        raise TypeError("'FrozenSettings' object does not support item assignment")
+    __delitem__ = __setitem__ = set_nested = _raise_exc
 
-    def copy(self) -> 'FrozenSettings':
-        """Create a copy of this instance."""
-        ret = FrozenSettings()
+    def flatten(self, flatten_list: bool = True) -> 'FrozenSettings':
+        ret = super().flatten(flatten_list)
+        return type(self)(ret)
+    flatten.__doc__ = Settings.flatten.__doc__
+
+    def unflatten(self, unflatten_list: bool = True) -> 'FrozenSettings':
+        ret = super().unflatten(unflatten_list)
+        return type(self)(ret)
+    unflatten.__doc__ = Settings.unflatten.__doc__
+
+    def __hash__(self) -> int:
+        """Return the hash of this instance; pull it from :attr:`._hash` if possible."""
+        if self._hash is not None:
+            return dict.__getattribute__(self, '_hash')
+
+        flat = super().flatten()
+        ret = 0
+        for k, v in flat.items():
+            ret ^= hash(k + (v, ))
+        dict.__setattr__(self, '_hash', ret)
+        return ret
+
+    def copy(self, deep: bool = False) -> 'FrozenSettings':
+        """Create a copy of this instance.
+
+        The returned instance is a recursive copy, the **deep** parameter only affecting the
+        function used for copying non-:class:`dict` values:
+        :func:`copy.copy` if ``deep=False`` and  :func:`copy.deepcopy` if ``deep=True``.
+
+        """
+        copy_func = copy.deepcopy if deep else copy.copy
+        ret = type(self)()
         for key, value in self.items():
-            try:
-                Settings.__setitem__(ret, key, value.copy())
-            except AttributeError:
-                Settings.__setitem__(ret, key, value)
+            value_cp = copy_func(value)
+            Settings.__setitem__(ret, key, value_cp)
         return ret
 
     def __copy__(self) -> 'FrozenSettings':
-        """Create a copy of this instance by calling :meth:`FrozenSettings.copy`."""
-        return self.copy()
+        """Create a shallow copy of this instance by calling :meth:`FrozenSettings.copy`."""
+        return self.copy(deep=False)
+
+    def __deepcopy__(self, memo=None) -> 'FrozenSettings':
+        """Create a deep copy of this instance by calling :meth:`FrozenSettings.copy`."""
+        return self.copy(deep=True)
+
+
+_frozen_settings = FrozenSettings()
