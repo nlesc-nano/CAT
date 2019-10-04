@@ -251,10 +251,12 @@ def split_mol(plams_mol: Molecule) -> List[Bond]:
     # Fragment the molecule such that the functional group is on the largest fragment
     ret = []
     for at, bond_list in atom_dict.items():
-        for _ in bond_list[2:]:
+        # Can't directly iterate over bond_list as its size is modified
+        iterator = range(len(bond_list[2:]))
+        for _ in iterator:
             frag_size = [_get_frag_size(bond) for bond in bond_list]
             idx = np.argmax(frag_size)  # The index of the largest fragment
-            bond = bond_list[idx]
+            bond = bond_list.pop(idx)
             ret.append(bond)
     return ret
 
@@ -486,6 +488,5 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int]) -
     # Perform an unconstrained optimization on the best geometry and update the geometry of ligand
     i = np.argmin(cost_list)
     rdmol_best = mol_list[i]
-    mol_list = [molkit.from_rdmol(m) for m in mol_list]
     uff(rdmol_best).Minimize()
     ligand.from_rdmol(rdmol_best)
