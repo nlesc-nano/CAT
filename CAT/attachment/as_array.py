@@ -64,8 +64,8 @@ class AsArray(AbstractContextManager):
 
     _MOl: Molecule = Molecule()
 
-    @property
-    def from_array(self) -> Callable[..., None]: return self._MOl.from_array
+    @classmethod
+    def from_array(cls) -> Callable[..., None]: return cls._MOl.from_array
 
     def __init__(self, mol: Iterable[Atom], delete_atom: str = 'raise', **kwargs: Any) -> None:
         """Initialize a :class:`AsArray` instance."""
