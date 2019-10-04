@@ -367,26 +367,13 @@ Ligand
                         * **Default value** – ``False``
 
 
-        Calculate the ligand dissociation energy.
-
-        Given a set of angles :math:`\phi`, the bulkiness factor :math:`V_{bulk}` is defined below.
-        Angles are constructed according to :math:`\phi = \angle_{ABC}`,
-        where :math:`A` represents a set of all ligand atoms,
-        :math:`B` is the ligand anchor atom and
-        :math:`C` is the mean position of all ligand atoms (*i.e.* the ligand center).
+        Calculate the ligand bulkiness factor :math:`V_{bulk}`.
 
         .. math::
-            W_{bulk} = \frac{1}{n} \sum_{i}^{n} e^{\sin \phi_{i}}
+            V_{bulk} = \frac{1}{n} \sum_{i}^{n} {e^{r_{i}}}
 
-        Conceptually, the bulkiness factor :math:`V_{bulk}` is related to ligand (half-)cones angles,
-        with the key difference that :math:`V_{bulk}` builds on top of it,
-        representing an estimate of mean inter-ligand steric interactions.
-
-        See also
-        --------
-        `Ligand cone angle <https://en.wikipedia.org/wiki/Ligand_cone_angle>`_:
-            The ligand cone angle is a measure of the steric bulk of a ligand in
-            a transition metal complex.
+        :math:`V_{bulk}` represents the mean repulsion of all atoms with a cylindrical external potential,
+        the potential being of exponential form.
 
 |
 

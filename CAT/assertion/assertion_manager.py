@@ -83,7 +83,7 @@ def _wrap_docstring(func: Callable) -> str:
 
 def _bind_callable(class_type: Union[type, Any], func: Callable,
                    name: Optional[str] = None) -> None:
-    """Take a callable and use it to create a new assertion method for **class_**.
+    """Take a callable and use it to create a new assertion method for **class_type**.
 
     Parameter
     ---------

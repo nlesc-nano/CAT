@@ -48,6 +48,11 @@ from rdkit.Chem import rdMolTransforms
 
 __all__ = ['adf_connectivity', 'fix_h', 'fix_carboxyl']
 
+try:
+    SANITIZE: int = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_ADJUSTHS
+except TypeError:  # This prevents Sphinx from raising a TypeError when rdkit is mocked
+    SANITIZE: int = 0
+
 
 @add_to_class(Molecule)
 def from_mol_other(self, mol: Molecule,
@@ -153,7 +158,7 @@ def merge_mol(self, mol_list: Union[Molecule, Iterable[Molecule]]) -> None:
 
     """
     if isinstance(mol_list, Molecule):
-        mol_list = [mol_list]
+        mol_list = (mol_list,)
 
     for mol in mol_list:
         for atom in mol.atoms:
@@ -166,7 +171,7 @@ def merge_mol(self, mol_list: Union[Molecule, Iterable[Molecule]]) -> None:
 
 
 @add_to_class(Molecule)
-def separate_mod(self) -> List[Molecule]:
+def separate_mod(self) -> Tuple[Molecule]:
     """Modified PLAMS function: creates new molecules out of this instance rather than
     a copy of this instance. Atoms, bonds and properties are *not* copied.
 
@@ -179,11 +184,11 @@ def separate_mod(self) -> List[Molecule]:
 
     Returns
     -------
-    |list|_ [|plams.Molecule|_]
+    |tuple|_ [|plams.Molecule|_]
         A list of molecules with atoms and bonds from **self**.
 
     """
-    frags = []
+    frags = ()
     for at in self:
         at._visited = False
 
@@ -200,7 +205,8 @@ def separate_mod(self) -> List[Molecule]:
         if not src._visited:
             m = Molecule()
             dfs(src, m)
-            frags.append(m)
+            frags += (m,)
+            m.properties = self.properties.copy()
 
     for at in self.atoms:
         del at._visited
@@ -224,7 +230,7 @@ def round_coords(self, decimals: int = 3) -> None:
 
     """
     xyz = self.as_array()
-    np.round(xyz, decimals=decimals, out=xyz)
+    xyz[:] = np.round(xyz, decimals=decimals)
     self.from_array(xyz)
 
 
@@ -322,6 +328,21 @@ def adf_connectivity(mol: Molecule) -> List[str]:
     return bonds
 
 
+def _smiles_to_rdmol(smiles: str) -> Chem.Mol:
+    """Convert a SMILES string into an rdkit Mol; supports explicit hydrogens."""
+    # RDKit tends to remove explicit hydrogens if SANITIZE_ADJUSTHS is enabled
+    try:
+        mol = Chem.MolFromSmiles(smiles, sanitize=False)
+        Chem.rdmolops.SanitizeMol(mol, sanitizeOps=SANITIZE)
+    except Exception as ex:
+        raise ex.__class__(f'Failed to parse the following SMILES string: {repr(smiles)}\n\n{ex}')
+    return mol
+
+
+#: A carboxylate
+_CARBOXYLATE: Chem.Mol = _smiles_to_rdmol('[O-]C(C)=O')
+
+
 def fix_carboxyl(mol: Molecule) -> None:
     """Resets carboxylate OCO angles if it is smaller than :math:`60` degrees.
 
@@ -333,10 +354,10 @@ def fix_carboxyl(mol: Molecule) -> None:
         A PLAMS molecule.
 
     """
+
     rdmol = molkit.to_rdmol(mol)
     conf = rdmol.GetConformer()
-    carboxylate = Chem.MolFromSmarts('[O-]C(C)=O')
-    matches = rdmol.GetSubstructMatches(carboxylate)
+    matches = rdmol.GetSubstructMatches(_CARBOXYLATE)
 
     if matches:
         get_angle = rdMolTransforms.GetAngleDeg

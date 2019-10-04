@@ -24,7 +24,7 @@ import io
 import abc
 import functools
 from contextlib import AbstractContextManager
-from codecs import iterdecode
+from codecs import iterdecode, encode
 from typing import (Dict, Optional, Any, Iterable, Iterator, Union, AnyStr, Callable)
 from collections.abc import Container
 
@@ -235,8 +235,8 @@ class AbstractFileContainer(abc.ABC, Container):
             return writer
 
         @functools.wraps(writer)
-        def writer_new(value: str, *args, **kwargs):
-            value_bytes = value.encode(encoding)
+        def writer_new(value: AnyStr, *args, **kwargs):
+            value_bytes = encode(value, encoding)
             return writer(value_bytes, *args, **kwargs)
         return writer_new
 

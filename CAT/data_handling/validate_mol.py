@@ -38,15 +38,17 @@ __all__ = ['validate_mol', 'santize_smiles']
 def santize_smiles(smiles: str) -> str:
     """Sanitize a SMILES string: turn it into a valid filename."""
     name = smiles.replace('(', '[').replace(')', ']')
-    cis_trans = [item for item in smiles if item in ('/', '\\')]
-    if cis_trans:
-        cis_trans = [item + cis_trans[i*2+1] for i, item in enumerate(cis_trans[::2])]
-        cis_trans_dict = {'//': 'trans-', '/\\': 'cis-'}
-        for item in cis_trans[::-1]:
-            name = cis_trans_dict[item] + name
-        name = name.replace('/', '').replace('\\', '')
-
-    return name
+    try:
+        cis_trans = [item for item in smiles if item in ('/', '\\')]
+        if cis_trans:
+            cis_trans = [item + cis_trans[i*2+1] for i, item in enumerate(cis_trans[::2])]
+            cis_trans_dict = {'//': 'trans-', '/\\': 'cis-'}
+            for item in cis_trans[::-1]:
+                name = cis_trans_dict[item] + name
+    except KeyError:
+        pass
+    finally:
+        return name.replace('/', '').replace('\\', '')
 
 
 def validate_mol(args: Sequence[Union[Any, Settings]],
