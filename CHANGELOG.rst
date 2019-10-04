@@ -8,7 +8,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.6.2
 *****
-* Added multiple improvements to the ligand conformation optimizer.
+* Added multiple improvements (and bug fixes) to the ligand conformation optimizer.
 * Added a context manager for the `plams.Molecule.as_array()` method.
 * Added an optimizer for the ligand vector.
 * Updated the ligand bulkiness workflow in `nano-CAT`_ 0.2.2.
