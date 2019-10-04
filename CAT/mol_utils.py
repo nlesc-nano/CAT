@@ -48,6 +48,11 @@ from rdkit.Chem import rdMolTransforms
 
 __all__ = ['adf_connectivity', 'fix_h', 'fix_carboxyl']
 
+try:
+    SANITIZE: int = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_ADJUSTHS
+except TypeError:  # This prevents Sphinx from raising a TypeError when rdkit is mocked
+    SANITIZE: int = 0
+
 
 @add_to_class(Molecule)
 def from_mol_other(self, mol: Molecule,
@@ -326,10 +331,9 @@ def adf_connectivity(mol: Molecule) -> List[str]:
 def _smiles_to_rdmol(smiles: str) -> Chem.Mol:
     """Convert a SMILES string into an rdkit Mol; supports explicit hydrogens."""
     # RDKit tends to remove explicit hydrogens if SANITIZE_ADJUSTHS is enabled
-    sanitize = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_ADJUSTHS
     try:
         mol = Chem.MolFromSmiles(smiles, sanitize=False)
-        Chem.rdmolops.SanitizeMol(mol, sanitizeOps=sanitize)
+        Chem.rdmolops.SanitizeMol(mol, sanitizeOps=SANITIZE)
     except Exception as ex:
         raise ex.__class__(f'Failed to parse the following SMILES string: {repr(smiles)}\n\n{ex}')
     return mol

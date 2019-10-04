@@ -63,7 +63,7 @@ class AsArray(AbstractContextManager):
 
     Parameters
     ----------
-    mol : |plams.Molecule| or |Iterable| [|plams.Atoms|]
+    mol : |plams.Molecule| or |Iterable| [|plams.Atom|]
         An iterable consisting of PLAMS atoms.
         See :attr:`AsArray.mol`.
 
@@ -74,7 +74,6 @@ class AsArray(AbstractContextManager):
         * ``"raise"``: Raise a :exc:`MoleculeError`.
         * ``"warn"``: Issue a warning before calling the method.
         * ``"pass"``: Just call the method.
-
         Only relevant if **mol** is a |plams.Molecule| instance.
         See :attr:`AsArray.delete_atom`.
 
@@ -84,7 +83,7 @@ class AsArray(AbstractContextManager):
 
     Attributes
     ----------
-    mol : |plams.Molecule| or |Sequence| [|plams.Atoms|]
+    mol : |plams.Molecule| or |Sequence| [|plams.Atom|]
         A PLAMS molecule or a sequence of PLAMS atoms.
 
     kwargs : :class:`dict` [:class:`str`, |Any|]

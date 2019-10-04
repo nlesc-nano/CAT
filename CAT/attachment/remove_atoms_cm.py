@@ -73,7 +73,7 @@ class RemoveAtoms(AbstractContextManager):
         A sequence of PLAMS atoms belonging to :attr:`RemoveAtoms.mol`.
         Setting a value will convert it into a sequence of atoms.
 
-    bonds : :class:`OrderedDict` [|plams.Bond|, ``None``], optional
+    bonds : |OrderedDict| [|plams.Bond|, ``None``], optional
         A ordered dictionary of PLAMS bonds connected to one or more atoms in
         :attr:`RemoveAtoms.atoms`.
         All values are ``None``, the dictionary serving as an improvised ``OrderedSet``.
