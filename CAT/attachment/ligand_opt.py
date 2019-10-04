@@ -35,7 +35,7 @@ API
 """
 
 import itertools
-from typing import (List, Tuple, Dict, Any, Union)
+from typing import (List, Tuple, Dict, Any, Union, Set)
 
 import numpy as np
 import pandas as pd
@@ -262,7 +262,7 @@ def split_mol(plams_mol: Molecule) -> List[Bond]:
 
 
 @add_to_class(Molecule)
-def get_frag_size(self, bond: Bond, atom: Atom) -> int:
+def get_frag_size(self, bond: Bond, reference_atom: Atom) -> int:
     """Return the size of the fragment containing **atom** if **self** was split into two
     molecules by the breaking of **bond**.
 
@@ -271,7 +271,7 @@ def get_frag_size(self, bond: Bond, atom: Atom) -> int:
     bond : |plams.Bond|
         A PLAMS bond.
 
-    atom : |plams.Atom|
+    reference_atom : |plams.Atom|
         A PLAMS atom. The size of the fragment containg this atom will be returned.
 
     Returns
@@ -283,38 +283,40 @@ def get_frag_size(self, bond: Bond, atom: Atom) -> int:
     if bond not in self.bonds:
         raise MoleculeError('get_frag_size: The argument bond should be of type plams.Bond and '
                             'be part of the Molecule')
-    elif atom not in self.atoms:
+    elif reference_atom not in self.atoms:
         raise MoleculeError('get_frag_size: The argument atom should be of type plams.Atom and '
                             'be part of the Molecule')
 
     for at in self:
         at._visited = False
 
-    def dfs(at1, len_at=0, has_atom=False, atom=atom):
+    frag1 = set()
+    frag2 = set()
+
+    def dfs(at1: Atom, atom_set: Set[Atom]):
         at1._visited = True
-        len_at += 1
-        if at1 is atom:
-            has_atom = True
+        atom_set.add(at1)
         for bond in at1.bonds:
             at2 = bond.other_end(at1)
             if at2._visited:
                 continue
-            i, j = dfs(at2)
-            len_at += i
-            has_atom = has_atom or j
-        return len_at, has_atom
+            dfs(at2, atom_set)
 
     bond.atom1._visited = bond.atom2._visited = True
-    size1, has_atom1 = dfs(bond.atom1)
-    size2, _ = dfs(bond.atom2)
+    dfs(bond.atom1, frag1)
+    dfs(bond.atom2, frag2)
     for at in self.atoms:
         del at._visited
 
-    if has_atom1:
-        return size1
+    # fragment #1 contains **atom**
+    if reference_atom in frag1:
+        if bond.atom1 not in frag1:
+            bond.atom1, bond.atom2 = bond.atom2, bond.atom1
+        return len(frag1)
 
-    bond.atom1, bond.atom2 = bond.atom2, bond.atom1
-    return size2
+    if bond.atom1 not in frag2:
+        bond.atom1, bond.atom2 = bond.atom2, bond.atom1
+    return len(frag2)
 
 
 def get_dihed(atoms: Tuple[Atom, Atom, Atom, Atom], unit: str = 'degree') -> float:
@@ -431,7 +433,7 @@ def rdmol_as_array(rdmol: rdkit.Chem.Mol) -> np.ndarray:
     return np.array((x, y, z)).T
 
 
-def find_idx(mol: Molecule, bond: Bond, atom: Atom) -> List[int]:
+def find_idx(mol: Molecule, bond: Bond) -> List[int]:
     ret = []
     mol.set_atoms_id(start=0)
     for at in mol:
@@ -446,9 +448,7 @@ def find_idx(mol: Molecule, bond: Bond, atom: Atom) -> List[int]:
                 dfs(at2, mol)
 
     bond.atom1._visited = bond.atom2._visited = True
-    for src in mol.atoms:
-        if not src._visited:
-            dfs(src, mol)
+    dfs(bond.atom2, mol)
 
     mol.unset_atoms_id()
     return ret
@@ -467,7 +467,7 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int]) -
     # Optimize the (constrained) geometry for all dihedral angles in angle_list
     # The geometry that yields the minimum energy is returned
     uff = AllChem.UFFGetMoleculeForceField
-    fixed = find_idx(mol, bond, atom)
+    fixed = find_idx(mol, bond)
     for rdmol in mol_list:
         ff = uff(rdmol)
         for f in fixed:
@@ -488,5 +488,5 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int]) -
     # Perform an unconstrained optimization on the best geometry and update the geometry of ligand
     i = np.argmin(cost_list)
     rdmol_best = mol_list[i]
-    uff(rdmol_best).Minimize()
+    uff(rdmol).Minimize()
     ligand.from_rdmol(rdmol_best)
