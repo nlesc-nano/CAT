@@ -1,9 +1,30 @@
-import warnings
-import reprlib
+"""
+CAT.attachment.as_array
+=======================
+
+A context manager for temporary interconverting between PLAMS molecules and NumPy arrays.
+
+Index
+-----
+.. currentmodule:: CAT.attachment.as_array
+.. autosummary::
+    AsArray
+
+API
+---
+.. autoclass:: AsArray
+    :members:
+    :private-members:
+    :special-members:
+
+"""
+
 import types
+import reprlib
+import warnings
 from typing import Any, NoReturn, Iterable, Callable
-from collections.abc import Sequence
 from contextlib import AbstractContextManager
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -11,7 +32,7 @@ from scm.plams import MoleculeError, Atom, Molecule
 
 
 class AsArray(AbstractContextManager):
-    r"""A context manager for temporary calling the :meth:`Molecule.as_array` method.
+    r"""A context manager for temporary interconverting between PLAMS molecules and NumPy arrays.
 
     Examples
     --------
@@ -42,7 +63,7 @@ class AsArray(AbstractContextManager):
 
     Parameters
     ----------
-    mol : |plams.Molecule|
+    mol : |plams.Molecule| or |Iterable| [|plams.Atoms|]
         An iterable consisting of PLAMS atoms.
         See :attr:`AsArray.mol`.
 
@@ -54,11 +75,34 @@ class AsArray(AbstractContextManager):
         * ``"warn"``: Issue a warning before calling the method.
         * ``"pass"``: Just call the method.
 
+        Only relevant if **mol** is a |plams.Molecule| instance.
         See :attr:`AsArray.delete_atom`.
 
     \**kwargs
         Keyword arguments for the :func:`numpy.array` function.
         See :attr:`AsArray.kwargs`.
+
+    Attributes
+    ----------
+    mol : |plams.Molecule| or |Sequence| [|plams.Atoms|]
+        A PLAMS molecule or a sequence of PLAMS atoms.
+
+    kwargs : :class:`dict` [:class:`str`, |Any|]
+        A dictionary with keyword arguments for the :func:`numpy.array` function.
+
+    delete_atom : :class:`str`
+        The action which is to be taken when calling the :meth:`Molecule.delete_atom` method
+        of **mol**:
+
+        * ``"raise"``: Raise a :exc:`MoleculeError`.
+        * ``"warn"``: Issue a warning before calling the method.
+        * ``"pass"``: Just call the method.
+
+        Only relevant if **mol** is a |plams.Molecule| instance.
+
+    _xyz : :math:`n*3` :class:`numpy.ndarray` [:class:`float`], optional
+        A 2D array with the Cartesian coordinates of **mol**.
+        Empty by default; this value is set internally by the :meth:`AsArray.__enter__` method.
 
     """
 
@@ -66,6 +110,7 @@ class AsArray(AbstractContextManager):
 
     @classmethod
     def from_array(cls, xyz_array: np.ndarray, atom_subset: Iterable[Atom]) -> Callable[..., None]:
+        """Call the :meth:`Molecule.from_array` method."""
         return cls._MOl.from_array(xyz_array, atom_subset)
 
     def __init__(self, mol: Iterable[Atom], delete_atom: str = 'raise', **kwargs: Any) -> None:
@@ -97,8 +142,7 @@ class AsArray(AbstractContextManager):
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         """Exit the context manager; update the Cartesian coordinates of :attr:`AsArray.mol`."""
         mol = self.mol
-        xyz = self._xyz
-        self.from_array(xyz, mol)
+        self.from_array(self._xyz, mol)
 
         # Deleting removes the 'delete_atom' method from the molecules' instance variables;
         # thus reverting back to the method originally defined in the class itself
