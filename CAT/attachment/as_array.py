@@ -65,14 +65,14 @@ class AsArray(AbstractContextManager):
     _MOl: Molecule = Molecule()
 
     @classmethod
-    def from_array(cls, xyz_array: np.ndarray, atoms: Iterable[Atom]) -> Callable[..., None]:
-        return cls._MOl.from_array(xyz_array, atoms)
+    def from_array(cls, xyz_array: np.ndarray, atom_subset: Iterable[Atom]) -> Callable[..., None]:
+        return cls._MOl.from_array(xyz_array, atom_subset)
 
     def __init__(self, mol: Iterable[Atom], delete_atom: str = 'raise', **kwargs: Any) -> None:
         """Initialize a :class:`AsArray` instance."""
         self.mol = mol if isinstance(mol, (Sequence, Molecule)) else tuple(mol)
         self.kwargs = kwargs
-        self.delete_atom = delete_atom.lower()
+        self.delete_atom = delete_atom.lower() if not isinstance(mol, Molecule) else 'pass'
 
         self._xyz = None
 
@@ -98,7 +98,7 @@ class AsArray(AbstractContextManager):
         """Exit the context manager; update the Cartesian coordinates of :attr:`AsArray.mol`."""
         mol = self.mol
         xyz = self._xyz
-        self.from_array(xyz, atom_subset=mol)
+        self.from_array(xyz, mol)
 
         # Deleting removes the 'delete_atom' method from the molecules' instance variables;
         # thus reverting back to the method originally defined in the class itself
