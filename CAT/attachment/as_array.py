@@ -13,6 +13,33 @@ from scm.plams import MoleculeError, Atom, Molecule
 class AsArray(AbstractContextManager):
     r"""A context manager for temporary calling the :meth:`Molecule.as_array` method.
 
+    Examples
+    --------
+    .. code:: python
+
+        >>> from scm.plams import Molecule
+
+        # Create a H2 example molecule
+        >>> h1 = Atom(symbol='H', coords=(0.0, 0.0, 0.0))
+        >>> h2 = Atom(symbol='H', coords=(1.0, 0.0, 0.0))
+        >>> mol = Molecule()
+        >>> mol.add_atom(h1)
+        >>> mol.add_atom(h2)
+
+        >>> print(mol)
+          Atoms:
+            1         H      0.000000      0.000000      0.000000
+            2         H      1.000000      0.000000      0.000000
+
+        # Example: Translate the molecule along the Cartesian Z-axis by 5 Angstroem
+        >>> with AsArray(mol) as xyz:
+        ...     xyz[:, 2] += 5
+
+        >>> print(mol)
+          Atoms:
+            1         H      0.000000      0.000000      5.000000
+            2         H      1.000000      0.000000      5.000000
+
     Parameters
     ----------
     mol : |plams.Molecule|
@@ -38,14 +65,15 @@ class AsArray(AbstractContextManager):
     _MOl: Molecule = Molecule()
 
     @property
-    def from_array(self) -> Callable: return self._MOl.from_array
+    def from_array(self) -> Callable[..., None]: return self._MOl.from_array
 
     def __init__(self, mol: Iterable[Atom], delete_atom: str = 'raise', **kwargs: Any) -> None:
         """Initialize a :class:`AsArray` instance."""
         self.mol = mol if isinstance(mol, (Sequence, Molecule)) else tuple(mol)
         self.kwargs = kwargs
         self.delete_atom = delete_atom.lower()
-        self.xyz = None
+
+        self._xyz = None
 
         if self.delete_atom == 'pass':
             return None
@@ -62,18 +90,20 @@ class AsArray(AbstractContextManager):
 
     def __enter__(self) -> np.ndarray:
         """Enter the context manager; return an array of Cartesian coordinates."""
-        self.xyz = np.array(self.mol, **self.kwargs)
-        return self.xyz
+        self._xyz = np.array(self.mol, **self.kwargs)
+        return self._xyz
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         """Exit the context manager; update the Cartesian coordinates of :attr:`AsArray.mol`."""
         mol = self.mol
-        self.from_array(self.xyz, mol)
+        xyz = self._xyz
+        self.from_array(xyz, atom_subset=mol)
 
         # Deleting removes the 'delete_atom' method from the molecules' instance variables;
         # thus reverting back to the method originally defined in the class itself
         if self.delete_atom in ('raise', 'warn'):
             delattr(mol, 'delete_atom')
+        self.__dict__ = {}
 
     """######################### Warning- and exception-related methods #########################"""
 

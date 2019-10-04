@@ -123,8 +123,7 @@ class SplitMol(AbstractContextManager):
 
     """
 
-    def __init__(self, mol: Molecule,
-                 bond_list: Union[Bond, Iterable[Bond]],
+    def __init__(self, mol: Molecule, bond_list: Union[Bond, Iterable[Bond]],
                  cap_type: Union[str, int, Atom] = 'H') -> None:
         """Initialize a :class:`SplitMol` instance."""
         self.mol = mol
