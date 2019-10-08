@@ -13,9 +13,9 @@ assuming one is content with the default settings.
 Index
 ~~~~~
 
-========================================= ==================================================================================
+========================================= =========================================================================================================
 Option                                    Description
-========================================= ==================================================================================
+========================================= =========================================================================================================
 :attr:`optional.database.dirname`         The name of the directory where the database will be stored.
 :attr:`optional.database.read`            Attempt to read results from the database before starting calculations.
 :attr:`optional.database.write`           Export results to the database.
@@ -31,13 +31,13 @@ Option                                    Description
 :attr:`optional.ligand.functional_groups` Manually specify SMILES strings representing functional groups.
 :attr:`optional.ligand.split`             If the ligand should be attached in its entirety to the core or not.
 :attr:`optional.ligand.cosmo-rs`          Perform a property calculation with COSMO-RS on the ligand.
-:attr:`optional.ligand.bulkiness`         Perform a ligand bulkiness calculation.
 
 :attr:`optional.qd.dirname`               The name of the directory where all quantum dots will be stored.
-:attr:`optional.qd.optimize`              Optimize the quantum dot (i.e. core + all ligands) .
+:attr:`optional.qd.optimize`              Optimize the quantum dot (i.e. core + all ligands).
+:attr:`optional.qd.bulkiness`             Calculate the :math:`V_{bulk}`, a ligand- and core-sepcific descriptor of a ligands' bulkiness.
 :attr:`optional.qd.activation_strain`     Perform an activation strain analyses.
 :attr:`optional.qd.dissociate`            Calculate the ligand dissociation energy.
-========================================= ==================================================================================
+========================================= =========================================================================================================
 
 Default Settings
 ~~~~~~~~~~~~~~~~
@@ -263,7 +263,6 @@ Ligand
                 functional_groups: null
                 split: True
                 cosmo-rs: False
-                bulkiness: False
 
 |
 
@@ -360,21 +359,6 @@ Ligand
         dimethyl formamide (DMF), dimethyl sulfoxide (DMSO), ethyl acetate,
         ethanol, *n*-hexane, toluene and water.
 
-
-    .. attribute:: optional.ligand.bulkiness
-
-        :Parameter:     * **Type** - :class:`bool`
-                        * **Default value** – ``False``
-
-
-        Calculate the ligand bulkiness factor :math:`V_{bulk}`.
-
-        .. math::
-            V_{bulk} = \frac{1}{n} \sum_{i}^{n} {e^{r_{i}}}
-
-        :math:`V_{bulk}` represents the mean repulsion of all atoms with a cylindrical external potential,
-        the potential being of exponential form.
-
 |
 
 QD
@@ -392,6 +376,7 @@ QD
             qd:
                 dirname: QD
                 optimize: False
+                bulkiness: False
                 activation_strain: False
                 dissociate: False
 
@@ -418,6 +403,29 @@ QD
         By default the calculation is performed with ADF UFF [3_, 11_].
         The geometry of the core and ligand atoms directly attached to the core
         are frozen during this optimization.
+
+
+    .. attribute:: optional.qd.bulkiness
+
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``False``
+
+        Calculate the :math:`V_{bulk}`, a ligand- and core-sepcific descriptor of a ligands' bulkiness.
+
+        .. math::
+            V_{bulk} = \frac{1}{n} \sum_{i}^{n} {e^{r_{i}^{eff}}}
+
+            r_{i}^{eff} = r_{i} - h_{i} * 2 \arctan (\phi / 2)
+
+        :math:`r` and :math:`h`, respectively, represent the radius and height of a "cylinder" centered
+        around the ligand vector, the ligand anchor being the origin.
+        Due to the conal (rather than cylindrical) shape of the ligand,
+        the radius is substituted for an effective height- and angle-depedant radius: :math:`r^{eff}`.
+        This effective radius reduces the repulsive force of the potential
+        as :math:`h` grows larger, *i.e.* when atoms are positioned further away from
+        the surface of the core.
+        :math:`\phi` is the angle between the vectors of two neighbouring ligands,
+        an angle of 0 reverting back to a cylindrical description of the ligand.
 
 
     .. attribute:: optional.qd.activation_strain
