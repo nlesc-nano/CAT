@@ -260,7 +260,6 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
 
     """
     # Unpack arguments
-    bulk = ligand_df.settings.optional.ligand.bulkiness
     forcefield = ligand_df.settings.optional.forcefield
     optimize = ligand_df.settings.optional.ligand.optimize
     crs = ligand_df.settings.optional.ligand.crs
@@ -275,11 +274,6 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     # Optimize the ligands
     if optimize:
         init_ligand_opt(ligand_df)
-
-    # Perform a COSMO-RS calculation on the ligands
-    if bulk:
-        val_nano_cat("Ligand bulkiness calculations require the nano-CAT package")
-        init_lig_bulkiness(ligand_df)
 
     # Perform a COSMO-RS calculation on the ligands
     if crs:
@@ -327,13 +321,23 @@ def prep_qd(ligand_df: SettingsDataFrame,
 
     """
     # Unpack arguments
+    bulk = ligand_df.settings.optional.qd.bulkiness
     optimize = ligand_df.settings.optional.qd.optimize
     forcefield = ligand_df.settings.optional.forcefield
     dissociate = ligand_df.settings.optional.qd.dissociate
     activation_strain = ligand_df.settings.optional.qd.activation_strain
 
+    # Start the ligand bulkiness workflow
+    if bulk:
+        val_nano_cat("Ligand bulkiness calculations require the nano-CAT package")
+        init_lig_bulkiness(ligand_df, core_df)
+
     # Construct the quantum dots
+    logger.info('Starting quantum dot surface population')
     qd_df = init_qd_construction(ligand_df, core_df)
+    logger.info('Finishing quantum dot surface population')
+
+    logger.info('calculating ligand distortion and inter-ligand interaction')
     if not qd_df[MOL].any():
         raise MoleculeError('No valid quantum dots found, aborting')
 
