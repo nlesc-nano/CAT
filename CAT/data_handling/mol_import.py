@@ -303,8 +303,8 @@ def get_charge_dict() -> Dict[str, int]:
     return dict(zip(keys, values))
 
 
-# Create a dictionary of elements and their formal atomic charge
-charge_dict: Dict[str, int] = get_charge_dict()
+#: A dictionary with default atomic charges
+CHARGE_DICT: Dict[str, int] = get_charge_dict()
 
 
 def set_mol_prop(mol: Molecule,
@@ -358,13 +358,13 @@ def set_atom_prop(atom: Atom,
         return
 
     # Default to a charge of 0 if no charge is available for that specific element
-    if atom.symbol not in charge_dict:
+    if atom.symbol not in CHARGE_DICT:
         atom.properties.charge = 0
         return
 
     # Update the charge of non-hypervalent atoms
     total_bonds = int(sum([bond.order for bond in atom.bonds]))
-    default_charge = charge_dict[atom.symbol]
+    default_charge = CHARGE_DICT[atom.symbol]
     abs_charge = abs(default_charge)
     sign = -1 * int(default_charge / abs_charge)
 
@@ -374,12 +374,12 @@ def set_atom_prop(atom: Atom,
         return
 
     # Update formal atomic charges for hypervalent atoms
-    if total_bonds is abs_charge + 2:
-        atom.properties.charge += 2 * sign
-    elif total_bonds is abs_charge + 4:
-        atom.properties.charge += 4 * sign
-    elif total_bonds >= abs_charge + 6:
-        atom.properties.charge += 6 * sign
+    if total_bonds is 2 + abs_charge:
+        atom.properties.charge -= 2 * sign
+    elif total_bonds is 4 + abs_charge:
+        atom.properties.charge -= 4 * sign
+    elif total_bonds >= 6 + abs_charge:
+        atom.properties.charge -= 6 * sign
     return
 
 
