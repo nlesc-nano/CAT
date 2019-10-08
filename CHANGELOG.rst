@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 
+0.6.3
+*****
+* Fixed a bug where hypervalent atoms where assigned incorrect atomic charges.
+
+
 0.6.2
 *****
 * Added multiple improvements (and bug fixes) to the ligand conformation optimizer.
