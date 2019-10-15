@@ -355,9 +355,6 @@ ligand_schema: Schema = Schema({
     Optional_('split', default=True):  # Remove a counterion from the function group
         And(bool, error='optional.ligand.split expects a boolean'),
 
-    Optional_('bulkiness', default=False):  # Ligand bulkiness workflow
-        And(bool, error='optional.ligand.bulkiness expects a boolean'),
-
     Optional_('cosmo-rs', default=False):  # Settings specific to ligand COSMO-RS calculations
         Or(
             dict,
@@ -376,6 +373,9 @@ qd_schema: Schema = Schema({
     # Settings specific to a quantum dot activation strain analyses
     Optional_('activation_strain', default=False):
         And(bool, error='optional.qd.activation_strain expects a boolean'),
+
+    Optional_('bulkiness', default=False):  # Ligand bulkiness workflow
+        And(bool, error='optional.qd.bulkiness expects a boolean'),
 
     Optional_('optimize', default=False):  # Settings for quantum dot geometry optimizations
         Or(
