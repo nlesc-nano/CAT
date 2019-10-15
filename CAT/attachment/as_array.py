@@ -22,9 +22,9 @@ API
 import types
 import reprlib
 import warnings
-from typing import Any, NoReturn, Iterable, Callable
+from typing import Any, NoReturn, Iterable, Callable, Union, Sequence
 from contextlib import AbstractContextManager
-from collections.abc import Sequence
+from collections import abc
 
 import numpy as np
 
@@ -107,61 +107,24 @@ class AsArray(AbstractContextManager):
 
     _MOl: Molecule = Molecule()
 
-    @classmethod
-    def from_array(cls, xyz_array: np.ndarray, atom_subset: Iterable[Atom]) -> Callable[..., None]:
-        """Call the :meth:`Molecule.from_array` method."""
-        return cls._MOl.from_array(xyz_array, atom_subset)
+    @property
+    def mol(self) -> Union[Molecule, Sequence[Atom]]: return self._mol
 
-    def __init__(self, mol: Iterable[Atom], delete_atom: str = 'raise', **kwargs: Any) -> None:
+    @mol.setter
+    def mol(self, value: Iterable[Atom]) -> None:
+        self._mol = value if isinstance(value, (abc.Sequence, Molecule)) else tuple(value)
+
+    def __init__(self, mol: Iterable[Atom]) -> None:
         """Initialize a :class:`AsArray` instance."""
-        self.mol = mol if isinstance(mol, (Sequence, Molecule)) else tuple(mol)
-        self.kwargs = kwargs
-        self.delete_atom = delete_atom.lower() if not isinstance(mol, Molecule) else 'pass'
-
+        self.mol = mol
         self._xyz = None
-
-        if self.delete_atom == 'pass':
-            return None
-
-        try:
-            func_new = getattr(self, f'_{self.delete_atom}')
-        except AttributeError as ex:
-            raise ValueError("An invalid value was passed to the 'delete_atom' parameter: "
-                             f"{reprlib.repr(delete_atom)}; accepted values are 'raise', 'warn' "
-                             "and 'pass'").with_traceback(ex.__traceback__)
-        method = types.MethodType(func_new, mol)
-        setattr(mol, 'delete_atom', method)
-        return None
 
     def __enter__(self) -> np.ndarray:
         """Enter the context manager; return an array of Cartesian coordinates."""
-        self._xyz = np.array(self.mol, **self.kwargs)
+        self._xyz = Molecule.as_array(None, atom_subset=self.mol)
         return self._xyz
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         """Exit the context manager; update the Cartesian coordinates of :attr:`AsArray.mol`."""
-        mol = self.mol
-        self.from_array(self._xyz, mol)
-
-        # Deleting removes the 'delete_atom' method from the molecules' instance variables;
-        # thus reverting back to the method originally defined in the class itself
-        if self.delete_atom in ('raise', 'warn'):
-            delattr(mol, 'delete_atom')
-        self.__dict__ = {}
-
-    """######################### Warning- and exception-related methods #########################"""
-
-    @staticmethod
-    def _raise(*args, **kwargs) -> NoReturn:
-        raise MoleculeError("Atoms should not be deleted while a molecule is opened with 'AsArray'")
-
-    @staticmethod
-    def _warn(*args, **kwargs) -> None:
-        warnings.warn("Atoms should not be deleted while a molecule is opened with 'AsArray'")
-        return Molecule.delete_atom(*args, **kwargs)
-
-    @staticmethod
-    def _pass(*args, **kwargs) -> None:
-        return Molecule.delete_atom(*args, **kwargs)
-
-    _raise.__doc__ = _warn.__doc__ = _pass.__doc__ = Molecule.delete_atom.__doc__
+        Molecule.from_array(None, self._xyz, atom_subset=self.mol)
+        self._xyz = None

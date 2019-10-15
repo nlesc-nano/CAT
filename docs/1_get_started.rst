@@ -74,11 +74,11 @@ Verbose default Settings
             split: True
             functional_groups: null
             cosmo-rs: False
-            bulkiness: False
 
         qd:
             dirname: QD
             optimize: False
+            bulkiness: False
             activation_strain: False
             dissociate: False
 
@@ -116,11 +116,11 @@ Maximum verbose default Settings
             split: True
             functional_groups: null
             cosmo-rs: False
-            bulkiness: False
 
         qd:
             dirname: QD
             optimize: False
+            bulkiness: False
             activation_strain: False
             dissociate:
                 core_atom: Cd

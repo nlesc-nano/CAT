@@ -40,7 +40,9 @@ optional:
     qd:
         dirname: QD
         optimize: False
-#        dissociate:
+        bulkiness: False
+        activation_strain: False
+        dissociate: False
 #            keep_files: False
 #            core_atom: Cd
 #            lig_count: 2
