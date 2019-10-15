@@ -4,8 +4,8 @@ from os.path import join
 
 from scm.plams import (Settings, Molecule)
 import scm.plams.interfaces.molecule.rdkit as molkit
+from assertionlib import assertion
 
-from CAT.assertion.assertion_manager import assertion
 from CAT.data_handling.validate_mol import (
     validate_mol, santize_smiles, _parse_name_type, _parse_mol_type
 )

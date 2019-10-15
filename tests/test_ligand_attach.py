@@ -4,7 +4,8 @@ from os.path import join
 
 import numpy as np
 
-from CAT.assertion.assertion_manager import assertion
+from assertionlib import assertion
+
 from CAT.attachment.ligand_attach import (_get_rotmat1, _get_rotmat2)
 
 PATH = join('tests', 'test_files')

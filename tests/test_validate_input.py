@@ -9,8 +9,8 @@ from unittest import mock
 
 from rdkit import Chem
 from scm.plams import (Settings, AMSJob)
+from assertionlib import assertion
 
-from CAT.assertion.assertion_manager import assertion
 from CAT.data_handling.validate_input import validate_input
 from dataCAT import Database
 

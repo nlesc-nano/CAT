@@ -5,8 +5,8 @@ from os.path import join
 import numpy as np
 
 from scm.plams import (Molecule, Units)
+from assertionlib import assertion
 
-from CAT.assertion.assertion_manager import assertion
 from CAT.thermo_chem import (get_entropy, get_thermo)
 
 PATH = join('tests', 'test_files')
