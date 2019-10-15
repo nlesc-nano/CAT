@@ -42,8 +42,8 @@ def test_validate_input() -> None:
     ref.ligand.dirname = join(PATH, 'ligand')
     ref.ligand.optimize = True
     ref.ligand.split = True
-    ref.ligand.bulkiness = False
 
+    ref.qd.bulkiness = False
     ref.qd.activation_strain = False
     ref.qd.dirname = join(PATH, 'qd')
     ref.qd.dissociate = False

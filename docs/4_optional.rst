@@ -413,19 +413,8 @@ QD
         Calculate the :math:`V_{bulk}`, a ligand- and core-sepcific descriptor of a ligands' bulkiness.
 
         .. math::
-            V_{bulk} = \frac{1}{n} \sum_{i}^{n} {e^{r_{i}^{eff}}}
-
-            r_{i}^{eff} = r_{i} - h_{i} * 2 \arctan (\phi / 2)
-
-        :math:`r` and :math:`h`, respectively, represent the radius and height of a "cylinder" centered
-        around the ligand vector, the ligand anchor being the origin.
-        Due to the conal (rather than cylindrical) shape of the ligand,
-        the radius is substituted for an effective height- and angle-depedant radius: :math:`r^{eff}`.
-        This effective radius reduces the repulsive force of the potential
-        as :math:`h` grows larger, *i.e.* when atoms are positioned further away from
-        the surface of the core.
-        :math:`\phi` is the angle between the vectors of two neighbouring ligands,
-        an angle of 0 reverting back to a cylindrical description of the ligand.
+            V(r_{i}, h_{i}; d, h_{lim}) =
+            \sum_{i=1}^{n} e^{r_{i}} (\frac{2 r_{i}}{d} - 1)^{+} (1 - \frac{h_{i}}{h_{lim}})^{+}
 
 
     .. attribute:: optional.qd.activation_strain
