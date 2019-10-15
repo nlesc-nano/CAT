@@ -4,9 +4,9 @@ from os.path import (join, abspath)
 from collections import abc
 
 from scm.plams import Settings, JobManager, AMSJob, AMSResults
+from assertionlib import assertion
 
 from CAT.gen_job_manager import GenJobManager
-from CAT.assertion.assertion_manager import assertion
 
 SETTINGS = Settings({'counter_len': 3, 'hashing': 'input', 'remove_empty_directories': True})
 PATH = join('tests', 'test_files')

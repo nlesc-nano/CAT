@@ -327,15 +327,15 @@ def prep_qd(ligand_df: SettingsDataFrame,
     dissociate = ligand_df.settings.optional.qd.dissociate
     activation_strain = ligand_df.settings.optional.qd.activation_strain
 
-    # Start the ligand bulkiness workflow
-    if bulk:
-        val_nano_cat("Ligand bulkiness calculations require the nano-CAT package")
-        init_lig_bulkiness(ligand_df, core_df)
-
     # Construct the quantum dots
     logger.info('Starting quantum dot surface population')
     qd_df = init_qd_construction(ligand_df, core_df)
     logger.info('Finishing quantum dot surface population')
+
+    # Start the ligand bulkiness workflow
+    if bulk:
+        val_nano_cat("Ligand bulkiness calculations require the nano-CAT package")
+        init_lig_bulkiness(qd_df, ligand_df, core_df)
 
     logger.info('calculating ligand distortion and inter-ligand interaction')
     if not qd_df[MOL].any():

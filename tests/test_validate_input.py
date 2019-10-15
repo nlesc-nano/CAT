@@ -9,8 +9,8 @@ from unittest import mock
 
 from rdkit import Chem
 from scm.plams import (Settings, AMSJob)
+from assertionlib import assertion
 
-from CAT.assertion.assertion_manager import assertion
 from CAT.data_handling.validate_input import validate_input
 from dataCAT import Database
 
@@ -42,8 +42,8 @@ def test_validate_input() -> None:
     ref.ligand.dirname = join(PATH, 'ligand')
     ref.ligand.optimize = True
     ref.ligand.split = True
-    ref.ligand.bulkiness = False
 
+    ref.qd.bulkiness = False
     ref.qd.activation_strain = False
     ref.qd.dirname = join(PATH, 'qd')
     ref.qd.dissociate = False

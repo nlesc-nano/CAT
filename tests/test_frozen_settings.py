@@ -1,7 +1,8 @@
 """Tests for :mod:`CAT.frozen_settings`."""
 
+from assertionlib import assertion
+
 from CAT.frozen_settings import FrozenSettings
-from CAT.assertion.assertion_manager import assertion
 
 SETTINGS = FrozenSettings({'a': True, 'b': False, 'c': [1, 2, 3, 4]})
 

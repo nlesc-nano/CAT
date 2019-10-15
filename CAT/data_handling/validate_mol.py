@@ -194,7 +194,7 @@ def _parse_name_type(mol_dict: Settings) -> None:
             mol_dict.type = 'folder'
             mol_dict.name = basename(mol)
         else:  # mol is (probably; hopefully?) a SMILES string
-            i = 1 + len(mol_dict.path)
+            i = 1 + len(mol_dict.path) if 'path' in mol_dict else 0
             mol_dict.type = 'smiles'
             mol_dict.mol = mol[i:]
             mol_dict.name = santize_smiles(mol_dict.mol)

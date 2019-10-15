@@ -7,9 +7,9 @@ from schema import SchemaError
 from unittest import mock
 
 from scm.plams import AMSJob, ADFJob, Settings
+from assertionlib import assertion
 
 from CAT.utils import get_template
-from CAT.assertion.assertion_manager import assertion
 from CAT.data_handling.validation_schemas import (
     mol_schema, core_schema, ligand_schema, qd_schema, database_schema,
     mongodb_schema, bde_schema, qd_opt_schema, crs_schema
@@ -128,8 +128,7 @@ def test_ligand_schema() -> None:
         'functional_groups': None,
         'optimize': True,
         'split': True,
-        'cosmo-rs': False,
-        'bulkiness': False
+        'cosmo-rs': False
     }
     args = SchemaError, ligand_schema.validate, lig_dict
 
@@ -142,10 +141,6 @@ def test_ligand_schema() -> None:
     lig_dict['split'] = 1  # Exception: incorrect type
     assertion.exception(*args)
     lig_dict['split'] = True
-
-    lig_dict['bulkiness'] = 1  # Exception: incorrect type
-    assertion.exception(*args)
-    lig_dict['bulkiness'] = False
 
     lig_dict['cosmo-rs'] = 1  # Exception: incorrect type
     assertion.exception(*args)
@@ -192,7 +187,8 @@ def test_qd_schema() -> None:
         'dirname': '.',
         'activation_strain': False,
         'optimize': False,
-        'dissociate': False
+        'dissociate': False,
+        'bulkiness': False
     }
     args = SchemaError, qd_schema.validate, qd_dict
 
@@ -201,6 +197,10 @@ def test_qd_schema() -> None:
     qd_dict['activation_strain'] = 1  # Exception: incorrect type
     assertion.exception(*args)
     qd_dict['activation_strain'] = True
+
+    qd_dict['bulkiness'] = 1  # Exception: incorrect type
+    assertion.exception(*args)
+    qd_dict['bulkiness'] = False
 
     qd_dict['optimize'] = 1  # Exception: incorrect type
     assertion.exception(*args)
