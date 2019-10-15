@@ -7,9 +7,9 @@ from schema import SchemaError
 from unittest import mock
 
 from scm.plams import AMSJob, ADFJob, Settings
+from assertionlib import assertion
 
 from CAT.utils import get_template
-from CAT.assertion.assertion_manager import assertion
 from CAT.data_handling.validation_schemas import (
     mol_schema, core_schema, ligand_schema, qd_schema, database_schema,
     mongodb_schema, bde_schema, qd_opt_schema, crs_schema

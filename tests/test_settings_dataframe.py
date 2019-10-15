@@ -2,7 +2,8 @@
 
 import numpy as np
 
-from CAT.assertion.assertion_manager import assertion
+from assertionlib import assertion
+
 from CAT.frozen_settings import FrozenSettings
 from CAT.settings_dataframe import (SettingsDataFrame, SettingsSeries)
 

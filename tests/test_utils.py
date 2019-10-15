@@ -12,8 +12,8 @@ from scm.plams.interfaces.thirdparty.orca import ORCAJob
 from scm.plams.interfaces.thirdparty.cp2k import Cp2kJob
 from scm.plams.interfaces.thirdparty.dirac import DiracJob
 from scm.plams.interfaces.thirdparty.gamess import GamessJob
+from assertionlib import assertion
 
-from CAT.assertion.assertion_manager import assertion
 from CAT.utils import (
     type_to_string, dict_concatenate, get_template, validate_path, check_sys_var, restart_init
 )

@@ -4,10 +4,11 @@ from os import mkdir
 from os.path import (join, isdir)
 from shutil import rmtree
 
-from CAT.assertion.assertion_manager import assertion
+from scm.plams import Molecule
+from assertionlib import assertion
+
 from CAT.data_handling.mol_to_file import mol_to_file
 
-from scm.plams import Molecule
 
 _PATH = join('tests', 'test_files')
 PATH = join(_PATH, 'mol_to_file')

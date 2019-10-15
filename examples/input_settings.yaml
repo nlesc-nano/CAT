@@ -5,13 +5,21 @@ input_cores:
         guess_bonds: False
 
 input_ligands:
-    - CCCO
-    # - FragranceDB2.txt
+    # - 'O=C(O)CCCCCCNC(=O)OCC1c2ccccc2-c2ccccc21'
+    # - '/Users/basvanbeek/Documents/CdSe/Week_5/Carboxylic_acids_eMolecules_1000.txt'
+    # - ligand_library.txt
+    # - Carboxylic_acids_eMolecules_1000.txt
+    # - 'CCCCCCCCCCCCCCC(=O)O'
+    # - 'OC(C1=C(C(C)C)C=CC=C1C(C)C)=O'
+    # - 'CCCCCCCCCCCCC(CCC)(CCC)C(=O)O'
+    # - 'CCCCCCCCCC(CCC)CCCC(=O)O'
+    #  - 'ClC1=C(C(O)=O)C=C(S(=O)(F)=O)C=C1'
+    - 'CCCCCCCC\C=C\CCCCCCCC(O)=O'
 
 optional:
     database:
         dirname: database
-        read: True
+        read: False
         write: True
         overwrite: False
         mol_format: [pdb]
@@ -26,6 +34,8 @@ optional:
         optimize: True
         split: True
         cosmo-rs: False
+        functional_groups: 'O(C=O)[H]'
+        bulkiness: True
 
     qd:
         dirname: QD

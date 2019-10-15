@@ -5,8 +5,8 @@ from itertools import chain
 
 from scm.plams import (Molecule, PeriodicTable, PTError)
 import scm.plams.interfaces.molecule.rdkit as molkit
+from assertionlib import assertion
 
-from CAT.assertion.assertion_manager import assertion
 from CAT.mol_utils import (
     from_mol_other, from_rdmol, get_index, merge_mol, separate_mod,
     to_atnum, to_symbol, adf_connectivity, fix_carboxyl, fix_h

@@ -2,8 +2,8 @@
 
 from os.path import join
 from shutil import rmtree
+from assertionlib import assertion
 
-from CAT.assertion.assertion_manager import assertion
 from CAT.data_handling.entry_points import main
 
 PATH = join('tests', 'test_files')
