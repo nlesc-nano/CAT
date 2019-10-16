@@ -19,4 +19,4 @@ def test_main() -> None:
         rmtree(join(PATH, 'qd'))
         rmtree(join(PATH, 'database'))
 
-    assertion.exception(FileNotFoundError, main, [filename + 'bob'])
+    assertion.assert_(main, [filename + 'bob'], exception=FileNotFoundError)

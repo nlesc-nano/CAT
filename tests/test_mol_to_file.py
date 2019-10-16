@@ -45,14 +45,14 @@ def test_mol_to_file() -> None:
             assertion.isfile(file, invert=True)
 
         kwargs['path'] = join(PATH, 'bob')
-        assertion.exception(FileNotFoundError, mol_to_file, mol_list, **kwargs)
+        assertion.assert_(mol_to_file, mol_list, exception=FileNotFoundError, **kwargs)
 
         kwargs['path'] = join(PATH, 'mol.xyz')
-        assertion.exception(NotADirectoryError, mol_to_file, mol_list, **kwargs)
+        assertion.assert_(mol_to_file, mol_list, exception=NotADirectoryError, **kwargs)
 
         kwargs['path'] = PATH
         kwargs['mol_format'] = ('bob')
-        assertion.exception(ValueError, mol_to_file, mol_list, **kwargs)
+        assertion.assert_(mol_to_file, mol_list, exception=ValueError, **kwargs)
 
     finally:
         rmtree(PATH)

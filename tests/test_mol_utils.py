@@ -90,11 +90,11 @@ def test_to_atnum() -> None:
         i = to_atnum(symbol)
         assertion.eq(i, j)
         assertion.eq(to_atnum(j), j)
-    assertion.exception(TypeError, to_atnum, {})
-    assertion.exception(TypeError, to_atnum, [])
-    assertion.exception(TypeError, to_atnum, ())
-    assertion.exception(PTError, to_atnum, 'bob')
-    assertion.exception(PTError, to_atnum, 'bill')
+    assertion.assert_(to_atnum, {}, exception=TypeError)
+    assertion.assert_(to_atnum, [], exception=TypeError)
+    assertion.assert_(to_atnum, (), exception=TypeError)
+    assertion.assert_(to_atnum, 'bob', exception=PTError)
+    assertion.assert_(to_atnum, 'bill', exception=PTError)
 
 
 def test_to_symbol() -> None:
@@ -103,11 +103,11 @@ def test_to_symbol() -> None:
         i = to_symbol(j)
         assertion.eq(i, symbol)
         assertion.eq(to_symbol(symbol), symbol)
-    assertion.exception(TypeError, to_symbol, {})
-    assertion.exception(TypeError, to_symbol, [])
-    assertion.exception(TypeError, to_symbol, ())
-    assertion.exception(PTError, to_symbol, 999)
-    assertion.exception(PTError, to_symbol, -999)
+    assertion.assert_(to_symbol, {}, exception=TypeError)
+    assertion.assert_(to_symbol, [], exception=TypeError)
+    assertion.assert_(to_symbol, (), exception=TypeError)
+    assertion.assert_(to_symbol, 999, exception=PTError)
+    assertion.assert_(to_symbol, -999, exception=PTError)
 
 
 def test_adf_connectivity() -> None:

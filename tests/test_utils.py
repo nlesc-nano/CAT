@@ -60,8 +60,8 @@ def test_validate_path() -> None:
     assertion.eq(validate_path(''), os.getcwd())
     assertion.eq(validate_path('.'), os.getcwd())
     assertion.eq(validate_path(PATH), PATH)
-    assertion.exception(FileNotFoundError, validate_path, join(PATH, 'bob'))
-    assertion.exception(NotADirectoryError, validate_path, join(PATH, 'Methanol.xyz'))
+    assertion.assert_(validate_path, join(PATH, 'bob'), exception=FileNotFoundError)
+    assertion.assert_(validate_path, join(PATH, 'Methanol.xyz'), exception=NotADirectoryError)
 
 
 def test_check_sys_var() -> None:
@@ -74,12 +74,12 @@ def test_check_sys_var() -> None:
     @mock.patch.dict(os.environ,
                      {'ADFBIN': '', 'ADFHOME': '2019', 'ADFRESOURCES': '', 'SCMLICENSE': ''})
     def test2() -> None:
-        assertion.exception(EnvironmentError, check_sys_var)
+        assertion.assert_(check_sys_var, exception=EnvironmentError)
 
     @mock.patch.dict(os.environ,
                      {'ADFBIN': 'a', 'ADFHOME': '2018', 'ADFRESOURCES': 'b', 'SCMLICENSE': 'c'})
     def test3() -> None:
-        assertion.exception(EnvironmentError, check_sys_var)
+        assertion.assert_(check_sys_var, exception=EnvironmentError)
 
     test1()
     test2()

@@ -16,13 +16,13 @@ def test_missing() -> None:
 def test_delitem() -> None:
     """Tests for :meth:`CAT.frozen_settings.FrozenSettings.__delitem__`."""
     args = ('a')
-    assertion.exception(TypeError, SETTINGS.__delitem__, args)
+    assertion.assert_(SETTINGS.__delitem__, args, exception=TypeError)
 
 
 def test_setitem() -> None:
     """Tests for :meth:`CAT.frozen_settings.FrozenSettings.__setitem__`."""
     args = ('d', True)
-    assertion.exception(TypeError, SETTINGS.__setitem__, args)
+    assertion.assert_(SETTINGS.__setitem__, args, exception=TypeError)
 
 
 def test_copy() -> None:
