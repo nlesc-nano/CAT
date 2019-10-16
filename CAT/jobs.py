@@ -33,7 +33,7 @@ API
 """
 
 from shutil import rmtree
-from typing import (Optional, Callable)
+from typing import (Optional, Type)
 from os.path import join
 
 import numpy as np
@@ -106,7 +106,7 @@ def _get_name(name: str) -> str:
 
 
 def pre_process_settings(mol: Molecule, s: Settings,
-                         job_type: type, template_name: str) -> Settings:
+                         job_type: Type[Job], template_name: str) -> Settings:
     """Update all :class:`Settings`, **s**, with those from a QMFlows template (see **job**)."""
     ret = Settings()
     ret.input = getattr(qmflows, template_name)['specific'][type_to_string(job_type)].copy()
@@ -233,7 +233,7 @@ def _finalize(self):
 
 
 @add_to_class(Molecule)
-def job_single_point(self, job_type: Callable[..., Job],
+def job_single_point(self, job_type: Type[Job],
                      settings: Settings,
                      name: str = 'Single_point',
                      ret_results: bool = False,
@@ -286,7 +286,7 @@ def job_single_point(self, job_type: Callable[..., Job],
 
 
 @add_to_class(Molecule)
-def job_geometry_opt(self, job_type: Callable[..., Job],
+def job_geometry_opt(self, job_type: Type[Job],
                      settings: Settings,
                      name: str = 'Geometry_optimization',
                      ret_results: bool = False,
@@ -339,7 +339,7 @@ def job_geometry_opt(self, job_type: Callable[..., Job],
 
 
 @add_to_class(Molecule)
-def job_freq(self, job_type: Callable[..., Job],
+def job_freq(self, job_type: Type[Job],
              settings: Settings,
              name: str = 'Frequency_analysis',
              opt: bool = True,
