@@ -419,7 +419,7 @@ QD
 
     .. attribute:: optional.qd.activation_strain
 
-        :Parameter:     * **Type** - :class:`bool`
+        :Parameter:     * **Type** - :class:`bool` or :class:`dict`
                         * **Default value** – ``False``
 
         Perform an activation strain analyses [12_, 13_, 14_].
