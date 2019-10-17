@@ -172,7 +172,7 @@ class WorkFlow(AbstractDataClass):
         )
 
     @classmethod
-    def from_dict(cls, settings: Union[Settings, SettingsDataFrame], name: str) -> 'WorkFlow':
+    def from_template(cls, settings: Union[Settings, SettingsDataFrame], name: str) -> 'WorkFlow':
         if isinstance(settings, SettingsDataFrame):
             settings = settings.settings
 
@@ -196,7 +196,7 @@ class WorkFlow(AbstractDataClass):
         kwargs['settings'] = concatenate_values(kwargs, 's')
         kwargs['name'] = name
 
-        return super().from_dict(kwargs)
+        return cls.from_dict(kwargs)
 
 
 class PlamsInit(AbstractContextManager):
