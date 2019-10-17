@@ -140,14 +140,14 @@ class WorkFlow(AbstractDataClass):
         iterator = super()._str_iterator()
         return ((k.strip('_'), v) for k, v in iterator)
 
-    def __call__(self, df: pd.DataFrame) -> None:
+    def __call__(self, func: Callable, df: pd.DataFrame) -> None:
         """Initialize the workflow."""
         name = self.name
 
         self.from_db(df)
         logger.info(f"Starting {self.job_description}")
-        with PlamsInit(self.path, name):
-            pass
+        with PlamsInit(path=self.path, folder=name):
+            func(df, **vars(self))
         logger.info(f"Finishing {self.job_description}")
         self.to_db(df)
 
@@ -156,7 +156,7 @@ class WorkFlow(AbstractDataClass):
         if not self.read:
             return
 
-        for key, value in self._COLUMN_MAPPING[self.name].items():
+        for key, value in self.column_dict.items():
             if key not in df:
                 df[key] = value
         self.db.from_csv(df, database=self.mol_type)
@@ -181,7 +181,12 @@ class WorkFlow(AbstractDataClass):
         # Raise a KeyError if a key cannot be found
         with Settings.supress_missing():
             # Extract the correct template
-            template: Dict[str, List[str]] = cls._TEMPLATE_MAPPING[name]
+            try:
+                template: Dict[str, List[str]] = cls._TEMPLATE_MAPPING[name]
+            except KeyError as ex:
+                err = (f"Invalid value for the 'name' parameter: {repr(name)}\n"
+                       f"Allowed values: {', '.join(repr(k) for k in cls._MOL_TYPE_MAPPING)}")
+                raise ValueError(err).with_traceback(ex.__traceback__)
 
             # Create a dictionary with keyword arguments
             for k, v in template.items():
