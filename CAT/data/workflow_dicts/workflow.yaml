@@ -1,0 +1,10 @@
+asa:
+    db: [optional, database, db]
+    read: [optional, database, read]
+    write: [optional, database, write]
+    overwrite: [optional, database, overwrite]
+
+    path: [optional, qd, dirname]
+    keep_files: [optional, qd, asa, keep_files]
+    job1: [optional, qd, asa, job]
+    s1: [optional, qd, asa, s]
