@@ -325,7 +325,7 @@ def prep_qd(ligand_df: SettingsDataFrame,
     optimize = ligand_df.settings.optional.qd.optimize
     forcefield = ligand_df.settings.optional.forcefield
     dissociate = ligand_df.settings.optional.qd.dissociate
-    activation_strain = ligand_df.settings.optional.qd.activation_strain
+    asa = ligand_df.settings.optional.qd.asa
 
     # Construct the quantum dots
     logger.info('Starting quantum dot surface population')
@@ -350,7 +350,7 @@ def prep_qd(ligand_df: SettingsDataFrame,
         init_qd_opt(qd_df)
 
     # Calculate the interaction between ligands on the quantum dot surface
-    if activation_strain:
+    if asa:
         val_nano_cat("Quantum dot activation-strain calculations require the nano-CAT package")
         logger.info('calculating ligand distortion and inter-ligand interaction')
         init_asa(qd_df)

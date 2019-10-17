@@ -109,13 +109,16 @@ def pre_process_settings(mol: Molecule, s: Settings,
                          job_type: Type[Job], template_name: str) -> Settings:
     """Update all :class:`Settings`, **s**, with those from a QMFlows template (see **job**)."""
     ret = Settings()
-    ret.input = getattr(qmflows, template_name)['specific'][type_to_string(job_type)].copy()
+    type_key = type_to_string(job_type)
+    ret.input = getattr(qmflows, template_name)['specific'][type_key].copy()
     ret.update(s)
-    if job_type == AMSJob:
+
+    if job_type is AMSJob:
         ret.input.ams.system.bondorders._1 = adf_connectivity(mol)
         if 'uff' not in s.input:
-            ret.input.ams.system.charge = sum([at.properties.charge for at in mol if
-                                               'charge' in at.properties])
+            ret.input.ams.system.charge = sum(
+                [at.properties.charge for at in mol if 'charge' in at.properties]
+            )
     return ret
 
 

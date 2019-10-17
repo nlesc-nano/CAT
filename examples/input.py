@@ -14,9 +14,7 @@ with open(yaml_path, 'r') as file:
     arg = Settings(yaml.load(file, Loader=yaml.FullLoader))
 
 try:
-    _, core_df, ligand_df = base.prep(arg)
+    qd_df, core_df, ligand_df = base.prep(arg)
 except Exception as ex:
     logger.critical(f'{ex.__class__.__name__}: {ex}', exc_info=True)
     raise ex
-
-bulk = ligand_df[('V_bulk', '')].sort_values()
