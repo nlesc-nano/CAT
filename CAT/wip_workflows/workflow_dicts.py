@@ -14,4 +14,4 @@ def load_templates():
         return yaml.load(f, Loader=yaml.FullLoader)
 
 
-ASA, *_ = load_templates().values()
+ASA, *_ = sorted(load_templates().values(), key=str)
