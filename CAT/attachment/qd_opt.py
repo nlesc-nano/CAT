@@ -167,7 +167,7 @@ def _qd_to_db(qd_df: SettingsDataFrame, idx: pd.Series) -> None:
         overwrite=overwrite,
         columns=columns,
         job_recipe=recipe,
-        database='QD',
+        database='qd',
         opt=True
     )
 

@@ -106,7 +106,7 @@ def init_qd_construction(ligand_df: SettingsDataFrame,
 
     # Export the resulting geometries back to the database
     if write:
-        db.update_csv(qd_df, columns=[HDF5_INDEX], database='QD_no_opt')
+        db.update_csv(qd_df, columns=[HDF5_INDEX], database='qd_no_opt')
 
     # Export xyz/pdb files
     if 'qd' in settings.database.write and mol_format and not optimize:
@@ -167,8 +167,8 @@ def _read_database(qd_df: SettingsDataFrame,
 
     # Extract molecules from the database and set their properties
     # If possible extract optimized structures; supplement with unoptimized structures if required
-    mol_series_opt = db.from_csv(qd_df, database='QD', inplace=False)
-    mol_series_no_opt = db.from_csv(qd_df, database='QD_no_opt', inplace=False)
+    mol_series_opt = db.from_csv(qd_df, database='qd', inplace=False)
+    mol_series_no_opt = db.from_csv(qd_df, database='qd_no_opt', inplace=False)
     slice_ = mol_series_no_opt.index.isin(mol_series_opt.index)
     mol_series = mol_series_opt.append(mol_series_no_opt[~slice_])
 

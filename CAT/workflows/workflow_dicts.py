@@ -5,11 +5,12 @@ import numpy as np
 
 import CAT
 
-__all__ = ['finilize_templates']
+__all__ = ['finalize_templates']
 
 ASA_INT = ('ASA', 'E_int')
 ASA_STRAIN = ('ASA', 'E_strain')
 ASA_E = ('ASA', 'E')
+SETTINGS_ASA = ('settings', 'ASA 1')
 
 FrozenSettings = CAT.frozen_settings.FrozenSettings
 
@@ -22,10 +23,10 @@ def load_templates():
         return yaml.load(f, Loader=yaml.FullLoader)
 
 
-def finilize_templates():
+def finalize_templates():
     template_update = {
         'asa': {'import_columns': {ASA_INT: np.nan, ASA_STRAIN: np.nan, ASA_E: np.nan},
-                'export_columns': (ASA_INT, ASA_STRAIN, ASA_E)}
+                'export_columns': (SETTINGS_ASA, ASA_INT, ASA_STRAIN, ASA_E)}
     }
 
     templates = load_templates()

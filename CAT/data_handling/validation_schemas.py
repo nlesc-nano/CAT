@@ -87,7 +87,7 @@ __all__ = ['mol_schema', 'core_schema', 'ligand_schema', 'qd_schema', 'database_
 
 
 def val_job_type(value: type) -> type:
-    """Call :func:`.check_sys_var` if value is in :data:`._class_dict_scm`"""
+    """Call :func:`.check_sys_var` if value is in :data:`._class_dict_scm`."""
     if value in _class_dict_scm.values():
         check_sys_var()
     return value
@@ -375,7 +375,10 @@ qd_schema: Schema = Schema({
 
     # Settings specific to a quantum dot activation strain analyses
     Optional_('activation_strain', default=False):
-        Or(bool, dict, error='optional.qd.activation_strain expects a boolean or dictionary'),
+        Or(
+            And(bool, Use(lambda n: {'job1': None} if n else False)),
+            dict, error='optional.qd.activation_strain expects a boolean or dictionary'
+        ),
 
     Optional_('bulkiness', default=False):  # Ligand bulkiness workflow
         And(bool, error='optional.qd.bulkiness expects a boolean'),
@@ -641,8 +644,9 @@ asa_schema: Schema = Schema({
         And(bool, error='optional.qd.activation_strain.keep_files expects a boolean'),
 
     # The job type for constructing the COSMO surface
-    Optional_('job1'):
+    Optional_('job1', default=None):
         Or(
+            None,
             And(
                 And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
                 error=('optional.qd.activation_strain.job1 expects a type object '
@@ -657,8 +661,9 @@ asa_schema: Schema = Schema({
         ),
 
     # The settings for constructing the COSMO surface
-    Optional_('s1'):
+    Optional_('s1', default=None):
         Or(
+            None,
             dict,
             And(str, Use(lambda n: get_template(n, from_cat_data=False))),
             error='optional.qd.activation_strain.s1 expects a string or a dictionary'

@@ -60,7 +60,6 @@ def validate_mol(args: Sequence[Union[Any, Settings]],
 
     Examples
     --------
-
     An example using a list of .xyz files as input
 
     .. code:: python

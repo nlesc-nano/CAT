@@ -79,9 +79,7 @@ def validate_input(s: Settings) -> None:
     if s.optional.qd.dissociate:
         s.optional.qd.dissociate = bde_schema.validate(s.optional.qd.dissociate)
     if s.optional.qd.activation_strain:
-        s.optional.qd.asa = s.optional.qd.pop('activation_strain')
-        if isinstance(s.optional.qd.asa, dict):
-            s.optional.qd.asa = asa_schema.validate(s.optional.qd.asa)
+        s.optional.qd.activation_strain = asa_schema.validate(s.optional.qd.activation_strain)
 
     # Forcefield stuff
     if s.optional.forcefield:

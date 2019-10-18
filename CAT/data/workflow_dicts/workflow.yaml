@@ -6,9 +6,9 @@ asa:
         overwrite: !!python/tuple [optional, database, overwrite]
 
         path: !!python/tuple [optional, qd, dirname]
-        keep_files: !!python/tuple [optional, qd, asa, keep_files]
-        job1: !!python/tuple [optional, qd, asa, job]
-        s1: !!python/tuple [optional, qd, asa, s]
+        keep_files: !!python/tuple [optional, qd, activation_strain, keep_files]
+        job1: !!python/tuple [optional, qd, activation_strain, job1]
+        s1: !!python/tuple [optional, qd, activation_strain, s1]
     mol_type: qd
     description: ligand activation strain analyses
 
