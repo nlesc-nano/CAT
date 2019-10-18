@@ -1,19 +1,20 @@
+from shutil import rmtree
+from pathlib import Path
 from contextlib import AbstractContextManager
 from typing import (
-    Optional, Union, Dict, List, Hashable, MutableMapping, TypeVar, Iterable, Any, Collection
+    Optional, Union, Dict, Hashable, MutableMapping, TypeVar, Iterable, Container, Tuple, Callable
 )
 
-import numpy as np
 import pandas as pd
 
 from scm.plams import finish, Settings
 from scm.plams.core.basejob import Job
 from assertionlib.dataclass import AbstractDataClass
 
-from CAT.logger import logger
 from CAT.utils import restart_init
+from CAT.logger import logger
 from CAT.settings_dataframe import SettingsDataFrame
-from CAT.wip_workflows.workflow_dicts import ASA
+from CAT.wip_workflows.workflow_dicts import finilize_templats as load_templates
 from CAT.frozen_settings import FrozenSettings
 
 T = TypeVar('T')
@@ -23,12 +24,44 @@ ASA_STRAIN = ('ASA', 'E_strain')
 ASA_E = ('ASA', 'E')
 
 
-def concatenate_values(mapping: MutableMapping[Hashable, T], base_key: Any) -> List[T]:
-    """
+def concatenate_values(mapping: MutableMapping[Hashable, T], base_key: Hashable) -> Tuple[T, ...]:
+    """Take a key and :meth:`pop<dict.pop>` all values from **mapping**.
+
+    The popping will continue as long as :code:`base_key + str(i)` is available in the mapping,
+    where ``i`` is an :class:`int` larger than 1.
+    The value if ``i`` will start from 1 and increase by `+1` every iteration.
+
+    Examples
+    --------
+    .. code:: python
+
+        >>> mapping: dict = {
+        ...     'job1': 1,
+        ...     'job2': 2,
+        ...     'job3': 3,
+        ...     'final_key': True
+        ... }
+
+        >>> base_key: str = 'job'
+        >>> value_tuple: tuple = concatenate_values(mapping, base_key)
+        >>> print(value_tuple)
+        (1, 2, 3)
+
+        >>> print(mapping)
+        {'final_key': True}
 
     Parameters
     ----------
-    settings
+    mapping : :data:`MutableMapping`
+        A dictionary or other mutable mapping.
+
+    base_key : :data:`Hashable<typing.Hashable>`
+        The base key which will be appended with successively increasing integers.
+
+    Returns
+    -------
+    :class:`tuple`
+        A tuple with all values popped from **mapping**.
 
     """
     i = 1
@@ -38,7 +71,7 @@ def concatenate_values(mapping: MutableMapping[Hashable, T], base_key: Any) -> L
         try:
             value = mapping.pop(key)
         except KeyError:
-            return ret
+            return tuple(ret)
         else:
             ret.append(value)
             i += 1
@@ -47,46 +80,29 @@ def concatenate_values(mapping: MutableMapping[Hashable, T], base_key: Any) -> L
 class WorkFlow(AbstractDataClass):
 
     #: Map a name to a workflow template
-    _TEMPLATE_MAPPING: FrozenSettings = FrozenSettings({
-        'asa': ASA
-    })
-
-    #: Map a name to a workflow mol type
-    _MOL_TYPE_MAPPING: FrozenSettings = FrozenSettings({
-        'asa': 'qd'
-    })
-
-    #: Map a name to a workflow description
-    _JOB_DESCRIPTION_MAPPING: FrozenSettings = FrozenSettings({
-        'asa': 'ligand activation strain analyses'
-    })
-
-    #: Map a name to a new columns and their placeholder values
-    _PULL_COLUMN_MAPPING: FrozenSettings = FrozenSettings({
-        'asa': {ASA_INT: np.nan, ASA_STRAIN: np.nan, ASA_E: np.nan}
-    })
-
-    #: Map a name to a new columns and their placeholder values
-    _PUSH_COLUMN_MAPPING: FrozenSettings = FrozenSettings({
-        'asa': (ASA_INT, ASA_STRAIN, ASA_E)
-    })
+    _WORKFLOW_TEMPLATES: FrozenSettings = load_templates()
 
     # Get-only properties
 
     @property
-    def template(self) -> Dict[str, List[str]]: return self._TEMPLATE_MAPPING[self.name]
+    def template(self) -> Dict[str, Tuple[str, ...]]:
+        return self._WORKFLOW_TEMPLATES[self.name].template
 
     @property
-    def mol_type(self) -> str: return self._MOL_TYPE_MAPPING[self.name]
+    def mol_type(self) -> str:
+        return self._WORKFLOW_TEMPLATES[self.name].mol_type
 
     @property
-    def job_description(self) -> str: return self._JOB_DESCRIPTION_MAPPING[self.name]
+    def description(self) -> str:
+        return self._WORKFLOW_TEMPLATES[self.name].description
 
     @property
-    def column_dict(self) -> str: return self._COLUMN_MAPPING[self.name]
+    def import_columns(self) -> Dict[str, Tuple[str, str]]:
+        return self._WORKFLOW_TEMPLATES[self.name].import_columns
 
     @property
-    def columns(self) -> str: return self._PUSH_COLUMN_MAPPING[self.name]
+    def export_columns(self) -> Tuple[Tuple[str, str], ...]:
+        return self._WORKFLOW_TEMPLATES[self.name].export_columns
 
     # Getter and setter properties
 
@@ -94,27 +110,27 @@ class WorkFlow(AbstractDataClass):
     def read(self) -> bool: return self._read
 
     @read.setter
-    def read(self, value: Collection):
-        self._read = self.db and self._MOL_TYPE_MAPPING[self.name] in value
+    def read(self, value: Container):
+        self._read = self.db and self.mol_type in value
 
     @property
     def write(self) -> bool: return self._write
 
     @write.setter
-    def write(self, value: Collection):
-        self._write = self.db and self._MOL_TYPE_MAPPING[self.name] in value
+    def write(self, value: Container):
+        self._write = self.db and self.mol_type in value
 
     @property
     def overwrite(self) -> bool: return self._overwrite
 
     @overwrite.setter
-    def overwrite(self, value: Collection):
-        self._overwrite = self.db and self._MOL_TYPE_MAPPING[self.name] in value
+    def overwrite(self, value: Container):
+        self._overwrite = self.db and self.mol_type in value
 
     # Methods and magic methods
 
-    def __init__(self, name: str, db=None, read=None, write=None, overwrite=None, path=None,
-                 folder=None, keep_files=None, jobs=None, settings=None, **kwargs) -> None:
+    def __init__(self, name: str, db=None, read=False, write=False, overwrite=False, path='.',
+                 keep_files=True, jobs=None, settings=None, **kwargs) -> None:
         if name not in self._MOL_TYPE_MAPPING:
             err = (f"Invalid value for the 'name' parameter: {repr(name)}\n"
                    f"Allowed values: {', '.join(repr(k) for k in self._MOL_TYPE_MAPPING)}")
@@ -146,10 +162,15 @@ class WorkFlow(AbstractDataClass):
 
         self.from_db(df)
         logger.info(f"Starting {self.job_description}")
+
         with PlamsInit(path=self.path, folder=name):
             func(df, **vars(self))
-        logger.info(f"Finishing {self.job_description}")
+
         self.to_db(df)
+        logger.info(f"Finishing {self.job_description}")
+
+        if not self.keep_files:
+            rmtree(Path(self.path) / name)
 
     def from_db(self, df: pd.DataFrame) -> None:
         """Import results from the database."""
@@ -180,12 +201,11 @@ class WorkFlow(AbstractDataClass):
 
         # Raise a KeyError if a key cannot be found
         with Settings.supress_missing():
-            # Extract the correct template
-            try:
-                template: Dict[str, List[str]] = cls._TEMPLATE_MAPPING[name]
+            try:  # Extract the correct template
+                template: Dict[str, Tuple[str, ...]] = cls._WORKFLOW_TEMPLATES[name].template
             except KeyError as ex:
                 err = (f"Invalid value for the 'name' parameter: {repr(name)}\n"
-                       f"Allowed values: {', '.join(repr(k) for k in cls._MOL_TYPE_MAPPING)}")
+                       f"Allowed values: {', '.join(repr(k) for k in cls._WORKFLOW_TEMPLATES)}")
                 raise ValueError(err).with_traceback(ex.__traceback__)
 
             # Create a dictionary with keyword arguments
