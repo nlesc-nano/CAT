@@ -35,10 +35,9 @@ API
 """
 
 import itertools
-from typing import (List, Tuple, Union, Set, Iterable)
+from typing import (List, Tuple, Union, Set, Iterable, Optional)
 
 import numpy as np
-import pandas as pd
 
 import rdkit
 import scm.plams.interfaces.molecule.rdkit as molkit
@@ -82,9 +81,9 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
     workflow.to_db(ligand_df, status='optimized', idx_slice=idx, job_recipe=job_recipe)
 
     # Export ligands to .xyz, .pdb, .mol and/or .mol format
-    mol_format = ligand_df.settings.database.mol_format
+    mol_format = ligand_df.settings.optional.database.mol_format
     if mol_format:
-        path = workflow.dirname
+        path = workflow.path
         mol_to_file(ligand_df.loc[idx, MOL], path, mol_format=mol_format)
 
 
@@ -101,6 +100,7 @@ def start_ligand_jobs(ligand_list: Iterable[Molecule], **kwargs) -> None:
         else:
             logger.info(f'UFFGetMoleculeForceField: {ligand.properties.name} optimization '
                         'is successful')
+        allign_axis(ligand)
     return None
 
 
@@ -120,17 +120,14 @@ def optimize_ligand(ligand: Molecule) -> None:
     fix_carboxyl(ligand)
 
 
-def allign_axis(ligand_df: pd.DataFrame):
-    """Allign all molecules with the Cartesian X-axis."""
-    for mol in ligand_df[MOL]:
-        with AsArray(mol) as xyz:
-            i = mol.atoms.index(mol.properties.dummies)
-
-            # Allign the molecule with the X-axis
-            rotmat = optimize_rotmat(xyz, i)
-            xyz[:] = xyz@rotmat.T
-            xyz -= xyz[i]
-            xyz[:] = xyz.round(decimals=3)
+def allign_axis(mol: Molecule, idx: Optional[int] = None):
+    """Allign a molecule with the Cartesian X-axis."""
+    idx = idx if idx is not None else mol.atoms.index(mol.properties.dummies)
+    with AsArray(mol) as xyz:  # Allign the molecule with the X-axis
+        rotmat = optimize_rotmat(xyz, idx)
+        xyz[:] = xyz@rotmat.T
+        xyz -= xyz[idx]
+        xyz[:] = xyz.round(decimals=3)
 
 
 def split_mol(plams_mol: Molecule) -> List[Bond]:
