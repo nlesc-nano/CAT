@@ -89,7 +89,43 @@ def concatenate_values(mapping: MutableMapping[Hashable, T], base_key: Hashable,
 
 
 class WorkFlow(AbstractDataClass):
-    """A workflow manager."""
+    """A workflow manager.
+
+    Examples
+    --------
+    Typical usage example:
+
+    .. code:: python
+
+        >>> import pandas as pd
+
+        >>> # Prepare workflow parameters
+        >>> df = pd.DataFrame(...)
+        >>> settings = Settings(...)
+        >>> def fancy_df_func(df, **kwargs):
+        ...     pass
+
+        >>> # Create the workflow
+        >>> workflow = WorkFlow.from_template(settings, name='asa')
+        >>> print(workflow)
+        WorkFlow(
+            name       = 'asa',
+            db         = None,
+            read       = False,
+            write      = False,
+            overwrite  = False,
+            path       = '.',
+            keep_files = True,
+            jobs       = None,
+            settings   = None
+        )
+
+        # Run the workflow
+        >>> idx = workflow.from_db(df)
+        >>> workflow(fancy_df_func, df, index=idx)
+        >>> workflow.to_db(df)
+
+    """
 
     #: Map a name to a workflow template.
     _WORKFLOW_TEMPLATES: FrozenSettings = load_templates()
@@ -127,41 +163,58 @@ class WorkFlow(AbstractDataClass):
     def read(self) -> bool: return self._read
 
     @read.setter
-    def read(self, value: Container) -> None:
-        self._read = self.db and self.mol_type in value
+    def read(self, value: Union[bool, Container]) -> None:
+        try:
+            self._read = bool(self.db) and self.mol_type in value
+        except TypeError:  # value is not a container
+            self._read = bool(value)
 
     @property
     def write(self) -> bool: return self._write
 
     @write.setter
-    def write(self, value: Container) -> None:
-        self._write = self.db and self.mol_type in value
+    def write(self, value: Union[bool, Container]) -> None:
+        try:
+            self._write = bool(self.db) and self.mol_type in value
+        except TypeError:  # value is not a container
+            self._write = bool(value)
 
     @property
     def overwrite(self) -> bool: return self._overwrite
 
     @overwrite.setter
-    def overwrite(self, value: Container) -> None:
-        self._overwrite = self.db and self.mol_type in value
+    def overwrite(self, value: Union[bool, Container]) -> None:
+        try:
+            self._overwrite = bool(self.db) and self.mol_type in value
+        except TypeError:  # value is not a container
+            self._overwrite = bool(value)
 
     @property
     def jobs(self) -> Optional[Tuple[Job, ...]]: return self._jobs
 
     @jobs.setter
-    def jobs(self, value: Optional[Tuple[Job, ...]]) -> None:
-        self._jobs = None if not value else value
+    def jobs(self, value: Optional[Iterable[Job]]) -> None:
+        self._jobs = None if not value else tuple(value)
 
     @property
     def settings(self) -> Optional[Tuple[Settings, ...]]: return self._settings
 
     @settings.setter
-    def settings(self, value: Optional[Tuple[Settings, ...]]) -> None:
-        self._settings = None if not value else value
+    def settings(self, value: Optional[Iterable[Settings]]) -> None:
+        self._settings = None if not value else tuple(value)
 
     # Methods and magic methods
 
-    def __init__(self, name: str, db=None, read=False, write=False, overwrite=False, path='.',
-                 keep_files=True, jobs=None, settings=None, **kwargs) -> None:
+    def __init__(self, name: str,
+                 db: Optional['Database'] = None,
+                 read: bool = False,
+                 write: bool = False,
+                 overwrite: bool = False,
+                 path: str = '.',
+                 keep_files: bool = True,
+                 jobs: Optional[Iterable[Job]] = None,
+                 settings: Optional[Iterable[Settings]] = None,
+                 **kwargs: Any) -> None:
         if name not in self._WORKFLOW_TEMPLATES:
             err = (f"Invalid value for the 'name' parameter: {repr(name)}\n"
                    f"Allowed values: {', '.join(repr(k) for k in self._WORKFLOW_TEMPLATES)}")
@@ -179,6 +232,8 @@ class WorkFlow(AbstractDataClass):
         self.jobs: Iterable[Job] = jobs
         self.settings: Iterable[Settings] = settings
 
+        self._idx_slice: Union[slice, pd.Series] = slice(None)
+
         for k, v in kwargs.items():
             setattr(self, k, v)
 
@@ -188,7 +243,7 @@ class WorkFlow(AbstractDataClass):
         return ((k.strip('_'), v) for k, v in iterator)
 
     def __call__(self, func: Callable, df: pd.DataFrame,
-                 index: Optional[pd.Series] = slice(None), **kwargs) -> None:
+                 idx_slice: Optional[pd.Series] = slice(None), **kwargs) -> None:
         """Initialize the workflow.
 
         Parameters
@@ -202,8 +257,8 @@ class WorkFlow(AbstractDataClass):
         df : :class:`pandas.DataFrame`
             A DataFrame with molecules and results.
 
-        index : :class:`slice` or :class:`pandas.index` [:class:`bool`]
-            An object for slicing the index of **df**.
+        idx_slice : :class:`slice` or :class:`pandas.Series` [:class:`bool`]
+            An object for slicing the rows of **df** (*i.e.* :attr:`pandas.DataFrame.index`).
 
         See Also
         --------
@@ -211,9 +266,11 @@ class WorkFlow(AbstractDataClass):
             Returns a value for the **index** parameter.
 
         """
-        slice1 = index, MOL
-        slice2 = index, list(self.import_columns.keys())
+        # Prepare slices
+        slice1 = idx_slice, MOL
+        slice2 = idx_slice, list(self.import_columns.keys())
 
+        # Run the workflow
         logger.info(f"Starting {self.description}")
         with PlamsInit(path=self.path, folder=self.name), self._SUPRESS_SETTINGWITHCOPYWARNING:
             value = func(df.loc[slice1], **vars(self), **kwargs)
@@ -221,7 +278,7 @@ class WorkFlow(AbstractDataClass):
         logger.info(f"Finishing {self.description}\n")
 
     def from_db(self, df: pd.DataFrame) -> Union[slice, pd.Series]:
-        """Ensure that all required keys are present in **df** and import results from the database.
+        """Ensure that all required keys are present in **df** and import from the database.
 
         Returns a :class:`pandas.index` with all to-be updated rows, as based on how many
         previous results were imported from :attr:`WorkFlow.db`.
@@ -240,13 +297,15 @@ class WorkFlow(AbstractDataClass):
             slicing the entirety of **df** (*i.e.* :code:`slice(0, None`).
 
         """
+        # Add all necasary keys to the DataFrame
         for key, value in self.import_columns.items():
             if key not in df:
                 df[key] = value
+
         if not self.read:  # Nothing to see here, move along
             return slice(None)
 
-        # Add all necasary keys to the DataFrame and import from the database
+        # Import from the database
         self.db.from_csv(df, database=self.mol_type)
 
         # Return a new DataFrame slice based on previously calculated results
@@ -258,13 +317,17 @@ class WorkFlow(AbstractDataClass):
                 return slice(None)
             return ret
 
-    def to_db(self, df: pd.DataFrame, job_recipe: Optional[dict] = None, **kwargs) -> None:
+    def to_db(self, df: pd.DataFrame, job_recipe: Optional[dict] = None,
+              idx_slice: Union[slice, pd.Series] = slice(None), **kwargs) -> None:
         """Export results to the database.
 
         Parameters
         ----------
         df : :class:`pandas.DataFrame`
             A DataFrame with molecules and results.
+
+        idx_slice : :class:`slice` or :class:`pandas.Series` [:class:`bool`]
+            An object for slicing the rows of **df** (*i.e.* :attr:`pandas.DataFrame.index`).
 
         job_recipe : :class:`dict`
             A (nested) dictionary with the used job settings.
@@ -273,7 +336,7 @@ class WorkFlow(AbstractDataClass):
         # Write results to the database
         if self.write:
             self.db.update_csv(
-                df,
+                df[idx_slice],
                 columns=list(self.export_columns),
                 database=self.mol_type,
                 overwrite=self.overwrite,
