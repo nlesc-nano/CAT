@@ -65,9 +65,9 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
     workflow.to_db(qd_df, status='optimized', idx_slice=idx, job_recipe=job_recipe)
 
     # Export ligands to .xyz, .pdb, .mol and/or .mol format
-    mol_format = qd_df.settings.database.mol_format
+    mol_format = qd_df.settings.optional.database.mol_format
     if mol_format:
-        path = workflow.dirname
+        path = workflow.path
         mol_to_file(qd_df.loc[idx, MOL], path, mol_format=mol_format)
 
 

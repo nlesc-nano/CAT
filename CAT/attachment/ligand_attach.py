@@ -96,9 +96,9 @@ def init_qd_construction(ligand_df: SettingsDataFrame,
     workflow.to_db(qd_df, idx_slice=idx)
 
     # Export ligands to .xyz, .pdb, .mol and/or .mol format
-    mol_format = qd_df.settings.database.mol_format
-    if mol_format and not qd_df.settings.qd.optimize:
-        path = workflow.dirname
+    mol_format = qd_df.settings.optional.database.mol_format
+    if mol_format and not qd_df.settings.optional.qd.optimize:
+        path = workflow.path
         mol_to_file(qd_df.loc[idx, MOL], path, mol_format=mol_format)
 
     return qd_df
