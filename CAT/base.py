@@ -77,8 +77,7 @@ __all__ = ['prep']
 MOL: Tuple[str, str] = ('mol', '')
 
 
-def prep(arg: Settings,
-         return_mol: bool = True) -> Optional[Tuple[SettingsDataFrame]]:
+def prep(arg: Settings, return_mol: bool = True) -> Optional[Tuple[SettingsDataFrame]]:
     """Function that handles all tasks related to the three prep functions.
 
     * :func:`.prep_core`
@@ -330,14 +329,13 @@ def prep_qd(ligand_df: SettingsDataFrame,
     # Construct the quantum dots
     logger.info('Starting quantum dot surface population')
     qd_df = init_qd_construction(ligand_df, core_df)
-    logger.info('Finishing quantum dot surface population')
+    logger.info('Finishing quantum dot surface population\n')
 
     # Start the ligand bulkiness workflow
     if bulk:
         val_nano_cat("Ligand bulkiness calculations require the nano-CAT package")
         init_lig_bulkiness(qd_df, ligand_df, core_df)
 
-    logger.info('calculating ligand distortion and inter-ligand interaction')
     if not qd_df[MOL].any():
         raise MoleculeError('No valid quantum dots found, aborting')
 
@@ -352,14 +350,13 @@ def prep_qd(ligand_df: SettingsDataFrame,
     # Calculate the interaction between ligands on the quantum dot surface
     if activation_strain:
         val_nano_cat("Quantum dot activation-strain calculations require the nano-CAT package")
-        logger.info('calculating ligand distortion and inter-ligand interaction')
         init_asa(qd_df)
 
     # Calculate the interaction between ligands on the quantum dot surface upon removal of CdX2
     if dissociate:
         val_nano_cat("Quantum dot ligand dissociation calculations require the nano-CAT package")
         # Start the BDE calculation
-        logger.info('calculating ligand dissociation energy')
+        logger.info('Calculating ligand dissociation energy')
         init_bde(qd_df)
 
     return qd_df

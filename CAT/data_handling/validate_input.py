@@ -23,7 +23,7 @@ from scm.plams import Settings
 
 from CAT.data_handling.validation_schemas import (
     core_schema, ligand_schema, qd_schema, database_schema,
-    mongodb_schema, bde_schema, qd_opt_schema, crs_schema
+    mongodb_schema, bde_schema, qd_opt_schema, crs_schema, asa_schema
 )
 
 from .validate_ff import validate_ff, update_ff_jobs
@@ -78,6 +78,8 @@ def validate_input(s: Settings) -> None:
         s.optional.qd.optimize = qd_opt_schema.validate(s.optional.qd.optimize)
     if s.optional.qd.dissociate:
         s.optional.qd.dissociate = bde_schema.validate(s.optional.qd.dissociate)
+    if s.optional.qd.activation_strain:
+        s.optional.qd.activation_strain = asa_schema.validate(s.optional.qd.activation_strain)
 
     # Forcefield stuff
     if s.optional.forcefield:

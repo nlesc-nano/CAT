@@ -24,6 +24,8 @@ API
 
 """
 
+from os.path import join
+from shutil import rmtree
 from typing import List, Tuple
 
 import pandas as pd
@@ -71,6 +73,7 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
     overwrite = db and 'qd' in settings.database.overwrite
     mol_format = settings.database.mol_format
     qd_path = settings.qd.dirname
+    keep_files = settings.qd.keep_files
 
     # Prepare slices
     if overwrite and db:
@@ -96,6 +99,9 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
     # Export xyz/pdb files
     if 'qd' in settings.database.write and mol_format:
         mol_to_file(qd_df[MOL], qd_path, mol_format=mol_format)
+
+    if not keep_files:
+        rmtree(join(qd_path, 'QD_optimize'))
 
     return None
 
@@ -161,7 +167,7 @@ def _qd_to_db(qd_df: SettingsDataFrame, idx: pd.Series) -> None:
         overwrite=overwrite,
         columns=columns,
         job_recipe=recipe,
-        database='QD',
+        database='qd',
         opt=True
     )
 

@@ -5,7 +5,8 @@ input_cores:
         guess_bonds: False
 
 input_ligands:
-    - OC(=O)C
+    - ligand_library.txt
+    # - OC(=O)C
 
 optional:
     database:
@@ -25,18 +26,14 @@ optional:
         optimize: True
         split: True
         cosmo-rs: False
+        functional_groups: 'O(C=O)[H]'
 
     qd:
         dirname: QD
         optimize:
             use_ff: True
             job1: cp2kjob
-        dissociate:
-            keep_files: True
-            use_ff: True
-            core_atom: Cd
-            lig_count: 2
-            job1: cp2kjob
+        dissociate: False
 
     forcefield:
         charge:

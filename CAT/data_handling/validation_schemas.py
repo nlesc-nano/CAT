@@ -17,6 +17,7 @@ Index
     bde_schema
     qd_opt_schema
     crs_schema
+    asa_schema
     _class_dict
     _class_dict_scm
 
@@ -38,6 +39,8 @@ API
     :annotation: = schema.Schema
 .. autodata:: qd_opt_schema
     :annotation: = schema.Schema
+.. autodata:: asa_schema
+    :annotation: = schema.Schema
 .. autodata:: crs_schema
     :annotation: = schema.Schema
 .. autodata:: _class_dict
@@ -53,6 +56,7 @@ from collections import abc
 from schema import (Or, And, Use, Schema)
 from schema import Optional as Optional_
 
+from scm.plams import CRSJob
 from scm.plams.core.basejob import Job
 
 from scm.plams.interfaces.adfsuite.adf import ADFJob
@@ -72,19 +76,12 @@ from scm.plams.interfaces.thirdparty.dftbplus import DFTBPlusJob
 from ..utils import (get_template, validate_path, validate_core_atom, check_sys_var)
 from ..mol_utils import to_atnum
 
-try:
-    from nanoCAT.crs import CRSJob
-    NANO_CAT = True
-except ImportError:
-    CRSJob = Job
-    NANO_CAT = False
-
 __all__ = ['mol_schema', 'core_schema', 'ligand_schema', 'qd_schema', 'database_schema',
-           'mongodb_schema', 'bde_schema', 'qd_opt_schema', 'crs_schema']
+           'mongodb_schema', 'bde_schema', 'qd_opt_schema', 'crs_schema', 'asa_schema']
 
 
 def val_job_type(value: type) -> type:
-    """Call :func:`.check_sys_var` if value is in :data:`._class_dict_scm`"""
+    """Call :func:`.check_sys_var` if value is in :data:`._class_dict_scm`."""
     if value in _class_dict_scm.values():
         check_sys_var()
     return value
@@ -372,7 +369,10 @@ qd_schema: Schema = Schema({
 
     # Settings specific to a quantum dot activation strain analyses
     Optional_('activation_strain', default=False):
-        And(bool, error='optional.qd.activation_strain expects a boolean'),
+        Or(
+            And(bool, Use(lambda n: {'job1': None} if n else False)),
+            dict, error='optional.qd.activation_strain expects a boolean or dictionary'
+        ),
 
     Optional_('bulkiness', default=False):  # Ligand bulkiness workflow
         And(bool, error='optional.qd.bulkiness expects a boolean'),
@@ -524,6 +524,9 @@ qd_opt_schema: Schema = Schema({
     Optional_('use_ff', default=False):
         bool,
 
+    Optional_('keep_files', default=True):
+        And(bool, error='optional.qd.opt.keep_files expects a boolean'),
+
     # The job type for the first half of the optimization
     Optional_('job1', default=_get_amsjob):
         Or(
@@ -623,4 +626,40 @@ crs_schema: Schema = Schema({
             And(str, Use(lambda n: get_template(n, from_cat_data=False))),
             error='optional.ligand.cosmo-rs.s2 expects a string or a dictionary'
         )
+})
+
+#: Schema for validating the ``['optional']['qd']['activation_strain']`` block.
+asa_schema: Schema = Schema({
+    Optional_('use_ff', default=False):
+        bool,
+
+    # Delete files after the calculations are finished
+    Optional_('keep_files', default=True):
+        And(bool, error='optional.qd.activation_strain.keep_files expects a boolean'),
+
+    # The job type for constructing the COSMO surface
+    Optional_('job1', default=None):
+        Or(
+            None,
+            And(
+                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
+                error=('optional.qd.activation_strain.job1 expects a type object '
+                       'that is a subclass of plams.Job')
+            ),
+            And(
+                str, Use(str_to_job_type),
+                error=('optional.qd.activation_strain.job1 expects a string '
+                       'that is a valid plams.Job alias')
+            ),
+            error='optional.qd.activation_strain.job1 expects a string or a type object'
+        ),
+
+    # The settings for constructing the COSMO surface
+    Optional_('s1', default=None):
+        Or(
+            None,
+            dict,
+            And(str, Use(lambda n: get_template(n, from_cat_data=False))),
+            error='optional.qd.activation_strain.s1 expects a string or a dictionary'
+        ),
 })

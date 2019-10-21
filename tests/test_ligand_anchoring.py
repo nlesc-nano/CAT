@@ -9,10 +9,10 @@ from unittest import mock
 
 from rdkit import Chem
 from scm.plams.interfaces.molecule.rdkit import from_smiles
+from assertionlib import assertion
 
 from CAT.utils import get_template
 from CAT.base import prep_input
-from CAT.assertion.assertion_manager import assertion
 from CAT.attachment.ligand_anchoring import (
     get_functional_groups, _smiles_to_rdmol, find_substructure, init_ligand_anchoring
 )

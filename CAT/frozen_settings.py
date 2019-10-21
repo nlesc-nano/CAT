@@ -49,7 +49,7 @@ class FrozenSettings(Settings):
                 value_new = [cls(i) if isinstance(i, dict) else i for i in value]
             else:
                 continue
-            Settings.__setitem__(self, key, value_new)
+            dict.__setitem__(self, key, value_new)
 
         # An attribute for caching the hash of this instance
         dict.__setattr__(self, '_hash', None)

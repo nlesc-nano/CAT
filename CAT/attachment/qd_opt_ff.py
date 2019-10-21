@@ -62,7 +62,7 @@ def qd_opt_ff(mol: Molecule, job_recipe: Settings, name: str = 'QD_opt') -> None
     name : str
         The name of the job.
 
-    See also
+    See Also
     --------
     :func:`CAT.attachment.qd_opt.qd_opt`
         Default workflow for optimizing molecules.

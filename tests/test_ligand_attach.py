@@ -4,7 +4,8 @@ from os.path import join
 
 import numpy as np
 
-from CAT.assertion.assertion_manager import assertion
+from assertionlib import assertion
+
 from CAT.attachment.ligand_attach import (_get_rotmat1, _get_rotmat2)
 
 PATH = join('tests', 'test_files')
@@ -41,7 +42,7 @@ def test_get_rotmat1() -> None:
     rotmat5 = _get_rotmat1(vec4, vec1)
     np.testing.assert_allclose(rotmat5, ref5)
 
-    assertion.exception(ValueError, _get_rotmat1, vec3[..., None], vec3)
+    assertion.assert_(_get_rotmat1, vec3[..., None], vec3, exception=ValueError)
 
 
 def test_get_rotmat2() -> None:

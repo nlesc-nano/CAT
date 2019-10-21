@@ -5,8 +5,15 @@ input_cores:
         guess_bonds: False
 
 input_ligands:
-    - CCCO
-    # - FragranceDB2.txt
+    # - 'O=C(O)CCCCCCNC(=O)OCC1c2ccccc2-c2ccccc21'
+    # - ligand_library.txt
+    # - Carboxylic_acids_eMolecules_1000.txt
+    # - 'CCCCCCCCCCCCCCC(=O)O'
+    # - 'OC(C1=C(C(C)C)C=CC=C1C(C)C)=O'
+    # - 'CCCCCCCCCCCCC(CCC)(CCC)C(=O)O'
+    # - 'CCCCCCCCCC(CCC)CCCC(=O)O'
+    #  - 'ClC1=C(C(O)=O)C=C(S(=O)(F)=O)C=C1'
+    - 'CCCCCCCC\C=C\CCCCCCCC(O)=O'
 
 optional:
     database:
@@ -25,15 +32,9 @@ optional:
         dirname: ligand
         optimize: True
         split: True
-        cosmo-rs: False
-
+        functional_groups: 'O(C=O)[H]'
     qd:
         dirname: QD
         optimize: False
         bulkiness: False
-        activation_strain: False
-        dissociate: False
-#            keep_files: False
-#            core_atom: Cd
-#            lig_count: 2
-#            core_index: [67, 68, 69, 79, 80, 81]
+        activation_strain: True

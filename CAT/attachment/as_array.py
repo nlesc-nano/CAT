@@ -19,16 +19,13 @@ API
 
 """
 
-import types
-import reprlib
-import warnings
-from typing import Any, NoReturn, Iterable, Callable, Union, Sequence
+from typing import Iterable, Union, Sequence
 from contextlib import AbstractContextManager
 from collections import abc
 
 import numpy as np
 
-from scm.plams import MoleculeError, Atom, Molecule
+from scm.plams import Atom, Molecule
 
 
 class AsArray(AbstractContextManager):
@@ -67,45 +64,16 @@ class AsArray(AbstractContextManager):
         An iterable consisting of PLAMS atoms.
         See :attr:`AsArray.mol`.
 
-    delete_atom : :class:`str`
-        The action which is to be taken when calling the :meth:`Molecule.delete_atom` method
-        of **mol**:
-
-        * ``"raise"``: Raise a :exc:`MoleculeError`.
-        * ``"warn"``: Issue a warning before calling the method.
-        * ``"pass"``: Just call the method.
-        Only relevant if **mol** is a |plams.Molecule| instance.
-        See :attr:`AsArray.delete_atom`.
-
-    \**kwargs
-        Keyword arguments for the :func:`numpy.array` function.
-        See :attr:`AsArray.kwargs`.
-
     Attributes
     ----------
     mol : |plams.Molecule| or |Sequence| [|plams.Atom|]
         A PLAMS molecule or a sequence of PLAMS atoms.
-
-    kwargs : :class:`dict` [:class:`str`, |Any|]
-        A dictionary with keyword arguments for the :func:`numpy.array` function.
-
-    delete_atom : :class:`str`
-        The action which is to be taken when calling the :meth:`Molecule.delete_atom` method
-        of **mol**:
-
-        * ``"raise"``: Raise a :exc:`MoleculeError`.
-        * ``"warn"``: Issue a warning before calling the method.
-        * ``"pass"``: Just call the method.
-
-        Only relevant if **mol** is a |plams.Molecule| instance.
 
     _xyz : :math:`n*3` :class:`numpy.ndarray` [:class:`float`], optional
         A 2D array with the Cartesian coordinates of **mol**.
         Empty by default; this value is set internally by the :meth:`AsArray.__enter__` method.
 
     """
-
-    _MOl: Molecule = Molecule()
 
     @property
     def mol(self) -> Union[Molecule, Sequence[Atom]]: return self._mol

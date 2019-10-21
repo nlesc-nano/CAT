@@ -1,7 +1,8 @@
 """Tests for :mod:`CAT.frozen_settings`."""
 
+from assertionlib import assertion
+
 from CAT.frozen_settings import FrozenSettings
-from CAT.assertion.assertion_manager import assertion
 
 SETTINGS = FrozenSettings({'a': True, 'b': False, 'c': [1, 2, 3, 4]})
 
@@ -15,13 +16,13 @@ def test_missing() -> None:
 def test_delitem() -> None:
     """Tests for :meth:`CAT.frozen_settings.FrozenSettings.__delitem__`."""
     args = ('a')
-    assertion.exception(TypeError, SETTINGS.__delitem__, args)
+    assertion.assert_(SETTINGS.__delitem__, args, exception=TypeError)
 
 
 def test_setitem() -> None:
     """Tests for :meth:`CAT.frozen_settings.FrozenSettings.__setitem__`."""
     args = ('d', True)
-    assertion.exception(TypeError, SETTINGS.__setitem__, args)
+    assertion.assert_(SETTINGS.__setitem__, args, exception=TypeError)
 
 
 def test_copy() -> None:
