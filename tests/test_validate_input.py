@@ -47,7 +47,7 @@ def test_validate_input() -> None:
     ref.qd.activation_strain = False
     ref.qd.dirname = join(PATH, 'qd')
     ref.qd.dissociate = False
-    ref.qd.optimize = {'job1': AMSJob, 'use_ff': False, 's2': {'description': 'UFF with the default forcefield', 'input': {'uff': {'library': 'uff'}, 'ams': {'system': {'bondorders': {'_1': None}}}}}, 's1': {'description': 'UFF with the default forcefield', 'input': {'uff': {'library': 'uff'}, 'ams': {'system': {'bondorders': {'_1': None}}}}}, 'job2': AMSJob}  # noqa
+    ref.qd.optimize = {'job1': AMSJob, 'keep_files': True, 'use_ff': False, 's2': {'description': 'UFF with the default forcefield', 'input': {'uff': {'library': 'uff'}, 'ams': {'system': {'bondorders': {'_1': None}}}}}, 's1': {'description': 'UFF with the default forcefield', 'input': {'uff': {'library': 'uff'}, 'ams': {'system': {'bondorders': {'_1': None}}}}}, 'job2': AMSJob}  # noqa
 
     ref.forcefield = Settings()
 

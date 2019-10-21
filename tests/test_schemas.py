@@ -7,7 +7,7 @@ from schema import SchemaError
 from unittest import mock
 from schema import Schema
 
-from scm.plams import AMSJob, ADFJob, Settings
+from scm.plams import AMSJob, ADFJob, Settings, CRSJob
 from assertionlib import assertion
 
 from CAT.utils import get_template
@@ -15,8 +15,6 @@ from CAT.data_handling.validation_schemas import (
     mol_schema, core_schema, ligand_schema, qd_schema, database_schema,
     mongodb_schema, bde_schema, qd_opt_schema, crs_schema
 )
-
-from nanoCAT.crs import CRSJob
 
 PATH = join('tests', 'test_files')
 
@@ -261,6 +259,7 @@ def test_qd_opt_schema() -> None:
         's1': _qd_opt_s1_default,
         'job2': AMSJob,
         's2': _qd_opt_s2_default,
+        'keep_files': True,
         'use_ff': False
     })
 

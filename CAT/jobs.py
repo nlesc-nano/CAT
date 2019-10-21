@@ -348,7 +348,7 @@ def job_freq(self, job_type: Type[Job],
              opt: bool = True,
              ret_results: bool = False,
              read_template: bool = True) -> Optional[Results]:
-    """Function for running an arbritrary Jobs
+    """Function for running an arbritrary Jobs.
 
     Extracts total energies, final geometries and
     thermochemical quantities derived from vibrational frequencies.

@@ -56,6 +56,7 @@ from collections import abc
 from schema import (Or, And, Use, Schema)
 from schema import Optional as Optional_
 
+from scm.plams import CRSJob
 from scm.plams.core.basejob import Job
 
 from scm.plams.interfaces.adfsuite.adf import ADFJob
@@ -74,13 +75,6 @@ from scm.plams.interfaces.thirdparty.dftbplus import DFTBPlusJob
 
 from ..utils import (get_template, validate_path, validate_core_atom, check_sys_var)
 from ..mol_utils import to_atnum
-
-try:
-    from nanoCAT.crs import CRSJob
-    NANO_CAT = True
-except ImportError:
-    CRSJob = Job
-    NANO_CAT = False
 
 __all__ = ['mol_schema', 'core_schema', 'ligand_schema', 'qd_schema', 'database_schema',
            'mongodb_schema', 'bde_schema', 'qd_opt_schema', 'crs_schema', 'asa_schema']

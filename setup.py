@@ -27,7 +27,6 @@ setup(
     packages=[
         'CAT',
         'CAT.abc',
-        'CAT.assertion',
         'CAT.attachment',
         'CAT.data',
         'CAT.data.coskf',

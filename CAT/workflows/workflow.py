@@ -12,11 +12,11 @@ from scm.plams import finish, Settings
 from scm.plams.core.basejob import Job
 from assertionlib.dataclass import AbstractDataClass
 
-from CAT.utils import restart_init
-from CAT.logger import logger
-from CAT.settings_dataframe import SettingsDataFrame
-from CAT.workflows.workflow_dicts import finalize_templates as load_templates
-from CAT.frozen_settings import FrozenSettings
+from ..utils import restart_init
+from ..logger import logger
+from ..settings_dataframe import SettingsDataFrame
+from ..workflows.workflow_dicts import finalize_templates as load_templates
+from ..frozen_settings import FrozenSettings
 
 T = TypeVar('T')
 
@@ -26,16 +26,18 @@ ASA_E = ('ASA', 'E')
 MOL = ('mol', '')
 
 
-def _return_True(value: Any) -> bool: return True
+def _return_True(value: Any) -> bool:
+    """Return ``True``."""
+    return True
 
 
-def concatenate_values(mapping: MutableMapping[Hashable, T], base_key: Hashable,
-                       filter_func: Callable[[Any], bool] = _return_True) -> Tuple[T, ...]:
+def pop_and_concatenate(mapping: MutableMapping[Hashable, T], base_key: Hashable,
+                        filter_func: Callable[[Any], bool] = _return_True) -> Tuple[T, ...]:
     """Take a key and :meth:`pop<dict.pop>` all values from **mapping**.
 
     The popping will continue as long as :code:`base_key + str(i)` is available in the mapping,
     where ``i`` is an :class:`int` larger than 1.
-    The value if ``i`` will start from 1 and increase by `+1` every iteration.
+    The value if ``i`` will start from 1 and increase by `+ 1` every iteration.
 
     Examples
     --------
@@ -65,13 +67,13 @@ def concatenate_values(mapping: MutableMapping[Hashable, T], base_key: Hashable,
         The base key which will be appended with successively increasing integers.
 
     filter_func : :data:`Callable<typing.Callable>`
-        A callable for truth-testing each extracted value.
+        A callable for truth-testing each extracted **mapping** value.
         Values returning `False` will not be added to the to-be returned :class:`tuple`.
 
     Returns
     -------
     :class:`tuple`
-        A tuple with all values popped from **mapping**.
+        A tuple with values popped from **mapping**.
 
     """
     i = 1
@@ -139,22 +141,27 @@ class WorkFlow(AbstractDataClass):
 
     @property
     def template(self) -> Dict[str, Tuple[str, ...]]:
+        """Get :attr:`WorkFlow._WORKFLOW_TEMPLATES` [:attr:`WorkFlow.name`] [``"template"``]."""
         return self._WORKFLOW_TEMPLATES[self.name].template
 
     @property
     def mol_type(self) -> str:
+        """Get :attr:`WorkFlow._WORKFLOW_TEMPLATES` [:attr:`WorkFlow.name`] [``"mol_type"``]."""
         return self._WORKFLOW_TEMPLATES[self.name].mol_type
 
     @property
     def description(self) -> str:
+        """Get :attr:`WorkFlow._WORKFLOW_TEMPLATES` [:attr:`WorkFlow.name`] [``"description"``]."""
         return self._WORKFLOW_TEMPLATES[self.name].description
 
     @property
     def import_columns(self) -> Dict[str, Tuple[str, str]]:
+        """Get :attr:`WorkFlow._WORKFLOW_TEMPLATES` [:attr:`WorkFlow.name`] [``"import_columns"``]."""  # noqa
         return self._WORKFLOW_TEMPLATES[self.name].import_columns
 
     @property
     def export_columns(self) -> Tuple[Tuple[str, str], ...]:
+        """Get :attr:`WorkFlow._WORKFLOW_TEMPLATES` [:attr:`WorkFlow.name`] [``"export_columns"``]."""  # noqa
         return self._WORKFLOW_TEMPLATES[self.name].export_columns
 
     # Getter and setter properties
@@ -212,6 +219,7 @@ class WorkFlow(AbstractDataClass):
                  overwrite: bool = False,
                  path: str = '.',
                  keep_files: bool = True,
+                 read_template: bool = True,
                  jobs: Optional[Iterable[Job]] = None,
                  settings: Optional[Iterable[Settings]] = None,
                  **kwargs: Any) -> None:
@@ -229,10 +237,9 @@ class WorkFlow(AbstractDataClass):
 
         self.path: str = path
         self.keep_files: bool = keep_files
+        self.read_template: bool = read_template
         self.jobs: Iterable[Job] = jobs
         self.settings: Iterable[Settings] = settings
-
-        self._idx_slice: Union[slice, pd.Series] = slice(None)
 
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -389,8 +396,8 @@ class WorkFlow(AbstractDataClass):
                 kwargs[k] = settings.get_nested(v)
 
         # Post process all jobs and job settings
-        kwargs['jobs'] = concatenate_values(kwargs, 'job', filter_func=bool)
-        kwargs['settings'] = concatenate_values(kwargs, 's', filter_func=bool)
+        kwargs['jobs'] = pop_and_concatenate(kwargs, 'job', filter_func=bool)
+        kwargs['settings'] = pop_and_concatenate(kwargs, 's', filter_func=bool)
         return cls.from_dict(kwargs)
 
 
