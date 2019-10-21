@@ -12,8 +12,12 @@ input_ligands:
     # - 'OC(C1=C(C(C)C)C=CC=C1C(C)C)=O'
     # - 'CCCCCCCCCCCCC(CCC)(CCC)C(=O)O'
     # - 'CCCCCCCCCC(CCC)CCCC(=O)O'
-    #  - 'ClC1=C(C(O)=O)C=C(S(=O)(F)=O)C=C1'
-    - 'CCCCCCCC\C=C\CCCCCCCC(O)=O'
+    # - 'ClC1=C(C(O)=O)C=C(S(=O)(F)=O)C=C1'
+    # - 'CCCCCCCC\C=C\CCCCCCCC(O)=O'
+    - 'CCCOCCC(O)=O'
+    - 'CCCNCCC(O)=O'
+    - 'CCCCCCC(O)=O'
+
 
 optional:
     database:
@@ -35,6 +39,6 @@ optional:
         functional_groups: 'O(C=O)[H]'
     qd:
         dirname: QD
-        optimize: False
+        optimize: True
         bulkiness: False
         activation_strain: True

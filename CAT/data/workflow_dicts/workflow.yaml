@@ -39,7 +39,7 @@ qd_attach:
     mol_type: qd
     description: quantum dot construction
 
-qd_optimize:
+qd_opt:
     template:
         db: [optional, database, db]
         read: [optional, database, read]

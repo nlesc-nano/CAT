@@ -32,7 +32,6 @@ MOL = ('mol', '')
 OPT = ('opt', '')
 
 
-
 def _return_True(value: Any) -> bool: return True
 def _lt_0(value) -> int: return value < 0
 
@@ -203,10 +202,10 @@ class WorkFlow(AbstractDataClass):
             self._overwrite = bool(value)
 
     @property
-    def jobs(self) -> Optional[Tuple[Job, ...]]: return self._jobs
+    def jobs(self) -> Optional[Tuple[Type[Job], ...]]: return self._jobs
 
     @jobs.setter
-    def jobs(self, value: Optional[Iterable[Job]]) -> None:
+    def jobs(self, value: Optional[Iterable[Type[Job]]]) -> None:
         self._jobs = (None,) if value is None else tuple(value)
 
     @property
@@ -461,7 +460,7 @@ class WorkFlow(AbstractDataClass):
             A list of column keys from **df**.
 
         """
-        dtype_dict = {
+        dtype_dict: Dict[np.dtype, Callable] = {
             np.dtype(bool): operator.invert,
             np.dtype(int): _lt_0,
             np.dtype(float): pd.isnull,
