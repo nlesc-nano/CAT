@@ -84,8 +84,8 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
     # Export ligands to .xyz, .pdb, .mol and/or .mol format
     mol_format = ligand_df.settings.database.mol_format
     if mol_format:
-        lig_path = ligand_df.settings.ligand.dirname
-        mol_to_file(ligand_df.loc[idx, MOL], lig_path, mol_format=mol_format)
+        path = workflow.dirname
+        mol_to_file(ligand_df.loc[idx, MOL], path, mol_format=mol_format)
 
 
 def start_ligand_jobs(ligand_list: Iterable[Molecule], **kwargs) -> None:

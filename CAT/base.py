@@ -327,9 +327,7 @@ def prep_qd(ligand_df: SettingsDataFrame,
     activation_strain = ligand_df.settings.optional.qd.activation_strain
 
     # Construct the quantum dots
-    logger.info('Starting quantum dot surface population')
     qd_df = init_qd_construction(ligand_df, core_df)
-    logger.info('Finishing quantum dot surface population\n')
 
     # Start the ligand bulkiness workflow
     if bulk:

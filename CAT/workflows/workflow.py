@@ -256,7 +256,8 @@ class WorkFlow(AbstractDataClass):
         return ((k.strip('_'), v) for k, v in iterator)
 
     def __call__(self, func: Callable, df: pd.DataFrame,
-                 idx_slice: Optional[pd.Series] = slice(None), **kwargs) -> None:
+                 idx_slice: Union[slice, pd.Series] = slice(None),
+                 columns: Optional[List[Hashable]] = None, **kwargs) -> None:
         """Initialize the workflow.
 
         Parameters
@@ -281,7 +282,7 @@ class WorkFlow(AbstractDataClass):
         """
         # Prepare slices
         slice1 = idx_slice, MOL
-        slice2 = idx_slice, list(self.import_columns.keys())
+        slice2 = idx_slice, list(self.import_columns.keys()) if columns is None else columns
 
         # Run the workflow
         logger.info(f"Starting {self.description}")

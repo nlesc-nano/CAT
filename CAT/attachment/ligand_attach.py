@@ -53,6 +53,7 @@ from ..logger import logger
 from ..mol_utils import (merge_mol, get_index, round_coords)
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.mol_to_file import mol_to_file
+from ..workflows.workflow import WorkFlow
 
 __all__ = ['init_qd_construction']
 
@@ -80,109 +81,42 @@ def init_qd_construction(ligand_df: SettingsDataFrame,
         A dataframe of quantum dots.
 
     """
-    # Extract arguments
-    settings = ligand_df.settings.optional
-    db = settings.database.db
-    write = db and 'qd' in settings.database.write
-    read = db and 'qd' in settings.database.read
-    qd_path = settings.qd.dirname
-    mol_format = settings.database.mol_format
-    optimize = settings.qd.optimize
-
-    # Attempt to pull structures from the database
+    # import pdb; pdb.set_trace()
     qd_df = _get_df(core_df.index, ligand_df.index, ligand_df.settings)
+    qd_df[MOL] = None
     qd_df.sort_index(inplace=True)
-    if read:
-        mol_series1 = _read_database(qd_df, ligand_df, core_df)
+    workflow = WorkFlow.from_template(qd_df, name='qd_attach')
 
-    # Identify and create the to be constructed quantum dots
-    mol_series2 = construct_mol_series(qd_df, core_df, ligand_df)
+    # Pull from the database; push unoptimized structures
+    idx = workflow.from_db(qd_df)
 
-    # Update the *mol* column in qd_df with 1 or 2 series of quantum dots
-    try:
-        qd_df[MOL] = mol_series1.append(mol_series2)
-    except NameError:
-        qd_df[MOL] = mol_series2
+    # Start the ligand optimization
+    workflow(construct_mol_series, qd_df, columns=MOL, index=idx,
+             core_df=core_df, ligand_df=ligand_df)
+    workflow.to_db(qd_df, idx_slice=idx)
 
-    # Export the resulting geometries back to the database
-    if write:
-        db.update_csv(qd_df, columns=[HDF5_INDEX], database='qd_no_opt')
-
-    # Export xyz/pdb files
-    if 'qd' in settings.database.write and mol_format and not optimize:
-        mol_to_file(qd_df[MOL], qd_path, mol_format=mol_format)
+    # Export ligands to .xyz, .pdb, .mol and/or .mol format
+    mol_format = qd_df.settings.database.mol_format
+    if mol_format and not qd_df.settings.qd.optimize:
+        path = workflow.dirname
+        mol_to_file(qd_df.loc[idx, MOL], path, mol_format=mol_format)
 
     return qd_df
 
 
-def construct_mol_series(qd_df: SettingsDataFrame,
-                         core_df: pd.DataFrame,
-                         ligand_df: pd.DataFrame) -> pd.Series:
-    """Construct a Series of new quantum dots"""
+def construct_mol_series(df: SettingsDataFrame, core_df: pd.DataFrame,
+                         ligand_df: pd.DataFrame, **kwargs) -> pd.Series:
+    """Construct a Series of new quantum dots."""
     def _get_mol(i, j, k, l):
         ij = i, j
         kl = k, l
         return ligand_to_qd(core_df.at[ij, MOL], ligand_df.at[kl, MOL], settings)
 
+    qd_df = df
     settings = qd_df.settings
-    idx = qd_df[HDF5_INDEX] < 0
 
-    mol_list = [_get_mol(i, j, k, l) for i, j, k, l in qd_df.index[idx]]
-    return pd.Series(mol_list, index=qd_df.index[idx], name=MOL, dtype=object)
-
-
-def _read_database(qd_df: SettingsDataFrame,
-                   ligand_df: SettingsDataFrame,
-                   core_df: SettingsDataFrame) -> pd.Series:
-    """Read quantum dots from the database and set their properties.
-
-    Parameters
-    ----------
-    ligand_df : |CAT.SettingsDataFrame|_
-        A dataframe of quantum dots.
-
-    ligand_df : |CAT.SettingsDataFrame|_
-        A dataframe of ligands.
-
-    core_df : |CAT.SettingsDataFrame|_
-        A dataframe of cores.
-
-    Returns
-    -------
-    |pd.Series|_ [|plams.Molecule|_]
-        A Series of quantum dots pulled from the database.
-
-    """
-    def get_name() -> str:
-        """Construct the name of a quantum dot."""
-        core = core_df.at[(i[0:2]), MOL].properties.name
-        res = mol[-1].properties.pdb_info.ResidueNumber - 1
-        lig = ligand_df.at[(i[2:4]), MOL].properties.name
-        return f'{core}__{res}_{lig}'
-
-    # Extract arguments
-    settings = qd_df.settings.optional
-    path = settings.database.dirname
-    db = settings.database.db
-
-    # Extract molecules from the database and set their properties
-    # If possible extract optimized structures; supplement with unoptimized structures if required
-    mol_series_opt = db.from_csv(qd_df, database='qd', inplace=False)
-    mol_series_no_opt = db.from_csv(qd_df, database='qd_no_opt', inplace=False)
-    slice_ = mol_series_no_opt.index.isin(mol_series_opt.index)
-    mol_series = mol_series_opt.append(mol_series_no_opt[~slice_])
-
-    # Update Molecule.properties
-    logger.info('Pulling quantum dots from database')
-    for i, mol in mol_series.iteritems():
-        mol.properties = Settings({
-            'indices': _get_indices(mol, i),
-            'path': path,
-            'job_path': [],
-            'name': get_name()
-        })
-        logger.info(f'{mol.properties.name} has been pulled from the database')
-    return mol_series
+    mol_list = [_get_mol(i, j, k, l) for i, j, k, l in qd_df.index]
+    return pd.Series(mol_list, index=qd_df.index, name=MOL, dtype=object)
 
 
 def _get_indices(mol: Molecule,
@@ -269,9 +203,7 @@ def _get_df(core_index: pd.MultiIndex,
     return SettingsDataFrame(data, index=index, columns=columns, settings=settings)
 
 
-def ligand_to_qd(core: Molecule,
-                 ligand: Molecule,
-                 settings: Settings) -> Molecule:
+def ligand_to_qd(core: Molecule, ligand: Molecule, settings: Settings) -> Molecule:
     """Function that handles quantum dot (qd, *i.e.* core + all ligands) operations.
 
     Combine the core and ligands and assign properties to the quantom dot.
@@ -327,8 +259,7 @@ def ligand_to_qd(core: Molecule,
     return qd
 
 
-def _get_rotmat1(vec1: np.ndarray,
-                 vec2: np.ndarray) -> np.ndarray:
+def _get_rotmat1(vec1: np.ndarray, vec2: np.ndarray) -> np.ndarray:
     """Calculate the rotation matrix for rotating **vec1** to **vec2**.
 
     Returns a unit matrix if the length of one of the vectors is 0.
@@ -381,8 +312,7 @@ def _get_rotmat1(vec1: np.ndarray,
                      f'{np.asarray(vec2).shape}')
 
 
-def _get_rotmat2(vec: np.ndarray,
-                 step: float = (1/16)) -> np.ndarray:
+def _get_rotmat2(vec: np.ndarray, step: float = (1/16)) -> np.ndarray:
     r"""Calculate the rotation matrix for rotating m vectors along their axes, each vector
     yielding k = (2 / step) possible rotations.
 

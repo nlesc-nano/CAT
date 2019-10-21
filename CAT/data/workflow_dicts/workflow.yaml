@@ -27,3 +27,31 @@ ligand_opt:
         s2: [optional, ligand, optimize, s2]
     mol_type: ligand
     description: ligand geometry optimization
+
+qd_attach:
+    template:
+        db: [optional, database, db]
+        read: [optional, database, read]
+        write: [optional, database, write]
+        overwrite: [optional, database, overwrite]
+
+        path: [optional, qd, dirname]
+    mol_type: qd
+    description: quantum dot construction
+
+qd_optimize:
+    template:
+        db: [optional, database, db]
+        read: [optional, database, read]
+        write: [optional, database, write]
+        overwrite: [optional, database, overwrite]
+
+        path: [optional, qd, dirname]
+        use_ff: [optional, qd, optimize, use_ff]
+        keep_files: [optional, qd, optimize, keep_files]
+        job1: [optional, qd, optimize, job1]
+        s1: [optional, qd, optimize, s1]
+        job2: [optional, qd, optimize, job2]
+        s2: [optional, qd, optimize, s2]
+    mol_type: qd
+    description: quantum dot geometry optimization
