@@ -1,18 +1,23 @@
+import operator
 from shutil import rmtree
 from pathlib import Path
 from contextlib import AbstractContextManager
 from typing import (
     Optional, Union, Dict, Hashable, MutableMapping, TypeVar, Iterable, Container, Tuple, Callable,
-    Any
+    Any, List, Type
 )
 
+import numpy as np
 import pandas as pd
 
+import rdkit
+import qmflows
+from rdkit.Chem.AllChem import UFFGetMoleculeForceField as UFF
 from scm.plams import finish, Settings
 from scm.plams.core.basejob import Job
 from assertionlib.dataclass import AbstractDataClass
 
-from ..utils import restart_init
+from ..utils import restart_init, _job_dict
 from ..logger import logger
 from ..settings_dataframe import SettingsDataFrame
 from ..workflows.workflow_dicts import finalize_templates as load_templates
@@ -24,11 +29,12 @@ ASA_INT = ('ASA', 'E_int')
 ASA_STRAIN = ('ASA', 'E_strain')
 ASA_E = ('ASA', 'E')
 MOL = ('mol', '')
+OPT = ('opt', '')
 
 
-def _return_True(value: Any) -> bool:
-    """Return ``True``."""
-    return True
+
+def _return_True(value: Any) -> bool: return True
+def _lt_0(value) -> int: return value < 0
 
 
 def pop_and_concatenate(mapping: MutableMapping[Hashable, T], base_key: Hashable,
@@ -201,14 +207,14 @@ class WorkFlow(AbstractDataClass):
 
     @jobs.setter
     def jobs(self, value: Optional[Iterable[Job]]) -> None:
-        self._jobs = None if not value else tuple(value)
+        self._jobs = (None,) if value is None else tuple(value)
 
     @property
     def settings(self) -> Optional[Tuple[Settings, ...]]: return self._settings
 
     @settings.setter
     def settings(self, value: Optional[Iterable[Settings]]) -> None:
-        self._settings = None if not value else tuple(value)
+        self._settings = (None,) if value is None else tuple(value)
 
     # Methods and magic methods
 
@@ -280,7 +286,8 @@ class WorkFlow(AbstractDataClass):
         # Run the workflow
         logger.info(f"Starting {self.description}")
         with PlamsInit(path=self.path, folder=self.name), self._SUPRESS_SETTINGWITHCOPYWARNING:
-            value = func(df.loc[slice1], **vars(self), **kwargs)
+            self_vars = {k.strip('_'): v for k, v in vars(self).items()}
+            value = func(df.loc[slice1], **self_vars, **kwargs)
             df.loc[slice2] = value
         logger.info(f"Finishing {self.description}\n")
 
@@ -313,25 +320,28 @@ class WorkFlow(AbstractDataClass):
             return slice(None)
 
         # Import from the database
-        self.db.from_csv(df, database=self.mol_type)
+        with self._SUPRESS_SETTINGWITHCOPYWARNING:
+            self.db.from_csv(df, database=self.mol_type)
 
         # Return a new DataFrame slice based on previously calculated results
         if self.overwrite:
             return slice(None)
         else:
-            ret = df[self.import_columns].isnull().any(axis=1)
-            if ret.all():
-                return slice(None)
-            return ret
+            keys = list(self.import_columns.keys())
+            return self._isnull(df, keys).any(axis=1)
 
-    def to_db(self, df: pd.DataFrame, job_recipe: Optional[dict] = None,
-              idx_slice: Union[slice, pd.Series] = slice(None), **kwargs) -> None:
+    def to_db(self, df: pd.DataFrame, status: Optional[str] = None,
+              job_recipe: Optional[dict] = None,
+              idx_slice: Union[slice, pd.Series] = slice(None)) -> None:
         """Export results to the database.
 
         Parameters
         ----------
         df : :class:`pandas.DataFrame`
             A DataFrame with molecules and results.
+
+        status : :class:`str`, optional
+            Whether or not **df** contains structures resulting from a geometry optimization.
 
         idx_slice : :class:`slice` or :class:`pandas.Series` [:class:`bool`]
             An object for slicing the rows of **df** (*i.e.* :attr:`pandas.DataFrame.index`).
@@ -340,16 +350,28 @@ class WorkFlow(AbstractDataClass):
             A (nested) dictionary with the used job settings.
 
         """
+        # Dont export any settings columns if job_recipe is None
+        # No job recipe == no settings to export anyway
+        if job_recipe is None:
+            export_columns = [i for i in self.export_columns if i[0] != 'settings']
+        else:
+            export_columns = list(self.export_columns)
+
+        # Set the optimization status of the molecules to True
+        if status == 'optimized':
+            df.loc[idx_slice, OPT] = True
+
         # Write results to the database
         if self.write:
-            self.db.update_csv(
-                df[idx_slice],
-                columns=list(self.export_columns),
-                database=self.mol_type,
-                overwrite=self.overwrite,
-                job_recipe=job_recipe,
-                **kwargs
-            )
+            with self._SUPRESS_SETTINGWITHCOPYWARNING:
+                self.db.update_csv(
+                    df.loc[idx_slice],
+                    database=self.mol_type,
+                    columns=export_columns,
+                    overwrite=self.overwrite,
+                    job_recipe=job_recipe,
+                    status=status,
+                )
 
         # Remove the PLAMS results directories
         if not self.keep_files:
@@ -396,9 +418,73 @@ class WorkFlow(AbstractDataClass):
                 kwargs[k] = settings.get_nested(v)
 
         # Post process all jobs and job settings
-        kwargs['jobs'] = pop_and_concatenate(kwargs, 'job', filter_func=bool)
-        kwargs['settings'] = pop_and_concatenate(kwargs, 's', filter_func=bool)
+        kwargs['jobs'] = pop_and_concatenate(kwargs, 'job')
+        kwargs['settings'] = pop_and_concatenate(kwargs, 's')
         return cls.from_dict(kwargs)
+
+    def get_recipe(self) -> Settings:
+        """Create a recipe for :meth:`WorkFlow.to_db`."""
+        settings_names = [i[1:] for i in self.export_columns if i[0] == 'settings']
+        uff_fallback = {
+            'key': f'RDKit_{rdkit.__version__}', 'value': f'{UFF.__module__}.{UFF.__name__}'
+        }
+
+        ret = Settings()
+        for name, job, settings in zip(settings_names, self.jobs, self.settings):
+            # job is None, *i.e.* it's an RDKit UFF optimziation
+            if job is None:
+                ret[name].update(uff_fallback)
+                continue
+
+            settings = Settings(settings)
+            if self.read_template:  # Update the settings using a QMFlows template
+                template = qmflows.geometry['specific'][self.type_to_string(job)].copy()
+                settings.soft_update(template)
+            ret[name].key = job
+            ret[name].value = settings
+        return ret
+
+    @staticmethod
+    def _isnull(df: pd.DataFrame, columns: List[Hashable]) -> pd.DataFrame:
+        """A more expansive version of the :func:`pandas.isnull` function.
+
+        :class:`int` series now also return ``False`` if smaller than ``0`` and :class:`bool`
+        series are simply inverted.
+
+        Parameters
+        ----------
+        df : :class:`pandas.DataFrame`
+            A DataFrame.
+
+        columns : :class:`list`
+            A list of column keys from **df**.
+
+        """
+        dtype_dict = {
+            np.dtype(bool): operator.invert,
+            np.dtype(int): _lt_0,
+            np.dtype(float): pd.isnull,
+            np.dtype(object): pd.isnull
+        }
+
+        ret = pd.DataFrame(index=df.index)
+        for key, series in df[columns].items():
+            try:
+                ret[key] = dtype_dict[series.dtype](series)
+            except KeyError:  # Plan b
+                ret[key] = series.isnull()
+        return df
+
+    @staticmethod
+    def type_to_string(job: Union[Job, Type[Job]]) -> Optional[None]:
+        """Turn a :class:`type` instance into a :class:`str`."""
+        if not isinstance(job, type):
+            job = type(job)
+        try:
+            return _job_dict[job]
+        except KeyError:
+            logger.error(f"No default settings available for type: '{job.__class__.__name__}'")
+            return None
 
 
 class PlamsInit(AbstractContextManager):

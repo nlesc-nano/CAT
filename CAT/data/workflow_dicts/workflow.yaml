@@ -12,3 +12,18 @@ asa:
     mol_type: qd
     description: ligand activation strain analyses
 
+ligand_opt:
+    template:
+        db: [optional, database, db]
+        read: [optional, database, read]
+        write: [optional, database, write]
+        overwrite: [optional, database, overwrite]
+
+        path: [optional, ligand, dirname]
+        keep_files: [optional, ligand, optimize, keep_files]
+        job1: [optional, ligand, optimize, job1]
+        s1: [optional, ligand, optimize, s1]
+        job2: [optional, ligand, optimize, job2]
+        s2: [optional, ligand, optimize, s2]
+    mol_type: ligand
+    description: ligand geometry optimization

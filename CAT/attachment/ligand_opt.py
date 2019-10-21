@@ -35,15 +35,14 @@ API
 """
 
 import itertools
-from typing import (List, Tuple, Dict, Any, Union, Set)
+from typing import (List, Tuple, Union, Set, Iterable)
 
 import numpy as np
 import pandas as pd
 
-from scm.plams import (Molecule, Atom, Bond, Settings, MoleculeError, add_to_class, Units)
-import scm.plams.interfaces.molecule.rdkit as molkit
-
 import rdkit
+import scm.plams.interfaces.molecule.rdkit as molkit
+from scm.plams import (Molecule, Atom, Bond, MoleculeError, add_to_class, Units)
 from rdkit.Chem import AllChem
 
 from .mol_split_cm import SplitMol
@@ -51,105 +50,47 @@ from .remove_atoms_cm import RemoveAtoms
 from .optimize_rotmat import optimize_rotmat
 from .as_array import AsArray
 from ..logger import logger
-from ..mol_utils import (to_symbol, fix_carboxyl, get_index, round_coords, from_rdmol, to_atnum)
+from ..mol_utils import (fix_carboxyl, get_index, from_rdmol, to_atnum)
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.mol_to_file import mol_to_file
+from ..workflows.workflow import WorkFlow
 
 __all__ = ['init_ligand_opt']
 
 # Aliases for pd.MultiIndex columns
 MOL = ('mol', '')
 OPT = ('opt', '')
-FORMULA = ('formula', '')
-HDF5_INDEX = ('hdf5 index', '')
-SETTINGS1 = ('settings', '1')
+
+UFF = AllChem.UFFGetMoleculeForceField
 
 
 def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
-    """Initialize the ligand optimization procedure.
+    """Initialize the ligand optimization procedure."""
+    workflow = WorkFlow.from_template(ligand_df, name='ligand_opt')
 
-    Performs an inplace update of **ligand_df**.
+    # Pull from the database; push unoptimized structures
+    idx = workflow.from_db(ligand_df)
+    workflow.to_db(ligand_df, idx_slice=idx)
+    if not ligand_df.settings.optional.ligand.optimize:
+        return None
 
-    Parameters
-    ----------
-    ligand_df : |CAT.SettingsDataFrame|_
-        A dataframe of valid ligands.
+    # Start the ligand optimization
+    workflow(start_ligand_jobs, ligand_df, index=idx)
 
-    """
-    settings = ligand_df.settings.optional
-    db = settings.database.db
-    overwrite = db and 'ligand' in settings.database.overwrite
-    read = db and 'ligand' in settings.database.read
-    write = db and 'ligand' in settings.database.write
-    optimize = settings.ligand.optimize
-    lig_path = settings.ligand.dirname
-    mol_format = settings.database.mol_format
-
-    # Searches for matches between the input ligand and the database; imports the structure
-    if read:
-        read_data(ligand_df, read)
-
-    if write:
-        _ligand_to_db(ligand_df, opt=False)
-
-    # Identify the to be optimized ligands and optimize them
-    if optimize:
-        idx = _parse_overwrite(ligand_df, overwrite)
-        start_ligand_jobs(ligand_df, idx)
-
-    allign_axis(ligand_df)
-
-    # Write newly optimized structures to the database
-    if write and optimize:
-        _ligand_to_db(ligand_df)
+    # Push the optimized structures to the database
+    job_recipe = workflow.get_recipe()
+    workflow.to_db(ligand_df, status='optimized', idx_slice=idx, job_recipe=job_recipe)
 
     # Export ligands to .xyz, .pdb, .mol and/or .mol format
-    if 'ligand' in settings.database.write and optimize and mol_format:
-        mol_to_file(ligand_df[MOL], lig_path, mol_format=mol_format)
+    mol_format = ligand_df.settings.database.mol_format
+    if mol_format:
+        lig_path = ligand_df.settings.ligand.dirname
+        mol_to_file(ligand_df.loc[idx, MOL], lig_path, mol_format=mol_format)
 
 
-def _parse_overwrite(ligand_df: SettingsDataFrame, overwrite: bool) -> Tuple[pd.Series, str]:
-    """Return a series for dataframe slicing and a to-be printer message."""
-    if overwrite:
-        return pd.Series(True, index=ligand_df.index, name=MOL)
-    return np.invert(ligand_df[OPT])
-
-
-def read_data(ligand_df: SettingsDataFrame, read: bool) -> None:
-    """Read ligands from the database if **read** = ``True``."""
-    db = ligand_df.settings.optional.database.db
-    logger.info('Pulling ligands from database')
-    db.from_csv(ligand_df, database='ligand')
-
-    for i, mol in zip(ligand_df[OPT], ligand_df[MOL]):
-        if not i:
-            continue
-        logger.info(f'{mol.properties.name} has been pulled from the database')
-    ligand_df[OPT] = ligand_df[OPT].astype(bool, copy=False)
-
-
-def allign_axis(ligand_df: pd.DataFrame):
-    """Allign all molecules with the Cartesian X-axis."""
-    for mol in ligand_df[MOL]:
-        with AsArray(mol) as xyz:
-            i = mol.atoms.index(mol.properties.dummies)
-
-            # Allign the molecule with the X-axis
-            rotmat = optimize_rotmat(xyz, i)
-            xyz[:] = xyz@rotmat.T
-            xyz -= xyz[i]
-            xyz[:] = xyz.round(decimals=3)
-
-
-def start_ligand_jobs(ligand_df: SettingsDataFrame, idx: pd.Series) -> None:
+def start_ligand_jobs(ligand_list: Iterable[Molecule], **kwargs) -> None:
     """Loop over all molecules in ``ligand_df.loc[idx]`` and perform geometry optimizations."""
-    if not idx.any():
-        logger.info(f'No new to-be optimized ligands found\n')
-        return None
-    else:
-        logger.info(f'Starting ligand optimization')
-
-    for ligand in ligand_df.loc[idx, MOL]:
+    for ligand in ligand_list:
         logger.info(f'UFFGetMoleculeForceField: {ligand.properties.name} optimization has started')
         try:
             optimize_ligand(ligand)
@@ -160,8 +101,6 @@ def start_ligand_jobs(ligand_df: SettingsDataFrame, idx: pd.Series) -> None:
         else:
             logger.info(f'UFFGetMoleculeForceField: {ligand.properties.name} optimization '
                         'is successful')
-
-    logger.info('Finishing ligand optimization\n')
     return None
 
 
@@ -179,29 +118,19 @@ def optimize_ligand(ligand: Molecule) -> None:
 
     # RDKit UFF can sometimes mess up the geometries of carboxylates: fix them
     fix_carboxyl(ligand)
-    return None
 
 
-def _ligand_to_db(ligand_df: SettingsDataFrame, opt: bool = True):
-    """Export ligand optimziation results to the database."""
-    # Extract arguments
-    settings = ligand_df.settings.optional
-    db = settings.database.db
-    overwrite = 'ligand' in settings.database.overwrite
+def allign_axis(ligand_df: pd.DataFrame):
+    """Allign all molecules with the Cartesian X-axis."""
+    for mol in ligand_df[MOL]:
+        with AsArray(mol) as xyz:
+            i = mol.atoms.index(mol.properties.dummies)
 
-    kwargs: Dict[str, Any] = {'overwrite': overwrite}
-    if opt:
-        kwargs['job_recipe'] = Settings({
-            '1': {'key': 'RDKit_' + rdkit.__version__, 'value': 'UFF'}
-        })
-        kwargs['columns'] = [FORMULA, HDF5_INDEX, SETTINGS1]
-        kwargs['database'] = 'ligand'
-        kwargs['opt'] = True
-    else:
-        kwargs['columns'] = [FORMULA, HDF5_INDEX]
-        kwargs['database'] = 'ligand_no_opt'
-
-    db.update_csv(ligand_df, **kwargs)
+            # Allign the molecule with the X-axis
+            rotmat = optimize_rotmat(xyz, i)
+            xyz[:] = xyz@rotmat.T
+            xyz -= xyz[i]
+            xyz[:] = xyz.round(decimals=3)
 
 
 def split_mol(plams_mol: Molecule) -> List[Bond]:
@@ -263,8 +192,7 @@ def split_mol(plams_mol: Molecule) -> List[Bond]:
 
 @add_to_class(Molecule)
 def get_frag_size(self, bond: Bond, reference_atom: Atom) -> int:
-    """Return the size of the fragment containing **atom** if **self** was split into two
-    molecules by the breaking of **bond**.
+    """Return the size of the fragment containing **atom** if this instance was split into two by the breaking of **bond**.
 
     Parameters
     ----------
@@ -279,7 +207,7 @@ def get_frag_size(self, bond: Bond, reference_atom: Atom) -> int:
     :class:`int`
         The number of atoms in the fragment containing **atom**.
 
-    """
+    """  # noqa
     if bond not in self.bonds:
         raise MoleculeError('get_frag_size: The argument bond should be of type plams.Bond and '
                             'be part of the Molecule')
@@ -433,7 +361,7 @@ def rdmol_as_array(rdmol: rdkit.Chem.Mol) -> np.ndarray:
     return np.array((x, y, z)).T
 
 
-def find_idx(mol: Molecule, bond: Bond) -> List[int]:
+def _find_idx(mol: Molecule, bond: Bond) -> List[int]:
     ret = []
     mol.set_atoms_id(start=0)
     for at in mol:
@@ -467,7 +395,7 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int]) -
     # Optimize the (constrained) geometry for all dihedral angles in angle_list
     # The geometry that yields the minimum energy is returned
     uff = AllChem.UFFGetMoleculeForceField
-    fixed = find_idx(mol, bond)
+    fixed = _find_idx(mol, bond)
     for rdmol in mol_list:
         ff = uff(rdmol)
         for f in fixed:

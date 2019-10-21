@@ -21,11 +21,17 @@ ASA_STRAIN = ('ASA', 'E_strain')
 ASA_E = ('ASA', 'E')
 SETTINGS_ASA = ('settings', 'ASA 1')
 
+SETTINGS1 = ('settings', '1')
+SETTINGS2 = ('settings', '2')
+OPT = ('opt', '')
+
 FrozenSettings = CAT.frozen_settings.FrozenSettings
 
 _TEMPLATE_UPDATE: dict = {
     'asa': {'import_columns': {ASA_INT: np.nan, ASA_STRAIN: np.nan, ASA_E: np.nan},
-            'export_columns': (SETTINGS_ASA, ASA_INT, ASA_STRAIN, ASA_E)}
+            'export_columns': (SETTINGS_ASA, ASA_INT, ASA_STRAIN, ASA_E)},
+    'ligand_opt': {'import_columns': {OPT: False},
+                   'export_columns': (OPT, SETTINGS1, SETTINGS2)}
 }
 
 

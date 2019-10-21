@@ -14,6 +14,7 @@ Index
     qd_schema
     database_schema
     mongodb_schema
+    ligand_opt_schema
     bde_schema
     qd_opt_schema
     crs_schema
@@ -34,6 +35,8 @@ API
 .. autodata:: database_schema
     :annotation: = schema.Schema
 .. autodata:: mongodb_schema
+    :annotation: = schema.Schema
+.. autodata:: ligand_opt_schema
     :annotation: = schema.Schema
 .. autodata:: bde_schema
     :annotation: = schema.Schema
@@ -77,7 +80,8 @@ from ..utils import (get_template, validate_path, validate_core_atom, check_sys_
 from ..mol_utils import to_atnum
 
 __all__ = ['mol_schema', 'core_schema', 'ligand_schema', 'qd_schema', 'database_schema',
-           'mongodb_schema', 'bde_schema', 'qd_opt_schema', 'crs_schema', 'asa_schema']
+           'mongodb_schema', 'bde_schema', 'ligand_opt_schema', 'qd_opt_schema', 'crs_schema',
+           'asa_schema']
 
 
 def val_job_type(value: type) -> type:
@@ -347,7 +351,10 @@ ligand_schema: Schema = Schema({
         ),
 
     Optional_('optimize', default=True):  # Optimize the ligands
-        And(bool, error='optional.ligand.optimize expects a boolean'),
+        And(
+            bool, Use(lambda n: ({'job1': None} if n else False)),
+            error='optional.ligand.optimize expects a boolean'
+        ),
 
     Optional_('split', default=True):  # Remove a counterion from the function group
         And(bool, error='optional.ligand.split expects a boolean'),
@@ -411,6 +418,69 @@ mongodb_schema: Schema = Schema({
 
     Optional_(str):  # Other keyword arguments for :class:`pymongo.MongoClient`
         object
+})
+
+
+#: Schema for validating the ``['optional']['ligand']['optimize']`` block.
+ligand_opt_schema: Schema = Schema({
+    Optional_('use_ff', default=False):
+        bool,
+
+    # Delete files after the calculations are finished
+    Optional_('keep_files', default=True):
+        And(bool, error='optional.ligand.optimize.keep_files expects a boolean'),
+
+    # The Job type for the conformation search
+    Optional_('job1', default=None):
+        Or(
+            None,
+            And(
+                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
+                error=('optional.ligand.optimize.job1 expects a type object '
+                       'that is a subclass of plams.Job')
+            ),
+            And(
+                str, Use(str_to_job_type),
+                error=('optional.ligand.optimize.job1 expects a string '
+                       'that is a valid plams.Job alias')
+            ),
+            error='optional.ligand.optimize.job1 expects a string or a type object'
+        ),
+
+    # The Job Settings for the conformation search
+    Optional_('s1', default=None):
+        Or(
+            None,
+            dict,
+            And(str, Use(lambda n: get_template(n, from_cat_data=False))),
+            error='optional.ligand.optimize.s1 expects a string or a dictionary'
+        ),
+
+    # The Job type for the final geometry optimization
+    Optional_('job2', default=None):
+        Or(
+            None,
+            And(
+                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
+                error=('optional.ligand.optimize.job2 expects a type object '
+                       'that is a subclass of plams.Job')
+            ),
+            And(
+                str, Use(str_to_job_type),
+                error=('optional.ligand.optimize.job2 expects a string '
+                       'that is a valid plams.Job alias')
+            ),
+            error='optional.ligand.optimize.job2 expects a string or a type object'
+        ),
+
+    # The Job Settings for the final geometry optimization
+    Optional_('s2', default=None):
+        Or(
+            None,
+            dict,
+            And(str, Use(lambda n: get_template(n, from_cat_data=False))),
+            error='optional.ligand.optimize.s2 expects a string or a dictionary'
+        ),
 })
 
 
