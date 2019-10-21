@@ -42,7 +42,7 @@ __all__ = ['init_qd_opt']
 MOL: Tuple[str, str] = ('mol', '')
 OPT: Tuple[str, str] = ('opt', '')
 HDF5_INDEX: Tuple[str, str] = ('hdf5 index', '')
-JOB_SETTINGS_QD_OPT: Tuple[str, str] = ('job_settings_QD_opt', '')
+JOB_SETTINGS_QD_OPT: Tuple[str, str] = ('job_settings_qd_opt', '')
 SETTINGS1: Tuple[str, str] = ('settings', '1')
 SETTINGS2: Tuple[str, str] = ('settings', '2')
 
@@ -53,9 +53,12 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
 
     # Pull from the database; push unoptimized structures
     idx = workflow.from_db(qd_df)
-    workflow(start_qd_opt, qd_df, index=idx)
+    workflow(start_qd_opt, qd_df, columns=[], index=idx)
+
+    # Sets a nested list
+    # This cannot be done with loc is it will try to expand the list into a 2D array
+    qd_df[JOB_SETTINGS_QD_OPT] = pop_job_settings(qd_df)
     qd_df.loc[idx, OPT] = True
-    qd_df.loc[idx, JOB_SETTINGS_QD_OPT] = pop_job_settings(qd_df)
 
     # Push the optimized structures to the database
     job_recipe = workflow.get_recipe()

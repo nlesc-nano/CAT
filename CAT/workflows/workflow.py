@@ -291,7 +291,7 @@ class WorkFlow(AbstractDataClass):
             df.loc[slice2] = value
         logger.info(f"Finishing {self.description}\n")
 
-    def from_db(self, df: pd.DataFrame) -> Union[slice, pd.Series]:
+    def from_db(self, df: pd.DataFrame, inplace: bool = True) -> Union[slice, pd.Series]:
         """Ensure that all required keys are present in **df** and import from the database.
 
         Returns a :class:`pandas.index` with all to-be updated rows, as based on how many
@@ -303,6 +303,10 @@ class WorkFlow(AbstractDataClass):
         ----------
         df : :class:`pandas.DataFrame`
             A DataFrame with molecules and results.
+
+        inplace : :class:`bool`
+            If ``True``, perform an inplace update of the Cartesian coordinates of all molecules
+            rather than importing new molecules.
 
         Returns
         -------
@@ -321,7 +325,10 @@ class WorkFlow(AbstractDataClass):
 
         # Import from the database
         with self._SUPRESS_SETTINGWITHCOPYWARNING:
-            self.db.from_csv(df, database=self.mol_type)
+            # mol_list is either None or a sequence of Molecules
+            mol_list = self.db.from_csv(df, database=self.mol_type, inplace=inplace)
+            if not inplace:
+                df[MOL] = mol_list
 
         # Return a new DataFrame slice based on previously calculated results
         if self.overwrite:
