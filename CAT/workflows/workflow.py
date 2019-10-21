@@ -257,7 +257,7 @@ class WorkFlow(AbstractDataClass):
     def __call__(self, func: Callable, df: pd.DataFrame,
                  idx_slice: Union[slice, pd.Series] = slice(None),
                  columns: Optional[List[Hashable]] = None, **kwargs) -> None:
-        """Initialize the workflow.
+        r"""Initialize the workflow.
 
         Parameters
         ----------
@@ -271,12 +271,21 @@ class WorkFlow(AbstractDataClass):
             A DataFrame with molecules and results.
 
         idx_slice : :class:`slice` or :class:`pandas.Series` [:class:`bool`]
-            An object for slicing the rows of **df** (*i.e.* :attr:`pandas.DataFrame.index`).
+            An object for slicing the rows of **df**
+            (*e.g.* a :attr:`pandas.DataFrame.index` instance).
+
+        columns : :class:`list` [:data:`Hashable<typing.Hashable>`], optional
+            An optional list of keys specifying the to-be updated columns in **df**.
+            The output of **func** will be fed into :code:`df[columns]`.
+            If ``None``, use :attr:`WorkFlow.import_columns` instead.
+
+        \**kwargs : :data:`Any<typing.Any>`
+            Optional keyword arguments for **func**.
 
         See Also
         --------
         :meth:`Workflow.from_db`:
-            Returns a value for the **index** parameter.
+            Returns a value for the **idx_slice** parameter.
 
         """
         # Prepare slices
