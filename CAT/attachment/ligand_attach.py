@@ -93,7 +93,7 @@ def init_qd_construction(ligand_df: SettingsDataFrame,
     # Start the ligand optimization
     workflow(construct_mol_series, qd_df, columns=MOL, index=idx,
              core_df=core_df, ligand_df=ligand_df)
-    workflow.to_db(qd_df, idx_slice=idx)
+    workflow.to_db(qd_df, index=idx)
 
     # Export ligands to .xyz, .pdb, .mol and/or .mol format
     mol_format = qd_df.settings.optional.database.mol_format

@@ -130,7 +130,10 @@ class WorkFlow(AbstractDataClass):
         # Run the workflow
         >>> idx = workflow.from_db(df)
         >>> workflow(fancy_df_func, df, index=idx)
-        >>> workflow.to_db(df)
+
+        # Export all workflow results
+        >>> job_recipe = workflow.get_recipe()
+        >>> workflow.to_db(df, job_recip=job_recipe)
 
     """
 
@@ -172,7 +175,8 @@ class WorkFlow(AbstractDataClass):
     # Getter and setter properties
 
     @property
-    def read(self) -> bool: return self._read
+    def read(self) -> bool:
+        return self._read
 
     @read.setter
     def read(self, value: Union[bool, Container]) -> None:
@@ -228,6 +232,9 @@ class WorkFlow(AbstractDataClass):
                  jobs: Optional[Iterable[Job]] = None,
                  settings: Optional[Iterable[Settings]] = None,
                  **kwargs: Any) -> None:
+        """Initialize a :class:`WorkFlow` instance; see also :meth:`Workflow.from_template`."""
+        super().__init__()
+
         if name not in self._WORKFLOW_TEMPLATES:
             err = (f"Invalid value for the 'name' parameter: {repr(name)}\n"
                    f"Allowed values: {', '.join(repr(k) for k in self._WORKFLOW_TEMPLATES)}")
@@ -255,7 +262,7 @@ class WorkFlow(AbstractDataClass):
         return ((k.strip('_'), v) for k, v in iterator)
 
     def __call__(self, func: Callable, df: pd.DataFrame,
-                 idx_slice: Union[slice, pd.Series] = slice(None),
+                 index: Union[slice, pd.Series] = slice(None),
                  columns: Optional[List[Hashable]] = None, **kwargs) -> None:
         r"""Initialize the workflow.
 
@@ -270,12 +277,11 @@ class WorkFlow(AbstractDataClass):
         df : :class:`pandas.DataFrame`
             A DataFrame with molecules and results.
 
-        idx_slice : :class:`slice` or :class:`pandas.Series` [:class:`bool`]
-            An object for slicing the rows of **df**
-            (*e.g.* a :attr:`pandas.DataFrame.index` instance).
+        index : :class:`slice` or :class:`pandas.Series` [:class:`bool`]
+            An object for slicing the rows of **df** (*i.e.* a :attr:`pandas.DataFrame.index`).
 
         columns : :class:`list` [:data:`Hashable<typing.Hashable>`], optional
-            An optional list of keys specifying the to-be updated columns in **df**.
+            An object for slicing the columns of **df** (*i.e.* :attr:`pandas.DataFrame.columns`).
             The output of **func** will be fed into :code:`df[columns]`.
             If ``None``, use :attr:`WorkFlow.import_columns` instead.
 
@@ -289,8 +295,8 @@ class WorkFlow(AbstractDataClass):
 
         """
         # Prepare slices
-        slice1 = idx_slice, MOL
-        slice2 = idx_slice, list(self.import_columns.keys()) if columns is None else columns
+        slice1 = index, MOL
+        slice2 = index, list(self.import_columns.keys()) if columns is None else columns
 
         # Run the workflow
         logger.info(f"Starting {self.description}")
@@ -300,7 +306,8 @@ class WorkFlow(AbstractDataClass):
             df.loc[slice2] = value
         logger.info(f"Finishing {self.description}\n")
 
-    def from_db(self, df: pd.DataFrame, inplace: bool = True) -> Union[slice, pd.Series]:
+    def from_db(self, df: pd.DataFrame, inplace: bool = True,
+                columns: Optional[Dict[Hashable, Any]] = None) -> Union[slice, pd.Series]:
         """Ensure that all required keys are present in **df** and import from the database.
 
         Returns a :class:`pandas.index` with all to-be updated rows, as based on how many
@@ -317,6 +324,14 @@ class WorkFlow(AbstractDataClass):
             If ``True``, perform an inplace update of the Cartesian coordinates of all molecules
             rather than importing new molecules.
 
+        columns : :class:`dict` [:data:`Hashable<typing.Hashable>`, :class:`object`], optional
+            An dictionary whose keys will be used for slicing the columns of **df**
+            (*i.e.* :attr:`pandas.DataFrame.columns`).
+            The dictionary valeus are used as fill values if a key belongs
+            to a to-be created column.
+            Recommended values are :data:`numpy.nan`, ``None``, ``-1`` and/or ``False``.
+            If ``None``, use :attr:`WorkFlow.import_columns` instead.
+
         Returns
         -------
         :class:`pandas.Series` [:class:`bool`] or :class:`slice`
@@ -324,8 +339,9 @@ class WorkFlow(AbstractDataClass):
             slicing the entirety of **df** (*i.e.* :code:`slice(0, None`).
 
         """
-        # Add all necasary keys to the DataFrame
-        for key, value in self.import_columns.items():
+        # Add all necasary keys to **df**
+        import_columns = self.import_columns if columns is None else columns
+        for key, value in import_columns.items():
             if key not in df:
                 df[key] = value
 
@@ -334,21 +350,21 @@ class WorkFlow(AbstractDataClass):
 
         # Import from the database
         with self._SUPRESS_SETTINGWITHCOPYWARNING:
-            # mol_list is either None or a sequence of Molecules
             mol_list = self.db.from_csv(df, database=self.mol_type, inplace=inplace)
-            if not inplace:
+            if not inplace:  # mol_list is an actual sequence instead of None
                 df[MOL] = mol_list
 
         # Return a new DataFrame slice based on previously calculated results
         if self.overwrite:
             return slice(None)
         else:
-            keys = list(self.import_columns.keys())
+            keys = list(import_columns.keys())
             return self._isnull(df, keys).any(axis=1)
 
     def to_db(self, df: pd.DataFrame, status: Optional[str] = None,
               job_recipe: Optional[dict] = None,
-              idx_slice: Union[slice, pd.Series] = slice(None)) -> None:
+              index: Union[slice, pd.Series] = slice(None),
+              columns: Optional[Dict[Hashable, Any]] = None) -> None:
         """Export results to the database.
 
         Parameters
@@ -359,29 +375,34 @@ class WorkFlow(AbstractDataClass):
         status : :class:`str`, optional
             Whether or not **df** contains structures resulting from a geometry optimization.
 
-        idx_slice : :class:`slice` or :class:`pandas.Series` [:class:`bool`]
-            An object for slicing the rows of **df** (*i.e.* :attr:`pandas.DataFrame.index`).
-
         job_recipe : :class:`dict`
             A (nested) dictionary with the used job settings.
+
+        index : :class:`slice` or :class:`pandas.Series` [:class:`bool`]
+            An object for slicing the rows of **df** (*i.e.* :attr:`pandas.DataFrame.index`).
+
+        columns : :class:`list` [:data:`Hashable<typing.Hashable>`], optional
+            An object for slicing the columns of **df** (*i.e.* :attr:`pandas.DataFrame.columns`).
+            If ``None``, use :attr:`WorkFlow.export_columns` instead.
 
         """
         # Dont export any settings columns if job_recipe is None
         # No job recipe == no settings to export anyway
+        _export_columns = self.export_columns if columns is None else columns
         if job_recipe is None:
-            export_columns = [i for i in self.export_columns if i[0] != 'settings']
+            export_columns = [i for i in _export_columns if i[0] != 'settings']
         else:
-            export_columns = list(self.export_columns)
+            export_columns = list(_export_columns)
 
         # Set the optimization status of the molecules to True
         if status == 'optimized':
-            df.loc[idx_slice, OPT] = True
+            df.loc[index, OPT] = True
 
         # Write results to the database
         if self.write:
             with self._SUPRESS_SETTINGWITHCOPYWARNING:
                 self.db.update_csv(
-                    df.loc[idx_slice],
+                    df.loc[index],
                     database=self.mol_type,
                     columns=export_columns,
                     overwrite=self.overwrite,
@@ -417,8 +438,7 @@ class WorkFlow(AbstractDataClass):
         if isinstance(settings, SettingsDataFrame):
             settings = settings.settings
 
-        kwargs = {}
-        kwargs['name'] = name
+        kwargs = {'name': name}
 
         # Raise a KeyError if a key cannot be found
         with Settings.supress_missing():
@@ -495,7 +515,8 @@ class WorkFlow(AbstractDataClass):
     def type_to_string(job: Union[Job, Type[Job]]) -> Optional[None]:
         """Turn a :class:`type` instance into a :class:`str`."""
         if not isinstance(job, type):
-            job = type(job)
+            job = type(job)  # Convert a class instance into a class
+
         try:
             return _job_dict[job]
         except KeyError:

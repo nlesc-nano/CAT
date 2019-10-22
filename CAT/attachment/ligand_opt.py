@@ -69,7 +69,7 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
 
     # Pull from the database; push unoptimized structures
     idx = workflow.from_db(ligand_df)
-    workflow.to_db(ligand_df, idx_slice=idx)
+    workflow.to_db(ligand_df, index=idx)
     if not ligand_df.settings.optional.ligand.optimize:
         return None
 
@@ -78,7 +78,7 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
 
     # Push the optimized structures to the database
     job_recipe = workflow.get_recipe()
-    workflow.to_db(ligand_df, status='optimized', idx_slice=idx, job_recipe=job_recipe)
+    workflow.to_db(ligand_df, status='optimized', index=idx, job_recipe=job_recipe)
 
     # Export ligands to .xyz, .pdb, .mol and/or .mol format
     mol_format = ligand_df.settings.optional.database.mol_format

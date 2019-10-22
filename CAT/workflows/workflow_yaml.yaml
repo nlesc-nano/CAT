@@ -1,4 +1,6 @@
 asa:
+    description: ligand activation strain analyses
+    mol_type: qd
     template:
         db: [optional, database, db]
         read: [optional, database, read]
@@ -6,13 +8,14 @@ asa:
         overwrite: [optional, database, overwrite]
 
         path: [optional, qd, dirname]
+        use_ff: [optional, qd, activation_strain, use_ff]
         keep_files: [optional, qd, activation_strain, keep_files]
         job1: [optional, qd, activation_strain, job1]
         s1: [optional, qd, activation_strain, s1]
-    mol_type: qd
-    description: ligand activation strain analyses
 
 ligand_opt:
+    description: ligand geometry optimization
+    mol_type: ligand
     template:
         db: [optional, database, db]
         read: [optional, database, read]
@@ -20,15 +23,16 @@ ligand_opt:
         overwrite: [optional, database, overwrite]
 
         path: [optional, ligand, dirname]
+        use_ff: [optional, ligand, optimize, use_ff]
         keep_files: [optional, ligand, optimize, keep_files]
         job1: [optional, ligand, optimize, job1]
         s1: [optional, ligand, optimize, s1]
         job2: [optional, ligand, optimize, job2]
         s2: [optional, ligand, optimize, s2]
-    mol_type: ligand
-    description: ligand geometry optimization
 
 qd_attach:
+    description: quantum dot construction
+    mol_type: qd
     template:
         db: [optional, database, db]
         read: [optional, database, read]
@@ -36,10 +40,10 @@ qd_attach:
         overwrite: [optional, database, overwrite]
 
         path: [optional, qd, dirname]
-    mol_type: qd
-    description: quantum dot construction
 
 qd_opt:
+    description: quantum dot geometry optimization
+    mol_type: qd
     template:
         db: [optional, database, db]
         read: [optional, database, read]
@@ -53,5 +57,19 @@ qd_opt:
         s1: [optional, qd, optimize, s1]
         job2: [optional, qd, optimize, job2]
         s2: [optional, qd, optimize, s2]
-    mol_type: qd
-    description: quantum dot geometry optimization
+
+crs:
+    description: COSMO-RS ligand property calculation
+    mol_type: ligand
+    template:
+        db: [optional, database, db]
+        read: [optional, database, read]
+        write: [optional, database, write]
+        overwrite: [optional, database, overwrite]
+
+        path: [optional, qd, dirname]
+        keep_files: [optional, qd, ligand, keep_files]
+        job1: [optional, qd, ligand, job1]
+        s1: [optional, qd, ligand, s1]
+        job2: [optional, qd, ligand, job1]
+        s2: [optional, qd, ligand, s1]

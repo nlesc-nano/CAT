@@ -57,12 +57,12 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
 
     # Sets a nested list
     # This cannot be done with loc is it will try to expand the list into a 2D array
-    qd_df[JOB_SETTINGS_QD_OPT] = pop_job_settings(qd_df)
+    qd_df[JOB_SETTINGS_QD_OPT] = pop_job_settings(qd_df[MOL])
     qd_df.loc[idx, OPT] = True
 
     # Push the optimized structures to the database
     job_recipe = workflow.get_recipe()
-    workflow.to_db(qd_df, status='optimized', idx_slice=idx, job_recipe=job_recipe)
+    workflow.to_db(qd_df, status='optimized', index=idx, job_recipe=job_recipe)
 
     # Export ligands to .xyz, .pdb, .mol and/or .mol format
     mol_format = qd_df.settings.optional.database.mol_format
@@ -74,16 +74,16 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
 def start_qd_opt(mol_list: Iterable[Molecule],
                  jobs: Tuple[Optional[Type[Job]], ...], settings: Tuple[Optional[Settings], ...],
                  forcefield=None, **kwargs) -> None:
-    """Loop over all molecules in ``qd_df.loc[idx]`` and perform geometry optimizations."""
+    """Loop over all molecules in **mol_list** and perform geometry optimizations."""
     for mol in mol_list:
         mol.properties.job_path = []
         qd_opt(mol, jobs, settings, forcefield=forcefield)
 
 
-def pop_job_settings(qd_df: SettingsDataFrame) -> List[str]:
+def pop_job_settings(mol_list: Iterable[Molecule]) -> List[List[str]]:
     """Create a nested list of input files for each molecule in **ligand_df**."""
     job_settings = []
-    for mol in qd_df[MOL]:
+    for mol in mol_list:
         try:
             job_settings.append(mol.properties.pop('job_path'))
         except KeyError:
