@@ -519,8 +519,9 @@ class WorkFlow(AbstractDataClass):
 
         try:
             return _job_dict[job]
-        except KeyError:
+        except KeyError as ex:
             logger.error(f"No default settings available for type: '{job.__class__.__name__}'")
+            logger.debug(f'{ex.__class__.__name__}: {ex}', exc_info=True)
             return None
 
 
