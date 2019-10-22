@@ -283,7 +283,7 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     if forcefield:
         val_nano_cat("Automatic ligand forcefield assignment requires MATCH "
                      "(Multipurpose Atom-Typer for CHARMM) and the nano-CAT package")
-        init_ff_assignment(ligand_df, 'ligand')
+        init_ff_assignment(ligand_df)
 
     return ligand_df
 

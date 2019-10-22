@@ -97,3 +97,9 @@ bde:
         lig_core_dist: [optional, qd, bde, lig_core_dist]
         core_index: [optional, qd, bde, core_index]
         topology: [optional, qd, bde, topology]
+
+forcefield:
+    description: ligand forcefield assignment
+    mol_type: ligand
+    template:
+        path: [optional, ligand, dirname]

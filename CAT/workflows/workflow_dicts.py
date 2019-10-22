@@ -47,7 +47,9 @@ _TEMPLATE_UPDATE: dict = {
     'crs': {'import_columns': {},
             'export_columns': (JOB_SETTINGS_CRS, SETTINGS_SOLV1, SETTINGS_SOLV2)},
     'bde': {'import_columns': {},
-            'export_columns': (JOB_SETTINGS_BDE, SETTINGS_BDE1, SETTINGS_BDE2)}
+            'export_columns': (JOB_SETTINGS_BDE, SETTINGS_BDE1, SETTINGS_BDE2)},
+    'forcefield': {'import_columns': {},
+                   'export_columns': ()}
 }
 
 
