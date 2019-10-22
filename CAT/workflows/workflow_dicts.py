@@ -33,6 +33,7 @@ SETTINGS_SOLV2 = ('settings', 'solv 2')
 SETTINGS_ASA = ('settings', 'ASA 1')
 SETTINGS_BDE1 = ('settings', 'BDE 1')
 SETTINGS_BDE2 = ('settings', 'BDE 2')
+V_BULK = ('V_bulk', '')
 
 
 _TEMPLATE_UPDATE: dict = {
@@ -49,7 +50,9 @@ _TEMPLATE_UPDATE: dict = {
     'bde': {'import_columns': {},
             'export_columns': (JOB_SETTINGS_BDE, SETTINGS_BDE1, SETTINGS_BDE2)},
     'forcefield': {'import_columns': {},
-                   'export_columns': ()}
+                   'export_columns': ()},
+    'bulkiness': {'import_columns': {V_BULK: np.nan},
+                  'export_columns': (V_BULK,)}
 }
 
 

@@ -103,3 +103,9 @@ forcefield:
     mol_type: ligand
     template:
         path: [optional, ligand, dirname]
+
+bulkiness:
+    description: ligand bulkiness calculation
+    mol_type: qd
+    template:
+        path: [optional, qd, dirname]
