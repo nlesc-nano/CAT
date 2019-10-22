@@ -5,6 +5,12 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+
+0.7.0
+*****
+* * Finalize the introduction of a new CAT template system (``WorkFlow()``).
+
+
 0.6.5
 *****
 * Updated Nano-CAT to 0.2.4: https://github.com/nlesc-nano/nano-CAT/pull/20.
