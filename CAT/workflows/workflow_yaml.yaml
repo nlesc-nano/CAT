@@ -68,8 +68,32 @@ crs:
         overwrite: [optional, database, overwrite]
 
         path: [optional, ligand, dirname]
-        keep_files: [optional, crs, keep_files]
+        keep_files: [optional, ligand, crs, keep_files]
         job1: [optional, ligand, crs, job1]
         s1: [optional, ligand, crs, s1]
         job2: [optional, ligand, crs, job2]
         s2: [optional, ligand, crs, s2]
+
+bde:
+    description: ligand dissociation calculation
+    mol_type: qd
+    template:
+        db: [optional, database, db]
+        read: [optional, database, read]
+        write: [optional, database, write]
+        overwrite: [optional, database, overwrite]
+
+        path: [optional, qd, dirname]
+        keep_files: [optional, qd, bde, keep_files]
+        use_ff: [optional, qd, bde, use_ff]
+        job1: [optional, qd, bde, job1]
+        s1: [optional, qd, bde, s1]
+        job2: [optional, qd, bde, job2]
+        s2: [optional, qd, bde, s2]
+
+        core_atom: [optional, qd, bde, core_atom]
+        lig_count: [optional, qd, bde, lig_count]
+        core_core_dist:  [optional, qd, bde, core_core_dist]
+        lig_core_dist: [optional, qd, bde, lig_core_dist]
+        core_index: [optional, qd, bde, core_index]
+        topology: [optional, qd, bde, topology]

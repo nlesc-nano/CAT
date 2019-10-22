@@ -16,11 +16,13 @@ from CAT.frozen_settings import FrozenSettings
 
 __all__ = ['finalize_templates']
 
+# TODO import this stuff from a module
 OPT = ('opt', '')
 MOL = ('mol', '')
 HDF5_INDEX = ('hdf5 index', '')
 JOB_SETTINGS_QD_OPT = ('job_settings_qd_opt', '')
 JOB_SETTINGS_CRS = ('job_settings_crs', '')
+JOB_SETTINGS_BDE = ('job_settings_BDE', '')
 ASA_INT = ('ASA', 'E_int')
 ASA_STRAIN = ('ASA', 'E_strain')
 ASA_E = ('ASA', 'E')
@@ -29,6 +31,9 @@ SETTINGS2 = ('settings', '2')
 SETTINGS_SOLV1 = ('settings', 'solv 1')
 SETTINGS_SOLV2 = ('settings', 'solv 2')
 SETTINGS_ASA = ('settings', 'ASA 1')
+SETTINGS_BDE1 = ('settings', 'BDE 1')
+SETTINGS_BDE2 = ('settings', 'BDE 2')
+
 
 _TEMPLATE_UPDATE: dict = {
     'asa': {'import_columns': {ASA_INT: np.nan, ASA_STRAIN: np.nan, ASA_E: np.nan},
@@ -41,6 +46,8 @@ _TEMPLATE_UPDATE: dict = {
                'export_columns': (HDF5_INDEX, OPT, JOB_SETTINGS_QD_OPT, SETTINGS1, SETTINGS2)},
     'crs': {'import_columns': {},
             'export_columns': (JOB_SETTINGS_CRS, SETTINGS_SOLV1, SETTINGS_SOLV2)},
+    'bde': {'import_columns': {},
+            'export_columns': (JOB_SETTINGS_BDE, SETTINGS_BDE1, SETTINGS_BDE2)}
 }
 
 
