@@ -8,7 +8,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.7.0
 *****
-* * Finalize the introduction of a new CAT template system (``WorkFlow()``).
+* Finalize the introduction of a new CAT template system (``WorkFlow()``).
 
 
 0.6.5
