@@ -57,7 +57,7 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
 
     # Sets a nested list
     # This cannot be done with loc is it will try to expand the list into a 2D array
-    qd_df[JOB_SETTINGS_QD_OPT] = pop_job_settings(qd_df[MOL])
+    qd_df[JOB_SETTINGS_QD_OPT] = workflow.pop_job_settings(qd_df[MOL])
     qd_df.loc[idx, OPT] = True
 
     # Push the optimized structures to the database
@@ -78,17 +78,6 @@ def start_qd_opt(mol_list: Iterable[Molecule],
     for mol in mol_list:
         mol.properties.job_path = []
         qd_opt(mol, jobs, settings, forcefield=forcefield)
-
-
-def pop_job_settings(mol_list: Iterable[Molecule]) -> List[List[str]]:
-    """Create a nested list of input files for each molecule in **ligand_df**."""
-    job_settings = []
-    for mol in mol_list:
-        try:
-            job_settings.append(mol.properties.pop('job_path'))
-        except KeyError:
-            job_settings.append([])
-    return job_settings
 
 
 def qd_opt(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],

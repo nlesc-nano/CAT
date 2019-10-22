@@ -13,7 +13,7 @@ import pandas as pd
 import rdkit
 import qmflows
 from rdkit.Chem.AllChem import UFFGetMoleculeForceField as UFF
-from scm.plams import finish, Settings
+from scm.plams import finish, Settings, Molecule
 from scm.plams.core.basejob import Job
 from assertionlib.dataclass import AbstractDataClass
 
@@ -523,6 +523,35 @@ class WorkFlow(AbstractDataClass):
             logger.error(f"No default settings available for type: '{job.__class__.__name__}'")
             logger.debug(f'{ex.__class__.__name__}: {ex}', exc_info=True)
             return None
+
+    @staticmethod
+    def pop_job_settings(mol_list: Iterable[Molecule], key: str = 'job_path') -> List[List[str]]:
+        """Take a list of molecules and pop and return all references to **key**.
+
+        Parameters
+        ----------
+        mol_list : :data:`Iterable<typing.Iterable>` [|plams.Molecule|]
+            An iterable consisting of PLAMS molecules.
+            For this method to be effective they should contain a property by the name of **key**:
+            a list of strings represnting paths to .in files.
+
+        key : :data:`Hashable<typing.Hashable>`
+            The to-be popped key in each molecule in **mol_list**.
+
+        Returns
+        -------
+        :class:`list` [:class:`list` [:class:`str`]]
+            A nested list of strings popped from **mol_list**.
+
+        """
+        ret = []
+        for mol in mol_list:
+            try:
+                ret.append(mol.properties.pop(key))
+            except KeyError:
+                ret.append([])
+            mol.properties[key] = []
+        return ret
 
 
 class PlamsInit(AbstractContextManager):
