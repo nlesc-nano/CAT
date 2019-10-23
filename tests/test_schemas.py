@@ -182,7 +182,8 @@ def test_qd_schema() -> None:
         'activation_strain': False,
         'optimize': False,
         'dissociate': False,
-        'bulkiness': False
+        'bulkiness': False,
+        'construct_qd': True
     }
 
     assertion.eq(qd_schema.validate(qd_dict), ref)

@@ -5,8 +5,9 @@ input_cores:
         guess_bonds: False
 
 input_ligands:
-    - ligand_library.txt
-    # - OC(=O)C
+    # - ligand_library.txt
+    - OC(=O)C
+    - OC(=O)CC
 
 optional:
     database:
@@ -30,10 +31,11 @@ optional:
 
     qd:
         dirname: QD
-        optimize:
-            use_ff: True
-            job1: cp2kjob
+        construct_qd: False
+        bulkiness: True
         dissociate: False
+        optimize: False
+        activation_strain: False
 
     forcefield:
         charge:
