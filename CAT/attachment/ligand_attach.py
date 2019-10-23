@@ -85,6 +85,7 @@ def init_qd_construction(ligand_df: SettingsDataFrame,
     qd_df[MOL] = None
     qd_df.sort_index(inplace=True)
     workflow = WorkFlow.from_template(qd_df, name='qd_attach')
+    workflow.keep_files = False
 
     # Pull from the database; push unoptimized structures
     idx = workflow.from_db(qd_df, inplace=False)
