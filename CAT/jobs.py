@@ -82,19 +82,10 @@ def _xyz_to_mol(filename: str) -> Molecule:
 
 
 @add_to_class(Cp2kResults)
-def get_energy(self, index: int = 0, unit: str = 'Hartree') -> float:
-    """Returns last occurence of 'Total energy:' in the output."""
-    try:
-        energy = self._get_energy_type('Total', index=index)
-        if energy is None:
-            raise IndexError
-
-    # Because for some unfathomable reason CP2K doesn't print the final energy in a
-    # conviently accessible manner when running geometry optimizations
-    except IndexError:
-        mol = self.get_main_molecule()
-        energy = float(mol.properties.comment.split()[-1])
-
+def get_energy(self, index: int = -1, unit: str = 'Hartree') -> float:
+    """Return the energy of the last occurence of ``'ENERGY| Total FORCE_EVAL'`` in the output."""
+    energy_str = self.grep_output('ENERGY| Total FORCE_EVAL')[index]
+    energy = float(energy_str.rsplit(maxsplit=1)[1])
     return Units.convert(energy, 'Hartree', unit)
 
 
@@ -280,7 +271,10 @@ def job_single_point(self, job_type: Type[Job],
     retrieve_results(self, results, 'single point')
 
     inp_name = join(job.path, job.name + '.in')
-    self.properties.job_path.append(inp_name)
+    try:
+        self.properties.job_path.append(inp_name)
+    except TypeError:
+        self.properties.job_path = [inp_name]
 
     # Return results
     if ret_results:
@@ -333,7 +327,10 @@ def job_geometry_opt(self, job_type: Type[Job],
     retrieve_results(self, results, 'geometry optimization')
 
     inp_name = join(job.path, job.name + '.in')
-    self.properties.job_path.append(inp_name)
+    try:
+        self.properties.job_path.append(inp_name)
+    except TypeError:
+        self.properties.job_path = [inp_name]
 
     # Return results
     if ret_results:
@@ -397,7 +394,10 @@ def job_freq(self, job_type: Type[Job],
     retrieve_results(self, results, 'frequency analysis')
 
     inp_name = join(job.path, _name + '.in')
-    self.properties.job_path.append(inp_name)
+    try:
+        self.properties.job_path.append(inp_name)
+    except TypeError:
+        self.properties.job_path = [inp_name]
 
     # Return results
     if ret_results:
