@@ -49,7 +49,6 @@ from scipy.spatial.distance import cdist
 
 from scm.plams import (Molecule, Atom, Settings)
 
-from ..logger import logger
 from ..mol_utils import (merge_mol, get_index, round_coords)
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.mol_to_file import mol_to_file
