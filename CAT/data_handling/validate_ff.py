@@ -110,3 +110,9 @@ def update_ff_jobs(s: Settings) -> None:
         if dissociate.job1 and str(dissociate.job1) == str(Cp2kJob):
             dissociate.s1 = get_template('qd.yaml')['CP2K_CHARM_opt']
             dissociate.s1.soft_update(ff)
+
+    activation_strain = s.optional.qd.activation_strain
+    if activation_strain and activation_strain.use_ff:
+        if activation_strain.job1 and str(activation_strain.job1) == str(Cp2kJob):
+            activation_strain.s1 = get_template('qd.yaml')['CP2K_CHARM_singlepoint']
+            activation_strain.s1.soft_update(ff)

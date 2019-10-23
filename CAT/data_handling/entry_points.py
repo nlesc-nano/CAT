@@ -28,7 +28,7 @@ import yaml
 
 from scm.plams.core.settings import Settings
 
-from CAT import prep
+from CAT import base
 from CAT.logger import logger
 
 
@@ -61,7 +61,7 @@ def main(args: Optional[List[str]] = None) -> None:
 
     try:
         args = parser.parse_args(args)
-        prep(extract_args(args), return_mol=False)
+        base.prep(extract_args(args), return_mol=False)
     except Exception as ex:
         logger.critical(f'{ex.__class__.__name__}: {ex}')
         raise ex

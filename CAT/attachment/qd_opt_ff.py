@@ -25,27 +25,26 @@ API
 """
 
 import os
-from typing import Container, Iterable, Union, Dict, Tuple, List
+from typing import Container, Iterable, Union, Dict, Tuple, List, Optional, Type, Callable
 from collections import abc
 
 import numpy as np
 import pandas as pd
 
 from scm.plams import Molecule, Settings
+from scm.plams.core.basejob import Job
 
-try:
-    from nanoCAT.ff.cp2k_utils import set_cp2k_element
-    from nanoCAT.ff.psf import PSFContainer
-    from nanoCAT.ff.uff import combine_xi, combine_di
-    NANO_CAT: bool = True
-except ImportError:
-    PSFContainer = 'PSFContainer'
-    NANO_CAT: bool = False
+from nanoCAT.ff.cp2k_utils import set_cp2k_element
+from nanoCAT.ff.psf import PSFContainer
+from nanoCAT.ff.uff import combine_xi, combine_di
 
 __all__ = ['qd_opt_ff']
 
 
-def qd_opt_ff(mol: Molecule, job_recipe: Settings, name: str = 'QD_opt') -> None:
+def qd_opt_ff(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],
+              settings: Tuple[Optional[Settings], ...], name: str = 'QD_opt',
+              force_create_psf: bool = False,
+              job_func: Callable = Molecule.job_geometry_opt) -> None:
     """Alternative implementation of :func:`.qd_opt` using CP2Ks' classical forcefields.
 
     Performs an inplace update of **mol**.
@@ -55,9 +54,11 @@ def qd_opt_ff(mol: Molecule, job_recipe: Settings, name: str = 'QD_opt') -> None
     mol : |plams.Molecule|_
         The to-be optimized molecule.
 
-    job_recipe : |plams.Settings|_
-        A Settings instance containing all jon settings.
-        Expects 4 keys: ``"job1"``, ``"job2"``, ``"s1"``, ``"s2"``.
+    jobs : :class:`tuple`
+        A tuple of |plams.Job| types and/or ``None``.
+
+    settings : :class:`tuple`
+        A tuple of |plams.Settings| types and/or ``None``.
 
     name : str
         The name of the job.
@@ -71,7 +72,8 @@ def qd_opt_ff(mol: Molecule, job_recipe: Settings, name: str = 'QD_opt') -> None
     psf_name = os.path.join(mol.properties.path, mol.properties.name + '.psf')
 
     # Prepare the job settings
-    job, s = job_recipe.job1, job_recipe.s1.copy()
+    job = jobs[0] if isinstance(jobs, abc.Sequence) else jobs
+    s = Settings(settings[0]) if isinstance(settings, abc.Sequence) else Settings(settings)
 
     s.runscript.pre = (f'ln "{psf_name}" ./"{name}.psf"\n'
                        f'ln "{mol.properties.prm}" ./"{name}.prm"')
@@ -79,13 +81,13 @@ def qd_opt_ff(mol: Molecule, job_recipe: Settings, name: str = 'QD_opt') -> None
     s.input.force_eval.mm.forcefield.parm_file_name = f'{name}.prm'
     set_cp2k_element(s, mol)
 
-    if not os.path.isfile(psf_name):
+    if not os.path.isfile(psf_name) or force_create_psf:
         psf = get_psf(mol, s.input.force_eval.mm.forcefield.charge)
         psf.write(psf_name)
 
     # Run the first job and fix broken angles
     finalize_lj(mol, s.input.force_eval.mm.forcefield.nonbonded['lennard-jones'])
-    mol.job_geometry_opt(job, s, name=name, read_template=False)
+    job_func(mol, job, s, name=name, read_template=False)
     mol.round_coords()
 
 

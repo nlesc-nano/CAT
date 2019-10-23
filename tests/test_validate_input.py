@@ -40,10 +40,12 @@ def test_validate_input() -> None:
 
     ref.ligand['cosmo-rs'] = False
     ref.ligand.dirname = join(PATH, 'ligand')
-    ref.ligand.optimize = True
+    ref.ligand.optimize = {'job1': None, 'job2': None, 's1': None, 's2': None,
+                           'use_ff': False, 'keep_files': True}
     ref.ligand.split = True
 
     ref.qd.bulkiness = False
+    ref.qd.construct_qd = True
     ref.qd.activation_strain = False
     ref.qd.dirname = join(PATH, 'qd')
     ref.qd.dissociate = False

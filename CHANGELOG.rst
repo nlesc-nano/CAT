@@ -5,6 +5,13 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+
+0.7.0
+*****
+* Finalize the introduction of a new CAT template system (``WorkFlow()``).
+* WiP: Implement an acitvation strain workflow with custom MATCH-based forcefields in Nano-CAT_.
+
+
 0.6.5
 *****
 * Updated Nano-CAT to 0.2.4: https://github.com/nlesc-nano/nano-CAT/pull/20.
@@ -181,13 +188,13 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 .. _AssertionLib: https://github.com/nlesc-nano/AssertionLib
 .. _CAT: https://github.com/nlesc-nano/CAT
+.. _CAT.Database: https://cat.readthedocs.io/en/latest/7_database.html
+.. _CP2K: https://www.cp2k.org/
+.. _data-CAT: https://github.com/nlesc-nano/data-CAT/
+.. _Database: https://cat.readthedocs.io/en/latest/7_database.html#class-api
 .. _PLAMS: https://github.com/SCM-NV/PLAMS
 .. _MATCH: http://brooks.chem.lsa.umich.edu/index.php?page=match&subdir=articles/resources/software
-.. _CP2K: https://www.cp2k.org/
-.. _Database: https://cat.readthedocs.io/en/latest/7_database.html#class-api
-.. _Schema: https://github.com/keleshev/schema
-.. _nano-CAT: https://github.com/nlesc-nano/nano-CAT/
-.. _data-CAT: https://github.com/nlesc-nano/data-CAT/
-.. _SMILES: https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system
 .. _MongoDB: https://www.mongodb.com/
-.. _CAT.Database: https://cat.readthedocs.io/en/latest/7_database.html
+.. _nano-CAT: https://github.com/nlesc-nano/nano-CAT/
+.. _Schema: https://github.com/keleshev/schema
+.. _SMILES: https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system
