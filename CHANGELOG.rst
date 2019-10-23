@@ -9,7 +9,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 0.7.0
 *****
 * Finalize the introduction of a new CAT template system (``WorkFlow()``).
-* WiP: Implement an acitvation strain workflow with custom MATCH-based forcefields. in Nano-CAT_
+* WiP: Implement an acitvation strain workflow with custom MATCH-based forcefields in Nano-CAT_.
 
 
 0.6.5
