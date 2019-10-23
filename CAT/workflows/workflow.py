@@ -33,10 +33,12 @@ OPT = ('opt', '')
 
 
 def _return_True(value: Any) -> bool:
+    """Return ``True``."""
     return True
 
 
 def _lt_0(value) -> int:
+    """Return if **value** is smaller than ``0``."""
     return value < 0
 
 
@@ -528,7 +530,7 @@ class WorkFlow(AbstractDataClass):
     def _isnull(df: pd.DataFrame, columns: List[Hashable]) -> pd.DataFrame:
         """A more expansive version of the :func:`pandas.isnull` function.
 
-        :class:`int` series now also return ``False`` if smaller than ``0`` and :class:`bool`
+        :class:`int` series now also return ``True`` if smaller than ``0`` and :class:`bool`
         series are simply inverted.
 
         Parameters
@@ -550,10 +552,12 @@ class WorkFlow(AbstractDataClass):
         ret = pd.DataFrame(index=df.index)
         for key, series in df[columns].items():
             try:
-                ret[key] = dtype_dict[series.dtype](series)
+                func = dtype_dict[series.dtype]
             except KeyError:  # Plan b
-                ret[key] = series.isnull()
-        return df
+                func = pd.isnull
+            finally:
+                ret[key] = func(series)
+        return ret
 
     @staticmethod
     def type_to_string(job: Union[Job, Type[Job]]) -> Optional[None]:

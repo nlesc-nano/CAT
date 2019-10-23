@@ -41,7 +41,6 @@ import numpy as np
 
 import rdkit
 import scm.plams.interfaces.molecule.rdkit as molkit
-from scm.plams.recipes.global_minimum import global_minimum_scan_rdkit
 from scm.plams import (Molecule, Atom, Bond, MoleculeError, add_to_class, Units)
 from rdkit.Chem import AllChem
 
@@ -76,6 +75,7 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
 
     # Start the ligand optimization
     workflow(start_ligand_jobs, ligand_df, index=idx)
+    ligand_df.loc[idx, OPT] = True
 
     # Push the optimized structures to the database
     job_recipe = workflow.get_recipe()
