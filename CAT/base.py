@@ -320,14 +320,20 @@ def prep_qd(ligand_df: SettingsDataFrame,
     forcefield = ligand_df.settings.optional.forcefield
     dissociate = ligand_df.settings.optional.qd.dissociate
     activation_strain = ligand_df.settings.optional.qd.activation_strain
+    construct_qd = ligand_df.settings.optional.qd.construct_qd
 
-    # Construct the quantum dots
-    qd_df = init_qd_construction(ligand_df, core_df)
+    # Construct the quantum dot DataFrame
+    # If construct_qd is False, construct the dataframe without filling it with quantum dots
+    qd_df = init_qd_construction(ligand_df, core_df, construct_qd=construct_qd)
 
     # Start the ligand bulkiness workflow
     if bulk:
         val_nano_cat("Ligand bulkiness calculations require the nano-CAT package")
         init_lig_bulkiness(qd_df, ligand_df, core_df)
+
+    # Skip the actual quantum dot construction
+    if not construct_qd:
+        return qd_df
 
     if not qd_df[MOL].any():
         raise MoleculeError('No valid quantum dots found, aborting')

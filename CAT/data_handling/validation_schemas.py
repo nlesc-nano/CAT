@@ -374,6 +374,12 @@ qd_schema: Schema = Schema({
     'dirname':
         And(str, error='optional.qd.dirname expects a string'),
 
+    Optional_('construct_qd', default=True):  # Construct quantum dots
+        Or(
+            bool,
+            error='optional.qd.construct_qd expects a boolean'
+        ),
+
     # Settings specific to a quantum dot activation strain analyses
     Optional_('activation_strain', default=False):
         Or(
@@ -388,7 +394,7 @@ qd_schema: Schema = Schema({
         Or(
             dict,
             And(bool, Use(lambda n: ({'job1': 'AMSJob'} if n else False))),
-            error='optional.ligand.optimize expects a boolean or dictionary'
+            error='optional.qd.optimize expects a boolean or dictionary'
         ),
 
     # Settings for quantum dot ligand dissociation calculations
@@ -396,7 +402,7 @@ qd_schema: Schema = Schema({
         Or(
             dict,
             And(bool, lambda n: n is False),
-            error='optional.ligand.dissociate expects False (boolean) or a dictionary'
+            error='optional.qd.dissociate expects False (boolean) or a dictionary'
         )
 })
 

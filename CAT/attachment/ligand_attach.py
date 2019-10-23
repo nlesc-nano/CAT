@@ -62,8 +62,8 @@ MOL = ('mol', '')
 OPT = ('opt', '')
 
 
-def init_qd_construction(ligand_df: SettingsDataFrame,
-                         core_df: SettingsDataFrame) -> SettingsDataFrame:
+def init_qd_construction(ligand_df: SettingsDataFrame, core_df: SettingsDataFrame,
+                         construct_qd: bool = True) -> SettingsDataFrame:
     """Initialize the quantum dot construction.
 
     Parameters
@@ -73,6 +73,9 @@ def init_qd_construction(ligand_df: SettingsDataFrame,
 
     core_df : |CAT.SettingsDataFrame|_
         A dataframe of cores.
+
+    construct_qd : :class:`bool`
+        If ``False``, only construct and return the dataframe without filling it with molecules.
 
     Returns
     -------
@@ -84,6 +87,9 @@ def init_qd_construction(ligand_df: SettingsDataFrame,
     qd_df = _get_df(core_df.index, ligand_df.index, ligand_df.settings)
     qd_df[MOL] = None
     qd_df.sort_index(inplace=True)
+    if not construct_qd:
+        return qd_df
+
     workflow = WorkFlow.from_template(qd_df, name='qd_attach')
     workflow.keep_files = False
 

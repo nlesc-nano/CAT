@@ -352,7 +352,7 @@ class WorkFlow(AbstractDataClass):
             df.loc[slice2] = value
         logger.info(f"Finishing {self.description}\n")
 
-    def from_db(self, df: pd.DataFrame, inplace: bool = True,
+    def from_db(self, df: pd.DataFrame, inplace: bool = True, get_mol: bool = True,
                 columns: Optional[Dict[Hashable, Any]] = None) -> Union[slice, pd.Series]:
         """Ensure that all required keys are present in **df** and import from the database.
 
@@ -369,6 +369,9 @@ class WorkFlow(AbstractDataClass):
         inplace : :class:`bool`
             If ``True``, perform an inplace update of the Cartesian coordinates of all molecules
             rather than importing new molecules.
+
+        get_mol : :class:`bool`
+            If ``False`` do *not* try to import molecules from the database.
 
         columns : :class:`dict` [:data:`Hashable<typing.Hashable>`, :class:`object`], optional
             An dictionary whose keys will be used for slicing the columns of **df**
@@ -396,7 +399,8 @@ class WorkFlow(AbstractDataClass):
 
         # Import from the database
         with self._SUPRESS_SETTINGWITHCOPYWARNING:
-            mol_list = self.db.from_csv(df, database=self.mol_type, inplace=inplace)
+            mol_list = self.db.from_csv(df, database=self.mol_type,
+                                        get_mol=get_mol, inplace=inplace)
             if not inplace:  # mol_list is an actual sequence instead of None
                 df[MOL] = mol_list
 

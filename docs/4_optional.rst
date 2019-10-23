@@ -33,6 +33,7 @@ Option                                    Description
 :attr:`optional.ligand.cosmo-rs`          Perform a property calculation with COSMO-RS on the ligand.
 
 :attr:`optional.qd.dirname`               The name of the directory where all quantum dots will be stored.
+:attr:`optional.qd.construct_qd`          Whether or not the quantum dot should actually be constructed or not.
 :attr:`optional.qd.optimize`              Optimize the quantum dot (i.e. core + all ligands).
 :attr:`optional.qd.bulkiness`             Calculate the :math:`V_{bulk}`, a ligand- and core-sepcific descriptor of a ligands' bulkiness.
 :attr:`optional.qd.activation_strain`     Perform an activation strain analyses.
@@ -63,14 +64,14 @@ Default Settings
             functional_groups: null
             split: True
             cosmo-rs: False
-            bulkiness: False
 
         qd:
             dirname: qd
+            construct_qd: True
             optimize: False
             activation_strain: False
             dissociate: False
-
+            bulkiness: False
 
 Arguments
 ~~~~~~~~~
@@ -374,7 +375,8 @@ QD
 
         optional:
             qd:
-                dirname: QD
+                dirname: qd
+                construct_qd: True
                 optimize: False
                 bulkiness: False
                 activation_strain: False
@@ -391,6 +393,16 @@ QD
 
         The quantum dot directory will be created (if it does not yet exist)
         at the path specified in :ref:`Path`.
+
+    .. attribute:: optional.qd.construct_qd
+
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``True``
+
+        Whether or not the quantum dot should actually be constructed or not.
+
+        Setting this to ``False`` will still construct ligands and carry out ligand workflows,
+        but it will not construct the actual quantum dot itself.
 
 
     .. attribute:: optional.qd.optimize
