@@ -32,8 +32,12 @@ MOL = ('mol', '')
 OPT = ('opt', '')
 
 
-def _return_True(value: Any) -> bool: return True
-def _lt_0(value) -> int: return value < 0
+def _return_True(value: Any) -> bool:
+    return True
+
+
+def _lt_0(value) -> int:
+    return value < 0
 
 
 def pop_and_concatenate(mapping: MutableMapping[Hashable, T], base_key: Hashable,
@@ -127,11 +131,11 @@ class WorkFlow(AbstractDataClass):
             settings   = None
         )
 
-        # Run the workflow
+        >>> # Run the workflow
         >>> idx = workflow.from_db(df)
         >>> workflow(fancy_df_func, df, index=idx)
 
-        # Export all workflow results
+        >>> # Export all workflow results
         >>> job_recipe = workflow.get_recipe()
         >>> workflow.to_db(df, job_recip=job_recipe)
 
@@ -176,6 +180,12 @@ class WorkFlow(AbstractDataClass):
 
     @property
     def read(self) -> bool:
+        """Get or set :attr:`WorkFlow.read`.
+
+        Setting accepts either a boolean or a container that may
+        or may not contain :attr:`WorkFlow.mol_type`.
+
+        """
         return self._read
 
     @read.setter
@@ -186,7 +196,14 @@ class WorkFlow(AbstractDataClass):
             self._read = bool(value)
 
     @property
-    def write(self) -> bool: return self._write
+    def write(self) -> bool:
+        """Get or set :attr:`WorkFlow.write`.
+
+        Setting accepts either a boolean or a container that may
+        or may not contain :attr:`WorkFlow.mol_type`.
+
+        """
+        return self._write
 
     @write.setter
     def write(self, value: Union[bool, Container]) -> None:
@@ -196,7 +213,14 @@ class WorkFlow(AbstractDataClass):
             self._write = bool(value)
 
     @property
-    def overwrite(self) -> bool: return self._overwrite
+    def overwrite(self) -> bool:
+        """Get or set :attr:`WorkFlow.overwrite`.
+
+        Setting accepts either a boolean or a container that may
+        or may not contain :attr:`WorkFlow.mol_type`.
+
+        """
+        return self._overwrite
 
     @overwrite.setter
     def overwrite(self, value: Union[bool, Container]) -> None:
@@ -206,31 +230,51 @@ class WorkFlow(AbstractDataClass):
             self._overwrite = bool(value)
 
     @property
-    def jobs(self) -> Optional[Tuple[Type[Job], ...]]: return self._jobs
+    def jobs(self) -> Tuple[Optional[Type[Job]], ...]:
+        """Get or set :attr:`WorkFlow.read`.
+
+        Setting accepts either a |plams.Job| type, ``None`` or
+        an iterable containing one (or both) of the aforementioned objects.
+
+        """
+        return self._jobs
 
     @jobs.setter
-    def jobs(self, value: Optional[Iterable[Type[Job]]]) -> None:
-        self._jobs = (None,) if value is None else tuple(value)
+    def jobs(self, value: Union[None, Type[Job], Iterable[None], Iterable[Type[Job]]]) -> None:
+        if isinstance(value, Job):
+            self._jobs = (value,)
+        else:
+            self._jobs = (None,) if value is None else tuple(value)
 
     @property
-    def settings(self) -> Optional[Tuple[Settings, ...]]: return self._settings
+    def settings(self) -> Tuple[Optional[Settings], ...]:
+        """Get or set :attr:`WorkFlow.read`.
+
+        Setting accepts either a |plams.Settings| instance, ``None`` or
+        an iterable containing one (or both) of the aforementioned objects.
+
+        """
+        return self._settings
 
     @settings.setter
-    def settings(self, value: Optional[Iterable[Settings]]) -> None:
-        self._settings = (None,) if value is None else tuple(value)
+    def settings(self, value: Union[None, Settings, Iterable[None], Iterable[Settings]]) -> None:
+        if isinstance(value, Settings):
+            self._settings = (value,)
+        else:
+            self._settings = (None,) if value is None else tuple(value)
 
     # Methods and magic methods
 
     def __init__(self, name: str,
                  db: Optional['Database'] = None,
-                 read: bool = False,
-                 write: bool = False,
-                 overwrite: bool = False,
+                 read: Union[bool, Container] = False,
+                 write: Union[bool, Container] = False,
+                 overwrite: Union[bool, Container] = False,
                  path: str = '.',
                  keep_files: bool = True,
                  read_template: bool = True,
-                 jobs: Optional[Iterable[Job]] = None,
-                 settings: Optional[Iterable[Settings]] = None,
+                 jobs: Union[None, Type[Job], Iterable[None], Iterable[Type[Job]]] = None,
+                 settings: Union[None, Settings, Iterable[None], Iterable[Settings]] = None,
                  **kwargs: Any) -> None:
         """Initialize a :class:`WorkFlow` instance; see also :meth:`Workflow.from_template`."""
         super().__init__()
@@ -513,7 +557,27 @@ class WorkFlow(AbstractDataClass):
 
     @staticmethod
     def type_to_string(job: Union[Job, Type[Job]]) -> Optional[None]:
-        """Turn a :class:`type` instance into a :class:`str`."""
+        """Turn a :class:`type` instance into a :class:`str`.
+
+        Accepts one of the following |plams.Job| subclasses:
+            * ``ADFJob``
+            * ``AMSJob``
+            * ``DiracJob``
+            * ``Cp2kJob``
+            * ``GamessJob``
+            * ``ORCAJob``
+
+        Parameters
+        ----------
+        job : :class:`type` [|plams.Job|] or |plams.Job|
+            A PLAMS Job type or instance.
+
+        Returns
+        -------
+        :class:`str`, optional
+            Returns either ``None`` or an item pulled from :data:`._job_dict`.
+
+        """
         if not isinstance(job, type):
             job = type(job)  # Convert a class instance into a class
 

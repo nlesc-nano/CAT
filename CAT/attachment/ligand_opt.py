@@ -35,12 +35,13 @@ API
 """
 
 import itertools
-from typing import (List, Tuple, Union, Set, Iterable, Optional)
+from typing import (List, Tuple, Union, Set, Iterable)
 
 import numpy as np
 
 import rdkit
 import scm.plams.interfaces.molecule.rdkit as molkit
+from scm.plams.recipes.global_minimum import global_minimum_scan_rdkit
 from scm.plams import (Molecule, Atom, Bond, MoleculeError, add_to_class, Units)
 from rdkit.Chem import AllChem
 
@@ -100,29 +101,38 @@ def start_ligand_jobs(ligand_list: Iterable[Molecule], **kwargs) -> None:
         else:
             logger.info(f'UFFGetMoleculeForceField: {ligand.properties.name} optimization '
                         'is successful')
-        allign_axis(ligand)
     return None
 
 
 def optimize_ligand(ligand: Molecule) -> None:
     """Optimize a ligand molecule."""
+    anchor = ligand.properties.dummies
+
     # Split the branched ligand into linear fragments and optimize them individually
-    bonds = split_mol(ligand)
+    bonds = split_mol(ligand, anchor)
     with SplitMol(ligand, bonds) as mol_frags:
         for mol in mol_frags:
-            mol.set_dihed(180.0)
+            mol.set_dihed(180.0, anchor)
 
     # Find the optimal dihedrals angle between the fragments
     for bond in bonds:
-        modified_minimum_scan_rdkit(ligand, ligand.get_index(bond))
+        modified_minimum_scan_rdkit(ligand, ligand.get_index(bond), anchor)
 
     # RDKit UFF can sometimes mess up the geometries of carboxylates: fix them
     fix_carboxyl(ligand)
 
+    # Allign the ligand with the Cartesian X-axis.
+    allign_axis(ligand, anchor)
 
-def allign_axis(mol: Molecule, idx: Optional[int] = None):
-    """Allign a molecule with the Cartesian X-axis."""
-    idx = idx if idx is not None else mol.atoms.index(mol.properties.dummies)
+
+def allign_axis(mol: Molecule, anchor: Atom):
+    """Allign a molecule with the Cartesian X-axis; setting **anchor** as the origin."""
+    try:
+        idx = mol.atoms.index(anchor)
+    except ValueError as ex:
+        err = "The passed anchor is not in mol"
+        raise MoleculeError(err).with_tracebacl(ex.__traceback__)
+
     with AsArray(mol) as xyz:  # Allign the molecule with the X-axis
         rotmat = optimize_rotmat(xyz, idx)
         xyz[:] = xyz@rotmat.T
@@ -130,7 +140,7 @@ def allign_axis(mol: Molecule, idx: Optional[int] = None):
         xyz[:] = xyz.round(decimals=3)
 
 
-def split_mol(plams_mol: Molecule) -> List[Bond]:
+def split_mol(plams_mol: Molecule, anchor: Atom) -> List[Bond]:
     """Split a molecule into multiple smaller fragments; returning the bonds that have to be broken.
 
     One fragment is created for every branch within **plams_mol**.
@@ -138,7 +148,10 @@ def split_mol(plams_mol: Molecule) -> List[Bond]:
     Parameters
     ----------
     plams_mol : |plams.Molecule|
-        The input molecule with the properties.dummies attribute.
+        The input molecule.
+
+    anchor : |plams.Atom|
+        An anchor atom which will be stored in the largest to-be returned fragment.
 
     Returns
     -------
@@ -157,7 +170,7 @@ def split_mol(plams_mol: Molecule) -> List[Bond]:
 
     def _get_frag_size(bond: Bond) -> int:
         """Return the size of the largest fragment were **plams_mol** to be split along **bond**."""
-        return plams_mol.get_frag_size(bond, plams_mol.properties.dummies)
+        return plams_mol.get_frag_size(bond, anchor)
 
     # Temporary remove hydrogen atoms
     atom_gen = (at for at in plams_mol if at.atnum == 1)
@@ -174,7 +187,7 @@ def split_mol(plams_mol: Molecule) -> List[Bond]:
     atom_set = {atom for atom in atom_list if atom_list.count(atom) >= 3}
     atom_dict = {atom: [bond for bond in atom.bonds if bond in bond_list] for atom in atom_set}
 
-    # Fragment the molecule such that the functional group is on the largest fragment
+    # Fragment the molecule such that the anchor on the largest fragment
     ret = []
     for at, bond_list in atom_dict.items():
         # Can't directly iterate over bond_list as its size is modified
@@ -188,7 +201,7 @@ def split_mol(plams_mol: Molecule) -> List[Bond]:
 
 
 @add_to_class(Molecule)
-def get_frag_size(self, bond: Bond, reference_atom: Atom) -> int:
+def get_frag_size(self, bond: Bond, anchor: Atom) -> int:
     """Return the size of the fragment containing **atom** if this instance was split into two by the breaking of **bond**.
 
     Parameters
@@ -196,7 +209,7 @@ def get_frag_size(self, bond: Bond, reference_atom: Atom) -> int:
     bond : |plams.Bond|
         A PLAMS bond.
 
-    reference_atom : |plams.Atom|
+    anchor : |plams.Atom|
         A PLAMS atom. The size of the fragment containg this atom will be returned.
 
     Returns
@@ -208,7 +221,7 @@ def get_frag_size(self, bond: Bond, reference_atom: Atom) -> int:
     if bond not in self.bonds:
         raise MoleculeError('get_frag_size: The argument bond should be of type plams.Bond and '
                             'be part of the Molecule')
-    elif reference_atom not in self.atoms:
+    elif anchor not in self.atoms:
         raise MoleculeError('get_frag_size: The argument atom should be of type plams.Atom and '
                             'be part of the Molecule')
 
@@ -234,7 +247,7 @@ def get_frag_size(self, bond: Bond, reference_atom: Atom) -> int:
         del at._visited
 
     # fragment #1 contains **atom**
-    if reference_atom in frag1:
+    if anchor in frag1:
         if bond.atom1 not in frag1:
             bond.atom1, bond.atom2 = bond.atom2, bond.atom1
         return len(frag1)
@@ -244,8 +257,8 @@ def get_frag_size(self, bond: Bond, reference_atom: Atom) -> int:
     return len(frag2)
 
 
-def get_dihed(atoms: Tuple[Atom, Atom, Atom, Atom], unit: str = 'degree') -> float:
-    """Return the dihedral angle defined by four atoms.
+def get_dihed(atoms: Iterable[Atom], unit: str = 'degree') -> float:
+    """Return the dihedral angle defined by a set of four atoms.
 
     Parameters
     ----------
@@ -303,8 +316,8 @@ def neighbors_mod(self, atom: Atom, exclude: Union[int, str] = 1) -> List[Atom]:
 
 
 @add_to_class(Molecule)
-def set_dihed(self, angle: float, opt: bool = True, unit: str = 'degree') -> None:
-    """Change a dihedral angle into a specific value.
+def set_dihed(self, angle: float, anchor: Atom, opt: bool = True, unit: str = 'degree') -> None:
+    """Change all valid dihedral angles into a specific value.
 
     Performs an inplace update of this instance.
 
@@ -312,6 +325,9 @@ def set_dihed(self, angle: float, opt: bool = True, unit: str = 'degree') -> Non
     ----------
     angle : :class:`float`
         The desired dihedral angle.
+
+    anchor : |plams.Atom|
+        The ligand anchor atom.
 
     opt : :class:`bool`
         Whether or not the dihedral adjustment should be followed up by an RDKit UFF optimization.
@@ -324,7 +340,6 @@ def set_dihed(self, angle: float, opt: bool = True, unit: str = 'degree') -> Non
     bond_list = [bond for bond in self.bonds if bond.atom1.atnum != 1 and bond.atom2.atnum != 1
                  and bond.order == 1 and not self.in_ring(bond)]
 
-    anchor = self.properties.dummies
     for bond in bond_list:
         n1, n2 = self.neighbors_mod(bond.atom1), self.neighbors_mod(bond.atom2)
         n1 = [atom for atom in n1 if atom != bond.atom2]
@@ -359,6 +374,7 @@ def rdmol_as_array(rdmol: rdkit.Chem.Mol) -> np.ndarray:
 
 
 def _find_idx(mol: Molecule, bond: Bond) -> List[int]:
+    """Return the atomic indices of all atoms on the side of **bond.atom2**."""
     ret = []
     mol.set_atoms_id(start=0)
     for at in mol:
@@ -379,7 +395,25 @@ def _find_idx(mol: Molecule, bond: Bond) -> List[int]:
     return ret
 
 
-def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int]) -> None:
+def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int],
+                                anchor: Atom) -> None:
+    """A modified version of the :func:`.global_minimum_scan_rdkit` function.
+
+    * Uses the ligand vector as criteria rather than the energy.
+    * Geometry optimizations are constrained during the conformation search.
+    * Finish with a final unconstrained geometry optimization.
+
+    See Also
+    --------
+    :func:`global_minimum_scan_rdkit<scm.plams.recipes.global_minimum.minimum_scan_rdkit>`:
+        Optimize the molecule (RDKit UFF) with 3 different values for the given dihedral angle and
+        find the lowest energy conformer.
+
+        :param |Molecule| mol: The input molecule
+        :param tuple bond_tuple: A 2-tuples containing the atomic indices of valid bonds
+        :return |Molecule|: A copy of *mol* with a newly optimized geometry
+
+    """
     # Define a number of variables and create 3 copies of the ligand
     angles = (-120, 0, 120)
     mol_list = [ligand.copy() for _ in range(3)]
@@ -401,7 +435,12 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int]) -
 
     # Find the conformation with the optimal ligand vector
     cost_list = []
-    i = ligand.atoms.index(ligand.properties.dummies)
+    try:
+        i = mol.atoms.index(anchor)
+    except ValueError as ex:
+        err = "The passed anchor is not in mol"
+        raise MoleculeError(err).with_tracebacl(ex.__traceback__)
+
     for rdmol in mol_list:
         xyz = rdmol_as_array(rdmol)
         rotmat = optimize_rotmat(xyz, i)
