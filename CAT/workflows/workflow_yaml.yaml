@@ -57,6 +57,7 @@ qd_opt:
         s1: [optional, qd, optimize, s1]
         job2: [optional, qd, optimize, job2]
         s2: [optional, qd, optimize, s2]
+        forcefield: [optional, forcefield]
 
 crs:
     description: COSMO-RS ligand property calculation
