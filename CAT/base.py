@@ -31,8 +31,7 @@ from typing import (Optional, Tuple)
 
 import pandas as pd
 
-from scm.plams import Settings
-from scm.plams.core.errors import MoleculeError
+from scm.plams import Settings, MoleculeError
 
 from .__version__ import __version__
 
@@ -106,10 +105,10 @@ def prep(arg: Settings, return_mol: bool = True) -> Optional[Tuple[SettingsDataF
 
     if DATA_CAT is None:
         logger.info(f'The optional Data-CAT package was successfully found '
-                    f'(version: {dataCAT.__version__})')
+                    f'(version: {dataCAT.__version__})\n')
     else:
         logger.warning('The optional Data-CAT package was not found')
-        logger.debug(f'{DATA_CAT.__class__.__name__}: {DATA_CAT}', exc_info=True)
+        logger.debug(f'{DATA_CAT.__class__.__name__}: {DATA_CAT}\n', exc_info=True)
 
     # Interpret and extract the input settings
     ligand_df, core_df = prep_input(arg)

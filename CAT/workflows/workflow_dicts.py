@@ -6,7 +6,6 @@ A module for loading :class:`WorkFlow` templates.
 
 """
 
-
 import os
 
 import yaml
