@@ -47,7 +47,8 @@ __all__ = ['qd_opt_ff']
 
 def qd_opt_ff(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],
               settings: Tuple[Optional[Settings], ...], name: str = 'QD_opt',
-              job_preset: Callable = Molecule.job_geometry_opt) -> None:
+              force_create_psf: bool = False,
+              job_func: Callable = Molecule.job_geometry_opt) -> None:
     """Alternative implementation of :func:`.qd_opt` using CP2Ks' classical forcefields.
 
     Performs an inplace update of **mol**.
@@ -75,7 +76,8 @@ def qd_opt_ff(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],
     psf_name = os.path.join(mol.properties.path, mol.properties.name + '.psf')
 
     # Prepare the job settings
-    job, s = jobs[0], Settings(settings[0])
+    job = jobs[0] if isinstance(jobs, abc.Sequence) else jobs
+    s = Settings(settings[0]) if isinstance(settings, abc.Sequence) else Settings(settings)
 
     s.runscript.pre = (f'ln "{psf_name}" ./"{name}.psf"\n'
                        f'ln "{mol.properties.prm}" ./"{name}.prm"')
@@ -83,13 +85,13 @@ def qd_opt_ff(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],
     s.input.force_eval.mm.forcefield.parm_file_name = f'{name}.prm'
     set_cp2k_element(s, mol)
 
-    if not os.path.isfile(psf_name):
+    if not os.path.isfile(psf_name) or force_create_psf:
         psf = get_psf(mol, s.input.force_eval.mm.forcefield.charge)
         psf.write(psf_name)
 
     # Run the first job and fix broken angles
     finalize_lj(mol, s.input.force_eval.mm.forcefield.nonbonded['lennard-jones'])
-    job_preset(mol, job, s, name=name, read_template=False)
+    job_func(mol, job, s, name=name, read_template=False)
     mol.round_coords()
 
 

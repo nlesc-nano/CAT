@@ -84,7 +84,7 @@ def validate_input(s: Settings) -> None:
     if s.optional.qd.activation_strain:
         s.optional.qd.activation_strain = asa_schema.validate(s.optional.qd.activation_strain)
 
-    # Forcefield stuff
+    # Create forcefield Job Settings
     if s.optional.forcefield:
         s.optional.forcefield = validate_ff(s.optional.forcefield)
         update_ff_jobs(s)
