@@ -34,13 +34,9 @@ import pandas as pd
 from scm.plams import Molecule, Settings
 from scm.plams.core.basejob import Job
 
-try:
-    from nanoCAT.ff.cp2k_utils import set_cp2k_element
-    from nanoCAT.ff.psf import PSFContainer
-    from nanoCAT.ff.uff import combine_xi, combine_di
-    NANO_CAT: Optional[ImportError] = None
-except ImportError as ex:
-    NANO_CAT: Optional[ImportError] = ex
+from nanoCAT.ff.cp2k_utils import set_cp2k_element
+from nanoCAT.ff.psf import PSFContainer
+from nanoCAT.ff.uff import combine_xi, combine_di
 
 __all__ = ['qd_opt_ff']
 
