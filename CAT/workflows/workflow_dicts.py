@@ -36,6 +36,8 @@ SETTINGS_BDE2 = ('settings', 'BDE 2')
 V_BULK = ('V_bulk', '')
 
 
+#: A dictionary with additional values for ``CAT/data/workflow_dicts/workflow_yaml.yaml``.
+#: Contains values which are generally not as easily represented in the .yaml format.
 _TEMPLATE_UPDATE: dict = {
     'asa': {'import_columns': {ASA_INT: np.nan, ASA_STRAIN: np.nan, ASA_E: np.nan},
             'export_columns': (SETTINGS_ASA, ASA_INT, ASA_STRAIN, ASA_E)},
