@@ -40,8 +40,8 @@ try:
     from nanoCAT.ff.uff import combine_xi, combine_di
     NANOCAT: Optional[ImportError] = None
 except ImportError as ex:
+    PSFContainer = 'PSFContainer'
     NANOCAT: Optional[ImportError] = ex
-
 
 __all__ = ['qd_opt_ff']
 
