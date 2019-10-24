@@ -38,7 +38,8 @@ setup(
     package_data={
         'CAT': [
             'data/templates/*yaml',
-            'data/coskf/*coskf'
+            'data/coskf/*coskf',
+            'workflows/*yaml'
         ]
     },
     entry_points={
