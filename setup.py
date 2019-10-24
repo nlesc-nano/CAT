@@ -31,7 +31,8 @@ setup(
         'CAT.data',
         'CAT.data.coskf',
         'CAT.data.templates',
-        'CAT.data_handling'
+        'CAT.data_handling',
+        'CAT.workflows'
     ],
     package_dir={'CAT': 'CAT'},
     package_data={
