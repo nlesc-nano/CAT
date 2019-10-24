@@ -38,7 +38,8 @@ setup(
     package_data={
         'CAT': [
             'data/templates/*yaml',
-            'data/coskf/*coskf'
+            'data/coskf/*coskf',
+            'workflows/workflow_yaml.yaml'
         ]
     },
     entry_points={
@@ -87,7 +88,6 @@ setup(
         'pytest-cov',
         'pytest-mock',
         'pycodestyle',
-        'AssertionLib@git+https://github.com/nlesc-nano/AssertionLib@master',
         'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel',
         'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel'
     ],
@@ -96,7 +96,6 @@ setup(
                  'pytest-cov',
                  'pytest-mock',
                  'pycodestyle',
-                 'AssertionLib@git+https://github.com/nlesc-nano/AssertionLib@master',
                  'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel',
                  'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel'],
         'doc': ['sphinx>=2.0', 'sphinx_rtd_theme', 'sphinx-autodoc-typehints']

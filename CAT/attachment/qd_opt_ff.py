@@ -34,17 +34,21 @@ import pandas as pd
 from scm.plams import Molecule, Settings
 from scm.plams.core.basejob import Job
 
-from nanoCAT.ff.cp2k_utils import set_cp2k_element
-from nanoCAT.ff.psf import PSFContainer
-from nanoCAT.ff.uff import combine_xi, combine_di
+try:
+    from nanoCAT.ff.cp2k_utils import set_cp2k_element
+    from nanoCAT.ff.psf import PSFContainer
+    from nanoCAT.ff.uff import combine_xi, combine_di
+    NANOCAT: Optional[ImportError] = None
+except ImportError as ex:
+    PSFContainer = 'PSFContainer'
+    NANOCAT: Optional[ImportError] = ex
 
 __all__ = ['qd_opt_ff']
 
 
 def qd_opt_ff(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],
               settings: Tuple[Optional[Settings], ...], name: str = 'QD_opt',
-              force_create_psf: bool = False,
-              job_func: Callable = Molecule.job_geometry_opt) -> None:
+              new_psf: bool = False, job_func: Callable = Molecule.job_geometry_opt) -> None:
     """Alternative implementation of :func:`.qd_opt` using CP2Ks' classical forcefields.
 
     Performs an inplace update of **mol**.
@@ -81,7 +85,7 @@ def qd_opt_ff(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],
     s.input.force_eval.mm.forcefield.parm_file_name = f'{name}.prm'
     set_cp2k_element(s, mol)
 
-    if not os.path.isfile(psf_name) or force_create_psf:
+    if not os.path.isfile(psf_name) or new_psf:
         psf = get_psf(mol, s.input.force_eval.mm.forcefield.charge)
         psf.write(psf_name)
 
