@@ -22,7 +22,6 @@ HDF5_INDEX = ('hdf5 index', '')
 JOB_SETTINGS_QD_OPT = ('job_settings_qd_opt', '')
 JOB_SETTINGS_CRS = ('job_settings_crs', '')
 JOB_SETTINGS_BDE = ('job_settings_BDE', '')
-JOB_SETTINGS_ASA = ('job_settings_ASA', '')
 ASA_INT = ('ASA', 'E_int')
 ASA_STRAIN = ('ASA', 'E_strain')
 ASA_E = ('ASA', 'E')
@@ -40,7 +39,7 @@ V_BULK = ('V_bulk', '')
 #: Contains values which are generally not as easily represented in the .yaml format.
 _TEMPLATE_UPDATE: dict = {
     'asa': {'import_columns': {ASA_INT: np.nan, ASA_STRAIN: np.nan, ASA_E: np.nan},
-            'export_columns': (JOB_SETTINGS_ASA, SETTINGS_ASA, ASA_INT, ASA_STRAIN, ASA_E)},
+            'export_columns': (SETTINGS_ASA, ASA_INT, ASA_STRAIN, ASA_E)},
     'ligand_opt': {'import_columns': {HDF5_INDEX: -1, OPT: False},
                    'export_columns': (HDF5_INDEX, OPT, SETTINGS1, SETTINGS2)},
     'qd_attach': {'import_columns': {HDF5_INDEX: -1, OPT: False},
