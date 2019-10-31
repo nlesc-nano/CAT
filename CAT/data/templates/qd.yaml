@@ -92,7 +92,7 @@ CP2K_CHARM_opt:
                         gmax: 24
             subsys:
                 cell:
-                    abc: '[angstrom] 50.0 50.0 50.0'
+                    abc: '[angstrom] 100.0 100.0 100.0'
                     periodic: NONE
                 topology:
                     conn_file_format: PSF
@@ -127,7 +127,7 @@ CP2K_CHARM_singlepoint:
                         gmax: 24
             subsys:
                 cell:
-                    abc: '[angstrom] 50.0 50.0 50.0'
+                    abc: '[angstrom] 100.0 100.0 100.0'
                     periodic: NONE
                 topology:
                     conn_file_format: PSF
