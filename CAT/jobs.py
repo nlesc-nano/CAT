@@ -163,8 +163,7 @@ def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
 
         # Evaluate all results
         if not (energy and isinstance(freq, np.ndarray)):
-            with open(results['$JN.err'], 'r') as f:
-                raise ResultsError(f.read().split('\n')[0])
+            raise _get_results_error(results)
         log_succes(job, mol, job_preset, name)
 
     except Exception as ex:  # Failed to retrieve results
@@ -185,6 +184,17 @@ def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
             if key != 'molecule':
                 setattr(job, key, value)
     return None
+
+
+def _get_results_error(results: Results) -> ResultsError:
+    """Raise a :exc:`ResultsError` with the content of ``results['$JN.err']`` as error mesage."""
+    filename = results['$JN.err']
+    with open(filename, 'r') as f:
+        for _item in f:
+            item = _item.rstrip('\n')
+            if item:
+                return ResultsError(item)
+        return ResultsError()
 
 
 @add_to_class(Job)
