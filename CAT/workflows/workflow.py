@@ -1,3 +1,4 @@
+import os
 import operator
 from shutil import rmtree
 from pathlib import Path
@@ -79,7 +80,7 @@ def pop_and_concatenate(mapping: MutableMapping[Hashable, T], base_key: Hashable
 
     filter_func : :data:`Callable<typing.Callable>`
         A callable for truth-testing each extracted **mapping** value.
-        Values returning `False` will not be added to the to-be returned :class:`tuple`.
+        Values returning ``False`` will not be added to the to-be returned :class:`tuple`.
 
     Returns
     -------
@@ -99,6 +100,10 @@ def pop_and_concatenate(mapping: MutableMapping[Hashable, T], base_key: Hashable
             if filter_func(value):
                 ret.append(value)
             i += 1
+
+
+OptionalJobType = Union[None, Type[Job], Iterable[None], Iterable[Type[Job]]]
+OptionalSettings = Union[None, Settings, Iterable[None], Iterable[Settings]]
 
 
 class WorkFlow(AbstractDataClass):
@@ -185,7 +190,7 @@ class WorkFlow(AbstractDataClass):
         """Get or set :attr:`WorkFlow.read`.
 
         Setting accepts either a boolean or a container that may
-        or may not contain :attr:`WorkFlow.mol_type`.
+        or may not contain :attr:`WorkFlow.mol_type` as value.
 
         """
         return self._read
@@ -202,7 +207,7 @@ class WorkFlow(AbstractDataClass):
         """Get or set :attr:`WorkFlow.write`.
 
         Setting accepts either a boolean or a container that may
-        or may not contain :attr:`WorkFlow.mol_type`.
+        or may not contain :attr:`WorkFlow.mol_type` as value.
 
         """
         return self._write
@@ -219,7 +224,7 @@ class WorkFlow(AbstractDataClass):
         """Get or set :attr:`WorkFlow.overwrite`.
 
         Setting accepts either a boolean or a container that may
-        or may not contain :attr:`WorkFlow.mol_type`.
+        or may not contain :attr:`WorkFlow.mol_type` as value.
 
         """
         return self._overwrite
@@ -233,7 +238,7 @@ class WorkFlow(AbstractDataClass):
 
     @property
     def jobs(self) -> Tuple[Optional[Type[Job]], ...]:
-        """Get or set :attr:`WorkFlow.read`.
+        """Get or set :attr:`WorkFlow.jobs`.
 
         Setting accepts either a |plams.Job| type, ``None`` or
         an iterable containing one (or both) of the aforementioned objects.
@@ -250,7 +255,7 @@ class WorkFlow(AbstractDataClass):
 
     @property
     def settings(self) -> Tuple[Optional[Settings], ...]:
-        """Get or set :attr:`WorkFlow.read`.
+        """Get or set :attr:`WorkFlow.settings`.
 
         Setting accepts either a |plams.Settings| instance, ``None`` or
         an iterable containing one (or both) of the aforementioned objects.
@@ -272,11 +277,11 @@ class WorkFlow(AbstractDataClass):
                  read: Union[bool, Container] = False,
                  write: Union[bool, Container] = False,
                  overwrite: Union[bool, Container] = False,
-                 path: str = '.',
+                 path: Optional[str] = None,
                  keep_files: bool = True,
                  read_template: bool = True,
-                 jobs: Union[None, Type[Job], Iterable[None], Iterable[Type[Job]]] = None,
-                 settings: Union[None, Settings, Iterable[None], Iterable[Settings]] = None,
+                 jobs: OptionalJobType = None,
+                 settings: OptionalSettings = None,
                  **kwargs: Any) -> None:
         """Initialize a :class:`WorkFlow` instance; see also :meth:`Workflow.from_template`."""
         super().__init__()
@@ -293,13 +298,15 @@ class WorkFlow(AbstractDataClass):
         self.write: bool = write
         self.overwrite: bool = overwrite
 
-        self.path: str = path
+        self.path: str = path if path is not None else os.getcwd()
         self.keep_files: bool = keep_files
         self.read_template: bool = read_template
         self.jobs: Iterable[Job] = jobs
         self.settings: Iterable[Settings] = settings
 
         for k, v in kwargs.items():
+            if hasattr(self, k):
+                raise AttributeError(f"An attribute by the name of '{k}' already exists")
             setattr(self, k, v)
 
     @AbstractDataClass.inherit_annotations()
