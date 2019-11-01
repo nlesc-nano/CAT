@@ -71,7 +71,7 @@ CP2K_CHARM_opt:
         motion:
             geo_opt:
                 type: minimization
-                optimizer: LBFGS
+                optimizer: CG
                 max_iter: 1000
 
         force_eval:
