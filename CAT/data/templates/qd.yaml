@@ -74,7 +74,7 @@ CP2K_CHARM_opt:
                 optimizer: LBFGS
                 max_iter: 1000
                 lbfgs:
-                    max_h_rank: 30
+                    max_h_rank: 100
 
         force_eval:
             method: FIST
