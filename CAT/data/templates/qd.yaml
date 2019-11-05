@@ -73,7 +73,7 @@ CP2K_CHARM_opt:
                 type: minimization
                 optimizer: LBFGS
                 max_iter: 1000
-                lfbgs:
+                lbfgs:
                     max_h_rank: 30
 
         force_eval:
