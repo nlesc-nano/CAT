@@ -453,7 +453,7 @@ class WorkFlow(AbstractDataClass):
 
         # Set the optimization status of the molecules to True
         if status == 'optimized':
-            df.loc[index, OPT] = True
+            df.loc[index, OPT] = False
 
         # Write results to the database
         if self.write:

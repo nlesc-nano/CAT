@@ -58,7 +58,6 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
     # Sets a nested list
     # This cannot be done with loc is it will try to expand the list into a 2D array
     qd_df[JOB_SETTINGS_QD_OPT] = workflow.pop_job_settings(qd_df[MOL])
-    qd_df.loc[idx, OPT] = True
 
     # Push the optimized structures to the database
     job_recipe = workflow.get_recipe()

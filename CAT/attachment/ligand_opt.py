@@ -74,8 +74,7 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
         return None
 
     # Start the ligand optimization
-    workflow(start_ligand_jobs, ligand_df, index=idx)
-    ligand_df.loc[idx, OPT] = True
+    workflow(start_ligand_jobs, ligand_df, columns=[], index=idx)
 
     # Push the optimized structures to the database
     job_recipe = workflow.get_recipe()
