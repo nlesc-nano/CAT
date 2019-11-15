@@ -85,19 +85,19 @@ bde:
         overwrite: [optional, database, overwrite]
 
         path: [optional, qd, dirname]
-        keep_files: [optional, qd, bde, keep_files]
-        use_ff: [optional, qd, bde, use_ff]
-        job1: [optional, qd, bde, job1]
-        s1: [optional, qd, bde, s1]
-        job2: [optional, qd, bde, job2]
-        s2: [optional, qd, bde, s2]
+        keep_files: [optional, qd, dissociate, keep_files]
+        use_ff: [optional, qd, dissociate, use_ff]
+        job1: [optional, qd, dissociate, job1]
+        s1: [optional, qd, dissociate, s1]
+        job2: [optional, qd, dissociate, job2]
+        s2: [optional, qd, dissociate, s2]
 
-        core_atom: [optional, qd, bde, core_atom]
-        lig_count: [optional, qd, bde, lig_count]
-        core_core_dist:  [optional, qd, bde, core_core_dist]
-        lig_core_dist: [optional, qd, bde, lig_core_dist]
-        core_index: [optional, qd, bde, core_index]
-        topology: [optional, qd, bde, topology]
+        core_atom: [optional, qd, dissociate, core_atom]
+        lig_count: [optional, qd, dissociate, lig_count]
+        core_core_dist:  [optional, qd, dissociate, core_core_dist]
+        lig_core_dist: [optional, qd, dissociate, lig_core_dist]
+        core_index: [optional, qd, dissociate, core_index]
+        topology: [optional, qd, dissociate, topology]
 
 forcefield:
     description: ligand forcefield assignment

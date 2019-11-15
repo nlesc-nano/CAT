@@ -512,13 +512,14 @@ bde_schema: Schema = Schema({
     Optional_('keep_files', default=True):  # Delete files after the calculations are finished
         And(bool, error='optional.qd.dissociate.keep_files expects a boolean'),
 
-    Optional_('core_core_dist', default=0.0):
-        And(
-            Or(int, float), lambda n: n >= 0.0, Use(float),
-            error=('optional.qd.dissociate.core_core_dist expects an integer or float '
-                   'larger than or equal to 0.0')
+    Optional_('core_core_dist', default=None):
+        Or(
+            And(
+                Or(int, float), lambda n: n >= 0.0, Use(float),
+                error=('optional.qd.dissociate.core_core_dist expects an integer or float '
+                       'larger than or equal to 0.0')
+            )
         ),
-
     Optional_('lig_core_dist', default=5.0):
         And(
             Or(int, float), lambda n: n >= 0.0, Use(float),
@@ -526,8 +527,9 @@ bde_schema: Schema = Schema({
                    'larger than or equal to 0.0')
         ),
 
-    Optional_('core_index'):
+    Optional_('core_index', default=None):
         Or(
+            None,
             And(
                 int, lambda n: n >= 0, Use(lambda n: (n,)),
                 error=('optional.qd.dissociate.core_index expects an integer '
@@ -545,11 +547,15 @@ bde_schema: Schema = Schema({
                    'larger than or equal to 0')
         ),
 
-    Optional_('topology', default=dict):
-        And(
-            dict, lambda n: all(isinstance(k, int) for k in n),
-            error='optional.qd.dissociate.topology expects a dictionary with integers as keys'
+    Optional_('topology', default=None):
+        Or(
+            None,
+            And(
+                dict, lambda n: all(isinstance(k, int) for k in n),
+                error='optional.qd.dissociate.topology expects a dictionary with integers as keys'
+                )
         ),
+
 
     Optional_('job1', default=_get_amsjob):
         Or(
@@ -573,8 +579,9 @@ bde_schema: Schema = Schema({
             error='optional.qd.dissociate.s1 expects a string or a dictionary'
         ),
 
-    Optional_('job2'):
+    Optional_('job2', default=None):
         Or(
+            None,
             And(
                 And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
                 error=('optional.qd.dissociate.job2 expects a type object '
@@ -587,8 +594,9 @@ bde_schema: Schema = Schema({
             error='optional.qd.dissociate.job2 expects a string or a type object'
         ),
 
-    Optional_('s2'):
+    Optional_('s2', default=None):
         Or(
+            None,
             dict,
             And(str, Use(lambda n: get_template(n, from_cat_data=False))),
             error='optional.qd.dissociate.s2 expects a string or a dictionary'
