@@ -7,6 +7,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.7.2
 *****
+* Minor tweaks to the default forcefield-related CP2K input files.
 * Fixed a couple of bugs in the ligand dissociation workflow.
 * Reworked the ligand dissociation procedure in Nano-CAT_.
 
