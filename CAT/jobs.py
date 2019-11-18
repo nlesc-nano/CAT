@@ -154,7 +154,8 @@ def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
         # Read all relevant results
         energy = mol.properties.energy.E = results.get_energy(unit='kcal/mol')
         if job_preset in ('geometry optimization', 'frequency analysis'):
-            mol.from_mol_other(results.get_main_molecule())
+            mol_new = results.get_main_molecule() or Molecule()
+            mol.from_mol_other(mol_new)
 
         if job_preset == 'frequency analysis':
             freq = mol.properties.frequencies = results.get_frequencies()
@@ -162,8 +163,7 @@ def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
 
         # Evaluate all results
         if not (energy and isinstance(freq, np.ndarray)):
-            with open(results['$JN.err'], 'r') as f:
-                raise ResultsError(f.read().rstrip('\n'))
+            raise _get_results_error(results)
         log_succes(job, mol, job_preset, name)
 
     except Exception as ex:  # Failed to retrieve results
@@ -184,6 +184,17 @@ def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
             if key != 'molecule':
                 setattr(job, key, value)
     return None
+
+
+def _get_results_error(results: Results) -> ResultsError:
+    """Raise a :exc:`ResultsError` with the content of ``results['$JN.err']`` as error mesage."""
+    filename = results['$JN.err']
+    with open(filename, 'r') as f:
+        for _item in f:
+            item = _item.rstrip('\n')
+            if item:
+                return ResultsError(item)
+        return ResultsError()
 
 
 @add_to_class(Job)

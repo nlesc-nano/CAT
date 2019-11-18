@@ -87,6 +87,9 @@ def qd_opt_ff(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],
 
     if not os.path.isfile(psf_name) or new_psf:
         psf = get_psf(mol, s.input.force_eval.mm.forcefield.charge)
+        for at, charge, symbol in zip(mol, psf.charge, psf.atom_type):
+            at.properties.charge_float = charge
+            at.properties.symbol = symbol
         psf.write(psf_name)
 
     # Run the first job and fix broken angles

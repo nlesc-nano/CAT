@@ -130,7 +130,7 @@ def allign_axis(mol: Molecule, anchor: Atom):
         idx = mol.atoms.index(anchor)
     except ValueError as ex:
         err = "The passed anchor is not in mol"
-        raise MoleculeError(err).with_tracebacl(ex.__traceback__)
+        raise MoleculeError(err).with_traceback(ex.__traceback__)
 
     with AsArray(mol) as xyz:  # Allign the molecule with the X-axis
         rotmat = optimize_rotmat(xyz, idx)
@@ -436,12 +436,13 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int],
     cost_list = []
     try:
         i = mol.atoms.index(anchor)
-    except ValueError as ex:
-        err = "The passed anchor is not in mol"
-        raise MoleculeError(err).with_tracebacl(ex.__traceback__)
+    except ValueError:
+        i = -1  # Default to the origin as anchor
 
     for rdmol in mol_list:
         xyz = rdmol_as_array(rdmol)
+        if i == -1:  # Default to the origin as anchor
+            xyz = np.vstack([xyz, [0, 0, 0]])
         rotmat = optimize_rotmat(xyz, i)
         xyz[:] = xyz@rotmat.T
         xyz -= xyz[i]

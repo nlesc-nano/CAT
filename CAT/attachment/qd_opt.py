@@ -24,7 +24,7 @@ API
 
 """
 
-from typing import List, Tuple, Iterable, Optional, Type
+from typing import Tuple, Iterable, Optional, Type
 
 from scm.plams import Molecule, Settings, AMSJob
 from scm.plams.core.basejob import Job

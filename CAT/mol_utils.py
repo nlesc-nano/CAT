@@ -234,7 +234,7 @@ def round_coords(self, decimals: int = 3) -> None:
     self.from_array(xyz)
 
 
-def to_atnum(item: Union[str, int]) -> int:
+def to_atnum(item: Union[str, int, Atom]) -> int:
     """Turn an atomic symbol into an atomic number.
 
     Parameters
@@ -257,12 +257,16 @@ def to_atnum(item: Union[str, int]) -> int:
         return PeriodicTable.get_atomic_number(item)
     elif isinstance(item, int):
         return item
+    try:
+        return item.atnum
+    except Exception as ex:
+        tb = ex.__traceback__
 
-    err = "the 'item' argument expects an instance of 'str' or 'int'; observed type: '{}'"
-    raise TypeError(err.format(item.__class__.__name__))
+    err = "The 'item' paramater expects an instance of 'str', 'int' or 'Atom'; observed type: '{}'"
+    raise TypeError(err.format(item.__class__.__name__)).with_traceback(tb)
 
 
-def to_symbol(item: Union[str, int]) -> str:
+def to_symbol(item: Union[str, int, Atom]) -> str:
     """Turn an atomic number into an atomic symbol.
 
     Parameters
@@ -285,9 +289,13 @@ def to_symbol(item: Union[str, int]) -> str:
         return PeriodicTable.get_symbol(item)
     elif isinstance(item, str):
         return item
+    try:
+        return item.symbol
+    except Exception as ex:
+        tb = ex.__traceback__
 
-    err = "the 'item' argument expects an instance of 'str' or 'int'; observed type: '{}'"
-    raise TypeError(err.format(item.__class__.__name__))
+    err = "The 'item' paramater expects an instance of 'str', 'int' or 'Atom'; observed type: '{}'"
+    raise TypeError(err.format(item.__class__.__name__)).with_traceback(tb)
 
 
 def adf_connectivity(mol: Molecule) -> List[str]:
