@@ -353,12 +353,15 @@ def test_bde_schema() -> None:
         'keep_files': True,
         'use_ff': False,
         'core_atom': 48,
+        'core_index': None,
+        'core_core_dist': None,
         'lig_count': 2,
-        'core_core_dist': 0.0,
         'lig_core_dist': 5.0,
-        'topology': {},
+        'topology': None,
         'job1': AMSJob,
-        's1': _bde_s1_default
+        's1': _bde_s1_default,
+        'job2': None,
+        's2': None
     })
 
     assertion.eq(bde_schema.validate(bde_dict), ref)
