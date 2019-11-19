@@ -76,8 +76,10 @@ Verbose default Settings
             cosmo-rs: False
 
         qd:
-            dirname: QD
+            dirname: qd
+            construct_qd: True
             optimize: False
+            bulkiness: False
             activation_strain: False
             dissociate: False
 
@@ -117,8 +119,10 @@ Maximum verbose default Settings
             cosmo-rs: False
 
         qd:
-            dirname: QD
+            dirname: qd
+            construct_qd: True
             optimize: False
+            bulkiness: False
             activation_strain: False
             dissociate:
                 core_atom: Cd

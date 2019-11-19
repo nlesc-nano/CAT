@@ -4,8 +4,8 @@ from os.path import join
 
 from scm.plams import (Settings, Molecule)
 import scm.plams.interfaces.molecule.rdkit as molkit
+from assertionlib import assertion
 
-from CAT.assertion.assertion_manager import assertion
 from CAT.data_handling.validate_mol import (
     validate_mol, santize_smiles, _parse_name_type, _parse_mol_type
 )
@@ -32,8 +32,8 @@ def test_parse_mol_type() -> None:
     """Test :func:`CAT.data_handling.validate_mol._parse_mol_type`."""
     assertion.eq(_parse_mol_type('input_cores'), True)
     assertion.eq(_parse_mol_type('input_ligands'), False)
-    assertion.exception(ValueError, _parse_mol_type, 'bob')
-    assertion.exception(AttributeError, _parse_mol_type, 1)
+    assertion.assert_(_parse_mol_type, 'bob', exception=ValueError)
+    assertion.assert_(_parse_mol_type, 1, exception=AttributeError)
 
 
 def test_parse_name_type() -> None:
@@ -66,7 +66,7 @@ def test_parse_name_type() -> None:
     assertion.eq(mol_dict, {'mol': MOL_PATH, 'type': 'xyz', 'name': 'Methanol'})
 
     mol_dict = Settings({'mol': 1})  # Excception: Invalid type
-    assertion.exception(TypeError, _parse_name_type, mol_dict)
+    assertion.assert_(_parse_name_type, mol_dict, exception=TypeError)
 
 
 def test_validate_mol() -> None:

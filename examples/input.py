@@ -9,7 +9,8 @@ from CAT import base
 from CAT.logger import logger
 
 
-yaml_path = join(dirname(__file__), 'input_settings_ff.yaml')
+yaml_path = join(dirname(__file__), 'input_settings.yaml')
+# yaml_path = '/Users/basvanbeek/Downloads/juliette.yaml'
 with open(yaml_path, 'r') as file:
     arg = Settings(yaml.load(file, Loader=yaml.FullLoader))
 

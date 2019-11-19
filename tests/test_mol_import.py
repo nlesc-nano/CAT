@@ -7,8 +7,8 @@ import numpy as np
 
 from scm.plams import (Settings, Molecule)
 import scm.plams.interfaces.molecule.rdkit as molkit
+from assertionlib import assertion
 
-from CAT.assertion.assertion_manager import assertion
 from CAT.data_handling.mol_import import (
     read_mol_xyz, read_mol_pdb, read_mol_mol, read_mol_smiles, read_mol_plams, read_mol_rdkit,
     read_mol_folder, read_mol_txt, get_charge_dict, set_mol_prop, canonicalize_mol

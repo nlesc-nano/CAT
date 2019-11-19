@@ -33,7 +33,7 @@ API
 """
 
 from shutil import rmtree
-from typing import (Optional, Callable)
+from typing import (Optional, Type)
 from os.path import join
 
 import numpy as np
@@ -82,19 +82,10 @@ def _xyz_to_mol(filename: str) -> Molecule:
 
 
 @add_to_class(Cp2kResults)
-def get_energy(self, index: int = 0, unit: str = 'Hartree') -> float:
-    """Returns last occurence of 'Total energy:' in the output."""
-    try:
-        energy = self._get_energy_type('Total', index=index)
-        if energy is None:
-            raise IndexError
-
-    # Because for some unfathomable reason CP2K doesn't print the final energy in a
-    # conviently accessible manner when running geometry optimizations
-    except IndexError:
-        mol = self.get_main_molecule()
-        energy = float(mol.properties.comment.split()[-1])
-
+def get_energy(self, index: int = -1, unit: str = 'Hartree') -> float:
+    """Return the energy of the last occurence of ``'ENERGY| Total FORCE_EVAL'`` in the output."""
+    energy_str = self.grep_output('ENERGY| Total FORCE_EVAL')[index]
+    energy = float(energy_str.rsplit(maxsplit=1)[1])
     return Units.convert(energy, 'Hartree', unit)
 
 
@@ -106,16 +97,19 @@ def _get_name(name: str) -> str:
 
 
 def pre_process_settings(mol: Molecule, s: Settings,
-                         job_type: type, template_name: str) -> Settings:
+                         job_type: Type[Job], template_name: str) -> Settings:
     """Update all :class:`Settings`, **s**, with those from a QMFlows template (see **job**)."""
     ret = Settings()
-    ret.input = getattr(qmflows, template_name)['specific'][type_to_string(job_type)].copy()
+    type_key = type_to_string(job_type)
+    ret.input = getattr(qmflows, template_name)['specific'][type_key].copy()
     ret.update(s)
-    if job_type == AMSJob:
+
+    if job_type is AMSJob:
         ret.input.ams.system.bondorders._1 = adf_connectivity(mol)
         if 'uff' not in s.input:
-            ret.input.ams.system.charge = sum([at.properties.charge for at in mol if
-                                               'charge' in at.properties])
+            ret.input.ams.system.charge = sum(
+                [at.properties.charge for at in mol if 'charge' in at.properties]
+            )
     return ret
 
 
@@ -160,7 +154,8 @@ def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
         # Read all relevant results
         energy = mol.properties.energy.E = results.get_energy(unit='kcal/mol')
         if job_preset in ('geometry optimization', 'frequency analysis'):
-            mol.from_mol_other(results.get_main_molecule())
+            mol_new = results.get_main_molecule() or Molecule()
+            mol.from_mol_other(mol_new)
 
         if job_preset == 'frequency analysis':
             freq = mol.properties.frequencies = results.get_frequencies()
@@ -168,8 +163,7 @@ def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
 
         # Evaluate all results
         if not (energy and isinstance(freq, np.ndarray)):
-            with open(results['$JN.err'], 'r') as f:
-                raise ResultsError(f.read().rstrip('\n'))
+            raise _get_results_error(results)
         log_succes(job, mol, job_preset, name)
 
     except Exception as ex:  # Failed to retrieve results
@@ -190,6 +184,17 @@ def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
             if key != 'molecule':
                 setattr(job, key, value)
     return None
+
+
+def _get_results_error(results: Results) -> ResultsError:
+    """Raise a :exc:`ResultsError` with the content of ``results['$JN.err']`` as error mesage."""
+    filename = results['$JN.err']
+    with open(filename, 'r') as f:
+        for _item in f:
+            item = _item.rstrip('\n')
+            if item:
+                return ResultsError(item)
+        return ResultsError()
 
 
 @add_to_class(Job)
@@ -233,7 +238,7 @@ def _finalize(self):
 
 
 @add_to_class(Molecule)
-def job_single_point(self, job_type: Callable[..., Job],
+def job_single_point(self, job_type: Type[Job],
                      settings: Settings,
                      name: str = 'Single_point',
                      ret_results: bool = False,
@@ -277,7 +282,10 @@ def job_single_point(self, job_type: Callable[..., Job],
     retrieve_results(self, results, 'single point')
 
     inp_name = join(job.path, job.name + '.in')
-    self.properties.job_path.append(inp_name)
+    try:
+        self.properties.job_path.append(inp_name)
+    except TypeError:
+        self.properties.job_path = [inp_name]
 
     # Return results
     if ret_results:
@@ -286,7 +294,7 @@ def job_single_point(self, job_type: Callable[..., Job],
 
 
 @add_to_class(Molecule)
-def job_geometry_opt(self, job_type: Callable[..., Job],
+def job_geometry_opt(self, job_type: Type[Job],
                      settings: Settings,
                      name: str = 'Geometry_optimization',
                      ret_results: bool = False,
@@ -330,7 +338,10 @@ def job_geometry_opt(self, job_type: Callable[..., Job],
     retrieve_results(self, results, 'geometry optimization')
 
     inp_name = join(job.path, job.name + '.in')
-    self.properties.job_path.append(inp_name)
+    try:
+        self.properties.job_path.append(inp_name)
+    except TypeError:
+        self.properties.job_path = [inp_name]
 
     # Return results
     if ret_results:
@@ -339,13 +350,13 @@ def job_geometry_opt(self, job_type: Callable[..., Job],
 
 
 @add_to_class(Molecule)
-def job_freq(self, job_type: Callable[..., Job],
+def job_freq(self, job_type: Type[Job],
              settings: Settings,
              name: str = 'Frequency_analysis',
              opt: bool = True,
              ret_results: bool = False,
              read_template: bool = True) -> Optional[Results]:
-    """Function for running an arbritrary Jobs
+    """Function for running an arbritrary Jobs.
 
     Extracts total energies, final geometries and
     thermochemical quantities derived from vibrational frequencies.
@@ -394,7 +405,10 @@ def job_freq(self, job_type: Callable[..., Job],
     retrieve_results(self, results, 'frequency analysis')
 
     inp_name = join(job.path, _name + '.in')
-    self.properties.job_path.append(inp_name)
+    try:
+        self.properties.job_path.append(inp_name)
+    except TypeError:
+        self.properties.job_path = [inp_name]
 
     # Return results
     if ret_results:

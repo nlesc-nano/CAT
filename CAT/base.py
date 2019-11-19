@@ -31,8 +31,7 @@ from typing import (Optional, Tuple)
 
 import pandas as pd
 
-from scm.plams import Settings
-from scm.plams.core.errors import MoleculeError
+from scm.plams import Settings, MoleculeError
 
 from .__version__ import __version__
 
@@ -52,23 +51,20 @@ from .attachment.ligand_anchoring import init_ligand_anchoring
 try:
     import nanoCAT
     from nanoCAT.asa import init_asa
+    from nanoCAT.mol_bulk import init_lig_bulkiness
     from nanoCAT.bde.bde_workflow import init_bde
     from nanoCAT.ligand_solvation import init_solv
     from nanoCAT.ff.ff_assignment import init_ff_assignment
 
-    _NANO_EX: Optional[ImportError] = None
-    NANO_CAT: bool = True
+    NANO_CAT: Optional[ImportError] = None
 except ImportError as ex:
-    _NANO_EX: Optional[ImportError] = ex
-    NANO_CAT: bool = False
+    NANO_CAT: Optional[ImportError] = ex
 
 try:
     import dataCAT
-    _DATA_EX: Optional[ImportError] = None
-    DATA_CAT: bool = True
+    DATA_CAT: Optional[ImportError] = None
 except ImportError as ex:
-    _DATA_EX: Optional[ImportError] = ex
-    DATA_CAT: bool = False
+    DATA_CAT: Optional[ImportError] = ex
 
 
 __all__ = ['prep']
@@ -77,8 +73,7 @@ __all__ = ['prep']
 MOL: Tuple[str, str] = ('mol', '')
 
 
-def prep(arg: Settings,
-         return_mol: bool = True) -> Optional[Tuple[SettingsDataFrame]]:
+def prep(arg: Settings, return_mol: bool = True) -> Optional[Tuple[SettingsDataFrame]]:
     """Function that handles all tasks related to the three prep functions.
 
     * :func:`.prep_core`
@@ -102,19 +97,19 @@ def prep(arg: Settings,
     # The start
     time_start = time()
     logger.info(f'Starting CAT (version: {__version__})')
-    if NANO_CAT:
+    if NANO_CAT is None:
         logger.info(f'The optional Nano-CAT package was successfully found '
                     f'(version: {nanoCAT.__version__})')
     else:
         logger.warning('The optional Nano-CAT package was not found')
-        logger.debug(f'{_NANO_EX.__class__.__name__}: {_NANO_EX}', exc_info=True)
+        logger.debug(f'{NANO_CAT.__class__.__name__}: {NANO_CAT}', exc_info=True)
 
-    if DATA_CAT:
+    if DATA_CAT is None:
         logger.info(f'The optional Data-CAT package was successfully found '
-                    f'(version: {dataCAT.__version__})')
+                    f'(version: {dataCAT.__version__})\n')
     else:
         logger.warning('The optional Data-CAT package was not found')
-        logger.debug(f'{_DATA_EX.__class__.__name__}: {_DATA_EX}', exc_info=True)
+        logger.debug(f'{DATA_CAT.__class__.__name__}: {DATA_CAT}\n', exc_info=True)
 
     # Interpret and extract the input settings
     ligand_df, core_df, qd_df = prep_input(arg)
@@ -197,6 +192,7 @@ def prep_input(arg: Settings) -> Tuple[SettingsDataFrame, SettingsDataFrame, Set
     return ligand_df, core_df, qd_df
 
 
+# TODO: Move this function to its own module; this is a workflow and NOT a workflow manager
 def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
     """Function that handles the identification and marking of all core dummy atoms.
 
@@ -252,6 +248,7 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
 
     * Ligand function group identification
     * Ligand geometry optimization
+    * Ligand bulkiness calculations
     * Ligand COSMO-RS calculations
 
     .. _Nano-CAT: https://github.com/nlesc-nano/nano-CAT
@@ -297,7 +294,7 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     if forcefield:
         val_nano_cat("Automatic ligand forcefield assignment requires MATCH "
                      "(Multipurpose Atom-Typer for CHARMM) and the nano-CAT package")
-        init_ff_assignment(ligand_df, 'ligand')
+        init_ff_assignment(ligand_df)
 
     return ligand_df
 
@@ -352,10 +349,25 @@ def prep_qd(ligand_df: Optional[SettingsDataFrame],
                         "both be 'None'")
 
     # Unpack arguments
+    bulk = ligand_df.settings.optional.qd.bulkiness
     optimize = ligand_df.settings.optional.qd.optimize
     forcefield = ligand_df.settings.optional.forcefield
     dissociate = ligand_df.settings.optional.qd.dissociate
     activation_strain = ligand_df.settings.optional.qd.activation_strain
+    construct_qd = ligand_df.settings.optional.qd.construct_qd
+
+    # Construct the quantum dot DataFrame
+    # If construct_qd is False, construct the dataframe without filling it with quantum dots
+    qd_df = init_qd_construction(ligand_df, core_df, construct_qd=construct_qd)
+
+    # Start the ligand bulkiness workflow
+    if bulk:
+        val_nano_cat("Ligand bulkiness calculations require the nano-CAT package")
+        init_lig_bulkiness(qd_df, ligand_df, core_df)
+
+    # Skip the actual quantum dot construction
+    if not construct_qd:
+        return qd_df
 
     if not qd_df[MOL].any():
         raise MoleculeError('No valid quantum dots found, aborting')
@@ -371,14 +383,14 @@ def prep_qd(ligand_df: Optional[SettingsDataFrame],
     # Calculate the interaction between ligands on the quantum dot surface
     if activation_strain:
         val_nano_cat("Quantum dot activation-strain calculations require the nano-CAT package")
-        logger.info('calculating ligand distortion and inter-ligand interaction')
         init_asa(qd_df)
 
     # Calculate the interaction between ligands on the quantum dot surface upon removal of CdX2
     if dissociate:
         val_nano_cat("Quantum dot ligand dissociation calculations require the nano-CAT package")
-        logger.info('calculating ligand dissociation energy')
-        init_bde(qd_df)  # Start the BDE calculation
+        # Start the BDE calculation
+        logger.info('Calculating ligand dissociation energy')
+        init_bde(qd_df)
 
     return qd_df
 
@@ -386,5 +398,5 @@ def prep_qd(ligand_df: Optional[SettingsDataFrame],
 def val_nano_cat(error_message: Optional[str] = None) -> None:
     """Raise an an :exc:`ImportError` if the module-level constant ``NANO_CAT`` is ``False``."""
     err = error_message or ''
-    if not NANO_CAT:
+    if NANO_CAT is not None:
         raise ImportError(err)

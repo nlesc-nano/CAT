@@ -86,6 +86,7 @@ def init_ligand_anchoring(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
         elif len(dummies) == 2:  # optional.ligand.split = True
             lig.properties.dummies = tuple(i - 1 for i in dummies)
             _split = True
+
         mol_list += [substructure_split(lig, lig.properties.dummies, split=_split)]
 
     # Convert the results into a dataframe
@@ -121,7 +122,7 @@ def _get_df(mol_list: Sequence[Molecule],
     df[MOL] = mol_list
     df[FORMULA] = [lig.get_formula() for lig in df[MOL]]
     df[OPT] = False
-    return df
+    return df[~df.index.duplicated(keep='first')]  # Remove duplicate indices
 
 
 def get_functional_groups(functional_groups: Optional[Iterable[str]] = None,

@@ -38,15 +38,17 @@ __all__ = ['validate_mol', 'santize_smiles']
 def santize_smiles(smiles: str) -> str:
     """Sanitize a SMILES string: turn it into a valid filename."""
     name = smiles.replace('(', '[').replace(')', ']')
-    cis_trans = [item for item in smiles if item in ('/', '\\')]
-    if cis_trans:
-        cis_trans = [item + cis_trans[i*2+1] for i, item in enumerate(cis_trans[::2])]
-        cis_trans_dict = {'//': 'trans-', '/\\': 'cis-'}
-        for item in cis_trans[::-1]:
-            name = cis_trans_dict[item] + name
-        name = name.replace('/', '').replace('\\', '')
-
-    return name
+    try:
+        cis_trans = [item for item in smiles if item in ('/', '\\')]
+        if cis_trans:
+            cis_trans = [item + cis_trans[i*2+1] for i, item in enumerate(cis_trans[::2])]
+            cis_trans_dict = {'//': 'trans-', '/\\': 'cis-'}
+            for item in cis_trans[::-1]:
+                name = cis_trans_dict[item] + name
+    except KeyError:
+        pass
+    finally:
+        return name.replace('/', '').replace('\\', '')
 
 
 def validate_mol(args: Sequence[Union[Any, Settings]],
@@ -58,7 +60,6 @@ def validate_mol(args: Sequence[Union[Any, Settings]],
 
     Examples
     --------
-
     An example using a list of .xyz files as input
 
     .. code:: python
@@ -194,9 +195,10 @@ def _parse_name_type(mol_dict: Settings) -> None:
             mol_dict.type = 'folder'
             mol_dict.name = basename(mol)
         else:  # mol is (probably; hopefully?) a SMILES string
+            i = 1 + len(mol_dict.path) if 'path' in mol_dict else 0
             mol_dict.type = 'smiles'
-            mol_dict.mol = basename(mol)
-            mol_dict.name = santize_smiles(basename(mol))
+            mol_dict.mol = mol[i:]
+            mol_dict.name = santize_smiles(mol_dict.mol)
 
     elif isinstance(mol, Molecule):  # mol is an instance of plams.Molecule
         mol_dict.type = 'plams_mol'

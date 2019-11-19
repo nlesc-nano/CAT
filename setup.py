@@ -27,18 +27,19 @@ setup(
     packages=[
         'CAT',
         'CAT.abc',
-        'CAT.assertion',
         'CAT.attachment',
         'CAT.data',
         'CAT.data.coskf',
         'CAT.data.templates',
-        'CAT.data_handling'
+        'CAT.data_handling',
+        'CAT.workflows'
     ],
     package_dir={'CAT': 'CAT'},
     package_data={
         'CAT': [
             'data/templates/*yaml',
-            'data/coskf/*coskf'
+            'data/coskf/*coskf',
+            'workflows/workflow_yaml.yaml'
         ]
     },
     entry_points={
@@ -75,8 +76,9 @@ setup(
         'pandas',
         'pyyaml>=5.1',
         'schema',
-        'plams@git+https://github.com/SCM-NV/PLAMS@Minor-changes',
-        'qmflows@git+https://github.com/SCM-NV/qmflows@master'
+        'plams@git+https://github.com/SCM-NV/PLAMS@master',
+        'qmflows@git+https://github.com/SCM-NV/qmflows@master',
+        'AssertionLib@git+https://github.com/nlesc-nano/AssertionLib@master'
     ],
     setup_requires=[
         'pytest-runner',

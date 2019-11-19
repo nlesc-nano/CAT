@@ -5,14 +5,64 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+0.7.2
+*****
+* Minor tweaks to the default forcefield-related CP2K input files.
+* Fixed a couple of bugs in the ligand dissociation workflow.
+* Reworked the ligand dissociation procedure in Nano-CAT_.
+
+
+0.7.1
+*****
+* Bug fix: Added a missing value to the to-be exported ASA columns.
+
+
+0.7.0
+*****
+* Finalize the introduction of a new CAT template system (``WorkFlow()``).
+* WiP: Implement an acitvation strain workflow with custom MATCH-based forcefields in Nano-CAT_.
+
+
+0.6.5
+*****
+* Updated Nano-CAT to 0.2.4: https://github.com/nlesc-nano/nano-CAT/pull/20.
+* Updated Data-CAT to 0.1.5: https://github.com/nlesc-nano/data-CAT/pull/17.
+* Import assertions from AssertionLib_ rather than CAT_.
+* Simplified to ``AsArray()`` context manager.
+* Added the ``["keep_files"]`` option for quantum dot optimizations.
+* Removed ``CRSJob()`` and ``CRSResults()``; import them from PLAMS_ instead.
+* WiP: Introduction of a new CAT template system (``WorkFlow()``).
+
+
+0.6.4
+*****
+* Moved the ligand bulkiness workflow from the `ligand` to the `qd` block in the CAT input. See `nano-CAT`_ 0.2.3.
+* Updated the formula for the ligand bulkiness calculation. See `nano-CAT`_ 0.2.3.
+
+
+0.6.3
+*****
+* Fixed a bug where hypervalent atoms where assigned incorrect atomic charges.
+
+
+0.6.2
+*****
+* Added multiple improvements (and bug fixes) to the ligand conformation optimizer.
+* Added a context manager for the `plams.Molecule.as_array()` method.
+* Added an optimizer for the ligand vector.
+* Updated the ligand bulkiness workflow in `nano-CAT`_ 0.2.2.
+
+
+0.6.1
+*****
+* Added a workflow for calculating ligand bulkiness in `nano-CAT`_ 0.2.1.
+
+
 0.6.0
 *****
 * Implemented an interface to MATCH_ (Multipurpose Atom-Typer for CHARMM) in Nano-CAT.
 * Added a workflow for creating CP2K input files with the MATCH-assigned atom types & charges.
 * Updated the handling of assertions, see ``CAT.assertions.assertion_manager``.
-
-.. _MATCH: http://brooks.chem.lsa.umich.edu/index.php?page=match&subdir=articles/resources/software
-.. _CP2K: https://www.cp2k.org/
 
 
 0.6.1
@@ -37,8 +87,6 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * Updated Data-CAT_ to 0.1.2; changed status from pre-alpha to alpha
   (see https://github.com/nlesc-nano/data-CAT/pull/13).
 
-.. _Database: https://cat.readthedocs.io/en/latest/7_database.html#class-api
-.. _Schema: https://github.com/keleshev/schema
 
 
 0.5.3
@@ -83,18 +131,10 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * Custom function groups (*i.e.* SMILES_ strings) can now be specified in the input
   under the optional.ligand.functional_groups key (see https://github.com/nlesc-nano/CAT/issues/13).
 
-.. _CAT: https://github.com/nlesc-nano/CAT/
-.. _nano-CAT: https://github.com/nlesc-nano/nano-CAT/
-.. _data-CAT: https://github.com/nlesc-nano/data-CAT/
-.. _SMILES: https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system
-
 
 0.4.6
 *****
 * Added an interface between MongoDB_ and the CAT.Database_ class (see https://github.com/nlesc-nano/CAT/issues/11).
-
-.. _MongoDB: https://www.mongodb.com/
-.. _CAT.Database: https://cat.readthedocs.io/en/latest/7_database.html
 
 
 0.4.5
@@ -160,8 +200,18 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 [Unreleased]
 ************
-
-Added
------
-
 * Empty Python project directory structure.
+
+
+.. _AssertionLib: https://github.com/nlesc-nano/AssertionLib
+.. _CAT: https://github.com/nlesc-nano/CAT
+.. _CAT.Database: https://cat.readthedocs.io/en/latest/7_database.html
+.. _CP2K: https://www.cp2k.org/
+.. _data-CAT: https://github.com/nlesc-nano/data-CAT/
+.. _Database: https://cat.readthedocs.io/en/latest/7_database.html#class-api
+.. _PLAMS: https://github.com/SCM-NV/PLAMS
+.. _MATCH: http://brooks.chem.lsa.umich.edu/index.php?page=match&subdir=articles/resources/software
+.. _MongoDB: https://www.mongodb.com/
+.. _nano-CAT: https://github.com/nlesc-nano/nano-CAT/
+.. _Schema: https://github.com/keleshev/schema
+.. _SMILES: https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system

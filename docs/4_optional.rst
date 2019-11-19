@@ -13,9 +13,9 @@ assuming one is content with the default settings.
 Index
 ~~~~~
 
-========================================= ==================================================================================
+========================================= =========================================================================================================
 Option                                    Description
-========================================= ==================================================================================
+========================================= =========================================================================================================
 :attr:`optional.database.dirname`         The name of the directory where the database will be stored.
 :attr:`optional.database.read`            Attempt to read results from the database before starting calculations.
 :attr:`optional.database.write`           Export results to the database.
@@ -33,10 +33,12 @@ Option                                    Description
 :attr:`optional.ligand.cosmo-rs`          Perform a property calculation with COSMO-RS on the ligand.
 
 :attr:`optional.qd.dirname`               The name of the directory where all quantum dots will be stored.
-:attr:`optional.qd.optimize`              Optimize the quantum dot (i.e. core + all ligands) .
+:attr:`optional.qd.construct_qd`          Whether or not the quantum dot should actually be constructed or not.
+:attr:`optional.qd.optimize`              Optimize the quantum dot (i.e. core + all ligands).
+:attr:`optional.qd.bulkiness`             Calculate the :math:`V_{bulk}`, a ligand- and core-sepcific descriptor of a ligands' bulkiness.
 :attr:`optional.qd.activation_strain`     Perform an activation strain analyses.
 :attr:`optional.qd.dissociate`            Calculate the ligand dissociation energy.
-========================================= ==================================================================================
+========================================= =========================================================================================================
 
 Default Settings
 ~~~~~~~~~~~~~~~~
@@ -65,10 +67,11 @@ Default Settings
 
         qd:
             dirname: qd
+            construct_qd: True
             optimize: False
             activation_strain: False
             dissociate: False
-
+            bulkiness: False
 
 Arguments
 ~~~~~~~~~
@@ -372,8 +375,10 @@ QD
 
         optional:
             qd:
-                dirname: QD
+                dirname: qd
+                construct_qd: True
                 optimize: False
+                bulkiness: False
                 activation_strain: False
                 dissociate: False
 
@@ -389,6 +394,16 @@ QD
         The quantum dot directory will be created (if it does not yet exist)
         at the path specified in :ref:`Path`.
 
+    .. attribute:: optional.qd.construct_qd
+
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``True``
+
+        Whether or not the quantum dot should actually be constructed or not.
+
+        Setting this to ``False`` will still construct ligands and carry out ligand workflows,
+        but it will not construct the actual quantum dot itself.
+
 
     .. attribute:: optional.qd.optimize
 
@@ -402,9 +417,21 @@ QD
         are frozen during this optimization.
 
 
-    .. attribute:: optional.qd.activation_strain
+    .. attribute:: optional.qd.bulkiness
 
         :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``False``
+
+        Calculate the :math:`V_{bulk}`, a ligand- and core-sepcific descriptor of a ligands' bulkiness.
+
+        .. math::
+            V(r_{i}, h_{i}; d, h_{lim}) =
+            \sum_{i=1}^{n} e^{r_{i}} (\frac{2 r_{i}}{d} - 1)^{+} (1 - \frac{h_{i}}{h_{lim}})^{+}
+
+
+    .. attribute:: optional.qd.activation_strain
+
+        :Parameter:     * **Type** - :class:`bool` or :class:`dict`
                         * **Default value** – ``False``
 
         Perform an activation strain analyses [12_, 13_, 14_].

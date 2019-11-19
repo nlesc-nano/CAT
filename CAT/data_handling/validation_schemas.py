@@ -14,9 +14,11 @@ Index
     qd_schema
     database_schema
     mongodb_schema
+    ligand_opt_schema
     bde_schema
     qd_opt_schema
     crs_schema
+    asa_schema
     _class_dict
     _class_dict_scm
 
@@ -34,9 +36,13 @@ API
     :annotation: = schema.Schema
 .. autodata:: mongodb_schema
     :annotation: = schema.Schema
+.. autodata:: ligand_opt_schema
+    :annotation: = schema.Schema
 .. autodata:: bde_schema
     :annotation: = schema.Schema
 .. autodata:: qd_opt_schema
+    :annotation: = schema.Schema
+.. autodata:: asa_schema
     :annotation: = schema.Schema
 .. autodata:: crs_schema
     :annotation: = schema.Schema
@@ -53,6 +59,7 @@ from collections import abc
 from schema import (Or, And, Use, Schema)
 from schema import Optional as Optional_
 
+from scm.plams import CRSJob
 from scm.plams.core.basejob import Job
 
 from scm.plams.interfaces.adfsuite.adf import ADFJob
@@ -72,19 +79,13 @@ from scm.plams.interfaces.thirdparty.dftbplus import DFTBPlusJob
 from ..utils import (get_template, validate_path, validate_core_atom, check_sys_var)
 from ..mol_utils import to_atnum
 
-try:
-    from nanoCAT.crs import CRSJob
-    NANO_CAT = True
-except ImportError:
-    CRSJob = Job
-    NANO_CAT = False
-
 __all__ = ['mol_schema', 'core_schema', 'ligand_schema', 'qd_schema', 'database_schema',
-           'mongodb_schema', 'bde_schema', 'qd_opt_schema', 'crs_schema']
+           'mongodb_schema', 'bde_schema', 'ligand_opt_schema', 'qd_opt_schema', 'crs_schema',
+           'asa_schema']
 
 
 def val_job_type(value: type) -> type:
-    """Call :func:`.check_sys_var` if value is in :data:`._class_dict_scm`"""
+    """Call :func:`.check_sys_var` if value is in :data:`._class_dict_scm`."""
     if value in _class_dict_scm.values():
         check_sys_var()
     return value
@@ -359,7 +360,10 @@ ligand_schema: Schema = Schema({
         ),
 
     Optional_('optimize', default=True):  # Optimize the ligands
-        And(bool, error='optional.ligand.optimize expects a boolean'),
+        And(
+            bool, Use(lambda n: ({'job1': None} if n else False)),
+            error='optional.ligand.optimize expects a boolean'
+        ),
 
     Optional_('split', default=True):  # Remove a counterion from the function group
         And(bool, error='optional.ligand.split expects a boolean'),
@@ -379,15 +383,27 @@ qd_schema: Schema = Schema({
     'dirname':
         And(str, error='optional.qd.dirname expects a string'),
 
+    Optional_('construct_qd', default=True):  # Construct quantum dots
+        Or(
+            bool,
+            error='optional.qd.construct_qd expects a boolean'
+        ),
+
     # Settings specific to a quantum dot activation strain analyses
     Optional_('activation_strain', default=False):
-        And(bool, error='optional.qd.activation_strain expects a boolean'),
+        Or(
+            And(bool, Use(lambda n: {'job1': None} if n else False)),
+            dict, error='optional.qd.activation_strain expects a boolean or dictionary'
+        ),
+
+    Optional_('bulkiness', default=False):  # Ligand bulkiness workflow
+        And(bool, error='optional.qd.bulkiness expects a boolean'),
 
     Optional_('optimize', default=False):  # Settings for quantum dot geometry optimizations
         Or(
             dict,
             And(bool, Use(lambda n: ({'job1': 'AMSJob'} if n else False))),
-            error='optional.ligand.optimize expects a boolean or dictionary'
+            error='optional.qd.optimize expects a boolean or dictionary'
         ),
 
     # Settings for quantum dot ligand dissociation calculations
@@ -395,7 +411,7 @@ qd_schema: Schema = Schema({
         Or(
             dict,
             And(bool, lambda n: n is False),
-            error='optional.ligand.dissociate expects False (boolean) or a dictionary'
+            error='optional.qd.dissociate expects False (boolean) or a dictionary'
         )
 })
 
@@ -417,6 +433,69 @@ mongodb_schema: Schema = Schema({
 
     Optional_(str):  # Other keyword arguments for :class:`pymongo.MongoClient`
         object
+})
+
+
+#: Schema for validating the ``['optional']['ligand']['optimize']`` block.
+ligand_opt_schema: Schema = Schema({
+    Optional_('use_ff', default=False):
+        bool,
+
+    # Delete files after the calculations are finished
+    Optional_('keep_files', default=True):
+        And(bool, error='optional.ligand.optimize.keep_files expects a boolean'),
+
+    # The Job type for the conformation search
+    Optional_('job1', default=None):
+        Or(
+            None,
+            And(
+                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
+                error=('optional.ligand.optimize.job1 expects a type object '
+                       'that is a subclass of plams.Job')
+            ),
+            And(
+                str, Use(str_to_job_type),
+                error=('optional.ligand.optimize.job1 expects a string '
+                       'that is a valid plams.Job alias')
+            ),
+            error='optional.ligand.optimize.job1 expects a string or a type object'
+        ),
+
+    # The Job Settings for the conformation search
+    Optional_('s1', default=None):
+        Or(
+            None,
+            dict,
+            And(str, Use(lambda n: get_template(n, from_cat_data=False))),
+            error='optional.ligand.optimize.s1 expects a string or a dictionary'
+        ),
+
+    # The Job type for the final geometry optimization
+    Optional_('job2', default=None):
+        Or(
+            None,
+            And(
+                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
+                error=('optional.ligand.optimize.job2 expects a type object '
+                       'that is a subclass of plams.Job')
+            ),
+            And(
+                str, Use(str_to_job_type),
+                error=('optional.ligand.optimize.job2 expects a string '
+                       'that is a valid plams.Job alias')
+            ),
+            error='optional.ligand.optimize.job2 expects a string or a type object'
+        ),
+
+    # The Job Settings for the final geometry optimization
+    Optional_('s2', default=None):
+        Or(
+            None,
+            dict,
+            And(str, Use(lambda n: get_template(n, from_cat_data=False))),
+            error='optional.ligand.optimize.s2 expects a string or a dictionary'
+        ),
 })
 
 
@@ -442,13 +521,14 @@ bde_schema: Schema = Schema({
     Optional_('keep_files', default=True):  # Delete files after the calculations are finished
         And(bool, error='optional.qd.dissociate.keep_files expects a boolean'),
 
-    Optional_('core_core_dist', default=0.0):
-        And(
-            Or(int, float), lambda n: n >= 0.0, Use(float),
-            error=('optional.qd.dissociate.core_core_dist expects an integer or float '
-                   'larger than or equal to 0.0')
+    Optional_('core_core_dist', default=None):
+        Or(
+            And(
+                Or(int, float), lambda n: n >= 0.0, Use(float),
+                error=('optional.qd.dissociate.core_core_dist expects an integer or float '
+                       'larger than or equal to 0.0')
+            )
         ),
-
     Optional_('lig_core_dist', default=5.0):
         And(
             Or(int, float), lambda n: n >= 0.0, Use(float),
@@ -456,8 +536,9 @@ bde_schema: Schema = Schema({
                    'larger than or equal to 0.0')
         ),
 
-    Optional_('core_index'):
+    Optional_('core_index', default=None):
         Or(
+            None,
             And(
                 int, lambda n: n >= 0, Use(lambda n: (n,)),
                 error=('optional.qd.dissociate.core_index expects an integer '
@@ -475,11 +556,15 @@ bde_schema: Schema = Schema({
                    'larger than or equal to 0')
         ),
 
-    Optional_('topology', default=dict):
-        And(
-            dict, lambda n: all(isinstance(k, int) for k in n),
-            error='optional.qd.dissociate.topology expects a dictionary with integers as keys'
+    Optional_('topology', default=None):
+        Or(
+            None,
+            And(
+                dict, lambda n: all(isinstance(k, int) for k in n),
+                error='optional.qd.dissociate.topology expects a dictionary with integers as keys'
+                )
         ),
+
 
     Optional_('job1', default=_get_amsjob):
         Or(
@@ -503,8 +588,9 @@ bde_schema: Schema = Schema({
             error='optional.qd.dissociate.s1 expects a string or a dictionary'
         ),
 
-    Optional_('job2'):
+    Optional_('job2', default=None):
         Or(
+            None,
             And(
                 And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
                 error=('optional.qd.dissociate.job2 expects a type object '
@@ -517,8 +603,9 @@ bde_schema: Schema = Schema({
             error='optional.qd.dissociate.job2 expects a string or a type object'
         ),
 
-    Optional_('s2'):
+    Optional_('s2', default=None):
         Or(
+            None,
             dict,
             And(str, Use(lambda n: get_template(n, from_cat_data=False))),
             error='optional.qd.dissociate.s2 expects a string or a dictionary'
@@ -529,6 +616,9 @@ bde_schema: Schema = Schema({
 qd_opt_schema: Schema = Schema({
     Optional_('use_ff', default=False):
         bool,
+
+    Optional_('keep_files', default=True):
+        And(bool, error='optional.qd.opt.keep_files expects a boolean'),
 
     # The job type for the first half of the optimization
     Optional_('job1', default=_get_amsjob):
@@ -629,4 +719,40 @@ crs_schema: Schema = Schema({
             And(str, Use(lambda n: get_template(n, from_cat_data=False))),
             error='optional.ligand.cosmo-rs.s2 expects a string or a dictionary'
         )
+})
+
+#: Schema for validating the ``['optional']['qd']['activation_strain']`` block.
+asa_schema: Schema = Schema({
+    Optional_('use_ff', default=False):
+        bool,
+
+    # Delete files after the calculations are finished
+    Optional_('keep_files', default=True):
+        And(bool, error='optional.qd.activation_strain.keep_files expects a boolean'),
+
+    # The job type for constructing the COSMO surface
+    Optional_('job1', default=None):
+        Or(
+            None,
+            And(
+                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
+                error=('optional.qd.activation_strain.job1 expects a type object '
+                       'that is a subclass of plams.Job')
+            ),
+            And(
+                str, Use(str_to_job_type),
+                error=('optional.qd.activation_strain.job1 expects a string '
+                       'that is a valid plams.Job alias')
+            ),
+            error='optional.qd.activation_strain.job1 expects a string or a type object'
+        ),
+
+    # The settings for constructing the COSMO surface
+    Optional_('s1', default=None):
+        Or(
+            None,
+            dict,
+            And(str, Use(lambda n: get_template(n, from_cat_data=False))),
+            error='optional.qd.activation_strain.s1 expects a string or a dictionary'
+        ),
 })

@@ -24,8 +24,6 @@ from .data_handling import (
     read_mol, set_mol_prop
 )
 
-from .base import prep
-
 from .utils import get_template
 
 __version__ = __version__
@@ -40,8 +38,6 @@ __all__ = [
     'init_qd_opt', 'init_ligand_opt', 'init_qd_construction', 'init_ligand_anchoring',
 
     'read_mol', 'set_mol_prop'
-
-    'prep',
 
     'get_template'
 ]

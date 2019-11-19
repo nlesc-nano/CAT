@@ -171,10 +171,12 @@ class GenJobManager(JobManager):
             return None
 
         if h in self.hashes:
-            prev = self.hashes[h]()
-            return prev
-        else:
-            filename = join(job.path, job.name)
-            func = self._get_job(filename + '.dill')
-            self.hashes[h] = func  # Set a callable that returns a Job instance
-            return None
+            try:
+                return self.hashes[h]()
+            except AttributeError:  # In case the job unpickling fails
+                pass
+
+        filename = join(job.path, job.name)
+        func = self._get_job(filename + '.dill')
+        self.hashes[h] = func  # Set a callable that returns a Job instance
+        return None

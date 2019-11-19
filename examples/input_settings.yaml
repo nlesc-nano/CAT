@@ -1,14 +1,13 @@
-path: /Users/basvanbeek/Documents/CdSe/Week_5
+path: /path/to/my/stuff
 
 input_cores:
     - Cd68Se55.xyz:
         guess_bonds: False
 
 input_ligands:
-    - CO
-    - CCO
-    - CCCO
-    # - FragranceDB2.txt
+    - 'CCCOCCC(O)=O'
+    - 'CCCNCCC(O)=O'
+    - 'CCCCCCC(O)=O'
 
 optional:
     database:
@@ -27,13 +26,12 @@ optional:
         dirname: ligand
         optimize: True
         split: True
+        functional_groups: 'O(C=O)[H]'
         cosmo-rs: False
 
     qd:
         dirname: QD
+        construct_qd: True
         optimize: False
-#        dissociate:
-#            keep_files: False
-#            core_atom: Cd
-#            lig_count: 2
-#            core_index: [67, 68, 69, 79, 80, 81]
+        bulkiness: False
+        activation_strain: False
