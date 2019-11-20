@@ -21,8 +21,6 @@ import os
 import sys
 import datetime
 
-import CAT
-
 sys.path.insert(0, os.path.abspath('..'))
 
 # -- General configuration ------------------------------------------------
@@ -65,7 +63,7 @@ master_doc = 'index'
 # General information about the project.
 project = 'CAT'
 year = str(datetime.datetime.now().year)
-author = CAT.__author__
+author = 'B. F. van Beek'
 copyright = f'{year}, {author}'
 
 

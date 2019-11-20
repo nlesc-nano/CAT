@@ -157,6 +157,7 @@ def prep_input(arg: Settings) -> Tuple[SettingsDataFrame, SettingsDataFrame, Set
     qd_list = read_mol(arg.input_qd)
     del arg.input_ligands
     del arg.input_cores
+    del arg.input_qd
 
     is_qd = True if qd_list else False
 
@@ -339,15 +340,6 @@ def prep_qd(ligand_df: Optional[SettingsDataFrame],
         installing the Nano-CAT_ package.
 
     """
-    if qd_df is None:  # Construct new quantum dots
-        qd_df = init_qd_construction(ligand_df, core_df)
-    elif ligand_df is core_df is None:  # Update existing quantum dots
-        update_qd_df(qd_df)
-    else:
-        raise TypeError(f"Either qd_df ('{type(qd_df)}') must be 'None' or ligand_df "
-                        f"('{type(ligand_df)}') and core_df ('{type(core_df)}') must "
-                        "both be 'None'")
-
     # Unpack arguments
     bulk = ligand_df.settings.optional.qd.bulkiness
     optimize = ligand_df.settings.optional.qd.optimize
@@ -358,7 +350,13 @@ def prep_qd(ligand_df: Optional[SettingsDataFrame],
 
     # Construct the quantum dot DataFrame
     # If construct_qd is False, construct the dataframe without filling it with quantum dots
-    qd_df = init_qd_construction(ligand_df, core_df, construct_qd=construct_qd)
+    if qd_df is None:  # Construct new quantum dots
+        qd_df = init_qd_construction(ligand_df, core_df, construct_qd=construct_qd)
+    elif ligand_df is core_df is None:  # Update existing quantum dots
+        update_qd_df(qd_df)
+    else:
+        raise TypeError("Either qd_df must be 'None' or ligand_df "
+                        " and core_df must both be 'None'")
 
     # Start the ligand bulkiness workflow
     if bulk:
