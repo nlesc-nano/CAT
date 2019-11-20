@@ -44,8 +44,9 @@ API
 
 import os
 import itertools
+from types import MappingProxyType
 from string import ascii_letters
-from typing import (Dict, Iterable, List, Sequence, Optional)
+from typing import (Dict, Iterable, List, Sequence, Optional, Mapping)
 
 import numpy as np
 
@@ -94,6 +95,8 @@ def read_mol(input_mol: Iterable[Settings]) -> List[Molecule]:
 
     # Create a list of PLAMS molecules
     mol_list = []
+    append = mol_list.append
+    extend = mol_list.extend
     for mol_dict in input_mol:
         try:
             read_mol = extension_dict[mol_dict.type]
@@ -106,17 +109,17 @@ def read_mol(input_mol: Iterable[Settings]) -> List[Molecule]:
             continue
 
         if isinstance(mol, list):  # if mol is a list of molecules
-            mol_list += mol
+            extend(mol)
 
         elif mol_dict.is_qd:  # A quantum dot molecule
             set_qd(mol, mol_dict)
-            mol_list.append(mol)
+            append(mol)
 
         else:  # A core or ligand molecule
             if mol_dict.guess_bonds:
                 mol.guess_bonds()
             set_mol_prop(mol, mol_dict)
-            mol_list.append(mol)
+            append(mol)
 
     return mol_list
 
@@ -231,8 +234,7 @@ def read_mol_txt(mol_dict: Settings) -> Optional[List[Molecule]]:
         print_exception('read_mol_txt', mol_dict.name, ex)
 
 
-def canonicalize_mol(mol: Molecule,
-                     inplace: bool = True) -> Optional[Molecule]:
+def canonicalize_mol(mol: Molecule, inplace: bool = True) -> Optional[Molecule]:
     """Take a PLAMS molecule and sort its atoms based on their canonical rank.
 
     .. _rdkit.Chem.CanonicalRankAtoms: https://www.rdkit.org/docs/source/rdkit.Chem.rdmolfiles.html#rdkit.Chem.rdmolfiles.CanonicalRankAtoms
@@ -273,7 +275,7 @@ def canonicalize_mol(mol: Molecule,
         Optional: if ``inplace=False``, return a copy of **mol** with its atoms sorted by their
         canonical rank.
 
-    See also
+    See Also
     --------
     * rdkit.Chem.CanonicalRankAtoms_: Returns the canonical atom ranking for each atom of a
       molecule fragment.
@@ -313,11 +315,10 @@ def get_charge_dict() -> Dict[str, int]:
 
 
 #: A dictionary with default atomic charges
-CHARGE_DICT: Dict[str, int] = get_charge_dict()
+CHARGE_MAPPING: Mapping[str, int] = MappingProxyType(get_charge_dict())
 
 
-def set_mol_prop(mol: Molecule,
-                 mol_dict: Settings) -> None:
+def set_mol_prop(mol: Molecule, mol_dict: Settings) -> None:
     """Set molecular and atomic properties."""
     if mol_dict.is_core:
         residue_name = 'COR'
@@ -342,9 +343,7 @@ def set_mol_prop(mol: Molecule,
                                                  canonical=True)
 
 
-def set_atom_prop(atom: Atom,
-                  at_id: Sequence[str],
-                  residue_name: str) -> None:
+def set_atom_prop(atom: Atom, at_id: Sequence[str], residue_name: str) -> None:
     """Set atomic properties."""
     symbol = '{:4}'.format(atom.symbol + ''.join(at_id))
 
@@ -367,13 +366,13 @@ def set_atom_prop(atom: Atom,
         return
 
     # Default to a charge of 0 if no charge is available for that specific element
-    if atom.symbol not in CHARGE_DICT:
+    if atom.symbol not in CHARGE_MAPPING:
         atom.properties.charge = 0
         return
 
     # Update the charge of non-hypervalent atoms
     total_bonds = int(sum([bond.order for bond in atom.bonds]))
-    default_charge = CHARGE_DICT[atom.symbol]
+    default_charge = CHARGE_MAPPING[atom.symbol]
     abs_charge = abs(default_charge)
     sign = -1 * int(default_charge / abs_charge)
 
@@ -394,7 +393,6 @@ def set_atom_prop(atom: Atom,
 
 def set_qd(qd: Molecule, mol_dict: Settings) -> Molecule:
     """Update quantum dots imported by :func:`.read_mol`."""
-
     # Create ligand (and anchor) molecules
     ligand = molkit.from_smiles(mol_dict.ligand_smiles)
     ligand_rdmol = molkit.to_rdmol(ligand)
@@ -443,9 +441,7 @@ def set_qd(qd: Molecule, mol_dict: Settings) -> Molecule:
             at.properties.pdb_info.ResidueNumber = j
 
 
-def print_exception(func_name: str,
-                    mol_name: str,
-                    ex: Exception) -> None:
+def print_exception(func_name: str, mol_name: str, ex: Exception) -> None:
     """Manages the printing of exceptions upon failing to import a molecule."""
     ex_name = ex.__class__.__name__
     err = f'CAT.{func_name}() failed to parse {repr(mol_name)}; Caught exception: {ex_name}'
