@@ -402,24 +402,24 @@ def set_qd(qd: Molecule, mol_dict: Settings) -> Molecule:
     anchor_rdmol = molkit.to_rdmol(anchor)
     qd_rdmol = molkit.to_rdmol(qd)
 
+    # Create arrays of atomic indices of the core and ligands
+    lig_idx = 1 + np.array(qd_rdmol.GetSubstructMatches(ligand_rdmol))
+    core_idx = np.arange(1, len(qd))[~lig_idx]
+    lig_idx = lig_idx.ravel().tolist()
+    core_idx = core_idx.tolist()
+
     # Guess bonds
     if mol_dict.guess_bonds:
-        symbol_set = {at.symbol for at in ligand}
-        atom_list = [at for at in qd if at.symbol in symbol_set]
-        qd.guess_bonds(atom_subset=atom_list)
-
-    # Create arrays of atomic indices of the core and ligands
-    ligand_idx = 1 + np.array(qd_rdmol.GetSubstructMatches(ligand_rdmol))
-    core_idx = [i for i, _ in enumerate(qd, 1) if i not in ligand_idx]
+        qd.guess_bonds(atom_subset=[qd[i] for i in lig_idx])
 
     # Reorder all atoms: core atoms first followed by ligands
-    qd.atoms = [qd[i] for i in core_idx] + [qd[int(j)] for i in ligand_idx for j in i]
+    qd.atoms = [qd[i] for i in core_idx] + [qd[j] for i in lig_idx for j in i]
 
     # Construct a list with the indices of all ligand anchor atoms
     core_idx_max = 1 + len(core_idx)
     _anchor_idx = ligand_rdmol.GetSubstructMatch(anchor_rdmol)[0]
     start = core_idx_max + _anchor_idx
-    stop = core_idx_max + _anchor_idx + np.product(ligand_idx.shape)
+    stop = core_idx_max + _anchor_idx + np.product(lig_idx.shape)
     step = len(ligand)
     anchor_idx = list(range(start, stop, step))
 
@@ -439,8 +439,7 @@ def set_qd(qd: Molecule, mol_dict: Settings) -> Molecule:
         if i <= core_idx_max:  # A core atom
             at.properties.pdb_info.ResidueNumber = 1
         else:  # A ligand atom
-            j = 2 + int((i - core_idx_max) / len(ligand))
-            at.properties.pdb_info.ResidueNumber = j
+            at.properties.pdb_info.ResidueNumber = 2 + int((i - core_idx_max) / len(ligand))
 
 
 def print_exception(func_name: str,

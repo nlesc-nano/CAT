@@ -5,6 +5,12 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+
+0.7.3
+*****
+* Added an option the import pre-built quantum dots.
+
+
 0.7.2
 *****
 * Minor tweaks to the default forcefield-related CP2K input files.
@@ -63,12 +69,6 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * Implemented an interface to MATCH_ (Multipurpose Atom-Typer for CHARMM) in Nano-CAT.
 * Added a workflow for creating CP2K input files with the MATCH-assigned atom types & charges.
 * Updated the handling of assertions, see ``CAT.assertions.assertion_manager``.
-
-
-0.6.1
-*****
-
-* Added an option the import pre-built quantum dots.
 
 
 0.5.5

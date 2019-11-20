@@ -56,10 +56,11 @@ def _get_core_formula(mol: Molecule) -> str:
         at = mol[i]
         if 'anchor' not in at.properties:
             break  # The first ligand has been reached; abort and return
+        symbol = at.symbol
         try:
-            core[at.symbol] += 1
+            core[symbol] += 1
         except KeyError:
-            core[at.symbol] = 1
+            core[symbol] = 1
 
     # Concatenate the dictionary into a single string
     return ''.join(f'{k}{v}' for k, v in sorted(core.items()))
