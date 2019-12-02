@@ -93,7 +93,10 @@ def qd_opt_ff(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],
         psf.write(psf_name)
 
     # Run the first job and fix broken angles
-    finalize_lj(mol, s.input.force_eval.mm.forcefield.nonbonded['lennard-jones'])
+    try:
+        finalize_lj(mol, s.input.force_eval.mm.forcefield.nonbonded['lennard-jones'])
+    except TypeError:
+        pass
     job_func(mol, job, s, name=name, read_template=False)
     mol.round_coords()
 
