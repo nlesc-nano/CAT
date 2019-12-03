@@ -28,6 +28,7 @@ setup(
         'CAT',
         'CAT.abc',
         'CAT.attachment',
+        'CAT.recipes',
         'CAT.data',
         'CAT.data.coskf',
         'CAT.data.templates',
