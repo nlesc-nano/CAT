@@ -99,20 +99,21 @@ def update_ff_jobs(s: Settings) -> None:
     if optimize and optimize.use_ff:
         if optimize.job1 and str(optimize.job1) == str(Cp2kJob):
             optimize.s1 = get_template('qd.yaml')['CP2K_CHARM_opt']
-            optimize.s1.soft_update(ff)
+            optimize.s1 += ff
 
         if optimize.job2 and str(optimize.job1) == str(Cp2kJob):
             optimize.s2 = get_template('qd.yaml')['CP2K_CHARM_opt']
-            optimize.s2.soft_update(ff)
+            optimize.s2 += ff
 
     dissociate = s.optional.qd.dissociate
     if dissociate and dissociate.use_ff:
         if dissociate.job1 and str(dissociate.job1) == str(Cp2kJob):
             dissociate.s1 = get_template('qd.yaml')['CP2K_CHARM_opt']
-            dissociate.s1.soft_update(ff)
+            dissociate.s1 += ff
 
     activation_strain = s.optional.qd.activation_strain
     if activation_strain and activation_strain.use_ff:
         if activation_strain.job1 and str(activation_strain.job1) == str(Cp2kJob):
-            activation_strain.s1 = get_template('qd.yaml')['CP2K_CHARM_singlepoint']
-            activation_strain.s1.soft_update(ff)
+            key = 'CP2K_CHARM_singlepoint' if not activation_strain.md else 'CP2K_CHARM_md'
+            activation_strain.s1 = get_template('qd.yaml')[key]
+            activation_strain.s1 += ff
