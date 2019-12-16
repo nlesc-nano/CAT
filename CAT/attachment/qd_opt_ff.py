@@ -33,6 +33,7 @@ import pandas as pd
 
 from scm.plams import Molecule, Settings
 from scm.plams.core.basejob import Job
+from scm.plams.core.results import Results
 
 try:
     from nanoCAT.ff.cp2k_utils import set_cp2k_element
@@ -48,7 +49,7 @@ __all__ = ['qd_opt_ff']
 
 def qd_opt_ff(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],
               settings: Tuple[Optional[Settings], ...], name: str = 'QD_opt',
-              new_psf: bool = False, job_func: Callable = Molecule.job_geometry_opt) -> None:
+              new_psf: bool = False, job_func: Callable = Molecule.job_geometry_opt) -> Results:
     """Alternative implementation of :func:`.qd_opt` using CP2Ks' classical forcefields.
 
     Performs an inplace update of **mol**.
@@ -97,8 +98,10 @@ def qd_opt_ff(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],
         finalize_lj(mol, s.input.force_eval.mm.forcefield.nonbonded['lennard-jones'])
     except TypeError:
         pass
-    job_func(mol, job, s, name=name, read_template=False)
+    results = job_func(mol, job, s, name=name, read_template=False, ret_results=True)
     mol.round_coords()
+
+    return results
 
 
 def get_psf(mol: Molecule, charges: Union[Settings, Iterable[Settings]]) -> PSFContainer:
