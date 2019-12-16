@@ -726,6 +726,9 @@ asa_schema: Schema = Schema({
     Optional_('use_ff', default=False):
         bool,
 
+    Optional_('md', default=False):
+        bool,
+
     # Delete files after the calculations are finished
     Optional_('keep_files', default=True):
         And(bool, error='optional.qd.activation_strain.keep_files expects a boolean'),
