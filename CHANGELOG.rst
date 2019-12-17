@@ -6,9 +6,14 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 
+0.7.4
+*****
+* WiP: Added an option the import pre-built quantum dots.
+
+
 0.7.3
 *****
-* Added an option the import pre-built quantum dots.
+* Added an option perform an ensemble-averaged QD activation strain analyses in Nano-CAT_.
 
 
 0.7.2
