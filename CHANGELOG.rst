@@ -14,6 +14,8 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 0.7.3
 *****
 * Added an option perform an ensemble-averaged QD activation strain analyses in Nano-CAT_.
+* Removed a number of redundant modules.
+* QD optimization now properly respect the ``optional.qd.opt.use_ff`` keyword.
 
 
 0.7.2
