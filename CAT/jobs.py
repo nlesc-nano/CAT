@@ -113,6 +113,11 @@ def pre_process_settings(mol: Molecule, s: Settings,
     return ret
 
 
+JOB_PRESETS = frozenset({
+    'geometry optimization', 'frequency analysis', 'single point', 'MD calculation'
+})
+
+
 def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
     """Unpack the :class:`results` from a PLAMS-facilitated calculation.
 
@@ -136,7 +141,7 @@ def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
         ``"frequency analysis"``.
 
     """
-    if job_preset not in ('geometry optimization', 'frequency analysis', 'single point'):
+    if job_preset not in JOB_PRESETS:
         raise ValueError(f'Invalid value for job_preset: {repr(job_preset)}')
 
     # Unpack arguments
