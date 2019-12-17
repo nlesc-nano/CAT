@@ -133,7 +133,7 @@ def test_init_ligand_anchoring() -> None:
     try:
         filename = join(PATH, 'input1.yaml')
         s = get_template(filename, from_cat_data=False)
-        ligand_df, _ = prep_input(s)
+        ligand_df, *_ = prep_input(s)
         df = init_ligand_anchoring(ligand_df)
 
         idx = [('C[O-]', 'O2'), ('CC[O-]', 'O3')]
