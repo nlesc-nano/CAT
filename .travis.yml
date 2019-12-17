@@ -30,6 +30,7 @@ install:
     - pip install .[test]
     - pip install nano-cat@git+https://github.com/nlesc-nano/nano-CAT@devel --upgrade
     - pip install data-cat@git+https://github.com/nlesc-nano/data-CAT@devel --upgrade
+    - pip install data-fox@git+https://github.com/nlesc-nano/auto-FOX@devel --upgrade
 
 script:
     # Run the unitary tests excluding the expensive computations
