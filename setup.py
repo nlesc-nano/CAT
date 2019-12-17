@@ -28,6 +28,7 @@ setup(
         'CAT',
         'CAT.abc',
         'CAT.attachment',
+        'CAT.recipes',
         'CAT.data',
         'CAT.data.coskf',
         'CAT.data.templates',
@@ -88,16 +89,16 @@ setup(
         'pytest-cov',
         'pytest-mock',
         'pycodestyle',
-        'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel',
-        'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel'
+        'data-CAT@git+https://github.com/nlesc-nano/data-CAT@master',
+        'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@master'
     ],
     extras_require={
         'test': ['pytest',
                  'pytest-cov',
                  'pytest-mock',
                  'pycodestyle',
-                 'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel',
-                 'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel'],
+                 'data-CAT@git+https://github.com/nlesc-nano/data-CAT@master',
+                 'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@master'],
         'doc': ['sphinx>=2.0', 'sphinx_rtd_theme', 'sphinx-autodoc-typehints']
     }
 )
