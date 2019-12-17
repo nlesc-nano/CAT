@@ -151,8 +151,8 @@ CP2K_CHARM_md:
                 ensemble: NVT
                 temperature: 300.0
                 timestep: 1.0
-                time_start_val: 5000
-                steps: 10000
+                time_start_val: 2500
+                steps: 5000
                 thermostat:
                     type: CSVR
                     csvr:
@@ -188,4 +188,4 @@ CP2K_CHARM_md:
         global:
             print_level: low
             project: cp2k
-            run_type: geometry_optimization
+            run_type: MD
