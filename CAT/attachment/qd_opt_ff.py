@@ -37,8 +37,8 @@ from scm.plams.core.results import Results
 
 try:
     from nanoCAT.ff.cp2k_utils import set_cp2k_element
-    from nanoCAT.ff.psf import PSFContainer
-    from nanoCAT.ff.uff import combine_xi, combine_di
+    from FOX import PSFContainer
+    from FOX.ff.lj_uff import combine_sigma, combine_epsilon
     NANOCAT: Optional[ImportError] = None
 except ImportError as ex:
     PSFContainer = 'PSFContainer'
@@ -210,8 +210,8 @@ def finalize_lj(mol: Molecule, s: List[Settings]) -> None:
 
             s.append(Settings({
                 'atoms': f'{at1} {at2}',
-                'epsilon':  f'[kcalmol] {round(combine_di(symbol1, symbol2), 4)}',
-                'sigma':  f'[angstrom] {round(combine_xi(symbol1, symbol2), 4)}'
+                'epsilon':  f'[kcalmol] {round(combine_epsilon(symbol1, symbol2), 4)}',
+                'sigma':  f'[angstrom] {round(combine_sigma(symbol1, symbol2), 4)}'
             }))
 
 

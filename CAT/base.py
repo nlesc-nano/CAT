@@ -50,7 +50,7 @@ from .attachment.ligand_anchoring import init_ligand_anchoring
 
 try:
     import nanoCAT
-    from nanoCAT.asa import init_asa
+    from nanoCAT.asa.asa import init_asa
     from nanoCAT.mol_bulk import init_lig_bulkiness
     from nanoCAT.bde.bde_workflow import init_bde
     from nanoCAT.ligand_solvation import init_solv
