@@ -7,7 +7,7 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 from assertionlib import assertion
 
 from CAT.data_handling.validate_mol import (
-    validate_mol, santize_smiles, _parse_name_type, _parse_mol_type
+    validate_mol, santize_smiles, _parse_name_type, _check_core
 )
 
 PATH = join('tests', 'test_files')
@@ -30,10 +30,10 @@ def test_santize_smiles() -> None:
 
 def test_parse_mol_type() -> None:
     """Test :func:`CAT.data_handling.validate_mol._parse_mol_type`."""
-    assertion.eq(_parse_mol_type('input_cores'), True)
-    assertion.eq(_parse_mol_type('input_ligands'), False)
-    assertion.assert_(_parse_mol_type, 'bob', exception=ValueError)
-    assertion.assert_(_parse_mol_type, 1, exception=AttributeError)
+    assertion.eq(_check_core('input_cores'), True)
+    assertion.eq(_check_core('input_ligands'), False)
+    assertion.assert_(_check_core, 'bob', exception=ValueError)
+    assertion.assert_(_check_core, 1, exception=AttributeError)
 
 
 def test_parse_name_type() -> None:
@@ -80,11 +80,13 @@ def test_validate_mol() -> None:
     ref1 = [
         {'path': PATH,
          'is_core': True,
+         'is_qd': False,
          'mol': join(PATH, 'Methanol.xyz'),
          'type': 'xyz',
          'name': 'Methanol'},
         {'path': PATH,
          'is_core': True,
+         'is_qd': False,
          'mol': join(PATH, 'Ethylene.xyz'),
          'type': 'xyz',
          'name': 'Ethylene'}
@@ -93,12 +95,14 @@ def test_validate_mol() -> None:
     ref2 = [
         {'guess_bonds': False,
          'is_core': False,
+         'is_qd': False,
          'path': PATH,
          'mol': join(PATH, 'Acetate.xyz'),
          'type': 'xyz',
          'name': 'Acetate'},
         {'guess_bonds': False,
          'is_core': False,
+         'is_qd': False,
          'path': PATH,
          'mol': join(PATH, 'Methanol_rotate.xyz'),
          'type': 'xyz',

@@ -5,6 +5,19 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+
+0.7.4
+*****
+* WiP: Added an option the import pre-built quantum dots.
+
+
+0.7.3
+*****
+* Added an option perform an ensemble-averaged QD activation strain analyses in Nano-CAT_.
+* Removed a number of redundant modules.
+* QD optimization now properly respect the ``optional.qd.opt.use_ff`` keyword.
+
+
 0.7.2
 *****
 * Minor tweaks to the default forcefield-related CP2K input files.

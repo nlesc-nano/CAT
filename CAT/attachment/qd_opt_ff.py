@@ -33,11 +33,12 @@ import pandas as pd
 
 from scm.plams import Molecule, Settings
 from scm.plams.core.basejob import Job
+from scm.plams.core.results import Results
 
 try:
     from nanoCAT.ff.cp2k_utils import set_cp2k_element
-    from nanoCAT.ff.psf import PSFContainer
-    from nanoCAT.ff.uff import combine_xi, combine_di
+    from FOX import PSFContainer
+    from FOX.ff.lj_uff import combine_sigma, combine_epsilon
     NANOCAT: Optional[ImportError] = None
 except ImportError as ex:
     PSFContainer = 'PSFContainer'
@@ -48,7 +49,7 @@ __all__ = ['qd_opt_ff']
 
 def qd_opt_ff(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],
               settings: Tuple[Optional[Settings], ...], name: str = 'QD_opt',
-              new_psf: bool = False, job_func: Callable = Molecule.job_geometry_opt) -> None:
+              new_psf: bool = False, job_func: Callable = Molecule.job_geometry_opt) -> Results:
     """Alternative implementation of :func:`.qd_opt` using CP2Ks' classical forcefields.
 
     Performs an inplace update of **mol**.
@@ -93,9 +94,14 @@ def qd_opt_ff(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],
         psf.write(psf_name)
 
     # Run the first job and fix broken angles
-    finalize_lj(mol, s.input.force_eval.mm.forcefield.nonbonded['lennard-jones'])
-    job_func(mol, job, s, name=name, read_template=False)
+    try:
+        finalize_lj(mol, s.input.force_eval.mm.forcefield.nonbonded['lennard-jones'])
+    except TypeError:
+        pass
+    results = job_func(mol, job, s, name=name, read_template=False, ret_results=True)
     mol.round_coords()
+
+    return results
 
 
 def get_psf(mol: Molecule, charges: Union[Settings, Iterable[Settings]]) -> PSFContainer:
@@ -204,8 +210,8 @@ def finalize_lj(mol: Molecule, s: List[Settings]) -> None:
 
             s.append(Settings({
                 'atoms': f'{at1} {at2}',
-                'epsilon':  f'[kcalmol] {round(combine_di(symbol1, symbol2), 4)}',
-                'sigma':  f'[angstrom] {round(combine_xi(symbol1, symbol2), 4)}'
+                'epsilon':  f'[kcalmol] {round(combine_epsilon(symbol1, symbol2), 4)}',
+                'sigma':  f'[angstrom] {round(combine_sigma(symbol1, symbol2), 4)}'
             }))
 
 

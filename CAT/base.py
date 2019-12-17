@@ -40,6 +40,7 @@ from .mol_utils import to_symbol
 from .settings_dataframe import SettingsDataFrame
 
 from .data_handling.mol_import import read_mol
+from .data_handling.update_qd_df import update_qd_df
 from .data_handling.validate_input import validate_input
 
 from .attachment.qd_opt import init_qd_opt
@@ -49,7 +50,7 @@ from .attachment.ligand_anchoring import init_ligand_anchoring
 
 try:
     import nanoCAT
-    from nanoCAT.asa import init_asa
+    from nanoCAT.asa.asa import init_asa
     from nanoCAT.mol_bulk import init_lig_bulkiness
     from nanoCAT.bde.bde_workflow import init_bde
     from nanoCAT.ligand_solvation import init_solv
@@ -111,16 +112,18 @@ def prep(arg: Settings, return_mol: bool = True) -> Optional[Tuple[SettingsDataF
         logger.debug(f'{DATA_CAT.__class__.__name__}: {DATA_CAT}\n', exc_info=True)
 
     # Interpret and extract the input settings
-    ligand_df, core_df = prep_input(arg)
+    ligand_df, core_df, qd_df = prep_input(arg)
 
-    # Adds the indices of the core dummy atoms to core.properties.core
-    core_df = prep_core(core_df)
+    if qd_df is None:
+        # Adds the indices of the core dummy atoms to core.properties.core
+        core_df = prep_core(core_df)
 
-    # Optimize the ligands, find functional groups, calculate properties and read/write the results
-    ligand_df = prep_ligand(ligand_df)
+        # Optimize the ligands, find functional groups, calculate properties
+        # and read/write the results
+        ligand_df = prep_ligand(ligand_df)
 
     # Combine the cores and ligands; analyze the resulting quantum dots
-    qd_df = prep_qd(ligand_df, core_df)
+    qd_df = prep_qd(ligand_df, core_df, qd_df)
 
     # The End
     delta_t = time() - time_start
@@ -131,7 +134,7 @@ def prep(arg: Settings, return_mol: bool = True) -> Optional[Tuple[SettingsDataF
     return None
 
 
-def prep_input(arg: Settings) -> Tuple[SettingsDataFrame, SettingsDataFrame]:
+def prep_input(arg: Settings) -> Tuple[SettingsDataFrame, SettingsDataFrame, SettingsDataFrame]:
     """Interpret and extract the input settings. Returns a list of ligands and a list of cores.
 
     Parameters
@@ -141,8 +144,8 @@ def prep_input(arg: Settings) -> Tuple[SettingsDataFrame, SettingsDataFrame]:
 
     Returns
     -------
-    |tuple|_ [|CAT.SettingsDataFrame|_, |CAT.SettingsDataFrame|_]
-        A tuple containing the ligand and core dataframe.
+    |tuple|_ [|CAT.SettingsDataFrame|_, |CAT.SettingsDataFrame|_, |CAT.SettingsDataFrame|_]
+        A tuple containing the ligand, core and qd dataframes.
 
     """
     # Interpret arguments
@@ -151,29 +154,43 @@ def prep_input(arg: Settings) -> Tuple[SettingsDataFrame, SettingsDataFrame]:
     # Read the input ligands and cores
     lig_list = read_mol(arg.input_ligands)
     core_list = read_mol(arg.input_cores)
+    qd_list = read_mol(arg.input_qd)
     del arg.input_ligands
     del arg.input_cores
+    del arg.input_qd
+
+    is_qd = True if qd_list else False
 
     # Raises an error if lig_list or core_list is empty
-    if not lig_list:
-        raise MoleculeError('No valid input ligands were found, aborting run')
-    elif not core_list:
-        raise MoleculeError('No valid input cores were found, aborting run')
+    if not is_qd:
+        if not lig_list:
+            raise MoleculeError('No valid input ligands were found, aborting run')
+        elif not core_list:
+            raise MoleculeError('No valid input cores were found, aborting run')
 
     # Store the molecules in dataframes
     columns = pd.MultiIndex.from_tuples([MOL], names=['index', 'sub index'])
 
-    ligand_df = SettingsDataFrame(index=pd.RangeIndex(len(lig_list)),
-                                  columns=columns,
-                                  settings=arg)
-    core_df = SettingsDataFrame(index=pd.RangeIndex(len(core_list)),
-                                columns=columns.copy(),
-                                settings=arg)
+    if is_qd:
+        ligand_df = core_df = None
+        qd_df = SettingsDataFrame(
+            index=pd.RangeIndex(len(qd_list)), columns=columns, settings=arg
+        )
+        qd_df[MOL] = qd_list
+    else:
+        qd_df = None
+        ligand_df = SettingsDataFrame(
+            index=pd.RangeIndex(len(lig_list)), columns=columns, settings=arg
+        )
 
-    ligand_df[MOL] = lig_list
-    core_df[MOL] = core_list
+        core_df = SettingsDataFrame(
+            index=pd.RangeIndex(len(core_list)), columns=columns.copy(), settings=arg
+        )
 
-    return ligand_df, core_df
+        ligand_df[MOL] = lig_list
+        core_df[MOL] = core_list
+
+    return ligand_df, core_df, qd_df
 
 
 # TODO: Move this function to its own module; this is a workflow and NOT a workflow manager
@@ -283,8 +300,9 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     return ligand_df
 
 
-def prep_qd(ligand_df: SettingsDataFrame,
-            core_df: SettingsDataFrame) -> SettingsDataFrame:
+def prep_qd(ligand_df: Optional[SettingsDataFrame],
+            core_df: Optional[SettingsDataFrame],
+            qd_df: Optional[SettingsDataFrame]) -> SettingsDataFrame:
     """Function that handles all quantum dot (qd, i.e. core + all ligands) operations.
 
     * Constructing the quantum dots
@@ -294,13 +312,21 @@ def prep_qd(ligand_df: SettingsDataFrame,
 
     .. _Nano-CAT: https://github.com/nlesc-nano/nano-CAT
 
+    Has two accepted signatures:
+        * ``ligand_df = core_df = None``: Update an existing quantum dot dataframe (**qd_df**).
+        * ``qd_df = None``: Construct a new quantum dot dataframe from
+          **ligand_df** and **core_df**.
+
     Parameters
     ----------
     ligand_df : |CAT.SettingsDataFrame|_
-        A dataframe of ligand molecules. Molecules are stored in the *mol* column.
+        ``None`` or a dataframe of ligand molecules. Molecules are stored in the *mol* column.
 
     core_df : |CAT.SettingsDataFrame|_
-        A dataframe of core molecules. Molecules are stored in the *mol* column.
+        ``None`` or a dataframe of core molecules. Molecules are stored in the *mol* column.
+
+    qd_df : |CAT.SettingsDataFrame|_
+        ``None`` or a dataframe of quantum dots. Molecules are stored in the *mol* column.
 
     Returns
     -------
@@ -324,7 +350,13 @@ def prep_qd(ligand_df: SettingsDataFrame,
 
     # Construct the quantum dot DataFrame
     # If construct_qd is False, construct the dataframe without filling it with quantum dots
-    qd_df = init_qd_construction(ligand_df, core_df, construct_qd=construct_qd)
+    if qd_df is None:  # Construct new quantum dots
+        qd_df = init_qd_construction(ligand_df, core_df, construct_qd=construct_qd)
+    elif ligand_df is core_df is None:  # Update existing quantum dots
+        update_qd_df(qd_df)
+    else:
+        raise TypeError("Either qd_df must be 'None' or ligand_df "
+                        " and core_df must both be 'None'")
 
     # Start the ligand bulkiness workflow
     if bulk:

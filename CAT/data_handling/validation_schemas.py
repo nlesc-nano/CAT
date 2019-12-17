@@ -187,6 +187,15 @@ mol_schema: Schema = Schema({
     Optional_('is_core'):
         And(bool, error=".is_core expects a boolean"),
 
+    Optional_('is_qd'):
+        And(bool, error=".is_qd expects a boolean"),
+
+    Optional_('ligand_smiles'):
+        And(str, error=".ligand_smiles expects a string"),
+
+    Optional_('ligand_anchor'):
+        And(str, error=".ligand_smiles expects a string"),
+
     Optional_('column'):
         And(int, lambda n: n >= 0, error=".column expects an integer larger than or equal to 0"),
 
@@ -715,6 +724,9 @@ crs_schema: Schema = Schema({
 #: Schema for validating the ``['optional']['qd']['activation_strain']`` block.
 asa_schema: Schema = Schema({
     Optional_('use_ff', default=False):
+        bool,
+
+    Optional_('md', default=False):
         bool,
 
     # Delete files after the calculations are finished

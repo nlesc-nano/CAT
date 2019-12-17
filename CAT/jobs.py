@@ -113,6 +113,11 @@ def pre_process_settings(mol: Molecule, s: Settings,
     return ret
 
 
+JOB_PRESETS = frozenset({
+    'geometry optimization', 'frequency analysis', 'single point', 'MD calculation'
+})
+
+
 def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
     """Unpack the :class:`results` from a PLAMS-facilitated calculation.
 
@@ -136,7 +141,7 @@ def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
         ``"frequency analysis"``.
 
     """
-    if job_preset not in ('geometry optimization', 'frequency analysis', 'single point'):
+    if job_preset not in JOB_PRESETS:
         raise ValueError(f'Invalid value for job_preset: {repr(job_preset)}')
 
     # Unpack arguments
@@ -336,6 +341,61 @@ def job_geometry_opt(self, job_type: Type[Job],
 
     results = job.run()
     retrieve_results(self, results, 'geometry optimization')
+
+    inp_name = join(job.path, job.name + '.in')
+    try:
+        self.properties.job_path.append(inp_name)
+    except TypeError:
+        self.properties.job_path = [inp_name]
+
+    # Return results
+    if ret_results:
+        return results
+    return None
+
+
+@add_to_class(Molecule)
+def job_md(self, job_type: Type[Job],
+           settings: Settings,
+           name: str = 'MD',
+           ret_results: bool = False,
+           read_template: bool = False) -> Optional[Results]:
+    """Function for running an arbritrary jobs, extracting total energies and final geometries.
+
+    Paramaters
+    ----------
+    job_type : |Callable|_
+        A type Callable of a class derived from :class:`Job`, e.g. :class:`AMSJob`
+        or :class:`Cp2kJob`.
+
+    settings : |plams.Settings|_
+        The settings for **job**.
+
+    name : str
+        The name of **job**.
+
+    ret_results : bool
+        Whether or not the :class:`Results` instance should be returned or not.
+
+    read_template : bool
+        Whether or not to update **settings** using a QMFlows template or not.
+
+    Returns
+    -------
+    |plams.Results|_
+        Optional: If ``ret_results=True` return the :class:`Results` instance produced by this job.
+
+    """
+    # Grab the default settings for a specific job and update them with user provided settings
+    s = settings
+
+    # Run the job; extract geometries and energies
+    job = job_type(molecule=self, settings=s, name=name)
+    _name = _get_name(name)
+    log_start(job, self, 'MD calculation', _name)
+
+    results = job.run()
+    retrieve_results(self, results, 'MD calculation')
 
     inp_name = join(job.path, job.name + '.in')
     try:

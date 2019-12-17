@@ -562,12 +562,8 @@ class WorkFlow(AbstractDataClass):
 
         ret = pd.DataFrame(index=df.index)
         for key, series in df[columns].items():
-            try:
-                func = dtype_dict[series.dtype]
-            except KeyError:  # Plan b
-                func = pd.isnull
-            finally:
-                ret[key] = func(series)
+            func = dtype_dict.get(series.dtype, pd.isnull)
+            ret[key] = func(series)
         return ret
 
     @staticmethod

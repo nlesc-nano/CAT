@@ -142,3 +142,50 @@ CP2K_CHARM_singlepoint:
             print_level: low
             project: cp2k
             run_type: energy
+
+CP2K_CHARM_md:
+    description: CP2K molecular dynamics simulation with CHARMM forcefields
+    input:
+        motion:
+            md:
+                ensemble: NVT
+                temperature: 300.0
+                timestep: 1.0
+                time_start_val: 2500
+                steps: 5000
+                thermostat:
+                    type: CSVR
+                    csvr:
+                        timecon: 1250
+
+        force_eval:
+            method: FIST
+            mm:
+                forcefield:
+                    ignore_missing_critical_params: ''
+                    parmtype: CHM
+                    parm_file_name: null
+                    do_nonbonded: ''
+                    shift_cutoff: .TRUE.
+                    spline:
+                        emax_spline: 10e10
+                poisson:
+                    ewald:
+                        ewald_type: spme
+                        alpha: .44
+                        gmax: 24
+            subsys:
+                cell:
+                    abc: '[angstrom] 100.0 100.0 100.0'
+                    periodic: NONE
+                topology:
+                    conn_file_format: PSF
+                    conn_file_name: null
+                    coord_file_format: 'OFF'
+                    center_coordinates:
+                        center_point: 0.0 0.0 0.0
+
+        global:
+            print_level: low
+            project: cp2k
+            run_type: MD

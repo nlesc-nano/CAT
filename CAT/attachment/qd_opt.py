@@ -72,15 +72,15 @@ def init_qd_opt(qd_df: SettingsDataFrame) -> None:
 
 def start_qd_opt(mol_list: Iterable[Molecule],
                  jobs: Tuple[Optional[Type[Job]], ...], settings: Tuple[Optional[Settings], ...],
-                 forcefield=None, **kwargs) -> None:
+                 use_ff: bool = False, **kwargs) -> None:
     """Loop over all molecules in **mol_list** and perform geometry optimizations."""
     for mol in mol_list:
         mol.properties.job_path = []
-        qd_opt(mol, jobs, settings, forcefield=forcefield)
+        qd_opt(mol, jobs, settings, use_ff=use_ff)
 
 
 def qd_opt(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],
-           settings: Tuple[Optional[Settings], ...], forcefield: bool = False) -> None:
+           settings: Tuple[Optional[Settings], ...], use_ff: bool = False) -> None:
     """Perform an optimization of the quantum dot.
 
     Performs an inplace update of **mol**.
@@ -99,7 +99,7 @@ def qd_opt(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],
 
     """
     # Prepare the job settings
-    if forcefield:
+    if use_ff:
         qd_opt_ff(mol, jobs, settings)
         return None
 

@@ -10,6 +10,7 @@ asa:
         path: [optional, qd, dirname]
         use_ff: [optional, qd, activation_strain, use_ff]
         keep_files: [optional, qd, activation_strain, keep_files]
+        md: [optional, qd, activation_strain, md]
         job1: [optional, qd, activation_strain, job1]
         s1: [optional, qd, activation_strain, s1]
 

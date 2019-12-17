@@ -92,6 +92,8 @@ def validate_input(s: Settings) -> None:
     # Validate the input cores and ligands
     validate_mol(s.input_cores, 'input_cores', join(path, 'core'))
     validate_mol(s.input_ligands, 'input_ligands', join(path, 'ligand'))
+    if 'input_qd' in s:
+        validate_mol(s.input_qd, 'input_qd', join(path, 'qd'))
 
     # Create a dataCAT.Database instance
     if DATA_CAT:
