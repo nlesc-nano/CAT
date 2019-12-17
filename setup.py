@@ -26,7 +26,6 @@ setup(
     url='https://github.com/nlesc-nano/CAT',
     packages=[
         'CAT',
-        'CAT.abc',
         'CAT.attachment',
         'CAT.recipes',
         'CAT.data',
@@ -67,7 +66,8 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Natural Language :: English',
         'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7'
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8'
     ],
     test_suite='tests',
     python_requires='>=3.6',
