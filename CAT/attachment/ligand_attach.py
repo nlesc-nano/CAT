@@ -46,6 +46,7 @@ from typing import (List, Tuple, Any, Optional)
 import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
+from scipy.spatial import cKDTree
 
 from scm.plams import (Molecule, Atom, Settings)
 
@@ -287,16 +288,16 @@ def _get_rotmat1(vec1: np.ndarray, vec2: np.ndarray) -> np.ndarray:
 
     """
     # Increase the vector dimensionality if required
-    _vec1 = np.array(vec1, dtype=float, ndmin=2, copy=False)
-    _vec2 = np.array(vec2, dtype=float, ndmin=2, copy=False)
+    u_vec1 = np.array(vec1, dtype=float, ndmin=2, copy=False)
+    u_vec2 = np.array(vec2, dtype=float, ndmin=2, copy=False)
 
     with np.errstate(divide='raise', invalid='raise'):
         # Return a unit matrix if either vec1 or vec2 is zero
         try:
-            u_vec1 = vec1 / np.linalg.norm(_vec1, axis=1)[:, None]
-            u_vec2 = vec2 / np.linalg.norm(_vec2, axis=1)[:, None]
+            u_vec1 /= np.linalg.norm(u_vec1, axis=1)[:, None]
+            u_vec2 /= np.linalg.norm(u_vec2, axis=1)[:, None]
         except FloatingPointError:  # i.e. division by zero
-            shape = max(len(_vec1), len(_vec2)), 3, 3
+            shape = max(len(u_vec1), len(u_vec2)), 3, 3
             ret = np.zeros(shape, dtype=float)
             ret[:] = np.identity(3)
             return ret
@@ -307,11 +308,11 @@ def _get_rotmat1(vec1: np.ndarray, vec2: np.ndarray) -> np.ndarray:
                   [v3, v0, -v1],
                   [-v2, v1, v0]]).T
 
-    if len(_vec1) > 1 and len(_vec2) > 1:
+    if len(u_vec1) > 1 and len(u_vec2) > 1:
         return np.identity(3) + M + ((M@M).T / (1 + u_vec2.T@u_vec1).T[..., None]).T
-    elif len(_vec1) == 1:
+    elif len(u_vec1) == 1:
         return np.identity(3) + M + ((M@M).T / (1 + u_vec2@u_vec1[0].T).T).T
-    elif len(_vec2) == 1:
+    elif len(u_vec2) == 1:
         return np.identity(3) + M + ((M@M).T / (1 + u_vec2[0]@u_vec1.T).T).T
     raise ValueError('vec1 and vec2 expect 1- or 2-dimensional array-like objects; '
                      f'observed shapes: vec1: {np.asarray(vec1).shape} and vec2: '
@@ -319,8 +320,7 @@ def _get_rotmat1(vec1: np.ndarray, vec2: np.ndarray) -> np.ndarray:
 
 
 def _get_rotmat2(vec: np.ndarray, step: float = (1/16)) -> np.ndarray:
-    r"""Calculate the rotation matrix for rotating m vectors along their axes, each vector
-    yielding k = (2 / step) possible rotations.
+    r"""Calculate the rotation matrix for rotating m vectors along their axes, each vector yielding :math:`k = (2 / step)` possible rotations.
 
     Paramaters
     ----------
@@ -330,13 +330,13 @@ def _get_rotmat2(vec: np.ndarray, step: float = (1/16)) -> np.ndarray:
     step : float
         The rotation stepsize as fraction of :math:`2*/pi`.
 
-    """
-    # Increase the vector dimensionality if required
-    _vec = np.array(vec, dtype=float, ndmin=2, copy=False)
+    """  # noqa
+    # Increase the vector dimensionality if required and create unit vectors
+    v = np.array(vec, dtype=float, ndmin=2, copy=False)
+    v /= np.linalg.norm(v, axis=1)[:, None]
 
-    v = _vec / np.linalg.norm(_vec, axis=1)[:, None]
     v1, v2, v3 = v.T
-    zero = np.zeros(len(_vec))
+    zero = np.zeros(len(v))
     W = np.array([[zero, -v3, v2],
                   [v3, zero, -v1],
                   [-v2, v1, zero]]).T
@@ -400,48 +400,100 @@ def rot_mol(xyz_array: np.ndarray,
 
     """
     # Turn all arguments into numpy arrays with appropiate dimensions
-    xyz_array = sanitize_dim_3(xyz_array)
+    xyz = sanitize_dim_3(xyz_array)
     vec1 = sanitize_dim_2(vec1)
     vec2 = sanitize_dim_2(vec2)
 
     # Define slices
-    if xyz_array.ndim == 3 and len(xyz_array) != 1:
+    if xyz.ndim == 3 and len(xyz) != 1:
         length = None
     else:
         length = max([len(vec1), len(vec2)])
     idx1 = slice(0, None), idx
     idx2 = slice(0, length), slice(int(2 / step)), idx
 
-    # Translate xyz_array[idx] to the origin and rotate
-    xyz_array -= xyz_array[idx1]
-    rotmat = _get_rotmat1(vec1, vec2)
-    xyz_array = xyz_array@rotmat
+    # Translate xyz[idx] to the origin and rotate
+    xyz -= xyz[idx1]
+    rotmat1 = _get_rotmat1(vec1, vec2)
+    xyz = xyz@rotmat1
 
     # Create all k possible rotations of all m ligands
-    rotmat = _get_rotmat2(vec2, step=step)
-    xyz_array = np.swapaxes(xyz_array@rotmat, 0, 1)
+    rotmat2 = _get_rotmat2(vec2, step=step)
+    xyz = np.swapaxes(xyz@rotmat2, 0, 1)
+    if atoms_other is None:
+        return xyz
 
     # Translate the the molecules in xyz_array
-    if atoms_other is not None:
-        atoms_other = sanitize_dim_2(atoms_other)
-        xyz_array += (atoms_other[:, None, :] - xyz_array[idx2])[..., None, :]
-        if bond_length:
-            mult = (np.asarray(bond_length) / np.linalg.norm(vec2, axis=1))[:, None]
-            xyz_array -= (vec2 * mult)[:, None, :]
+    at_other = sanitize_dim_2(atoms_other)
+    xyz += (at_other[:, None, :] - xyz[idx2])[..., None, :]
+    if bond_length:
+        bond_length = np.asarray(bond_length)
+        mult = (bond_length / np.linalg.norm(vec2, axis=1))[:, None]
+        xyz -= (vec2 * mult)[:, None, :]
 
     # Returns the conformation of each molecule that maximizes the inter-moleculair distance
     # Or return all conformations if dist_to_self = False and atoms_other = None
-    if dist_to_self is not None or atoms_other is not None:
-        a, b, c, d = xyz_array.shape
-        ret_array = np.empty((a, c, d), order='F')
-        for i, xyz in enumerate(xyz_array):
-            dist_array = cdist(xyz.reshape(b*c, d), atoms_other).reshape(b, c, len(atoms_other))
-            idx_min = np.nansum(np.exp(-dist_array), axis=(1, 2)).argmin()
-            if dist_to_self is not None:
-                atoms_other = np.concatenate((atoms_other, xyz[idx_min]))
-            ret_array[i] = xyz[idx_min]
-        return ret_array
-    return xyz_array
+    return rotation_check_kdtree(xyz, at_other)
+
+
+def rotation_check_kdtree(xyz: np.ndarray, at_other: np.ndarray, k: int = 10):
+    """Perform the rotation check using SciPy's :class:`cKDTree<scipy.spatial.cKDTree.
+
+    Parameters
+    ----------
+    xyz : :math:`(m, n, l, 3)` :class:`numpy.ndarray`
+        A 4D array of Cartesian coordinates representing the :math:`n` rotameters of :math:m`
+        ligands with :math:`l` atoms each.
+
+    at_other : :math:`(m, 3)` :class:`numpy.ndarray`
+        A 2D array with the Cartesian of neighbouring atoms.
+
+    k : :class:`int`
+        The number of to-be considered neighbours when performing the rotation check.
+
+    See Also
+    --------
+    :meth:`cKDTree.query<scipy.spatial.cKDTree.query>`
+        Query the kd-tree for nearest neighbors.
+
+    """
+    a, b, c, d = xyz.shape
+    ret = np.empty((a, c, d), order='F')
+    distance_upper_bound = _get_distance_upper_bound(at_other)
+
+    for i, ar in enumerate(xyz):
+        tree = cKDTree(at_other)
+        dist, _ = tree.query(ar.reshape(b*c, d), k=k, distance_upper_bound=distance_upper_bound)
+        dist.shape = b, c, k
+
+        idx_min = np.exp(-dist).sum(axis=(1, 2)).argmin()
+        at_other = np.concatenate((at_other, ar[idx_min]))
+        ret[i] = ar[idx_min]
+    return ret
+
+
+def _get_distance_upper_bound(at_other: np.ndarray, r_min: float = 5.0,
+                              r_max: float = 10.0) -> float:
+    """Construct an estimate for **distance_upper_bound** based on the mean nearest-neighbour distance in **at_other**.
+
+    The to-be returned value is clipped, if necessary, by **r_min** and **r_max**.
+
+    """  # noqa
+    tree = cKDTree(at_other)
+    dist, _ = tree.query(at_other, k=2, distance_upper_bound=10.0)
+    dist = dist.T[1]
+    dist[dist == np.inf] = np.nan
+
+    # Check if distance_upper_bound=10.0 is too small; try again with the full dist matrix if so
+    if np.isnan(dist).all():
+        dist = cdist(at_other, at_other)
+        np.fill_diagonal(dist, np.inf)
+        r = dist.min(axis=0).mean()
+    else:
+        r = np.nanmean(dist)
+
+    # Clip and return
+    return np.clip(r, r_min, r_max)
 
 
 def rot_mol_angle(xyz_array: np.ndarray,
@@ -568,12 +620,12 @@ def _is_mol_sequence(item) -> bool:
     return _is_sequence(item) and _is_atom_sequence(item[-1])
 
 
-def sanitize_dim_2(arg: Any) -> np.ndarray:
+def sanitize_dim_2(value: Any) -> np.ndarray:
     """Convert a PLAMS atom or sequence of :math:`n` PLAMS atoms into a :math:`n*3` array.
 
     Parameters
     ----------
-    arg : object
+    value : object
         The to be parsed object.
         Acceptable types are:
 
@@ -594,23 +646,20 @@ def sanitize_dim_2(arg: Any) -> np.ndarray:
         or the content of **arg** cannot be converted into an array of floats.
 
     """
-    MOL = Molecule()
+    value = value.coords if isinstance(value, Atom) else value
+    try:
+        ret = np.array(value, dtype=float, copy=False)
+    except TypeError:
+        ret = Molecule.as_array(None, atom_subset=value)
 
-    if _is_atom(arg):
-        return np.array(arg.coords)[None, :]
-
-    elif _is_atom_sequence(arg):
-        return MOL.as_array(atom_subset=arg)
-
-    else:
-        ret = np.array(arg, ndmin=2, dtype=float, copy=False)
-        if ret.ndim > 2:
-            raise ValueError(f'Dimensionality of arg ({ret.ndim}) is larger than 2')
-        return ret
+    if ret.ndim < 2:
+        ret.shape = (2 - ret.ndim) * (1,) + ret.shape
+    elif ret.ndim > 2:
+        raise ValueError(f"Failed to create a 2D array; observed dimensionality: {ret.ndim}")
+    return ret
 
 
-def sanitize_dim_3(arg: Any,
-                   padding: float = np.nan) -> np.ndarray:
+def sanitize_dim_3(value: Any, padding: float = np.nan) -> np.ndarray:
     """Convert a Molecule or sequence of :math:`m` molecules into an :math:`m*n*3` array.
 
     If necessary, the to-be returned array is padded with **padding** .
@@ -643,23 +692,22 @@ def sanitize_dim_3(arg: Any,
         or the content of **arg** cannot be converted into an array of floats.
 
     """
-    MOL = Molecule()
+    if _is_atom(value):
+        return np.array(value.coords)[None, None, :]
 
-    if _is_atom(arg):
-        return np.array(arg.coords)[None, None, :]
+    elif _is_atom_sequence(value):
+        return Molecule.as_array(None, atom_subset=value)[None, :]
 
-    elif _is_atom_sequence(arg):
-        return MOL.as_array(atom_subset=arg)[None, :]
-
-    elif _is_mol_sequence(arg):
-        max_at = max(len(mol) for mol in arg)
-        ret = np.full((len(arg), max_at, 3), padding, order='F')
-        for i, mol in enumerate(arg):
-            ret[i, 0:len(mol)] = MOL.as_array(atom_subset=mol)
+    elif _is_mol_sequence(value):
+        max_at = max(len(mol) for mol in value)
+        ret = np.full((len(value), max_at, 3), padding, order='F')
+        for i, mol in enumerate(value):
+            j = len(mol)
+            ret[i, :j] = Molecule.as_array(None, atom_subset=mol)
         return ret
 
     else:
-        ret = np.array(arg, ndmin=3, dtype=float, copy=False)
+        ret = np.array(value, ndmin=3, dtype=float, copy=False)
         if ret.ndim > 3:
-            raise ValueError(f'Dimensionality of arg ({ret.ndim}) is larger than 3')
+            raise ValueError(f"Failed to create a 3D array; observed dimensionality: {ret.ndim}")
         return ret
