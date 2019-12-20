@@ -25,6 +25,7 @@ Option                                    Description
 
 :attr:`optional.core.dirname`             The name of the directory where all cores will be stored.
 :attr:`optional.core.dummy`               Atomic number of symbol of the core dummy atoms.
+:attr:`optional.core.subset`              Settings related to the partial replacement of core dummy atoms.
 
 :attr:`optional.ligand.dirname`           The name of the directory where all ligands will be stored.
 :attr:`optional.ligand.optimize`          Optimize the geometry of the to-be attached ligands.
@@ -57,6 +58,7 @@ Default Settings
         core:
             dirname: core
             dummy: Cl
+            subset: null
 
         ligand:
             dirname: ligand
@@ -218,6 +220,7 @@ Core
             core:
                 dirname: core
                 dummy: Cl
+                subset: null
 
 |
 
@@ -237,12 +240,53 @@ Core
         :Parameter:     * **Type** - :class:`str` or :class:`int`
                         * **Default value** – ``17``
 
-
         Atomic number of symbol of the core dummy atoms.
 
         The atomic number or atomic symbol of the atoms in the core which are to be
         replaced with ligands. Alternatively, dummy atoms can be manually specified
         with the core_indices variable.
+
+
+    .. attribute:: optional.core.subset
+
+        :Parameter:     * **Type** - :class:`dict`, optional
+                        * **Default value** – ``None``
+
+        Settings related to the partial replacement of core dummy atoms with ligands.
+
+        If not ``None``, has access to two further keywords:
+        :attr:`subset.p` and :attr:`subset.mode`.
+
+
+    .. attribute:: optional.core.subset.p
+
+        :Parameter:     * **Type** - :class:`float`
+
+        The fraction of core dummy atoms that will actually be exchanged for ligands.
+
+        The provided value should satisfy the following condition: :math:`0.0 < p <= 1.0`.
+
+        .. note::
+            This argument has no value be default and must thus be provided by the user.
+
+
+    .. attribute:: optional.core.subset.mode
+
+        :Parameter:     * **Type** - :class:`str`
+                        * **Default value** – ``"uniform"``
+
+        Defines how the dummy atom subset, whose size is defined by the fraction :math:`p`, will be generated.
+
+        Accepts one of the following values:
+
+        * ``"random"``: A random distribution.
+        * ``"uniform"``: A uniform distribution; the distance between each
+          successive dummy atom and all previous dummy atoms is maximized.
+        * ``"cluster"``: A clustered distribution; the distance between each
+          successive dummy atom and all previous dummy atoms is minmized.
+
+        It should be noted that all three methods converge towards the same set
+        as :math:`p` approaches :math:`1.0`.
 
 |
 

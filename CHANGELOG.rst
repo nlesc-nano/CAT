@@ -6,12 +6,17 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 
-0.7.5
+0.8.0
 *****
 * WiP: Added an option the import pre-built quantum dots.
 
 
 0.7.5
+*****
+* Added the ability to populate only a (random-ish) subset of core anchors with ligands.
+
+
+0.7.4
 *****
 * The ligand rotation check is now substantially faster:
   a distance cutoff has been implemented for the construction of distance matrices.
