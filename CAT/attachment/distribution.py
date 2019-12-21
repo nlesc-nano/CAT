@@ -22,7 +22,7 @@ API
 
 import random
 import reprlib
-from typing import Generator, Optional, Iterable, TypeVar, Sequence, FrozenSet, Any, Union
+from typing import Generator, Optional, Iterable, TypeVar, FrozenSet, Any, Union
 from itertools import islice
 
 import numpy as np
@@ -39,21 +39,22 @@ MODE_SET: FrozenSet[str] = frozenset({'uniform', 'random', 'cluster'})
 T = TypeVar('T')
 
 
-def distribute_idx(core: Union[Molecule, np.ndarray], idx: Sequence[int],
+def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[int]],
                    mode: str = 'uniform', p: float = 0.5, **kwargs: Any) -> np.ndarray:
     r"""Create a new distribution of atomic indices from **idx** of length :code:`p * len(idx)`.
 
     Parameters
     ----------
-    core : array-like
+    core : array-like [:class:`int`]
         A 2D array-like object (such as a :class:`Molecule` instance) consisting
         of Cartesian coordinates.
 
-    idx : :class:`Sequence<collections.abc.Sequence>` [:class:`int`]
-        A sequence of integers representing the 0-based indices of all anchor atoms in **core**.
+    idx : array-like [:class:`int`]
+        An integer or iterable of integers representing the 0-based indices of
+        all anchor atoms in **core**.
 
     mode : :class:`str`
-        How the distribution of indices will be generated.
+        How the subset of to-be returned indices will be generated.
         Accepts one of the following values:
 
         * ``"random"``: A random distribution.
@@ -64,7 +65,7 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Sequence[int],
 
     p : :class:`float`
         A float obeying the following condition: :math:`0.0 < p <= 1.0`.
-        Represents the fraction of **idx** that will, later on, be exchanged for ligands.
+        Represents the fraction of **idx** that will be returned.
 
     \**kwargs : :data:`Any<typing.Any>`
         Further keyword arguments for the **mode**-specific functions.
@@ -76,34 +77,49 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Sequence[int],
         If **idx** has :math:`i` elements,
         then the length of the returned list is equal to :math:`\max(1, p*i)`.
 
+    See Also
+    --------
+    :func:`uniform_idx`
+        Yield the column-indices of **dist** which yield a uniform or clustered distribution.
+
+    :func:`random_idx`
+        Yield random elements from an **iterable**.
+
     """
+    # Convert **idx** into an array
+    try:
+        idx_ar = np.array(idx, dtype=int, ndmin=1, copy=False)
+    except TypeError:  # A Collection or Iterator
+        idx_ar = np.fromiter(idx, dtype=int)
+
     # Validate the input
     if mode not in MODE_SET:
         raise ValueError(f"Invalid value for 'mode' ({reprlib.repr(mode)}); "
-                         f"accepted values: {tuple(MODE_SET)}")
+                         f"accepted values: {reprlib.repr(tuple(MODE_SET))}")
     elif not (0.0 < p <= 1.0):
         raise ValueError("'p' should be larger than 0.0 and smaller than or equal to 1.0; "
-                         f"observed value: {repr(p)}")
-    elif p == 1.0:
-        return np.fromiter(idx, count=len(idx), dtype=int)
+                         f"observed value: {reprlib.repr(p)}")
+    elif p == 1.0:  # Ensure that **idx** is always returned as copy
+        return idx_ar.copy() if idx_ar is idx else idx_ar
 
-    # Create an iterator of atomic indices
+    # Create an array of indices
     if mode in ('uniform', 'cluster'):
-        xyz = np.array(core, dtype=float, ndmin=2, copy=False)[idx]
+        xyz = np.array(core, dtype=float, ndmin=2, copy=False)[idx_ar]
         dist = cdist(xyz, xyz)
         operation = 'max' if 'cluster' else 'min'
-        generator = (idx[i] for i in uniform_idx(dist, operation, kwargs.get('start', None)))
+        start = kwargs.get('start', None)
+        generator = (idx_ar[i] for i in uniform_idx(dist, operation, start=start))
     elif mode == 'random':
-        generator = random_idx(idx)
+        generator = random_idx(idx_ar)
 
     # Return a list of `p * len(idx)` atomic indices
-    stop = max(1, round(p * len(idx)))
-    return np.fromiter(islice(generator, stop), count=stop, dtype=int)
+    stop = max(1, round(p * len(idx_ar)))
+    return np.fromiter((i for i in islice(generator, stop)), count=p, dtype=int)
 
 
 def uniform_idx(dist: np.ndarray, operation: str = 'max',
                 start: Optional[int] = None) -> Generator[int, None, None]:
-    r"""Return the column-indices of **dist**, :math:`d`, which yield a uniform or clustered distribution.
+    r"""Yield the column-indices of **dist** which yield a uniform or clustered distribution.
 
     Given the symmetric distance matrix :math:`D` and
     a vector :math:`\boldsymbol{d}` (representing a set of indices in :math:`D`),
