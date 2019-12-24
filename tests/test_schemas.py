@@ -161,7 +161,8 @@ def test_core_schema() -> None:
     core_dict = {'dirname': '.'}
     ref = {
         'dirname': '.',
-        'dummy': 17
+        'dummy': 17,
+        'subset': None
     }
 
     assertion.eq(core_schema.validate(core_dict), ref)

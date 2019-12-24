@@ -67,6 +67,7 @@ Verbose default Settings
         core:
             dirname: core
             dummy: Cl
+            subset: null
 
         ligand:
             dirname: ligand
@@ -110,6 +111,7 @@ Maximum verbose default Settings
         core:
             dirname: core
             dummy: Cl
+            subset: null
 
         ligand:
             dirname: ligand

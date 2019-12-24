@@ -19,6 +19,7 @@ Index
     qd_opt_schema
     crs_schema
     asa_schema
+    subset_schema
     _class_dict
     _class_dict_scm
 
@@ -45,6 +46,8 @@ API
 .. autodata:: asa_schema
     :annotation: = schema.Schema
 .. autodata:: crs_schema
+    :annotation: = schema.Schema
+.. autodata:: subset_schema
     :annotation: = schema.Schema
 .. autodata:: _class_dict
     :annotation: = dict[str, type]
@@ -81,7 +84,7 @@ from ..mol_utils import to_atnum
 
 __all__ = ['mol_schema', 'core_schema', 'ligand_schema', 'qd_schema', 'database_schema',
            'mongodb_schema', 'bde_schema', 'ligand_opt_schema', 'qd_opt_schema', 'crs_schema',
-           'asa_schema']
+           'asa_schema', 'subset_schema']
 
 
 def val_job_type(value: type) -> type:
@@ -241,7 +244,22 @@ core_schema: Schema = Schema({
             And(int, Use(to_atnum)),
             And(str, Use(to_atnum)),
             error='optional.core.dummy expects a valid atomic number (int) or symbol (string)'
-        )
+        ),
+
+    Optional_('subset', default=None):
+        Or(None, dict)
+})
+
+#: Schema for validating the ``['optional']['core']['subset']`` block.
+subset_schema: Schema = Schema({
+    'p':
+        And(int, float, lambda n: 0.0 < n <= 1.0, Use(float)),
+
+    Optional_('mode', default='uniform'):
+        And(str, lambda n: n.lower() in {'uniform', 'random', 'cluster'}, Use(str.lower)),
+
+    Optional_('start', default=None):
+        And(None, int)
 })
 
 _db_names = ('core', 'ligand', 'qd')

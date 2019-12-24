@@ -29,6 +29,7 @@ API
 from time import time
 from typing import (Optional, Tuple)
 
+import numpy as np
 import pandas as pd
 
 from scm.plams import Settings, MoleculeError
@@ -45,6 +46,7 @@ from .data_handling.validate_input import validate_input
 
 from .attachment.qd_opt import init_qd_opt
 from .attachment.ligand_opt import init_ligand_opt
+from .attachment.distribution import distribute_idx
 from .attachment.ligand_attach import init_qd_construction
 from .attachment.ligand_anchoring import init_ligand_anchoring
 
@@ -210,6 +212,7 @@ def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
     """
     # Unpack arguments
     dummy = core_df.settings.optional.core.dummy
+    subset = core_df.settings.optional.core.subset
 
     idx_tuples = []
     for core in core_df[MOL]:
@@ -218,11 +221,16 @@ def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
 
         # Returns the indices and Atoms of all dummy atom ligand placeholders in the core
         if not core.properties.dummies:
-            _at_idx, core.properties.dummies = zip(*[(j, atom) for j, atom in enumerate(core, 1) if
-                                                     atom.atnum == dummy])
+            at_idx = np.array([i for i, atom in enumerate(core) if atom.atnum == dummy])
         else:
-            _at_idx, core.properties.dummies = zip(*[(j, core[j]) for j in core.properties.dummies])
-        dummies = core.properties.dummies
+            at_idx = np.array([i for i in core.properties.dummies]) - 1
+        if subset:
+            at_idx = distribute_idx(core, at_idx, **subset)
+
+        # Convert atomic indices into atoms
+        at_idx += 1
+        at_idx.sort()
+        core.properties.dummies = dummies = [core[i] for i in at_idx]
 
         # Returns an error if no dummy atoms were found
         if not dummies:
@@ -231,11 +239,9 @@ def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
                                 f"(formula: {formula})")
 
         # Delete all core dummy atoms
-        for at in reversed(dummies):
+        for at in dummies:
             core.delete_atom(at)
-
-        at_idx = ' '.join(str(i) for i in sorted(_at_idx))
-        idx_tuples.append((formula, at_idx))
+        idx_tuples.append((formula, ' '.join(at_idx.astype(str))))
 
     # Create and return a new dataframe
     idx = pd.MultiIndex.from_tuples(idx_tuples, names=['formula', 'anchor'])

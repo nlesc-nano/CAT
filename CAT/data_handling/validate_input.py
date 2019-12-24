@@ -24,7 +24,7 @@ from scm.plams import Settings
 from CAT.data_handling.validation_schemas import (
     core_schema, ligand_schema, qd_schema, database_schema,
     mongodb_schema, bde_schema, qd_opt_schema, crs_schema, asa_schema,
-    ligand_opt_schema
+    ligand_opt_schema, subset_schema
 )
 
 from .validate_ff import validate_ff, update_ff_jobs
@@ -72,6 +72,8 @@ def validate_input(s: Settings) -> None:
     # Validate some of the more complex optionala rguments
     if s.optional.database.mongodb:
         s.optional.database.mongodb = mongodb_schema.validate(s.optional.database.mongodb)
+    if s.optional.core.subset:
+        s.optional.core.subset = subset_schema.validate(s.optional.core.subset)
     if s.optional.ligand.optimize:
         s.optional.ligand.optimize = ligand_opt_schema.validate(s.optional.ligand.optimize)
     if s.optional.ligand['cosmo-rs']:
