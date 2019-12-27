@@ -253,13 +253,16 @@ core_schema: Schema = Schema({
 #: Schema for validating the ``['optional']['core']['subset']`` block.
 subset_schema: Schema = Schema({
     'p':
-        And(int, float, lambda n: 0.0 < n <= 1.0, Use(float)),
+        Or(
+            And(int, lambda n: 0 < n <= 1, Use(float)),
+            And(float, lambda n: 0.0 < n <= 1.0)
+        ),
 
     Optional_('mode', default='uniform'):
         And(str, lambda n: n.lower() in {'uniform', 'random', 'cluster'}, Use(str.lower)),
 
     Optional_('start', default=None):
-        And(None, int)
+        Or(None, int)
 })
 
 _db_names = ('core', 'ligand', 'qd')
