@@ -13,7 +13,7 @@ from assertionlib import assertion
 from CAT.utils import get_template
 from CAT.data_handling.validation_schemas import (
     mol_schema, core_schema, ligand_schema, qd_schema, database_schema,
-    mongodb_schema, bde_schema, qd_opt_schema, crs_schema
+    mongodb_schema, bde_schema, qd_opt_schema, crs_schema, subset_schema
 )
 
 PATH = join('tests', 'test_files')
@@ -440,3 +440,52 @@ def test_bde_schema() -> None:
         assertion.eq(bde_schema.validate(bde_dict)[s], ref)
         bde_dict[s] = join(PATH, 'settings.yaml')
         assertion.eq(bde_schema.validate(bde_dict)[s], ref)
+
+
+def test_subset_schema() -> None:
+    """Test :data:`CAT.data_handling.validation_schemas.subset_schema`."""
+    subset_dict = {'p': 0.5}
+    ref = {
+        'p': 0.5,
+        'mode': 'uniform',
+        'start': None
+    }
+
+    assertion.eq(subset_schema.validate(subset_dict), ref)
+
+    subset_dict['p'] = 'bob'  # Exception: incorrect type
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['p'] = -1  # Exception: incorrect value
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['p'] = 0  # Exception: incorrect value
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['p'] = 1.5  # Exception: incorrect value
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['p'] = 0.33
+    assertion.eq(subset_schema.validate(subset_dict)['p'], 0.33)
+    subset_dict['p'] = 1
+    assertion.eq(subset_schema.validate(subset_dict)['p'], 1.0)
+
+    subset_dict['mode'] = 1  # Exception: incorrect type
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['mode'] = 'bob'  # Exception: incorrect value
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['mode'] = 'random'
+    assertion.eq(subset_schema.validate(subset_dict)['mode'], 'random')
+    subset_dict['mode'] = 'uniform'
+    assertion.eq(subset_schema.validate(subset_dict)['mode'], 'uniform')
+    subset_dict['mode'] = 'cluster'
+    assertion.eq(subset_schema.validate(subset_dict)['mode'], 'cluster')
+
+    subset_dict['start'] = 1.0  # Exception: incorrect type
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['start'] = 'bob'  # Exception: incorrect type
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['start'] = None
+    assertion.is_(subset_schema.validate(subset_dict)['start'], None)
+    subset_dict['start'] = 42
+    assertion.eq(subset_schema.validate(subset_dict)['start'], 42)
+    subset_dict['start'] = -5
+    assertion.eq(subset_schema.validate(subset_dict)['start'], -5)
+    subset_dict['start'] = 0
+    assertion.eq(subset_schema.validate(subset_dict)['start'], 0)

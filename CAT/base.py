@@ -219,15 +219,17 @@ def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
         # Checks the if the dummy is a string (atomic symbol) or integer (atomic number)
         formula = core.get_formula()
 
-        # Returns the indices and Atoms of all dummy atom ligand placeholders in the core
+        # Returns the indices of all dummy atom ligand placeholders in the core
         if not core.properties.dummies:
             at_idx = np.array([i for i, atom in enumerate(core) if atom.atnum == dummy])
         else:
-            at_idx = np.array([i for i in core.properties.dummies]) - 1
+            dummies = core.properties.dummies
+            at_idx = np.fromiter(dummies, count=len(dummies), dtype=int)
+            at_idx -= 1
         if subset:
             at_idx = distribute_idx(core, at_idx, **subset)
 
-        # Convert atomic indices into atoms
+        # Convert atomic indices into Atoms
         at_idx += 1
         at_idx.sort()
         core.properties.dummies = dummies = [core[i] for i in at_idx]
@@ -241,7 +243,9 @@ def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
         # Delete all core dummy atoms
         for at in dummies:
             core.delete_atom(at)
-        idx_tuples.append((formula, ' '.join(at_idx.astype(str))))
+        idx_tuples.append(
+            (formula, ' '.join(at_idx.astype(str)))
+        )
 
     # Create and return a new dataframe
     idx = pd.MultiIndex.from_tuples(idx_tuples, names=['formula', 'anchor'])
