@@ -41,12 +41,12 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
 
     Parameters
     ----------
-    core : array-like [:class:`int`]
+    core : array-like [:class:`float`]
         A 2D array-like object (such as a :class:`Molecule` instance) consisting
         of Cartesian coordinates.
 
     idx : array-like [:class:`int`]
-        An integer or iterable of integers representing the 0-based indices of
+        An integer or iterable of unique integers representing the 0-based indices of
         all anchor atoms in **core**.
 
     p : :class:`float`
@@ -58,9 +58,9 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
         Accepts one of the following values:
 
         * ``"random"``: A random distribution.
-        * ``"uniform"``: A uniform distribution; the distance between each successive point and
+        * ``"uniform"``: A uniform distribution; the distance between each successive atom and
           all previous points is maximized.
-        * ``"cluster"``: A clustered distribution; the distance between each successive point and
+        * ``"cluster"``: A clustered distribution; the distance between each successive atom and
           all previous points is minmized.
 
     \**kwargs : :data:`Any<typing.Any>`
@@ -117,8 +117,10 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max',
     r"""Yield the column-indices of **dist** which yield a uniform or clustered distribution.
 
     Given the symmetric distance matrix :math:`D` and
-    a vector :math:`\boldsymbol{d}` (representing a set of indices in :math:`D`),
-    then the :math:`i`'th element :math:`\boldsymbol{d}_{i}` is defined as following:
+    the vector :math:`\boldsymbol{d} \in \mathbb{Z}^{n}`
+    (representing a set of indices in :math:`D`),
+    then the :math:`i`'th element :math:`\boldsymbol{d}_{i}` is
+    defined as following:
 
     .. math::
 
@@ -157,7 +159,7 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max',
     if operation not in ('min', 'max'):
         raise ValueError(f"Invalid value for 'mode' ({reprlib.repr(operation)}); "
                          f"accepted values: ('min', 'max')")
-    dist_sqr = np.asarray(dist)**2  # Squared distance matrix
+    dist_sqr = np.asarray(dist, dtype=float)**2  # Squared distance matrix
     norm_sqr = 0.0  # Squared norm
 
     # Use either argmin or argmax
@@ -168,15 +170,23 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max',
     else:
         fill_value = 0.0
         arg_func = np.ndarray.argmax
-    shift = start if start is not None else np.unravel_index(arg_func(dist), dist.shape)[0]
-    dist_sqr[:] = np.roll(dist_sqr, shift, axis=0)  # Shift the first row to **shift**
+
+    # Shift the first row to **shift**
+    if start is None:
+        shift = np.unravel_index(arg_func(dist_sqr), dist_sqr.shape)[0]
+    else:
+        shift = start
+    dist_sqr[:] = np.roll(dist_sqr, shift, axis=0)
+
+    # Map the indices of the (newly rolled) distance matrix to its original
+    idx_shift = np.roll(np.arange(len(dist_sqr)), shift)
 
     # Yield indices
-    for i, ar in enumerate(dist_sqr):
+    for ar in dist_sqr:
         ar_sqrt = np.sqrt(ar + norm_sqr)
 
         j = arg_func(ar_sqrt)
         norm_sqr += ar[j]
-
         dist_sqr[:, j] = fill_value
-        yield j
+
+        yield idx_shift[j]
