@@ -26,6 +26,7 @@ from itertools import islice
 
 import numpy as np
 from scipy.spatial.distance import cdist
+from scipy.special import expit
 
 from scm.plams import Molecule
 
@@ -102,7 +103,7 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
     if mode in ('uniform', 'cluster'):
         xyz = np.array(core, dtype=float, ndmin=2, copy=False)[idx_ar]
         dist = cdist(xyz, xyz)
-        operation = 'max' if mode == 'cluster' else 'min'
+        operation = 'max' if mode == 'uniform' else 'min'
         iterable = (idx_ar[i] for i in uniform_idx(dist, operation, kwargs.get('start', None)))
     elif mode == 'random':
         iterable = np.random.permutation(idx_ar)
@@ -110,6 +111,20 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
     # Return a list of `p * len(idx)` atomic indices
     stop = max(1, round(p * len(idx_ar)))
     return np.fromiter(islice(iterable, stop), count=stop, dtype=int)
+
+
+def sigmoid(x: np.ndarray, a: float = 0.0) -> np.ndarray:
+    r"""Return the (inverted) logistic sigmoid of **x**: :math:`\frac{1}{1 + e^{x - 1.5a}}`."""
+    return expit(-(x - 2*a))
+
+
+def apply_weight(dist: np.ndarray) -> np.ndarray:
+    """Weight all values in **dist** using :func:`sigmoid`."""
+    dist_cp = dist.copy()
+    np.fill_diagonal(dist_cp, np.inf)
+
+    a = dist_cp.min(axis=0).mean()
+    return sigmoid(dist, a)
 
 
 def uniform_idx(dist: np.ndarray, operation: str = 'max',
@@ -159,6 +174,7 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max',
     if operation not in ('min', 'max'):
         raise ValueError(f"Invalid value for 'mode' ({reprlib.repr(operation)}); "
                          f"accepted values: ('min', 'max')")
+
     dist_sqr = np.asarray(dist, dtype=float)**2  # Squared distance matrix
     norm_sqr = 0.0  # Squared norm
 
