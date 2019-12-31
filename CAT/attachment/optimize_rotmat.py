@@ -71,7 +71,11 @@ def optimize_rotmat(mol: np.ndarray, anchor: int = 0) -> np.ndarray:
     # Create a first guess for the starting
     vec1 = xyz.mean(axis=0) - xyz[i]
     vec2 = np.array([1, 0, 0], dtype=float)
-    rotmat1 = rotation_matrix(vec1, vec2)
+    with np.errstate(invalid='raise'):
+        try:
+            rotmat1 = rotation_matrix(vec1, vec2)
+        except FloatingPointError:
+            return np.eye(3)
     xyz_new = xyz@rotmat1.T
 
     # Optimize the trial vector; return the matching rotation matrix
