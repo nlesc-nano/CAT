@@ -255,7 +255,7 @@ Core
         Settings related to the partial replacement of core dummy atoms with ligands.
 
         If not ``None``, has access to two further keywords:
-        :attr:`subset.p` and :attr:`subset.mode`.
+        :attr:`subset.p`, :attr:`subset.mode` and :attr:`subset.follow_edge`.
 
 
     .. attribute:: optional.core.subset.p
@@ -287,6 +287,26 @@ Core
 
         It should be noted that all three methods converge towards the same set
         as :math:`p` approaches :math:`1.0`.
+
+
+    .. attribute:: optional.core.subset.follow_edge
+
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``False``
+
+        Construct the dummy atom distance matrix by following the edges of the
+        (Cartesian coordinate) polyhedron, rather than directly moving through space
+        as is the case with the normal distance matrix.
+
+        Only relevant when :attr:`subset.mode` is set to either ``"uniform"`` or ``"cluster"``.
+
+        .. image:: _images/polyhedron.png
+            :scale: 30 %
+            :align: center
+
+        .. note::
+            Enabling this option is strongly recommended when working with cores
+            which are poorly approximated as a sphere, *e.g.* a cylinder or cuboid.
 
 |
 

@@ -30,6 +30,8 @@ from scipy.special import expit
 
 from scm.plams import Molecule
 
+from .edge_distance import edge_dist, to_convex
+
 __all__ = ['distribute_idx']
 
 #: A set of allowed values for the **mode** parameter in :func:`get_distribution`.
@@ -102,9 +104,14 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
     # Create an array of indices
     if mode in ('uniform', 'cluster'):
         xyz = np.array(core, dtype=float, ndmin=2, copy=False)[idx_ar]
-        dist = cdist(xyz, xyz)
+        if kwargs.get('follow_edge', False):
+            xyz_convex = to_convex(xyz, n=0.75)
+            dist = edge_dist(xyz_convex)
+        else:
+            dist = cdist(xyz, xyz)
         operation = 'max' if mode == 'uniform' else 'min'
-        iterable = (idx_ar[i] for i in uniform_idx(dist, operation, kwargs.get('start', None)))
+        generator = uniform_idx(dist, operation, start=kwargs.get('start', None))
+        iterable = (idx_ar[i] for i in generator)
     elif mode == 'random':
         iterable = np.random.permutation(idx_ar)
 

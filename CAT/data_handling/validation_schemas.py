@@ -262,7 +262,10 @@ subset_schema: Schema = Schema({
         And(str, lambda n: n.lower() in {'uniform', 'random', 'cluster'}, Use(str.lower)),
 
     Optional_('start', default=None):
-        Or(None, int)
+        Or(None, int),
+
+    Optional_('follow_edge', default=False):
+        bool
 })
 
 _db_names = ('core', 'ligand', 'qd')
