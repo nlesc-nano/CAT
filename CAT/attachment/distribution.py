@@ -21,16 +21,15 @@ API
 """
 
 import reprlib
-from typing import Generator, Optional, Iterable, FrozenSet, Any, Union
 from itertools import islice
+from typing import Generator, Optional, Iterable, FrozenSet, Any, Union
 
 import numpy as np
 from scipy.spatial.distance import cdist
-from scipy.special import expit
 
 from scm.plams import Molecule
 
-from .edge_distance import edge_dist, to_convex
+from .edge_distance import edge_dist
 
 __all__ = ['distribute_idx']
 
@@ -44,11 +43,11 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
 
     Parameters
     ----------
-    core : array-like [:class:`float`]
+    core : :math:`(m, 3)` array-like [:class:`float`]
         A 2D array-like object (such as a :class:`Molecule` instance) consisting
         of Cartesian coordinates.
 
-    idx : array-like [:class:`int`]
+    idx : :class:`int` or :math:`(i,)` :class:`Iterable<collections.abc.Iterable>` [:class:`int`]
         An integer or iterable of unique integers representing the 0-based indices of
         all anchor atoms in **core**.
 
@@ -71,8 +70,8 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
 
     Returns
     -------
-    :class:`numpy.ndarray` [:class:`int`]
-        An array of atomic indices.
+    :math:`(p*i,)` :class:`numpy.ndarray` [:class:`int`]
+        A 1D array of atomic indices.
         If **idx** has :math:`i` elements,
         then the length of the returned list is equal to :math:`\max(1, p*i)`.
 
@@ -81,8 +80,8 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
     :func:`uniform_idx`
         Yield the column-indices of **dist** which yield a uniform or clustered distribution.
 
-    :func:`random_idx`
-        Yield random elements from an **iterable**.
+    :func:`cluster_idx`
+        Return the column-indices of **dist** which yield a clustered distribution.
 
     """
     # Convert **idx** into an array
@@ -102,71 +101,68 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
         return idx_ar.copy() if idx_ar is idx else idx_ar
 
     # Create an array of indices
+    stop = max(1, round(p * len(idx_ar)))
     if mode in ('uniform', 'cluster'):
         xyz = np.array(core, dtype=float, ndmin=2, copy=False)[idx_ar]
-        if kwargs.get('follow_edge', False):
-            xyz_convex = to_convex(xyz, n=0.75)
-            dist = edge_dist(xyz_convex)
+        dist = edge_dist(xyz) if kwargs.get('follow_edge', False) else cdist(xyz, xyz)
+        if mode == 'uniform':
+            generator1 = uniform_idx(dist, 'max', p=p, start=kwargs.get('start', None))
+            generator2 = islice(generator1, stop)
+            ret = idx_ar[np.fromiter(generator2, count=stop, dtype=int)]
         else:
-            dist = cdist(xyz, xyz)
-        operation = 'max' if mode == 'uniform' else 'min'
-        generator = uniform_idx(dist, operation, start=kwargs.get('start', None))
-        iterable = (idx_ar[i] for i in generator)
+            ret = idx_ar[cluster_idx(dist, start=kwargs.get('start', None))]
+
     elif mode == 'random':
-        iterable = np.random.permutation(idx_ar)
+        ret = np.random.permutation(idx_ar)
 
     # Return a list of `p * len(idx)` atomic indices
-    stop = max(1, round(p * len(idx_ar)))
-    return np.fromiter(islice(iterable, stop), count=stop, dtype=int)
+    return ret[:stop]
 
 
-def sigmoid(x: np.ndarray, a: float = 0.0) -> np.ndarray:
-    r"""Return the (inverted) logistic sigmoid of **x**: :math:`\frac{1}{1 + e^{x - 1.5a}}`."""
-    return expit(-(x - 2*a))
-
-
-def apply_weight(dist: np.ndarray) -> np.ndarray:
-    """Weight all values in **dist** using :func:`sigmoid`."""
-    dist_cp = dist.copy()
-    np.fill_diagonal(dist_cp, np.inf)
-
-    a = dist_cp.min(axis=0).mean()
-    return sigmoid(dist, a)
-
-
-def uniform_idx(dist: np.ndarray, operation: str = 'max',
+def uniform_idx(dist: np.ndarray, operation: str = 'max', p: Optional[float] = 0.5,
                 start: Optional[int] = None) -> Generator[int, None, None]:
     r"""Yield the column-indices of **dist** which yield a uniform or clustered distribution.
 
-    Given the symmetric distance matrix :math:`D` and
-    the vector :math:`\boldsymbol{d} \in \mathbb{Z}^{n}`
-    (representing a set of indices in :math:`D`),
+    Given the (symmetric) distance matrix :math:`D \in \mathbb{R}^{n,n}` and
+    the vector :math:`\boldsymbol{d} \in \mathbb{Z}^{m}`
+    (representing a subset of indices in :math:`D`),
     then the :math:`i`'th element :math:`\boldsymbol{d}_{i}` is
     defined as following:
 
     .. math::
 
         \DeclareMathOperator*{\argmax}{\arg\!\max}
-
-        \boldsymbol{d}_{i} = \argmax_{k} {\boldsymbol{d}_{k}}^{*}
-        \quad \text{with} \quad
-        \boldsymbol{d}^{*} = \sqrt{{D_{i,:}}^{2} + \sum_{0<j<i} {D_{j, \boldsymbol{d}_{j}}}^{2}}
+        \boldsymbol{d}_{i} = \argmax_{k}
+        \sqrt{ \sum_{0 \le j < i} {D_{k, \boldsymbol{d}_{j}}}^2 }
 
     The row in :math:`D` corresponding to :math:`\boldsymbol{d}_{i=0}`
     can be specified by **start**.
+
+    THe distance matrix can be truncated with the **p** parameter.
 
     The :math:`\text{argmax}` operation can be exchanged for :math:`\text{argmin}` by settings
     **operation** to ``"min"``, thus yielding a clustered- rather than uniform-distribution.
 
     Parameters
     ----------
-    dist : :math:`(m, m)` :class:`numpy.ndarray`
+    dist : :math:`(m, m)` :class:`numpy.ndarray` [:class:`float`]
         A symmetric 2D NumPy array (:code:`(dist == dist.T).all()`) representing the
         distance matrix :math:`D`.
 
     operation : :class:`str`
         Whether to minimize or maximize the distance between points.
         Accepted values are ``"min"`` and ``"max"``.
+
+    p : :class:`float`, optional
+        A float obeying the following condition: :math:`0.0 < p <= 1.0`.
+        Represents the fraction of **dist** which is of interest to the user.
+        If not ``None``, used for truncating the distance matrix :math:`D`:
+
+        .. math::
+
+            r_{truncate} = \max(2, r_{nn} * \log_{2} p)
+            \quad \text{with} \quad
+            r_{nn} = \frac{1}{N} \sum_{i=0}^{N} D_{i,:}
 
     start : :class:`int`, optional
         The index of the starting row in **dist**.
@@ -182,34 +178,64 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max',
         raise ValueError(f"Invalid value for 'mode' ({reprlib.repr(operation)}); "
                          f"accepted values: ('min', 'max')")
 
-    dist_sqr = np.asarray(dist, dtype=float)**2  # Squared distance matrix
-    norm_sqr = 0.0  # Squared norm
+    # Truncate and square the distance matrix
+    dist_sqr = np.array(dist, dtype=float, copy=True)
+    if p is not None:
+        np.fill_diagonal(dist_sqr, np.inf)
+        n = max(2, -np.log2(p))
+        trunc = n * dist_sqr.min(axis=0).mean()
+        dist_sqr[dist_sqr > trunc] = trunc
+    dist_sqr **= 2
 
     # Use either argmin or argmax
     if operation == 'min':
-        fill_value = np.inf
-        np.fill_diagonal(dist_sqr, np.inf)
-        arg_func = np.ndarray.argmin
+        arg_func = np.nanargmin
+        start = np.linalg.norm(dist, axis=1).argmin() if start is None else start
     else:
-        fill_value = 0.0
-        arg_func = np.ndarray.argmax
-
-    # Shift the first row to **shift**
-    if start is None:
-        shift = np.unravel_index(arg_func(dist_sqr), dist_sqr.shape)[0]
-    else:
-        shift = start
-    dist_sqr[:] = np.roll(dist_sqr, shift, axis=0)
-
-    # Map the indices of the (newly rolled) distance matrix to its original
-    idx_shift = np.roll(np.arange(len(dist_sqr)), shift)
+        arg_func = np.nanargmax
+        start = np.linalg.norm(dist, axis=1).argmax() if start is None else start
+    np.fill_diagonal(dist_sqr, np.nan)
 
     # Yield indices
-    for ar in dist_sqr:
-        ar_sqrt = np.sqrt(ar + norm_sqr)
+    dist_1d_sqr = dist_sqr[start].copy()
+    dist_1d_sqr[start] = np.nan
+    yield start
 
-        j = arg_func(ar_sqrt)
-        norm_sqr += ar[j]
-        dist_sqr[:, j] = fill_value
+    for _ in range(len(dist_1d_sqr)-1):
+        dist_1d = dist_1d_sqr**0.5
+        i = arg_func(dist_1d)
+        dist_1d_sqr[i] = np.nan
+        dist_1d_sqr += dist_sqr[i]
+        yield i
 
-        yield idx_shift[j]
+
+def cluster_idx(dist: np.ndarray, start: Optional[int] = None) -> np.ndarray:
+    r"""Return the column-indices of **dist** which yield a clustered distribution.
+
+    Returns the indices of :code:`dist[start]` sorted in order of ascending distance.
+    If **start** is ``None`` then default to the row which minimizes:
+    :math:`\min_{i} ||D_{i, :}||_{2}`.
+
+    Parameters
+    ----------
+    dist : :math:`(m, m)` array-like [:class:`float`]
+        A symmetric 2D NumPy array (:code:`(dist == dist.T).all()`) representing the
+        distance matrix :math:`D`.
+
+    start : :class:`int`, optional
+        The index of the starting row in **dist**.
+        If ``None``, start in whichever row which minimizes: :math:`\min_{i} ||D_{i, :}||_{2}`.
+
+    Returns
+    -------
+    :math:`(m,)` :class:`numpy.ndarray` [:class:`int`]
+        A 1D array of indices.
+
+    """
+    dist = np.asarray(dist, dtype=float)
+    start = np.linalg.norm(dist, axis=1).argmin() if start is None else start
+
+    r = dist[start]
+    r_arg = r.argsort()
+    idx = np.arange(len(r))
+    return idx[r_arg]
