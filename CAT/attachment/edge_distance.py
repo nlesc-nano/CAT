@@ -21,8 +21,9 @@ API
 """
 
 import reprlib
-from itertools import combinations
 from math import factorial
+from typing import Optional, Any
+from itertools import combinations
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -37,7 +38,7 @@ def array_combinations(array: np.ndarray, r: int = 2) -> np.ndarray:
 
     Parameters
     ----------
-    array : array-like
+    array : :math:`(m, k)` array-like
         A 2D array-like object.
 
     r : :class:`int`
@@ -45,7 +46,7 @@ def array_combinations(array: np.ndarray, r: int = 2) -> np.ndarray:
 
     Returns
     -------
-    ``(n, len(ar), r)`` :class:`numpy.ndarray`
+    ``(n, m, r)`` :class:`numpy.ndarray`
         A 3D array with all **ar** combinations (of length ``e``) along axis 1.
         ``n`` represents the number of combinations: :math:`n! / r! / (n-r)!`.
 
@@ -115,7 +116,7 @@ def edge_dist(xyz: np.ndarray, n: float = 1.0) -> np.ndarray:
 
     Parameters
     ----------
-    xyz : :class:`numpy.ndarray`
+    xyz : :math:`(m, 3)` :class:`numpy.ndarray`
         A 2D array-like object of Cartesian coordinates representing a polyhedron.
         The supplied polyhedron should be convex in shape.
 
@@ -125,7 +126,7 @@ def edge_dist(xyz: np.ndarray, n: float = 1.0) -> np.ndarray:
 
     Returns
     -------
-    :class:`numpy.ndarray`
+    :math:`(m, m)` :class:`numpy.ndarray`
         A 2D array containing all possible (Euclidean) distance-pairs in **xyz**.
         Distances are calculated by traversing the (minimum-length) edges of **xyz**,
         rather than moving directly through space.
@@ -164,17 +165,43 @@ def edge_dist(xyz: np.ndarray, n: float = 1.0) -> np.ndarray:
     return ret
 
 
-def _plot_polyhedron(xyz: np.ndarray, show: bool = True) -> 'matplotlib.pyplot.Figure':
-    """Plot a polyhedron, represented by an array of Cartesian coordinates, with matplotlib."""
+def plot_polyhedron(xyz: np.ndarray, triangles: Optional[np.ndarray] = None,
+                    show: bool = True, **kwargs: Any) -> 'matplotlib.pyplot.Figure':
+    r"""Plot a polyhedron, represented by an array of Cartesian coordinates, with matplotlib.
+
+    Parameters
+    ----------
+    xyz : :math:`(m, 3)` array-like [:class:`float`]
+        A 2D array-like object representing the Cartesian coordinates of a polyhedron.
+
+    :math:`(n, 2)` triangles : array-like [:class:`int`], optional
+        A 2D array-like object with all indice-pairs in **xyz** representing polyhedron edges.
+
+    show : :class:`bool`
+        Show created figure.
+
+    \**kwargs : :data:`Any<typing.Any>`
+        Further keyword arguments for
+        :meth:`Axes.plot_trisurf<matplotlib.pyplot.Axes.plot_trisurf>`.
+
+    Returns
+    -------
+    :class:`Figure<matplotlib.pyplot.Figure>`
+        The resulting matplotlib Figure.
+
+    """
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
+    if 'cmap' not in kwargs:
+        kwargs['cmap'] = plt.cm.Spectral
+
     xyz = np.asarray(xyz, dtype=float)
-    hull = ConvexHull(xyz)
+    triangles = ConvexHull(xyz).simplices if triangles is None else np.asarray(triangles, dtype=int)
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1, projection='3d')
-    ax.plot_trisurf(*xyz.T, triangles=hull.simplices, cmap=plt.cm.Spectral)
+    ax.plot_trisurf(*xyz.T, triangles=triangles, **kwargs)
 
     if show:
         plt.show(block=True)
