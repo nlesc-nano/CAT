@@ -44,6 +44,7 @@ def array_combinations(array: np.ndarray, r: int = 2) -> np.ndarray:
     r : :class:`int`
         The length of each combination.
 
+
     Returns
     -------
     ``(n, m, r)`` :class:`numpy.ndarray`
@@ -55,7 +56,12 @@ def array_combinations(array: np.ndarray, r: int = 2) -> np.ndarray:
     if ar.ndim != 2:
         raise ValueError(f"'array' excpected a 2D array; observed dimensionality: {ar.ndim}")
     n = ar.shape[1]
-    combinations_len = int(factorial(n) / factorial(r) / factorial(n - r))
+
+    try:
+        combinations_len = int(factorial(n) / factorial(r) / factorial(n - r))
+    except ValueError:
+        raise ValueError(f"'r' ({r}) expects a positive integer larger than or equal to the length "
+                         f"of 'array' axis 1 ({n})")
 
     shape = combinations_len, len(ar), r
     ret = np.empty(shape, dtype=ar.dtype)
