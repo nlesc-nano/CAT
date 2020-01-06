@@ -255,7 +255,7 @@ Core
         Settings related to the partial replacement of core dummy atoms with ligands.
 
         If not ``None``, has access to two further keywords:
-        :attr:`subset.p` and :attr:`subset.mode`.
+        :attr:`subset.p`, :attr:`subset.mode` and :attr:`subset.follow_edge`.
 
 
     .. attribute:: optional.core.subset.p
@@ -279,14 +279,41 @@ Core
 
         Accepts one of the following values:
 
-        * ``"random"``: A random distribution.
         * ``"uniform"``: A uniform distribution; the distance between each
           successive dummy atom and all previous dummy atoms is maximized.
         * ``"cluster"``: A clustered distribution; the distance between each
           successive dummy atom and all previous dummy atoms is minmized.
+        * ``"random"``: A random distribution.
 
         It should be noted that all three methods converge towards the same set
         as :math:`p` approaches :math:`1.0`.
+
+        .. note::
+            An example of a ``"uniform"``, ``"cluster"`` and ``"random"`` distribution with :math:`p=1/3`.
+
+            .. image:: _images/distribution.png
+                :scale: 15 %
+                :align: center
+
+
+
+    .. attribute:: optional.core.subset.follow_edge
+
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``False``
+
+        Construct the dummy atom distance matrix by following the shortest path along the
+        edges of the polyhedron rather than the shortest path through space.
+
+        Enabling this option will result in more accurate ``"uniform"`` and ``"cluster"``
+        distributions at the cost of increased computational time.
+
+        .. note::
+            An example of a cores' polyhedron-representation.
+
+            .. image:: _images/polyhedron.png
+                :scale: 30 %
+                :align: center
 
 |
 

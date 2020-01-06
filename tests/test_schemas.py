@@ -448,7 +448,8 @@ def test_subset_schema() -> None:
     ref = {
         'p': 0.5,
         'mode': 'uniform',
-        'start': None
+        'start': None,
+        'follow_edge': False
     }
 
     assertion.eq(subset_schema.validate(subset_dict), ref)
@@ -489,3 +490,12 @@ def test_subset_schema() -> None:
     assertion.eq(subset_schema.validate(subset_dict)['start'], -5)
     subset_dict['start'] = 0
     assertion.eq(subset_schema.validate(subset_dict)['start'], 0)
+
+    subset_dict['follow_edge'] = 1.0  # Exception: incorrect type
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['follow_edge'] = 'bob'  # Exception: incorrect type
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['follow_edge'] = True
+    assertion.is_(subset_schema.validate(subset_dict)['follow_edge'], True)
+    subset_dict['follow_edge'] = False
+    assertion.is_(subset_schema.validate(subset_dict)['follow_edge'], False)
