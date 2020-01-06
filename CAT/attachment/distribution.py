@@ -134,6 +134,8 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: Optional[float] = 0
         \DeclareMathOperator*{\argmax}{\arg\!\max}
         \boldsymbol{d}_{i} = \argmax_{k}
         \sqrt{ \sum_{0 \le j < i} {D_{k, \boldsymbol{d}_{j}}}^2 }
+        \quad \text{with} \quad
+        k \notin \boldsymbol{d}[0, ..., i-1]
 
     The row in :math:`D` corresponding to :math:`\boldsymbol{d}_{i=0}`
     can be specified by **start**.
@@ -212,9 +214,9 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: Optional[float] = 0
 def cluster_idx(dist: np.ndarray, start: Optional[int] = None) -> np.ndarray:
     r"""Return the column-indices of **dist** which yield a clustered distribution.
 
-    Returns the indices of :code:`dist[start]` sorted in order of ascending distance.
-    If **start** is ``None`` then default to the row which minimizes:
-    :math:`\min_{i} ||D_{i, :}||_{2}`.
+    Given the (symmetric) distance matrix :math:`D \in \mathbb{R}^{n, n}` and the row index
+    :math:`\DeclareMathOperator*{\argmin}{\arg\!\min} i = \argmin_{i} ||D_{i, :}||_{2}`,
+    return the column-indices of :math:`D_{i, :}` sorted in order of ascending distance.
 
     Parameters
     ----------
@@ -224,7 +226,8 @@ def cluster_idx(dist: np.ndarray, start: Optional[int] = None) -> np.ndarray:
 
     start : :class:`int`, optional
         The index of the starting row in **dist**.
-        If ``None``, start in whichever row which minimizes: :math:`\min_{i} ||D_{i, :}||_{2}`.
+        If ``None``, start in row:
+        :math:`\DeclareMathOperator*{\argmin}{\arg\!\min} i = \argmin_{i} ||D_{i, :}||_{2}`.
 
     Returns
     -------
