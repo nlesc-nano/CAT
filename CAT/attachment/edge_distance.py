@@ -47,14 +47,14 @@ def array_combinations(array: np.ndarray, r: int = 2) -> np.ndarray:
 
     Returns
     -------
-    ``(n, m, r)`` :class:`numpy.ndarray`
-        A 3D array with all **ar** combinations (of length ``e``) along axis 1.
+    :math:`(n, m, r)` :class:`numpy.ndarray`
+        A 3D array with all **ar** combinations (of length ``r``) along axis 1.
         ``n`` represents the number of combinations: :math:`n! / r! / (n-r)!`.
 
     """  # noqa
     ar = np.asarray(array)
     if ar.ndim != 2:
-        raise ValueError(f"'array' excpected a 2D array; observed dimensionality: {ar.ndim}")
+        raise ValueError(f"'array' excpected a 2D array; observed dimensionality: {ar.ndim}D")
     n = ar.shape[1]
 
     try:
@@ -65,8 +65,8 @@ def array_combinations(array: np.ndarray, r: int = 2) -> np.ndarray:
 
     shape = combinations_len, len(ar), r
     ret = np.empty(shape, dtype=ar.dtype)
-    for i, jk in enumerate(combinations(range(ar.shape[1]), r=r)):
-        ret[i] = ar[:, jk]
+    for i, item in enumerate(combinations(range(ar.shape[1]), r=r)):
+        ret[i] = ar[:, item]
     return ret
 
 
@@ -85,19 +85,22 @@ def to_convex(xyz: np.ndarray, n: float = 1.0) -> np.ndarray:
     return xyz
 
 
-def edge_dist(xyz: np.ndarray, n: float = 1.0) -> np.ndarray:
-    r"""Calculate all shortest paths in the polyhedron **xyz** by traversing its edges.
+def edge_dist(xyz: np.ndarray, n: float = 1.0,
+              edges: Optional[np.ndarray] = None) -> np.ndarray:
+    r"""Calculate all shortest paths between all points in the polyhedron **xyz** by traversing its edges.
 
     After converting **xyz** into a polyhedron with triangular faces,
-    the shortest paths between all possible point pairs is calculated.
+    using a convex hull algorithm,
+    the shortest paths between all possible point pairs is calculated using
+    the Dijkstra algorithm.
     Paths are constrained to the edges of the polyhedron,
-    effectively constraining all movement to a 2D surface
-    as opposed to the 3D volume of an ordinary distance matrix.
+    as opposed to a "normal" distance matrix each element thus represents
+    the shortest path along a set of 1D lines rather than a 3D volume.
 
     Given the matrix of Cartesian coordinates :math:`X \in \mathbb{R}^{n, 3}`,
     the matching distance matrix :math:`D \in \mathbb{R}^{n, n}` and
     the matching edge-distance matrix :math:`D^{\text{edge}} \in \mathbb{R}^{n, n}`,
-    then element :math:`D_{i, j}` is defined as following:
+    then element :math:`D_{i,j}` is defined as following:
 
     .. math::
 
@@ -108,7 +111,8 @@ def edge_dist(xyz: np.ndarray, n: float = 1.0) -> np.ndarray:
     .. math::
 
         D_{i, j}^{\text{edge}} = \min_{\boldsymbol{k}} \Bigl{(}
-            ||X_{i,:} - X_{\boldsymbol{k}_{0},:}||_{2} + ... +
+            ||X_{i,:} - X_{\boldsymbol{k}_{0},:}||_{2}
+            \; + \; ... \; + \;
             ||X_{\boldsymbol{k}_{m},:} - X_{j,:}||_{2} \Bigr{)}
 
         \quad \text{with} \quad
@@ -118,7 +122,15 @@ def edge_dist(xyz: np.ndarray, n: float = 1.0) -> np.ndarray:
 
     The vector :math:`\boldsymbol{k} \in \mathbb{Z}^{m}` is a path,
     represented by the indices of neighbouring vertices in :math:`X`,
-    whose length (*i.e.* Euclidean distance) is to-be minimized.
+    whose length (*i.e.* sum of Euclidean distances) is to-be minimized.
+
+    Notes
+    -----
+    All points in **xyz** are projected on the surface of a sphere during the construction
+    of the convex hull (if :code:`n != 0.0`);
+    the quality of the constructed polyhedron will thus depend on the "convexness" of **xyz**.
+    For highly concave structures (*e.g.* a torus) it is strongly recommended to
+    manually pass all edge indices using the **edges** parameter.
 
     Parameters
     ----------
@@ -130,11 +142,14 @@ def edge_dist(xyz: np.ndarray, n: float = 1.0) -> np.ndarray:
         Smoothing factor for constructing a convex hull.
         Should obey :math:`0 <= n <= 1`.
 
+    edges : :math:`(n, 2)` :class:`numpy.ndarray` [:class:`int`], optional
+        A 2D array-like object with all indice-pairs in **xyz** representing polyhedron edges.
+
     Returns
     -------
     :math:`(m, m)` :class:`numpy.ndarray`
         A 2D array containing all possible (Euclidean) distance-pairs in **xyz**.
-        Distances are calculated by traversing the (minimum-length) edges of **xyz**,
+        Distances are calculated by traversing the shortest path along the edges of **xyz**,
         rather than moving directly through space.
 
     See Also
@@ -148,15 +163,18 @@ def edge_dist(xyz: np.ndarray, n: float = 1.0) -> np.ndarray:
     :func:`cdist<scipy.spatial.distance.cdist>`
         Compute distance between each pair of the two collections of inputs.
 
-    """
+    """  # noqa
     xyz = np.array(xyz, dtype=float, ndmin=2, copy=False)
-    xyz_convex = to_convex(xyz, n=n) if not np.allclose(n, 0.0) else xyz
     xyz_len = len(xyz)
 
     # Create an array with all index-pairs forming the polyhedron edges
-    hull = ConvexHull(xyz_convex)
-    idx = array_combinations(hull.simplices, r=2)
-    idx.shape = -1, 2
+    if edges is None:
+        xyz_convex = to_convex(xyz, n=n) if not np.allclose(n, 0.0) else xyz
+        hull = ConvexHull(xyz_convex)
+        idx = array_combinations(hull.simplices, r=2)
+        idx.shape = -1, 2
+    else:
+        idx = np.asarray(edges, dtype=int)
     i, j = idx.T
 
     # Create a distancea matrix containing all edge distances
@@ -180,11 +198,12 @@ def plot_polyhedron(xyz: np.ndarray, triangles: Optional[np.ndarray] = None,
     xyz : :math:`(m, 3)` array-like [:class:`float`]
         A 2D array-like object representing the Cartesian coordinates of a polyhedron.
 
-    :math:`(n, 2)` triangles : array-like [:class:`int`], optional
-        A 2D array-like object with all indice-pairs in **xyz** representing polyhedron edges.
+    triangles : :math:`(n, 3)` array-like [:class:`int`], optional
+        A 2D array-like object with all indice-pairs in **xyz** representing the triangular
+        faces of the **xyz** polygon.
 
     show : :class:`bool`
-        Show created figure.
+        Show the created figure.
 
     \**kwargs : :data:`Any<typing.Any>`
         Further keyword arguments for
