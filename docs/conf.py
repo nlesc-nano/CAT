@@ -69,7 +69,7 @@ copyright = f'{year}, {author}'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the built documents.
-release = '0.7.6'  # The full version, including alpha/beta/rc tags.
+release = '0.7.7'  # The full version, including alpha/beta/rc tags.
 version = release.rsplit('.', maxsplit=1)[0]
 
 
@@ -198,10 +198,11 @@ texinfo_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'python': ('https://docs.python.org/', None),
-    'h5py': ('http://docs.h5py.org/en/latest/', None),
+    'h5py': ('https://docs.h5py.org/en/latest/', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
-    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
-    'plams': ('https://www.scm.com/doc/plams/', None)
+    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+    'plams': ('https://www.scm.com/doc/plams/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/reference', None)
 }
 
 

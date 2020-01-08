@@ -279,14 +279,32 @@ Core
 
         Accepts one of the following values:
 
-        * ``"uniform"``: A uniform distribution; the distance between each
+        * ``"uniform"``: A uniform distribution; the weighted distance between each
           successive dummy atom and all previous dummy atoms is maximized.
-        * ``"cluster"``: A clustered distribution; the distance between each
+        * ``"cluster"``: A clustered distribution; the weighted distance between each
           successive dummy atom and all previous dummy atoms is minmized.
         * ``"random"``: A random distribution.
 
         It should be noted that all three methods converge towards the same set
         as :math:`p` approaches :math:`1.0`.
+
+        If :math:`\boldsymbol{D} \in \mathbb{R}^{n,n}` is the (symmetric) distance matrix constructed
+        from the dummy atom superset and :math:`\boldsymbol{d} \in \mathbb{N}^{\le n}` the vector
+        of indices which yields the dummy atom subset, then element :math:`d_{i}` is defined as following
+        for the ``"uniform"`` distribution:
+
+        .. math::
+
+            \DeclareMathOperator*{\argmax}{\arg\!\max}
+            d_{i} = \begin{cases}
+                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} || &&&
+                \text{if} & i=0 \\
+                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}[k; d_{0},...,d_{i-1}] ||_{-2} &
+                \text{with} & k \notin \boldsymbol{d}[0, ..., i-1] &
+                \text{if} & i \ne 0
+            \end{cases}
+
+        For the ``"cluster"`` distribution all :math:`argmax` operations are exchanged for :math:`argmin`.
 
         .. note::
             An example of a ``"uniform"``, ``"cluster"`` and ``"random"`` distribution with :math:`p=1/3`.
@@ -295,6 +313,13 @@ Core
                 :scale: 15 %
                 :align: center
 
+            |
+            An example of four different ``"uniform"`` distributions at :math:`p=1/16`,
+            :math:`p=1/8`, :math:`p=1/4` and :math:`p=1/2`.
+
+            .. image:: _images/distribution_p_var.png
+                :scale: 20 %
+                :align: center
 
 
     .. attribute:: optional.core.subset.follow_edge
@@ -303,16 +328,39 @@ Core
                         * **Default value** – ``False``
 
         Construct the dummy atom distance matrix by following the shortest path along the
-        edges of the polyhedron rather than the shortest path through space.
+        edges of a (triangular-faced) polyhedral approximation of the core rather than the
+        shortest path through space.
 
         Enabling this option will result in more accurate ``"uniform"`` and ``"cluster"``
         distributions at the cost of increased computational time.
 
+        Given the matrix of Cartesian coordinates :math:`\boldsymbol{X} \in \mathbb{R}^{n, 3}`,
+        the matching edge-distance matrix :math:`\boldsymbol{D}^{\text{edge}} \in \mathbb{R}^{n, n}`
+        and the vector :math:`\boldsymbol{p} \in \mathbb{N}^{m}`, representing a (to-be optimized)
+        path as the indices of edge-connected vertices, then element :math:`D_{i,j}^{\text{edge}}`
+        is defined as following:
+
+        .. math::
+
+            D_{i, j}^{\text{edge}} = \min_{\boldsymbol{p} \in \mathbb{N}^{m}; m \in \mathbb{N}}
+            \sum_{k=0}^{m-1} || X_{p_{k},:} - X_{p_{k+1},:} ||
+            \quad \text{with} \quad p_{0} = i \quad \text{and} \quad p_{m} = j
+
+        The polyhedron edges are constructed, after projecting all vertices on the surface of a sphere,
+        using Qhull's :class:`ConvexHull<scipy.spatial.ConvexHull>` algorithm
+        (`The Quickhull Algorithm for Convex Hulls <https://doi.org/10.1145/235815.235821>`_).
+        The quality of the constructed edges is proportional to the convexness of the core,
+        more specifically: how well the vertices can be projected on a spherical surface without
+        severelly distorting the initial structure.
+        For example, spherical, cylindrical or cuboid cores will yield reasonably edges,
+        while the edges resulting from torus will be extremely poor.
+
         .. note::
-            An example of a cores' polyhedron-representation.
+            An example of a cores' polyhedron-representation; displaying the shortest path
+            between points :math:`i` and :math:`j`.
 
             .. image:: _images/polyhedron.png
-                :scale: 30 %
+                :scale: 15 %
                 :align: center
 
 |

@@ -11,6 +11,12 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.7.7
+*****
+* The ``"uniform"`` and ``"cluster"`` distributions are now weighted by the distance
+  rather than using a, less robust, distance truncation.
+
+
 0.7.6
 *****
 * Added the option, when constructing core atom subsets,
