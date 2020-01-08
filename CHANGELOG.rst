@@ -13,8 +13,22 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.7.6
 *****
-* Placeholder.
-
+* Added the option, when constructing core atom subsets,
+  the use a distance matrix representing the shortest paths along the edges of a polyhedron,
+  rather than through space.
+  Enabling this option will result in more accurate ``"uniform"`` and ``"cluster"``
+  distributions at the cost of increased computational time.
+* Updated and improved the ``"uniform"`` and ``"cluster"`` distributions.
+* https://github.com/nlesc-nano/CAT/pull/65: Fixed a bug where ``uniform_idx()`` yielded the rolled,
+  rather than unshifted, indices.
+* https://github.com/nlesc-nano/CAT/pull/64: Bug fix: the subset Schema now checks for instances of
+  int ``Or`` float.
+* https://github.com/nlesc-nano/CAT/pull/66: Return the identity (rotation) matrix if a ``FloatingPointError`` is
+  encountered during the creation of rotation matrices.
+  This can occur if a ligand consists of a single atom.
+* https://github.com/nlesc-nano/CAT/pull/66: Fixed a bug in the parsing of the mode parameter of ``distribute_idx()``;
+  ``"uniform"`` and ``"cluster"`` will now correctly link to ``np.argmax`` and
+  ``np.argmin`` instead of the other way around.
 
 0.7.5
 *****

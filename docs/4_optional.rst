@@ -279,14 +279,22 @@ Core
 
         Accepts one of the following values:
 
-        * ``"random"``: A random distribution.
         * ``"uniform"``: A uniform distribution; the distance between each
           successive dummy atom and all previous dummy atoms is maximized.
         * ``"cluster"``: A clustered distribution; the distance between each
           successive dummy atom and all previous dummy atoms is minmized.
+        * ``"random"``: A random distribution.
 
         It should be noted that all three methods converge towards the same set
         as :math:`p` approaches :math:`1.0`.
+
+        .. note::
+            An example of a ``"uniform"``, ``"cluster"`` and ``"random"`` distribution with :math:`p=1/3`.
+
+            .. image:: _images/distribution.png
+                :scale: 15 %
+                :align: center
+
 
 
     .. attribute:: optional.core.subset.follow_edge
@@ -294,19 +302,18 @@ Core
         :Parameter:     * **Type** - :class:`bool`
                         * **Default value** – ``False``
 
-        Construct the dummy atom distance matrix by following the edges of the
-        (Cartesian coordinate) polyhedron, rather than directly moving through space
-        as is the case with the normal distance matrix.
+        Construct the dummy atom distance matrix by following the shortest path along the
+        edges of the polyhedron rather than the shortest path through space.
 
-        Only relevant when :attr:`subset.mode` is set to either ``"uniform"`` or ``"cluster"``.
-
-        .. image:: _images/polyhedron.png
-            :scale: 30 %
-            :align: center
+        Enabling this option will result in more accurate ``"uniform"`` and ``"cluster"``
+        distributions at the cost of increased computational time.
 
         .. note::
-            Enabling this option is strongly recommended when working with cores
-            which are poorly approximated as a sphere, *e.g.* a cylinder or cuboid.
+            An example of a cores' polyhedron-representation.
+
+            .. image:: _images/polyhedron.png
+                :scale: 30 %
+                :align: center
 
 |
 
