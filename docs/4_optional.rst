@@ -328,16 +328,39 @@ Core
                         * **Default value** – ``False``
 
         Construct the dummy atom distance matrix by following the shortest path along the
-        edges of the polyhedron rather than the shortest path through space.
+        edges of a (triangular-faced) polyhedral approximation of the core rather than the
+        shortest path through space.
 
         Enabling this option will result in more accurate ``"uniform"`` and ``"cluster"``
         distributions at the cost of increased computational time.
 
+        Given the matrix of Cartesian coordinates :math:`\boldsymbol{X} \in \mathbb{R}^{n, 3}`,
+        the matching edge-distance matrix :math:`\boldsymbol{D}^{\text{edge}} \in \mathbb{R}^{n, n}`
+        and the vector :math:`\boldsymbol{p} \in \mathbb{N}^{m}`, representing a (to-be optimized)
+        path as the indices of edge-connected vertices, then element :math:`D_{i,j}^{\text{edge}}`
+        is defined as following:
+
+        .. math::
+
+            D_{i, j}^{\text{edge}} = \min_{\boldsymbol{p} \in \mathbb{N}^{m}; m \in \mathbb{N}}
+            \sum_{k=0}^{m-1} || X_{p_{k},:} - X_{p_{k+1},:} ||
+            \quad \text{with} \quad p_{0} = i \quad \text{and} \quad p_{m} = j
+
+        The polyhedron edges are constructed, after projecting all vertices on the surface of a sphere,
+        using Qhull's :class:`ConvexHull<scipy.spatial.ConvexHull>` algorithm
+        (`The Quickhull Algorithm for Convex Hulls <https://doi.org/10.1145/235815.235821>`_).
+        The quality of the constructed edges is proportional to the convexness of the core,
+        more specifically: how well the vertices can be projected on a spherical surface without
+        severelly distorting the initial structure.
+        For example, spherical, cylindrical or cuboid cores will yield reasonably edges,
+        while the edges resulting from torus will be extremely poor.
+
         .. note::
-            An example of a cores' polyhedron-representation.
+            An example of a cores' polyhedron-representation; displaying the shortest path
+            between points :math:`i` and :math:`j`.
 
             .. image:: _images/polyhedron.png
-                :scale: 30 %
+                :scale: 15 %
                 :align: center
 
 |
