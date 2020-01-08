@@ -25,12 +25,12 @@ def test_distribute_idx() -> None:
     out6 = distribute_idx(MOL, IDX, p=0.5, mode='uniform', follow_edge=True)
     out7 = distribute_idx(MOL, IDX, p=0.5, mode='cluster', follow_edge=True)
 
-    np.testing.assert_array_equal(out1, [127, 123, 124, 126, 128, 129, 131, 144, 140, 142, 137, 139, 145])  # noqa
-    np.testing.assert_array_equal(out2, [136, 142, 129, 148, 135, 127, 143, 125, 131, 147, 123, 134, 126])  # noqa
-    np.testing.assert_array_equal(out3, [148, 123, 124, 125, 126, 128, 131, 127, 140, 145, 136, 137, 139])  # noqa
-    np.testing.assert_array_equal(out4, [148, 129, 142, 136, 133, 123, 130, 147, 124, 125, 132, 127, 144])  # noqa
-    np.testing.assert_array_equal(out6, [128, 123, 124, 125, 126, 129, 131, 143, 140, 145, 142, 132, 141])  # noqa
-    np.testing.assert_array_equal(out7, [135, 131, 143, 139, 127, 136, 126, 129, 142, 134, 147, 125, 148])  # noqa
+    np.testing.assert_array_equal(out1, [127, 130, 138, 147, 144, 148, 131, 146, 137, 136, 124, 134, 123])  # noqa
+    np.testing.assert_array_equal(out2, [136, 142, 148, 129, 123, 132, 147, 126, 137, 130, 133, 141, 124])  # noqa
+    np.testing.assert_array_equal(out3, [148, 138, 127, 141, 126, 144, 123, 131, 146, 136, 134, 133, 132])  # noqa
+    np.testing.assert_array_equal(out4, [148, 129, 136, 142, 123, 132, 147, 126, 137, 130, 133, 141, 124])  # noqa
+    np.testing.assert_array_equal(out6, [128, 142, 130, 143, 126, 145, 129, 140, 132, 125, 131, 124, 127])  # noqa
+    np.testing.assert_array_equal(out7, [135, 131, 139, 143, 127, 134, 125, 144, 145, 136, 142, 148, 129])  # noqa
     assertion.len_eq(out5, round(0.5 * len(IDX)))
     assertion.len_eq(np.intersect1d(out5, IDX), len(out5))
 

@@ -21,13 +21,14 @@ API
 """
 
 import reprlib
-from itertools import islice
 from typing import Generator, Optional, Iterable, FrozenSet, Any, Union
+from itertools import islice
+from collections import abc
 
 import numpy as np
 from scipy.spatial.distance import cdist
 
-from scm.plams import Molecule
+from scm.plams import Molecule, Atom
 
 from .edge_distance import edge_dist
 
@@ -101,16 +102,14 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
         return idx_ar.copy() if idx_ar is idx else idx_ar
 
     # Create an array of indices
-    stop = max(1, round(p * len(idx_ar)))
+    stop = max(1, int(round(p * len(idx_ar))))
     if mode in ('uniform', 'cluster'):
         xyz = np.array(core, dtype=float, ndmin=2, copy=False)[idx_ar]
         dist = edge_dist(xyz) if kwargs.get('follow_edge', False) else cdist(xyz, xyz)
-        if mode == 'uniform':
-            generator1 = uniform_idx(dist, 'max', p=p, start=kwargs.get('start', None))
-            generator2 = islice(generator1, stop)
-            ret = idx_ar[np.fromiter(generator2, count=stop, dtype=int)]
-        else:
-            ret = idx_ar[cluster_idx(dist, start=kwargs.get('start', None))]
+        operation = 'max' if mode == 'uniform' else 'min'
+        generator1 = uniform_idx(dist, operation=operation, start=kwargs.get('start', None))
+        generator2 = islice(generator1, stop)
+        ret = idx_ar[np.fromiter(generator2, count=stop, dtype=int)]
 
     elif mode == 'random':
         ret = np.random.permutation(idx_ar)
@@ -119,12 +118,12 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
     return ret[:stop]
 
 
-def uniform_idx(dist: np.ndarray, operation: str = 'max', p: Optional[float] = 0.5,
+def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2.0,
                 start: Optional[int] = None) -> Generator[int, None, None]:
     r"""Yield the column-indices of **dist** which yield a uniform or clustered distribution.
 
-    Given the (symmetric) distance matrix :math:`D \in \mathbb{R}^{n,n}` and
-    the vector :math:`\boldsymbol{d} \in \mathbb{Z}^{m}`
+    Given the (symmetric) distance matrix :math:`\boldsymbol{D} \in \mathbb{R}^{n,n}` and
+    the vector :math:`\boldsymbol{d} \in \mathbb{N}^{m}`
     (representing a subset of indices in :math:`D`),
     then the :math:`i`'th element :math:`\boldsymbol{d}_{i}` is
     defined as following:
@@ -132,15 +131,20 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: Optional[float] = 0
     .. math::
 
         \DeclareMathOperator*{\argmax}{\arg\!\max}
-        \boldsymbol{d}_{i} = \argmax_{k}
-        \sqrt{ \sum_{0 \le j < i} {D_{k, \boldsymbol{d}_{j}}}^2 }
-        \quad \text{with} \quad
-        k \notin \boldsymbol{d}[0, ..., i-1]
+        d_{i} = \begin{cases}
+            \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} || &&&
+            \text{if} & i=0 \\
+            \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}[k; d_{0},...,d_{i-1}] ||_{p} &
+            \text{with} & k \notin \boldsymbol{d}[0, ..., i-1] &
+            \text{if} & i \ne 0
+        \end{cases}
 
-    The row in :math:`D` corresponding to :math:`\boldsymbol{d}_{i=0}`
-    can be specified by **start**.
+    By default :math:`p=-2`.
+    Using a negative Minkowski norm is equivalent to, temporarily, projecting the distance matrix
+    into recipropal space, thus results in an increased weight of all neighbouring atoms.
 
-    The distance matrix can (and should) be truncated with the **p** parameter.
+    The row in :math:`D` corresponding to :math:`d_{0}`
+    can alternatively be specified by **start**.
 
     The :math:`\text{argmax}` operation can be exchanged for :math:`\text{argmin}` by settings
     **operation** to ``"min"``, thus yielding a clustered- rather than uniform-distribution.
@@ -155,23 +159,21 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: Optional[float] = 0
         Whether to minimize or maximize the distance between points.
         Accepted values are ``"min"`` and ``"max"``.
 
-    p : :class:`float`, optional
-        A float obeying the following condition: :math:`0.0 < p <= 1.0`.
-        Represents the fraction of **dist** which is of interest to the user.
-        If not ``None``, used for truncating the distance matrix :math:`D`:
-
-        .. math::
-
-            r_{truncate} = r_{nn} * \max(2, \log_{2} p)
-            \quad \text{with} \quad
-            r_{nn} = \frac{1}{N} \sum_{i=0}^{N} \min_{j} D_{i,j}
-
     start : :class:`int`, optional
         The index of the starting row in **dist**.
         If ``None``, start in whichever row contains the global minimum
-        (:math:`\DeclareMathOperator*{\argmin}{\arg\!\min} \argmin_{i} ||D_{i, :}||_{2}`) or maximum
-        (:math:`\DeclareMathOperator*{\argmax}{\arg\!\max} \argmax_{i} ||D_{i, :}||_{2}`).
+        (:math:`\DeclareMathOperator*{\argmin}{\arg\!\min} \argmin\limits_{k \in \mathbb{N}} ||\boldsymbol{D}_{k, :}||`) or maximum
+        (:math:`\DeclareMathOperator*{\argmax}{\arg\!\max} \argmax\limits_{k \in \mathbb{N}} ||\boldsymbol{D}_{k, :}||`).
         See **operation**.
+
+    p : :class:`float`
+        The order of the Minkowski norm; used for determining the optimal values of :math:`d_{i>0}`.
+        :math:`p=2` is equivalent to the Euclidian norm:
+
+        .. math::
+
+            || \boldsymbol{x} ||_{p} = \left( \sum_{i=0}^n {x_{i}}^{p} \right)^{1/p}
+            \quad \text{with} \quad \boldsymbol{x} \in \mathbb{R}^n
 
     Yields
     ------
@@ -185,12 +187,8 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: Optional[float] = 0
 
     # Truncate and square the distance matrix
     dist_sqr = np.array(dist, dtype=float, copy=True)
-    if p is not None:
-        np.fill_diagonal(dist_sqr, np.inf)
-        n = max(2, -np.log2(p))
-        trunc = n * dist_sqr.min(axis=0).mean()
-        dist_sqr[dist_sqr > trunc] = trunc
-    dist_sqr **= 2
+    np.fill_diagonal(dist_sqr, np.nan)
+    dist_sqr **= p
 
     # Use either argmin or argmax
     if operation == 'min':
@@ -200,13 +198,15 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: Optional[float] = 0
     start = arg_func(np.linalg.norm(dist, axis=1)) if start is None else start
     np.fill_diagonal(dist_sqr, np.nan)
 
-    # Yield indices
+    # Yield the first index
     dist_1d_sqr = dist_sqr[start].copy()
     dist_1d_sqr[start] = np.nan
     yield start
 
+    # Yield remaining indices
+    p_inv = 1 / p
     for _ in range(len(dist_1d_sqr)-1):
-        dist_1d = dist_1d_sqr**0.5
+        dist_1d = dist_1d_sqr**p_inv
         i = arg_func(dist_1d)
         dist_1d_sqr[i] = np.nan
         dist_1d_sqr += dist_sqr[i]
@@ -220,6 +220,17 @@ def cluster_idx(dist: np.ndarray, start: Optional[int] = None) -> np.ndarray:
     :math:`\DeclareMathOperator*{\argmin}{\arg\!\min} i = \argmin_{i} ||D_{i, :}||_{2}`,
     return the column-indices of :math:`D_{i, :}` sorted in order of ascending distance.
 
+    .. math::
+
+        \DeclareMathOperator*{\argmin}{\arg\!\min}
+        d_{i} = \begin{cases}
+            \argmin\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:}|| &&&
+            \text{if} & i=0 \\
+            \argmin\limits_{k \in \mathbb{N}} D_{k, d_{0}} &
+            \text{with} & k \notin \boldsymbol{d}[0, ..., i-1] &
+            \text{if} & i \ne 0
+        \end{cases}
+
     Parameters
     ----------
     dist : :math:`(m, m)` array-like [:class:`float`]
@@ -229,7 +240,7 @@ def cluster_idx(dist: np.ndarray, start: Optional[int] = None) -> np.ndarray:
     start : :class:`int`, optional
         The index of the starting row in **dist**.
         If ``None``, start in row:
-        :math:`\DeclareMathOperator*{\argmin}{\arg\!\min} \argmin_{i} ||D_{i, :}||_{2}`.
+        :math:`\DeclareMathOperator*{\argmin}{\arg\!\min} \argmin_{k \in \mathbb{N}} ||D_{k, :}||`.
 
     Returns
     -------
@@ -246,23 +257,78 @@ def cluster_idx(dist: np.ndarray, start: Optional[int] = None) -> np.ndarray:
     return idx[r_arg]
 
 
-def truncate_dist(dist: np.ndarray, p: float) -> None:
-    np.fill_diagonal(dist, np.inf)
-    nn_dist = dist.min(axis=0).mean()
-    base = get_nn_count(dist, nn_dist)
+def _test_distribute(mol: Molecule, symbol: str, **kwargs) -> Molecule:
+    if not isinstance(mol, Molecule):
+        mol = Molecule(mol)
 
-    print(base)
-    n = -np.log(p) / np.log(base)
-    n += 2
-    print(n)
-    n *= nn_dist
-    dist[dist > n] = n
+    _idx_in = [i for i, at in enumerate(mol) if at.symbol == symbol]
+    idx_in = np.fromiter(_idx_in, count=len(_idx_in), dtype=int)
+    idx_out = distribute_idx(mol, idx_in, **kwargs)
+
+    a = symbol
+    b = 'I' if a != 'I' else 'Br'
+    mol2 = Molecule()
+    for i, at in enumerate(mol):
+        if at.symbol != symbol:
+            continue
+        symbol_new = a if i not in idx_out else b
+        mol2.add_atom(Atom(symbol=symbol_new, coords=at.coords, mol=mol2))
+    return mol2
 
 
-def get_nn_count(dist: np.ndarray, r: float, r_min: float = 0.5, r_max: float = 1.5) -> float:
-    """Return the number of elements in **dist** whose value are within the range :math:`[r*r_{min}, r*r_{max}]`."""  # noqa
-    valid = (dist > r_min * r) & (dist < r_max * r)
-    valid.shape = valid.size
-    n = np.bincount(valid)[1]
-    n /= len(dist)
-    return n
+def test_distribute(mol: Union[Molecule, str], symbol: str,
+                    p_range: Union[float, Iterable[float]], **kwargs) -> Molecule:
+    r"""Test function for :func:`CAT.attachment.distribution.distribute_idx`.
+
+    Examples
+    --------
+    .. code:: python
+
+        >>> import numpy as np
+        >>> from scm.plams import Molecule
+
+        >>> mol_input: Molecule = Molecule(...)
+        >>> xyz_output: str = ...
+        >>> at_symbol: str = 'Cl'
+        >>> p_range: numpy.ndarray = 2**-np.arange(8.0)
+
+        >>> mol_out: Molecule = test_distribute(mol_input, at_symbol, p_range)
+        >>> mol_out.write(xyz_output)
+
+        >>> print(len(mol_input) == len(p_range) * len(mol_out))
+        True
+
+
+    Parameters
+    ----------
+    mol : :class:`Molecule` or :class:`str`
+        A molecule or path+filename containing a molecule.
+
+    symbol : :class:`str`
+        The atomic symbol of the anchor atom.
+
+    p_range : :class:`float` or :class:`Iterable<collections.abc.Iterable>` :class:`float`
+        A float or iterable of floats subject to the following constraint: :math:`0 < p \le 1`.
+
+    \**kwargs : :data:`Any<typing.Any>`
+        Further keyword arguments for :func:`CAT.attachment.distribution.distribute_idx`:
+        ``follow_edge``, ``mode`` and ``start``.
+
+    Returns
+    -------
+    :class:`Molecule`
+        A Molecule instance containing one molecule for every item in **p_range**
+
+    """
+    if not isinstance(mol, Molecule):
+        mol = Molecule(mol)
+    if not isinstance(p_range, abc.Iterable):
+        p_range = (p_range,)
+
+    ret = Molecule()
+    trans = cdist(mol, mol).max() * 1.1
+    for i, p in enumerate(p_range):
+        mol_tmp = _test_distribute(mol, symbol, p=p, **kwargs)
+        mol_tmp.translate([i*trans, 0, 0])
+        ret += mol_tmp
+    return ret

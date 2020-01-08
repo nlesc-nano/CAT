@@ -96,31 +96,25 @@ def edge_dist(xyz: np.ndarray, n: float = 1.0,
     as opposed to a "normal" distance matrix each element thus represents
     the shortest path along a set of 1D lines rather than a 3D volume.
 
-    Given the matrix of Cartesian coordinates :math:`X \in \mathbb{R}^{n, 3}`,
-    the matching distance matrix :math:`D \in \mathbb{R}^{n, n}` and
-    the matching edge-distance matrix :math:`D^{\text{edge}} \in \mathbb{R}^{n, n}`,
+    Given the matrix of Cartesian coordinates :math:`\boldsymbol{X} \in \mathbb{R}^{n, 3}`,
+    the matching distance matrix :math:`\boldsymbol{D} \in \mathbb{R}^{n, n}` and
+    the matching edge-distance matrix :math:`\boldsymbol{D}^{\text{edge}} \in \mathbb{R}^{n, n}`,
     then element :math:`D_{i,j}` is defined as following:
 
     .. math::
 
-        D_{i, j} = ||X_{i,:} - X_{j,:}||_{2}
+        D_{i, j} = ||\boldsymbol{X}_{i,:} - \boldsymbol{X}_{j,:}||
 
     while :math:`D_{i, j}^{\text{edge}}` is defined as:
 
     .. math::
 
-        D_{i, j}^{\text{edge}} = \min_{\boldsymbol{k}} \Bigl{(}
-            ||X_{i,:} - X_{\boldsymbol{k}_{0},:}||_{2}
-            \; + \; ... \; + \;
-            ||X_{\boldsymbol{k}_{m},:} - X_{j,:}||_{2} \Bigr{)}
+        D_{i, j}^{\text{edge}} = \min_{\boldsymbol{p} \in \mathbb{N}^{m}; m \in \mathbb{N}}
+        \sum_{k=0}^{m-1} || X_{p_{k},:} - X_{p_{k+1},:} ||
+        \quad \text{with} \quad p_{0} = i \quad \text{and} \quad p_{m} = j
 
-        \quad \text{with} \quad
-        \boldsymbol{k}_{0} \ne i
-        \quad \text{and} \quad
-        \boldsymbol{k}_{m} \ne j
-
-    The vector :math:`\boldsymbol{k} \in \mathbb{Z}^{m}` is a path,
-    represented by the indices of neighbouring vertices in :math:`X`,
+    The vector :math:`\boldsymbol{p}` is a path,
+    represented by the indices of neighbouring vertices in :math:`\boldsymbol{X}`,
     whose length (*i.e.* sum of Euclidean distances) is to-be minimized.
 
     Notes

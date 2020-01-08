@@ -279,14 +279,32 @@ Core
 
         Accepts one of the following values:
 
-        * ``"uniform"``: A uniform distribution; the distance between each
+        * ``"uniform"``: A uniform distribution; the weighted distance between each
           successive dummy atom and all previous dummy atoms is maximized.
-        * ``"cluster"``: A clustered distribution; the distance between each
+        * ``"cluster"``: A clustered distribution; the weighted distance between each
           successive dummy atom and all previous dummy atoms is minmized.
         * ``"random"``: A random distribution.
 
         It should be noted that all three methods converge towards the same set
         as :math:`p` approaches :math:`1.0`.
+
+        If :math:`\boldsymbol{D} \in \mathbb{R}^{n,n}` is the (symmetric) distance matrix constructed
+        from the dummy atom superset and :math:`\boldsymbol{d} \in \mathbb{N}^{\le n}` the vector
+        of indices which yields the dummy atom subset, then element :math:`d_{i}` is defined as following
+        for the ``"uniform"`` distribution:
+
+        .. math::
+
+            \DeclareMathOperator*{\argmax}{\arg\!\max}
+            d_{i} = \begin{cases}
+                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} || &&&
+                \text{if} & i=0 \\
+                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}[k; d_{0},...,d_{i-1}] ||_{-2} &
+                \text{with} & k \notin \boldsymbol{d}[0, ..., i-1] &
+                \text{if} & i \ne 0
+            \end{cases}
+
+        For the ``"cluster"`` distribution all :math:`argmax` operations are exchanged for :math:`argmin`.
 
         .. note::
             An example of a ``"uniform"``, ``"cluster"`` and ``"random"`` distribution with :math:`p=1/3`.
@@ -295,6 +313,13 @@ Core
                 :scale: 15 %
                 :align: center
 
+            |
+            An example of four different ``"uniform"`` distributions at :math:`p=1/16`,
+            :math:`p=1/8`, :math:`p=1/4` and :math:`p=1/2`.
+
+            .. image:: _images/distribution_p_var.png
+                :scale: 20 %
+                :align: center
 
 
     .. attribute:: optional.core.subset.follow_edge
