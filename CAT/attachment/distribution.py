@@ -195,10 +195,9 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: Optional[float] = 0
     # Use either argmin or argmax
     if operation == 'min':
         arg_func = np.nanargmin
-        start = np.linalg.norm(dist, axis=1).argmin() if start is None else start
     else:
         arg_func = np.nanargmax
-        start = np.linalg.norm(dist, axis=1).argmax() if start is None else start
+    start = arg_func(np.linalg.norm(dist, axis=1)) if start is None else start
     np.fill_diagonal(dist_sqr, np.nan)
 
     # Yield indices
@@ -245,3 +244,25 @@ def cluster_idx(dist: np.ndarray, start: Optional[int] = None) -> np.ndarray:
     r_arg = r.argsort()
     idx = np.arange(len(r))
     return idx[r_arg]
+
+
+def truncate_dist(dist: np.ndarray, p: float) -> None:
+    np.fill_diagonal(dist, np.inf)
+    nn_dist = dist.min(axis=0).mean()
+    base = get_nn_count(dist, nn_dist)
+
+    print(base)
+    n = -np.log(p) / np.log(base)
+    n += 2
+    print(n)
+    n *= nn_dist
+    dist[dist > n] = n
+
+
+def get_nn_count(dist: np.ndarray, r: float, r_min: float = 0.5, r_max: float = 1.5) -> float:
+    """Return the number of elements in **dist** whose value are within the range :math:`[r*r_{min}, r*r_{max}]`."""  # noqa
+    valid = (dist > r_min * r) & (dist < r_max * r)
+    valid.shape = valid.size
+    n = np.bincount(valid)[1]
+    n /= len(dist)
+    return n
