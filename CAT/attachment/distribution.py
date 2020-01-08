@@ -140,7 +140,7 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: Optional[float] = 0
     The row in :math:`D` corresponding to :math:`\boldsymbol{d}_{i=0}`
     can be specified by **start**.
 
-    THe distance matrix can be truncated with the **p** parameter.
+    The distance matrix can (and should) be truncated with the **p** parameter.
 
     The :math:`\text{argmax}` operation can be exchanged for :math:`\text{argmin}` by settings
     **operation** to ``"min"``, thus yielding a clustered- rather than uniform-distribution.
@@ -162,13 +162,16 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: Optional[float] = 0
 
         .. math::
 
-            r_{truncate} = \max(2, r_{nn} * \log_{2} p)
+            r_{truncate} = r_{nn} * \max(2, \log_{2} p)
             \quad \text{with} \quad
-            r_{nn} = \frac{1}{N} \sum_{i=0}^{N} D_{i,:}
+            r_{nn} = \frac{1}{N} \sum_{i=0}^{N} \min_{j} D_{i,j}
 
     start : :class:`int`, optional
         The index of the starting row in **dist**.
-        If ``None``, start in whichever row contains the global minimum/maximum (see **operation**).
+        If ``None``, start in whichever row contains the global minimum
+        (:math:`\DeclareMathOperator*{\argmin}{\arg\!\min} \argmin_{i} ||D_{i, :}||_{2}`) or maximum
+        (:math:`\DeclareMathOperator*{\argmax}{\arg\!\max} \argmax_{i} ||D_{i, :}||_{2}`).
+        See **operation**.
 
     Yields
     ------
@@ -214,7 +217,7 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: Optional[float] = 0
 def cluster_idx(dist: np.ndarray, start: Optional[int] = None) -> np.ndarray:
     r"""Return the column-indices of **dist** which yield a clustered distribution.
 
-    Given the (symmetric) distance matrix :math:`D \in \mathbb{R}^{n, n}` and the row index
+    Given the (symmetric) distance matrix :math:`D \in \mathbb{R}^{n, n}` and the starting row
     :math:`\DeclareMathOperator*{\argmin}{\arg\!\min} i = \argmin_{i} ||D_{i, :}||_{2}`,
     return the column-indices of :math:`D_{i, :}` sorted in order of ascending distance.
 
@@ -227,7 +230,7 @@ def cluster_idx(dist: np.ndarray, start: Optional[int] = None) -> np.ndarray:
     start : :class:`int`, optional
         The index of the starting row in **dist**.
         If ``None``, start in row:
-        :math:`\DeclareMathOperator*{\argmin}{\arg\!\min} i = \argmin_{i} ||D_{i, :}||_{2}`.
+        :math:`\DeclareMathOperator*{\argmin}{\arg\!\min} \argmin_{i} ||D_{i, :}||_{2}`.
 
     Returns
     -------

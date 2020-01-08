@@ -44,7 +44,6 @@ def array_combinations(array: np.ndarray, r: int = 2) -> np.ndarray:
     r : :class:`int`
         The length of each combination.
 
-
     Returns
     -------
     :math:`(n, m, r)` :class:`numpy.ndarray`
