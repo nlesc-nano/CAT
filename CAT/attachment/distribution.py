@@ -30,7 +30,7 @@ from scipy.spatial.distance import cdist
 
 from scm.plams import Molecule, Atom
 
-from .edge_distance import edge_dist
+from CAT.attachment.edge_distance import edge_dist
 
 __all__ = ['distribute_idx']
 
@@ -107,7 +107,9 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
         xyz = np.array(core, dtype=float, ndmin=2, copy=False)[idx_ar]
         dist = edge_dist(xyz) if kwargs.get('follow_edge', False) else cdist(xyz, xyz)
         operation = 'max' if mode == 'uniform' else 'min'
-        generator1 = uniform_idx(dist, operation=operation, start=kwargs.get('start', None))
+        generator1 = uniform_idx(dist, operation=operation,
+                                 start=kwargs.get('start', None),
+                                 cluster_size=kwargs.get('cluster_size', 1))
         generator2 = islice(generator1, stop)
         ret = idx_ar[np.fromiter(generator2, count=stop, dtype=int)]
 
@@ -119,11 +121,11 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
 
 
 def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2.0,
-                start: Optional[int] = None) -> Generator[int, None, None]:
+                cluster_size: int = 1, start: Optional[int] = None) -> Generator[int, None, None]:
     r"""Yield the column-indices of **dist** which yield a uniform or clustered distribution.
 
     Given the (symmetric) distance matrix :math:`\boldsymbol{D} \in \mathbb{R}^{n,n}` and
-    the vector :math:`\boldsymbol{d} \in \mathbb{N}^{m}`
+    the vector :math:`\boldsymbol{d} \in \mathbb{N}^{\le n}`
     (representing a subset of indices in :math:`D`),
     then the :math:`i`'th element :math:`\boldsymbol{d}_{i}` is
     defined as following:
@@ -132,11 +134,16 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2.0,
 
         \DeclareMathOperator*{\argmax}{\arg\!\max}
         d_{i} = \begin{cases}
-            \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} || &&&
+            \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} ||_{p} &&&
             \text{if} & i=0 \\
             \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}[k; d_{0},...,d_{i-1}] ||_{p} &
             \text{with} & k \notin \boldsymbol{d}[0, ..., i-1] &
-            \text{if} & i \ne 0
+            \text{if} & i > 0, {i \over m} \in \mathbb{Z} \\
+            \argmax\limits_{k \in \mathbb{N}}
+                || \boldsymbol{D}[k; d_{0},...,d_{i-m}] ||_{p} *
+                || \boldsymbol{D}[k; d_{i-m+1},...,d_{i-1}] ||_{p}^p &
+            \text{with} & k \notin \boldsymbol{d}[0, ..., i-1] &
+            \text{if} & i > 0, {i \over m} \notin \mathbb{Z}
         \end{cases}
 
     By default :math:`p=-2`.
@@ -184,19 +191,19 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2.0,
     if operation not in ('min', 'max'):
         raise ValueError(f"Invalid value for 'mode' ({reprlib.repr(operation)}); "
                          f"accepted values: ('min', 'max')")
+    p_inv = 1 / p
 
     # Truncate and square the distance matrix
-    dist_sqr = np.array(dist, dtype=float, copy=True)
-    np.fill_diagonal(dist_sqr, np.nan)
-    dist_sqr **= p
+    dist = np.array(dist, dtype=float, copy=True)
+    np.fill_diagonal(dist, np.nan)
+    dist_sqr = dist**p
 
     # Use either argmin or argmax
     if operation == 'min':
-        arg_func = np.nanargmin
+        arg_func = np.nanargin
     else:
         arg_func = np.nanargmax
-    start = arg_func(np.linalg.norm(dist, axis=1)) if start is None else start
-    np.fill_diagonal(dist_sqr, np.nan)
+    start = arg_func(np.nansum(dist_sqr, axis=1)**p_inv) if start is None else start
 
     # Yield the first index
     dist_1d_sqr = dist_sqr[start].copy()
@@ -204,13 +211,19 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2.0,
     yield start
 
     # Yield remaining indices
-    p_inv = 1 / p
-    for _ in range(len(dist_1d_sqr)-1):
-        dist_1d = dist_1d_sqr**p_inv
-        i = arg_func(dist_1d)
-        dist_1d_sqr[i] = np.nan
-        dist_1d_sqr += dist_sqr[i]
-        yield i
+    bool_ar = np.zeros(len(dist_1d_sqr)-1, dtype=bool)
+    bool_ar[::cluster_size] = True
+    j = None
+    for i in bool_ar:
+        if i:
+            dist_1d = dist_1d_sqr**p_inv
+        else:
+            dist_1d = (dist_1d_sqr - dist_sqr[j])**p_inv
+            dist_1d *= dist_sqr[j]
+        j = arg_func(dist_1d)
+        dist_1d_sqr[j] = np.nan
+        dist_1d_sqr += dist_sqr[j]
+        yield j
 
 
 def cluster_idx(dist: np.ndarray, start: Optional[int] = None) -> np.ndarray:
@@ -298,7 +311,6 @@ def test_distribute(mol: Union[Molecule, str], symbol: str,
         >>> print(len(mol_input) == len(p_range) * len(mol_out))
         True
 
-
     Parameters
     ----------
     mol : :class:`Molecule` or :class:`str`
@@ -332,3 +344,10 @@ def test_distribute(mol: Union[Molecule, str], symbol: str,
         mol_tmp.translate([i*trans, 0, 0])
         ret += mol_tmp
     return ret
+
+
+file = r"D:\hardd\Downloads\8nm_model_cb_withdummy.xyz"
+p_range = 2**-np.arange(1.0, 5.0)
+mol = test_distribute(file, 'Cl', p_range=p_range, follow_edge=True, mode='uniform', cluster_size=2)
+mol.from_array(mol.as_array() / 2)
+mol.write(file.replace('xyz', 'output.xyz'))
