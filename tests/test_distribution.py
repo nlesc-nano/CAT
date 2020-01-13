@@ -10,7 +10,6 @@ from assertionlib import assertion
 from CAT.attachment.distribution import distribute_idx
 
 PATH = Path('tests') / 'test_files'
-PATH = Path('/Users/basvanbeek/Documents/GitHub/CAT/tests/test_files')
 MOL = Molecule(str(PATH / 'core' / 'Cd68Se55.xyz'))
 IDX = np.array([i for i, at in enumerate(MOL) if at.symbol == 'Cl'])
 IDX.setflags(write=False)
