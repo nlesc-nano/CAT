@@ -295,7 +295,7 @@ def _min_and_max(dist_sqr: np.ndarray, dist_1d_sqr: np.ndarray,
 
 def _parse_cluster_size(ar_size: int, clusters: Iterable[int]) -> np.ndarray:
     """Return indices for all ``True`` values in the boolean array of :func:`_min_and_max`."""
-    generator = takewhile(lambda x: x < ar_size, cycle_accumulate(clusters))
+    generator = takewhile(lambda x: x < ar_size, cycle_accumulate(clusters, start=-1))
     return np.fromiter(generator, dtype=int)
 
 
