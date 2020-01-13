@@ -270,12 +270,13 @@ def _min_and_max(dist_sqr: np.ndarray, dist_1d_sqr: np.ndarray,
                  cluster_size: Union[int, Iterable[int]] = 1) -> Generator[int, None, None]:
     """Helper function for :func:`uniform_idx` if :code:`cluster_size != 1`."""
     # Construct a boolean array denoting the start of new clusters
-    bool_ar = np.zeros(len(dist_1d_sqr)-1, dtype=bool)
+    bool_ar = np.zeros(len(dist_1d_sqr), dtype=bool)
     if isinstance(cluster_size, abc.Iterable):
         bool_indices = _parse_cluster_size(len(bool_ar), cluster_size)
         bool_ar[bool_indices] = True
     else:
         bool_ar[::cluster_size] = True
+    bool_ar = bool_ar[1:]
 
     j_ar = dist_1d_sqr.copy()
     for i in bool_ar:
