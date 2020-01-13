@@ -30,7 +30,7 @@ from scipy.spatial.distance import cdist
 
 from scm.plams import Molecule, Atom
 
-from CAT.attachment.edge_distance import edge_dist
+from .edge_distance import edge_dist
 
 __all__ = ['distribute_idx']
 
@@ -431,10 +431,3 @@ def _test_distribute(mol: Molecule, symbol: str, **kwargs) -> Molecule:
         symbol_new = a if i not in idx_out else b
         mol2.add_atom(Atom(symbol=symbol_new, coords=at.coords, mol=mol2))
     return mol2
-
-
-file = r"/Users/basvanbeek/Downloads/8nm_model_cb_withdummy.xyz"
-p_range = 2**-np.arange(1.0, 5.0)
-mol = test_distribute(file, 'Cl', p_range=1/4, follow_edge=True, mode='uniform',
-                      cluster_size=[1, 2, 9, 1])
-mol.write(file.replace('xyz', 'output.xyz'))
