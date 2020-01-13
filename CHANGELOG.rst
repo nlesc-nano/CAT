@@ -11,6 +11,12 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.7.8
+*****
+* It is now possible to create ``"uniform"`` distributions of clusters,
+  the size of each cluster being user-specified.
+
+
 0.7.7
 *****
 * The ``"uniform"`` and ``"cluster"`` distributions are now weighted by the distance

@@ -254,8 +254,9 @@ Core
 
         Settings related to the partial replacement of core dummy atoms with ligands.
 
-        If not ``None``, has access to two further keywords:
-        :attr:`subset.p`, :attr:`subset.mode` and :attr:`subset.follow_edge`.
+        If not ``None``, has access to four further keywords:
+        :attr:`subset.p`, :attr:`subset.mode` :attr:`subset.follow_edge`
+        and :attr:`subset.cluster_size`.
 
 
     .. attribute:: optional.core.subset.p
@@ -279,9 +280,11 @@ Core
 
         Accepts one of the following values:
 
-        * ``"uniform"``: A uniform distribution; the weighted distance between each
+        * ``"uniform"``: A uniform distribution; the nearest-neighbour distances between each
           successive dummy atom and all previous dummy atoms is maximized.
-        * ``"cluster"``: A clustered distribution; the weighted distance between each
+          can be combined with :attr:`subset.cluster_size<optional.core.subset.cluster_size>`
+          to create a uniform distribution of clusters of a user-specified size.
+        * ``"cluster"``: A clustered distribution; the the nearest-neighbour distances between each
           successive dummy atom and all previous dummy atoms is minmized.
         * ``"random"``: A random distribution.
 
@@ -289,22 +292,24 @@ Core
         as :math:`p` approaches :math:`1.0`.
 
         If :math:`\boldsymbol{D} \in \mathbb{R}^{n,n}` is the (symmetric) distance matrix constructed
-        from the dummy atom superset and :math:`\boldsymbol{d} \in \mathbb{N}^{\le n}` the vector
-        of indices which yields the dummy atom subset, then element :math:`d_{i}` is defined as following
-        for the ``"uniform"`` distribution:
+        from the dummy atom superset and :math:`\boldsymbol{a} \in \mathbb{N}^{m}` the vector
+        of indices which yields the dummy atom subset, then the definition of element :math:`a_{i}`
+        is defined below for the ``"uniform"`` distribution.
+        All elements of :math:`\boldsymbol{a}` are furthermore constrained to be unique.
 
         .. math::
+            :label: 1
 
             \DeclareMathOperator*{\argmax}{\arg\!\max}
-            d_{i} = \begin{cases}
-                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} || &&&
+            a_{i} = \begin{cases}
+                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} ||_{-2} &
                 \text{if} & i=0 \\
-                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}[k; d_{0},...,d_{i-1}] ||_{-2} &
-                \text{with} & k \notin \boldsymbol{d}[0, ..., i-1] &
-                \text{if} & i \ne 0
+                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}[k, \boldsymbol{a}[0:i] ||_{-2} &
+                \text{if} & i > 0
             \end{cases}
 
-        For the ``"cluster"`` distribution all :math:`argmax` operations are exchanged for :math:`argmin`.
+        For the ``"cluster"`` distribution all :math:`\text{argmax}` operations
+        are exchanged for :math:`\text{argmin}`.
 
         .. note::
             An example of a ``"uniform"``, ``"cluster"`` and ``"random"`` distribution with :math:`p=1/3`.
@@ -341,6 +346,7 @@ Core
         is defined as following:
 
         .. math::
+            :label: 2
 
             D_{i, j}^{\text{edge}} = \min_{\boldsymbol{p} \in \mathbb{N}^{m}; m \in \mathbb{N}}
             \sum_{k=0}^{m-1} || X_{p_{k},:} - X_{p_{k+1},:} ||
@@ -361,6 +367,58 @@ Core
 
             .. image:: _images/polyhedron.png
                 :scale: 15 %
+                :align: center
+
+
+    .. attribute:: optional.core.subset.cluster_size
+
+        :Parameter:     * **Type** - :class:`int` or :class:`Iterable<collections.abc.Iterable>` [:class:`int`]
+                        * **Default value** – ``1``
+
+        Allow for the creation of uniformly distributed clusters of size :math:`r`;
+        should be used in conjunction with :attr:`subset.mode = "uniform"<optional.core.subset.mode>`.
+
+        The value of :math:`r` can be either
+        a single cluster size (*e.g.* :code:`cluster_size = 5`) or an iterable of various
+        sizes (*e.g.* :code:`cluster_size = [2, 3, 4]`).
+        In the latter case the iterable will be repeated as long as necessary.
+
+        Compared to Eq :eq:`1` the vector of indices :math:`\boldsymbol{a} \in \mathbb{N}^{m}` is,
+        for the purpose of book keeping, reshaped into the matrix
+        :math:`\boldsymbol{A} \in \mathbb{N}^{q, r} \; \text{with} \; q*r = m`.
+        All elements of :math:`\boldsymbol{A}` are, again, constrained to be unique.
+
+        .. math::
+            :label: 3
+
+            \DeclareMathOperator*{\argmax}{\arg\!\max}
+            A_{i,j} = \begin{cases}
+                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} ||_{-2} &
+                \text{if} & i=0 & \text{and} & j=0 \\
+                \argmax\limits_{k \in \mathbb{N}}
+                    || \boldsymbol{D}[k; \boldsymbol{A}[0:i, 0:r] ||_{-2} &
+                \text{if} & i > 0 & \text{and} & j = 0 \\
+                \argmax\limits_{k \in \mathbb{N}}
+                    \dfrac{|| \boldsymbol{D}[k, \boldsymbol{A}[0:i, 0:r] ||_{-2}}
+                    {|| \boldsymbol{D}[k, \boldsymbol{A}[i, 0:j] ||_{-2}} &&&
+                \text{if} & j > 0
+            \end{cases}
+
+        |
+
+        .. note::
+            An example of various cluster sizes (1, 2, 3 and 4) with :math:`p=1/4`.
+
+            .. image:: _images/cluster_size.png
+                :scale: 15 %
+                :align: center
+
+            |
+            An example of clusters of varying size (:code:`cluster_size = [1, 2, 9, 1]`)
+            with :math:`p=1/4`.
+
+            .. image:: _images/cluster_size_variable.png
+                :scale: 5 %
                 :align: center
 
 |
@@ -544,6 +602,8 @@ QD
         Calculate the :math:`V_{bulk}`, a ligand- and core-sepcific descriptor of a ligands' bulkiness.
 
         .. math::
+            :label: 4
+
             V(r_{i}, h_{i}; d, h_{lim}) =
             \sum_{i=1}^{n} e^{r_{i}} (\frac{2 r_{i}}{d} - 1)^{+} (1 - \frac{h_{i}}{h_{lim}})^{+}
 
