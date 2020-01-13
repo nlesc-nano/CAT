@@ -449,7 +449,8 @@ def test_subset_schema() -> None:
         'p': 0.5,
         'mode': 'uniform',
         'start': None,
-        'follow_edge': False
+        'follow_edge': False,
+        'cluster_size': 1
     }
 
     assertion.eq(subset_schema.validate(subset_dict), ref)
@@ -499,3 +500,20 @@ def test_subset_schema() -> None:
     assertion.is_(subset_schema.validate(subset_dict)['follow_edge'], True)
     subset_dict['follow_edge'] = False
     assertion.is_(subset_schema.validate(subset_dict)['follow_edge'], False)
+
+    subset_dict['cluster_size'] = 1.0  # Exception: incorrect type
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['cluster_size'] = 'bob'  # Exception: incorrect type
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['cluster_size'] = (i for i in range(10))  # Exception: incorrect type
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['cluster_size'] = 0  # Exception: incorrect value
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['cluster_size'] = (0,)  # Exception: incorrect value
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['cluster_size'] = (None,)  # Exception: incorrect value
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['cluster_size'] = 10
+    assertion.eq(subset_schema.validate(subset_dict)['cluster_size'], 10)
+    subset_dict['cluster_size'] = [1, 5, 10]
+    assertion.eq(subset_schema.validate(subset_dict)['cluster_size'], [1, 5, 10])

@@ -265,7 +265,14 @@ subset_schema: Schema = Schema({
         Or(None, int),
 
     Optional_('follow_edge', default=False):
-        bool
+        bool,
+
+    Optional_('cluster_size', default=1):
+        Or(
+            And(int, lambda n: n > 0),
+            And(abc.Collection, lambda n: all(isinstance(i, int) for i in n),
+                lambda n: all(i > 0 for i in n))
+        )
 })
 
 _db_names = ('core', 'ligand', 'qd')
