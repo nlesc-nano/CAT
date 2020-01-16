@@ -21,7 +21,8 @@ API
 """
 
 import reprlib
-from typing import Generator, Optional, Iterable, FrozenSet, Any, Union, Callable
+from types import MappingProxyType
+from typing import Generator, Optional, Iterable, FrozenSet, Any, Union, Callable, Mapping
 from itertools import islice, cycle, takewhile
 from collections import abc
 
@@ -89,7 +90,11 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
     try:
         idx_ar = np.array(idx, dtype=int, ndmin=1, copy=False)
     except TypeError:  # A Collection or Iterator
-        idx_ar = np.fromiter(idx, dtype=int)
+        try:
+            idx_ar = np.fromiter(idx, dtype=int)
+        except ValueError as ex:
+            raise TypeError("'idx' expected an integer or iterable of integers; "
+                            f"{ex}").with_traceback(ex.__traceback__)
 
     # Validate the input
     if mode not in MODE_SET:
@@ -118,6 +123,14 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
 
     # Return a list of `p * len(idx)` atomic indices
     return ret[:stop]
+
+
+#: Map the **operation** parameter in :func:`uniform_idx` to either
+#: :func:`numpy.nanargmin` or :func:`numpy.nanargmax`.
+OPERATION_MAPPING: Mapping[Union[str, Callable], Callable] = MappingProxyType({
+    'min': np.nanargmin, min: np.nanargmin, np.min: np.nanargmin,
+    'max': np.nanargmax, max: np.nanargmax, np.max: np.nanargmax
+})
 
 
 def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2,
@@ -183,7 +196,7 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2,
     Parameters
     ----------
     dist : :math:`(n, n)` :class:`numpy.ndarray` [:class:`float`]
-        A symmetric 2D NumPy array (:code:`(dist == dist.T).all()`) representing the
+        A symmetric 2D NumPy array (:math:`D_{i,j} = D_{j,i}`) representing the
         distance matrix :math:`D`.
 
     operation : :class:`str`
@@ -198,7 +211,7 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2,
         See **operation**.
 
     p : :class:`float`
-        The order of the Minkowski norm; used for determining the optimal values of :math:`d_{i>0}`.
+        The (non-zero) order of the Minkowski norm; used for determining the optimal values of :math:`d_{i>0}`.
         :math:`p=2` is equivalent to the Euclidian norm:
 
         .. math::
@@ -224,10 +237,11 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2,
         A generator yielding column-indices specified in :math:`\boldsymbol{d}`.
 
     """  # noqa
-    if operation not in ('min', 'max'):
-        raise ValueError(f"Invalid value for 'mode' ({reprlib.repr(operation)}); "
-                         f"accepted values: ('min', 'max')")
-    p_inv = 1 / p
+    try:
+        p_inv = 1 / p
+    except ZeroDivisionError as ex:
+        raise ValueError("'p' must be non-zero; observed value: "
+                         f"{reprlib.repr(p)}").with_traceback(ex.__traceback__)
 
     # Truncate and square the distance matrix
     dist_sqr = np.array(dist, dtype=float, copy=True)
@@ -235,12 +249,23 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2,
     dist_sqr **= p
 
     # Use either argmin or argmax
-    arg_func = np.nanargmin if operation == 'min' else np.nanargmax
-    start = arg_func(np.nansum(dist_sqr, axis=1)**p_inv) if start is None else start
+    try:
+        arg_func = OPERATION_MAPPING[operation]
+    except KeyError as ex:
+        raise ValueError(f"Invalid value for 'operation' ({reprlib.repr(operation)}); "
+                         "accepted values: ('min', 'max')").with_traceback(ex.__traceback__)
+    start_ = arg_func(np.nansum(dist_sqr, axis=1)**p_inv) if start is None else start
 
     # Yield the first index
-    dist_1d_sqr = dist_sqr[start].copy()
-    dist_1d_sqr[start] = np.nan
+    try:
+        dist_1d_sqr = dist_sqr[start_].copy()
+    except IndexError as ex:
+        if not hasattr(start, '__index__'):
+            raise TypeError("'start' expected an integer or 'None'; observed type: "
+                            f"'{start.__class__.__name__}'").with_traceback(ex.__traceback__)
+        raise ex
+
+    dist_1d_sqr[start_] = np.nan
     yield start
 
     # Return a generator for yielding the remaining indices
@@ -275,7 +300,11 @@ def _min_and_max(dist_sqr: np.ndarray, dist_1d_sqr: np.ndarray,
         bool_indices = _parse_cluster_size(len(bool_ar), cluster_size)
         bool_ar[bool_indices] = True
     else:
-        bool_ar[::cluster_size] = True
+        try:
+            bool_ar[::cluster_size] = True
+        except ValueError as ex:
+            raise ValueError("'cluster_size' cannot be zero; oberved value: "
+                             f"{reprlib.repr(cluster_size)}").with_traceback(ex.__traceback__)
     bool_ar = bool_ar[1:]
 
     j_ar = dist_1d_sqr.copy()
@@ -294,7 +323,7 @@ def _min_and_max(dist_sqr: np.ndarray, dist_1d_sqr: np.ndarray,
         yield j
 
 
-def _parse_cluster_size(ar_size: int, clusters: Iterable[int]) -> np.ndarray:
+def _parse_cluster_size(ar_size: int, clusters: Iterable[int], validate: True) -> np.ndarray:
     """Return indices for all ``True`` values in the boolean array of :func:`_min_and_max`."""
     generator = takewhile(lambda x: x < ar_size, cycle_accumulate(clusters))
     return np.fromiter(generator, dtype=int)
@@ -351,7 +380,14 @@ def cluster_idx(dist: np.ndarray, start: Optional[int] = None) -> np.ndarray:
     dist = np.asarray(dist, dtype=float)
     start = np.linalg.norm(dist, axis=1).argmin() if start is None else start
 
-    r = dist[start]
+    try:
+        r = dist[start]
+    except IndexError as ex:
+        if not hasattr(start, '__index__'):
+            raise TypeError("'start' expected an integer or 'None'; observed type: "
+                            f"'{start.__class__.__name__}'").with_traceback(ex.__traceback__)
+        raise ex
+
     r_arg = r.argsort()
     idx = np.arange(len(r))
     return idx[r_arg]
