@@ -89,7 +89,7 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
     # Convert **idx** into an array
     try:
         idx_ar = np.array(idx, dtype=int, ndmin=1, copy=False)
-    except TypeError:  # A Collection or Iterator
+    except (TypeError, ValueError):  # A Collection or Iterator
         try:
             idx_ar = np.fromiter(idx, dtype=int)
         except ValueError as ex:
@@ -254,18 +254,18 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2,
     except KeyError as ex:
         raise ValueError(f"Invalid value for 'operation' ({reprlib.repr(operation)}); "
                          "accepted values: ('min', 'max')").with_traceback(ex.__traceback__)
-    start_ = arg_func(np.nansum(dist_sqr, axis=1)**p_inv) if start is None else start
+    start = arg_func(np.nansum(dist_sqr, axis=1)**p_inv) if start is None else start
 
     # Yield the first index
     try:
-        dist_1d_sqr = dist_sqr[start_].copy()
+        dist_1d_sqr = dist_sqr[start].copy()
     except IndexError as ex:
         if not hasattr(start, '__index__'):
             raise TypeError("'start' expected an integer or 'None'; observed type: "
                             f"'{start.__class__.__name__}'").with_traceback(ex.__traceback__)
-        raise ex
+        raise ValueError("index 'start={start}' is out of bounds: 'len(dist)={len(dist)}'")
 
-    dist_1d_sqr[start_] = np.nan
+    dist_1d_sqr[start] = np.nan
     yield start
 
     # Return a generator for yielding the remaining indices
@@ -305,6 +305,10 @@ def _min_and_max(dist_sqr: np.ndarray, dist_1d_sqr: np.ndarray,
         except ValueError as ex:
             raise ValueError("'cluster_size' cannot be zero; oberved value: "
                              f"{reprlib.repr(cluster_size)}").with_traceback(ex.__traceback__)
+        except TypeError as ex:
+            raise TypeError("'cluster_size' expected a non-zero integer or iterable of integers; "
+                            f"observed type: '{cluster_size.__class__.__name__}'"
+                            ).with_traceback(ex.__traceback__)
     bool_ar = bool_ar[1:]
 
     j_ar = dist_1d_sqr.copy()
@@ -323,10 +327,14 @@ def _min_and_max(dist_sqr: np.ndarray, dist_1d_sqr: np.ndarray,
         yield j
 
 
-def _parse_cluster_size(ar_size: int, clusters: Iterable[int], validate: True) -> np.ndarray:
+def _parse_cluster_size(ar_size: int, clusters: Iterable[int]) -> np.ndarray:
     """Return indices for all ``True`` values in the boolean array of :func:`_min_and_max`."""
     generator = takewhile(lambda x: x < ar_size, cycle_accumulate(clusters))
-    return np.fromiter(generator, dtype=int)
+    try:
+        return np.fromiter(generator, dtype=int)
+    except TypeError as ex:
+        raise TypeError("'cluster_size' expected a non-zero integer or iterable of integers; "
+                        f"{ex}").with_traceback(ex.__traceback__)
 
 
 def cycle_accumulate(iterable: Iterable[int], start: int = 0) -> Generator[int, None, None]:
