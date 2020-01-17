@@ -11,6 +11,16 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.7.9
+*****
+* Added the option to interpolate between ``"uniform"`` / ``"cluster"`` and ``"random"``.
+* The order of the ``p``-norm is now configurable.
+* The variable representing the anchor-atom subset size has been changed from ``p`` to ``f``.
+  ``p`` is now reserved for the order of the ``p-norm``.
+* https://github.com/nlesc-nano/CAT/pull/70: Fixed an issue with the
+  ``_parse_cluster_size()`` index offset.
+
+
 0.7.8
 *****
 * It is now possible to create ``"uniform"`` distributions of clusters,

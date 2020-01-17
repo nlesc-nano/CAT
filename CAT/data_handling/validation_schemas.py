@@ -252,10 +252,10 @@ core_schema: Schema = Schema({
 
 #: Schema for validating the ``['optional']['core']['subset']`` block.
 subset_schema: Schema = Schema({
-    'p':
+    'f':
         Or(
             And(int, lambda n: 0 < n <= 1, Use(float)),
-            And(float, lambda n: 0.0 < n <= 1.0)
+            And(float, lambda n: 0 < n <= 1)
         ),
 
     Optional_('mode', default='uniform'):
@@ -270,9 +270,25 @@ subset_schema: Schema = Schema({
     Optional_('cluster_size', default=1):
         Or(
             And(int, lambda n: n > 0),
-            And(abc.Collection, lambda n: all(isinstance(i, int) for i in n),
-                lambda n: all(i > 0 for i in n))
+            And(abc.Collection,
+                lambda n: all(isinstance(i, int) for i in n),
+                lambda n: all(i > 0 for i in n),
+                Use(tuple))
+        ),
+
+    Optional_('p', default=-2):
+        Or(
+            And(int, lambda n: n != 0, Use(float)),
+            And(float, lambda n: n != 0)
+        ),
+
+    Optional_('randomness', default=None):
+        Or(
+            None,
+            And(int, lambda n: 0 <= n <= 1, Use(float)),
+            And(float, lambda n: 0 <= n <= 1)
         )
+
 })
 
 _db_names = ('core', 'ligand', 'qd')
