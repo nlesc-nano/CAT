@@ -21,6 +21,7 @@ API
 """
 
 import reprlib
+import functools
 from types import MappingProxyType
 from typing import Generator, Optional, Iterable, FrozenSet, Any, Union, Callable, Mapping
 from itertools import islice, cycle, takewhile
@@ -29,7 +30,7 @@ from collections import abc
 import numpy as np
 from scipy.spatial.distance import cdist
 
-from scm.plams import Molecule, Atom
+from scm.plams import Molecule, Atom, rotation_matrix
 
 from .edge_distance import edge_dist
 
@@ -39,9 +40,9 @@ __all__ = ['distribute_idx']
 MODE_SET: FrozenSet[str] = frozenset({'uniform', 'random', 'cluster'})
 
 
-def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[int]], p: float,
+def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[int]], f: float,
                    mode: str = 'uniform', **kwargs: Any) -> np.ndarray:
-    r"""Create a new distribution of atomic indices from **idx** of length :code:`p * len(idx)`.
+    r"""Create a new distribution of atomic indices from **idx** of length :code:`f * len(idx)`.
 
     Parameters
     ----------
@@ -53,8 +54,8 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
         An integer or iterable of unique integers representing the 0-based indices of
         all anchor atoms in **core**.
 
-    p : :class:`float`
-        A float obeying the following condition: :math:`0.0 < p <= 1.0`.
+    f : :class:`float`
+        A float obeying the following condition: :math:`0.0 < f \le 1.0`.
         Represents the fraction of **idx** that will be returned.
 
     mode : :class:`str`
@@ -72,10 +73,10 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
 
     Returns
     -------
-    :math:`(p*i,)` :class:`numpy.ndarray` [:class:`int`]
+    :math:`(f*i,)` :class:`numpy.ndarray` [:class:`int`]
         A 1D array of atomic indices.
         If **idx** has :math:`i` elements,
-        then the length of the returned list is equal to :math:`\max(1, p*i)`.
+        then the length of the returned list is equal to :math:`\max(1, f*i)`.
 
     See Also
     --------
@@ -100,21 +101,23 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
     if mode not in MODE_SET:
         raise ValueError(f"Invalid value for 'mode' ({reprlib.repr(mode)}); "
                          f"accepted values: {reprlib.repr(tuple(MODE_SET))}")
-    elif not (0.0 < p <= 1.0):
-        raise ValueError("'p' should be larger than 0.0 and smaller than or equal to 1.0; "
-                         f"observed value: {reprlib.repr(p)}")
-    elif p == 1.0:  # Ensure that **idx** is always returned as copy
+    elif not (0.0 < f <= 1.0):
+        raise ValueError("'f' should be larger than 0.0 and smaller than or equal to 1.0; "
+                         f"observed value: {reprlib.repr(f)}")
+    elif f == 1.0:  # Ensure that **idx** is always returned as copy
         return idx_ar.copy() if idx_ar is idx else idx_ar
 
     # Create an array of indices
-    stop = max(1, int(round(p * len(idx_ar))))
+    stop = max(1, int(round(f * len(idx_ar))))
     if mode in ('uniform', 'cluster'):
         xyz = np.array(core, dtype=float, ndmin=2, copy=False)[idx_ar]
         dist = edge_dist(xyz) if kwargs.get('follow_edge', False) else cdist(xyz, xyz)
         operation = 'max' if mode == 'uniform' else 'min'
         generator1 = uniform_idx(dist, operation=operation,
                                  start=kwargs.get('start', None),
-                                 cluster_size=kwargs.get('cluster_size', 1))
+                                 cluster_size=kwargs.get('cluster_size', 1),
+                                 p=kwargs.get('p', -2),
+                                 randomness=kwargs.get('randomness', None))
         generator2 = islice(generator1, stop)
         ret = idx_ar[np.fromiter(generator2, count=stop, dtype=int)]
 
@@ -135,7 +138,8 @@ OPERATION_MAPPING: Mapping[Union[str, Callable], Callable] = MappingProxyType({
 
 def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2,
                 cluster_size: Union[int, Iterable[int]] = 1,
-                start: Optional[int] = None) -> Generator[int, None, None]:
+                start: Optional[int] = None,
+                randomness: Optional[float] = None) -> Generator[int, None, None]:
     r"""Yield the column-indices of **dist** which yield a uniform or clustered distribution.
 
     Given the (symmetric) distance matrix :math:`\boldsymbol{D} \in \mathbb{R}^{n,n}` and
@@ -231,10 +235,15 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2,
         of sizes 1, 2 and 3.
         The iteration process is repeated until all atoms represented by **dist** are exhausted.
 
-    Return
+    randomness : :class:`float`, optional
+        If not ``None``, represents the probability that a random index
+        will be yielded rather than obeying **operation**.
+        Should obey the following condition: :math:`0 \le randomness \le 1`.
+
+    Yields
     ------
-    :class:`Generator<collections.abc.Generator>` [:class:`int`]
-        A generator yielding column-indices specified in :math:`\boldsymbol{d}`.
+    :class:`int`
+        Yield the column-indices specified in :math:`\boldsymbol{d}`.
 
     """  # noqa
     try:
@@ -255,6 +264,9 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2,
         raise ValueError(f"Invalid value for 'operation' ({reprlib.repr(operation)}); "
                          "accepted values: ('min', 'max')").with_traceback(ex.__traceback__)
     start = arg_func(np.nansum(dist_sqr, axis=1)**p_inv) if start is None else start
+
+    if randomness is not None:
+        arg_func = _parse_randomness(randomness, arg_func, len(dist))
 
     # Yield the first index
     try:
@@ -327,6 +339,19 @@ def _min_and_max(dist_sqr: np.ndarray, dist_1d_sqr: np.ndarray,
         yield j
 
 
+def _random_arg_func(dist_1d: np.ndarray, arg_func: Callable[[np.ndarray], int],
+                     threshold: float, idx: np.ndarray,
+                     rand_func: Callable[[], float] = np.random.sample) -> int:
+    """Return a random element from **idx** if :code:`threshold > rand_func()`, otherwise call :code:`arg_func(dist_1d)`.
+
+    Elements in **dist_1d** which are `nan` will be used for masking **idx**.
+
+    """  # noqa
+    if threshold > rand_func():
+        return np.random.choice(idx[~np.isnan(dist_1d)])
+    return arg_func(dist_1d)
+
+
 def _parse_cluster_size(ar_size: int, clusters: Iterable[int]) -> np.ndarray:
     """Return indices for all ``True`` values in the boolean array of :func:`_min_and_max`."""
     generator = takewhile(lambda x: x < ar_size, cycle_accumulate(clusters))
@@ -335,6 +360,23 @@ def _parse_cluster_size(ar_size: int, clusters: Iterable[int]) -> np.ndarray:
     except TypeError as ex:
         raise TypeError("'cluster_size' expected a non-zero integer or iterable of integers; "
                         f"{ex}").with_traceback(ex.__traceback__)
+
+
+def _parse_randomness(randomness: float, arg_func: Callable[[np.ndarray], int],
+                      n: int) -> Callable[[np.ndarray], int]:
+    """Modifiy **arg_func** such that there is a **randomness** chance to return a random index from the range **n**."""  # noqa
+    try:
+        assert (0 <= randomness <= 1)
+    except TypeError as ex:
+        tb = ex.__traceback__
+        raise TypeError("'randomness' expected a float larger than 0.0 and smaller than 1.0; "
+                        f"observed type: '{randomness.__class__.__name__}'").with_traceback(tb)
+    except AssertionError as ex:
+        tb = ex.__traceback__
+        raise ValueError("'randomness' expected a float larger than 0.0 and smaller than 1.0; "
+                         f"observed value: {reprlib.repr(randomness)}").with_traceback(tb)
+    return functools.partial(_random_arg_func, arg_func=arg_func,
+                             threshold=randomness, idx=np.arange(n))
 
 
 def cycle_accumulate(iterable: Iterable[int], start: int = 0) -> Generator[int, None, None]:
@@ -402,7 +444,7 @@ def cluster_idx(dist: np.ndarray, start: Optional[int] = None) -> np.ndarray:
 
 
 def test_distribute(mol: Union[Molecule, str], symbol: str,
-                    p_range: Union[float, Iterable[float]], **kwargs) -> Molecule:
+                    f_range: Union[float, Iterable[float]], **kwargs) -> Molecule:
     r"""Test function for :func:`CAT.attachment.distribution.distribute_idx`.
 
     Examples
@@ -415,9 +457,9 @@ def test_distribute(mol: Union[Molecule, str], symbol: str,
         >>> mol_input: Molecule = Molecule(...)
         >>> xyz_output: str = ...
         >>> at_symbol: str = 'Cl'
-        >>> p_range: numpy.ndarray = 2**-np.arange(8.0)
+        >>> f_range: numpy.ndarray = 2**-np.arange(8.0)
 
-        >>> mol_out: Molecule = test_distribute(mol_input, at_symbol, p_range)
+        >>> mol_out: Molecule = test_distribute(mol_input, at_symbol, f_range)
         >>> mol_out.write(xyz_output)
 
         >>> print(len(mol_input) == len(p_range) * len(mol_out))
@@ -431,8 +473,8 @@ def test_distribute(mol: Union[Molecule, str], symbol: str,
     symbol : :class:`str`
         The atomic symbol of the anchor atom.
 
-    p_range : :class:`float` or :class:`Iterable<collections.abc.Iterable>` :class:`float`
-        A float or iterable of floats subject to the following constraint: :math:`0 < p \le 1`.
+    f_range : :class:`float` or :class:`Iterable<collections.abc.Iterable>` :class:`float`
+        A float or iterable of floats subject to the following constraint: :math:`0 < f \le 1`.
 
     \**kwargs : :data:`Any<typing.Any>`
         Further keyword arguments for :func:`CAT.attachment.distribution.distribute_idx`:
@@ -446,13 +488,14 @@ def test_distribute(mol: Union[Molecule, str], symbol: str,
     """
     if not isinstance(mol, Molecule):
         mol = Molecule(mol)
-    if not isinstance(p_range, abc.Iterable):
-        p_range = (p_range,)
+    if not isinstance(f_range, abc.Iterable):
+        f_range = (f_range,)
 
     ret = Molecule()
     trans = cdist(mol, mol).max() * 1.1
-    for i, p in enumerate(p_range):
-        mol_tmp = _test_distribute(mol, symbol, p=p, **kwargs)
+    for i, f in enumerate(f_range):
+        mol_tmp = _test_distribute(mol, symbol, f=f, **kwargs)
+        mol_tmp.rotate(rotation_matrix([0, 0, 1], [0.1, -0.1, 0.9]))
         mol_tmp.translate([i*trans, 0, 0])
         ret += mol_tmp
     return ret

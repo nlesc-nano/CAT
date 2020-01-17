@@ -4,7 +4,7 @@ Optional
 ========
 
 There are a number of arguments which can be used to modify the
-functionality and behaviour of the quantum dot builder. Herein an
+functionality and behavior of the quantum dot builder. Herein an
 overview is provided.
 
 Note: Inclusion of this section in the input file is not required,
@@ -123,7 +123,7 @@ Database
 
         Before optimizing a structure, check if a geometry is available from
         previous calculations. If a match is found, use that structure and
-        avoid a geometry reoptimizations. If one wants more control then the
+        avoid any geometry (re-)optimizations. If one wants more control then the
         boolean can be substituted for a list of strings (*i.e.* ``"core"``,
         ``"ligand"`` and/or ``"qd"``), meaning that structures will be read only for a
         specific subset.
@@ -158,7 +158,7 @@ Database
         Previous results will **not** be overwritten unless
         :attr:`optional.database.overwrite` = ``True``. If one wants more control then
         the boolean can be substituted for a list of strings (*i.e.* ``"core"``,
-        ``"ligand"`` and/or ``"qd"``), meaning that structures written for for a specific
+        ``"ligand"`` and/or ``"qd"``), meaning that structures written for a specific
         subset.
 
         See :attr:`optional.database.read` for a similar relevant example.
@@ -171,10 +171,10 @@ Database
 
         Allow previous results in the database to be overwritten.
 
-        Only apllicable if :attr:`optional.database.write` = ``True``.
+        Only applicable if :attr:`optional.database.write` = ``True``.
         If one wants more control then the boolean can be substituted for
         a list of strings (*i.e.* ``"core"``, ``"ligand"`` and/or ``"qd"``), meaning
-        that structures written for for a specific subset.
+        that structures written for a specific subset.
 
         See :attr:`optional.database.read` for a similar relevant example.
 
@@ -188,7 +188,7 @@ Database
 
         By default all structures are stored in the .hdf5 format as
         (partially) de-serialized .pdb files. Additional formats can be
-        requisted with this keyword.
+        requested with this keyword.
         Accepted values: ``"pdb"``, ``"xyz"``, ``"mol"`` and/or ``"mol2"``.
 
 
@@ -254,18 +254,24 @@ Core
 
         Settings related to the partial replacement of core dummy atoms with ligands.
 
-        If not ``None``, has access to four further keywords:
-        :attr:`subset.p`, :attr:`subset.mode` :attr:`subset.follow_edge`
-        and :attr:`subset.cluster_size`.
+        If not ``None``, has access to six further keywords,
+        the first two being the most important:
+
+        * :attr:`subset.f`
+        * :attr:`subset.mode`
+        * :attr:`subset.follow_edge`
+        * :attr:`subset.p`
+        * :attr:`subset.randomness`
+        * :attr:`subset.cluster_size`
 
 
-    .. attribute:: optional.core.subset.p
+    .. attribute:: optional.core.subset.f
 
         :Parameter:     * **Type** - :class:`float`
 
         The fraction of core dummy atoms that will actually be exchanged for ligands.
 
-        The provided value should satisfy the following condition: :math:`0.0 < p <= 1.0`.
+        The provided value should satisfy the following condition: :math:`0 < f \le 1`.
 
         .. note::
             This argument has no value be default and must thus be provided by the user.
@@ -276,20 +282,20 @@ Core
         :Parameter:     * **Type** - :class:`str`
                         * **Default value** – ``"uniform"``
 
-        Defines how the dummy atom subset, whose size is defined by the fraction :math:`p`, will be generated.
+        Defines how the dummy atom subset, whose size is defined by the fraction :math:`f`, will be generated.
 
         Accepts one of the following values:
 
-        * ``"uniform"``: A uniform distribution; the nearest-neighbour distances between each
+        * ``"uniform"``: A uniform distribution; the nearest-neighbor distances between each
           successive dummy atom and all previous dummy atoms is maximized.
           can be combined with :attr:`subset.cluster_size<optional.core.subset.cluster_size>`
           to create a uniform distribution of clusters of a user-specified size.
-        * ``"cluster"``: A clustered distribution; the the nearest-neighbour distances between each
-          successive dummy atom and all previous dummy atoms is minmized.
+        * ``"cluster"``: A clustered distribution; the nearest-neighbor distances between each
+          successive dummy atom and all previous dummy atoms is minimized.
         * ``"random"``: A random distribution.
 
         It should be noted that all three methods converge towards the same set
-        as :math:`p` approaches :math:`1.0`.
+        as :math:`f` approaches :math:`1.0`.
 
         If :math:`\boldsymbol{D} \in \mathbb{R}^{n,n}` is the (symmetric) distance matrix constructed
         from the dummy atom superset and :math:`\boldsymbol{a} \in \mathbb{N}^{m}` the vector
@@ -300,30 +306,65 @@ Core
         .. math::
             :label: 1
 
+            || \boldsymbol{x} ||_{p} = \left( \sum_{i=0} |x_{i}|^{p} \right)^{\frac{1}{p}}
+
+        .. math::
+            :label: 2
+
             \DeclareMathOperator*{\argmax}{\arg\!\max}
             a_{i} = \begin{cases}
-                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} ||_{-2} &
+                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} ||_{p} &
                 \text{if} & i=0 \\
-                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}[k, \boldsymbol{a}[0:i] ||_{-2} &
+                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}[k, \boldsymbol{a}[0:i] ||_{p} &
                 \text{if} & i > 0
-            \end{cases}
+            \end{cases} \quad \text{with} \quad p=-2
 
         For the ``"cluster"`` distribution all :math:`\text{argmax}` operations
         are exchanged for :math:`\text{argmin}`.
 
         .. note::
-            An example of a ``"uniform"``, ``"cluster"`` and ``"random"`` distribution with :math:`p=1/3`.
+            An example of a ``"uniform"``, ``"cluster"`` and ``"random"`` distribution with :math:`f=1/3`.
 
             .. image:: _images/distribution.png
                 :scale: 15 %
                 :align: center
 
             |
-            An example of four different ``"uniform"`` distributions at :math:`p=1/16`,
-            :math:`p=1/8`, :math:`p=1/4` and :math:`p=1/2`.
+            An example of four different ``"uniform"`` distributions at :math:`f=1/16`,
+            :math:`f=1/8`, :math:`f=1/4` and :math:`f=1/2`.
 
             .. image:: _images/distribution_p_var.png
                 :scale: 20 %
+                :align: center
+
+
+    .. attribute:: optional.core.subset.p
+
+        :Parameter:     * **Type** - :class:`float` or :class:`int`
+                        * **Default value** – ``-2``
+
+        The order of the p-norm used in computing the
+        ``"uniform"`` and ``"cluster"`` distributions.
+
+        See :eq:`1`, :eq:`2` and (optionally) :eq:`3` for more details.
+        The provided value should be non-zero.
+
+        Using :math:`p < -2` will increase the weight of nearest-neighbors,
+        while :math:`0 > p > -2` yields the opposite trend.
+        :math:`p > 0` is generally not recommended, as the lack of
+        reciprocal (:math:`x^{-2} = \frac{1}{x^{2}}`) will shift the nearest-neighbor
+        optimization to a furthest-neighbor optimization.
+
+        .. note::
+            A demonstration of the :math:`p` parameter for a ``"uniform"``
+            distribution at :math:`f=1/4`.
+
+            The :math:`p` values are (from left to right) set to :math:`\pm 1/10`,
+            :math:`\pm 1/2`, :math:`\pm 1`, :math:`\pm 2` and :math:`\pm 10`.
+            positive :math:`p` values are in the top row; negative ones are in the bottom row.
+
+            .. image:: _images/p.png
+                :scale: 13 %
                 :align: center
 
 
@@ -346,7 +387,7 @@ Core
         is defined as following:
 
         .. math::
-            :label: 2
+            :label: 3
 
             D_{i, j}^{\text{edge}} = \min_{\boldsymbol{p} \in \mathbb{N}^{m}; m \in \mathbb{N}}
             \sum_{k=0}^{m-1} || X_{p_{k},:} - X_{p_{k+1},:} ||
@@ -357,7 +398,7 @@ Core
         (`The Quickhull Algorithm for Convex Hulls <https://doi.org/10.1145/235815.235821>`_).
         The quality of the constructed edges is proportional to the convexness of the core,
         more specifically: how well the vertices can be projected on a spherical surface without
-        severelly distorting the initial structure.
+        severely distorting the initial structure.
         For example, spherical, cylindrical or cuboid cores will yield reasonably edges,
         while the edges resulting from torus will be extremely poor.
 
@@ -383,31 +424,31 @@ Core
         sizes (*e.g.* :code:`cluster_size = [2, 3, 4]`).
         In the latter case the iterable will be repeated as long as necessary.
 
-        Compared to Eq :eq:`1` the vector of indices :math:`\boldsymbol{a} \in \mathbb{N}^{m}` is,
+        Compared to Eq :eq:`2` the vector of indices :math:`\boldsymbol{a} \in \mathbb{N}^{m}` is,
         for the purpose of book keeping, reshaped into the matrix
         :math:`\boldsymbol{A} \in \mathbb{N}^{q, r} \; \text{with} \; q*r = m`.
         All elements of :math:`\boldsymbol{A}` are, again, constrained to be unique.
 
         .. math::
-            :label: 3
+            :label: 4
 
             \DeclareMathOperator*{\argmax}{\arg\!\max}
             A_{i,j} = \begin{cases}
-                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} ||_{-2} &
+                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} ||_{p} &
                 \text{if} & i=0 & \text{and} & j=0 \\
                 \argmax\limits_{k \in \mathbb{N}}
-                    || \boldsymbol{D}[k; \boldsymbol{A}[0:i, 0:r] ||_{-2} &
+                    || \boldsymbol{D}[k; \boldsymbol{A}[0:i, 0:r] ||_{p} &
                 \text{if} & i > 0 & \text{and} & j = 0 \\
                 \argmax\limits_{k \in \mathbb{N}}
-                    \dfrac{|| \boldsymbol{D}[k, \boldsymbol{A}[0:i, 0:r] ||_{-2}}
-                    {|| \boldsymbol{D}[k, \boldsymbol{A}[i, 0:j] ||_{-2}} &&&
+                    \dfrac{|| \boldsymbol{D}[k, \boldsymbol{A}[0:i, 0:r] ||_{p}}
+                    {|| \boldsymbol{D}[k, \boldsymbol{A}[i, 0:j] ||_{p}} &&&
                 \text{if} & j > 0
-            \end{cases}
+            \end{cases} \quad \text{with} \quad p=-2
 
         |
 
         .. note::
-            An example of various cluster sizes (1, 2, 3 and 4) with :math:`p=1/4`.
+            An example of various cluster sizes (1, 2, 3 and 4) with :math:`f=1/4`.
 
             .. image:: _images/cluster_size.png
                 :scale: 15 %
@@ -415,10 +456,37 @@ Core
 
             |
             An example of clusters of varying size (:code:`cluster_size = [1, 2, 9, 1]`)
-            with :math:`p=1/4`.
+            with :math:`f=1/4`.
 
             .. image:: _images/cluster_size_variable.png
                 :scale: 5 %
+                :align: center
+
+
+    .. attribute:: optional.core.subset.randomness
+
+        :Parameter:     * **Type** - :class:`float`, optional
+                        * **Default value** – ``None``
+
+        The probability that each new core dummy atom will be picked at random.
+
+        Can be used in combination with ``"uniform"`` and ``"cluster"`` to introduce
+        a certain degree of randomness (*i.e.* entropy).
+
+        If not ``None``, the provided value should satisfy the following condition:
+        :math:`0 \le randomness \le 1`. A value of :math:`0` is equivalent to a
+        ``"uniform"`` / ``"cluster"`` distribution while :math:`1` is equivalent
+        to ``"random"``.
+
+        .. note::
+            A demonstration of the ``randomness`` parameter for a ``"uniform"`` and
+            ``"cluster"`` distribution at :math:`f=1/4`.
+
+            The ``randomness`` values are (from left to right) set to :math:`0`,
+            :math:`1/4`, :math:`1/2` and :math:`1`.
+
+            .. image:: _images/randomness.png
+                :scale: 13 %
                 :align: center
 
 |
@@ -481,7 +549,7 @@ Ligand
 
         The first atom in each SMILES string (*i.e.* the "anchor") will be used for attaching the ligand
         to the core, while the last atom (assuming :attr:`optional.ligand.split` = ``True``) will be
-        dissociated from the ligand and disgarded.
+        dissociated from the ligand and discarded.
 
         If not specified, the default functional groups of **CAT** are used.
 
@@ -599,7 +667,7 @@ QD
         :Parameter:     * **Type** - :class:`bool`
                         * **Default value** – ``False``
 
-        Calculate the :math:`V_{bulk}`, a ligand- and core-sepcific descriptor of a ligands' bulkiness.
+        Calculate the :math:`V_{bulk}`, a ligand- and core-specific descriptor of a ligands' bulkiness.
 
         .. math::
             :label: 4
@@ -613,19 +681,19 @@ QD
         :Parameter:     * **Type** - :class:`bool` or :class:`dict`
                         * **Default value** – ``False``
 
-        Perform an activation strain analyses [12_, 13_, 14_].
+        Perform an activation strain analysis [12_, 13_, 14_].
 
-        The activation strain analyses (kcal mol\ :sup:`-1`\) is performed
+        The activation strain analysis (kcal mol\ :sup:`-1`\) is performed
         on the ligands attached to the quantum dot surface with RDKit UFF [1_, 2_, 3_].
 
-        The core is removed during this process; the analyses is thus exclusively
+        The core is removed during this process; the analysis is thus exclusively
         focused on ligand deformation and inter-ligand interaction.
         Yields three terms:
 
         1.  d\ *E*\ :sub:`strain`\  : 	The energy required to deform the ligand
         from their equilibrium geometry to the geometry they adopt on the quantum
         dot surface. This term is, by definition, destabilizing. Also known as the
-        preperation energy (d\ *E*\ :sub:`prep`\).
+        preparation energy (d\ *E*\ :sub:`prep`\).
 
         2.  d\ *E*\ :sub:`int`\  :	The mutual interaction between all deformed
         ligands. This term is characterized by the non-covalent interaction between
@@ -660,7 +728,7 @@ QD
             This step consists of single point calculations of the complete
             quantum dot, |XYn| and all |XYn|-dissociated quantum dots.
 
-            4.  Calculate the thermalchemical contribution to the BDE (|ddG|) at the
+            4.  Calculate the thermochemical contribution to the BDE (|ddG|) at the
             second level of theory (:math:`2`). Default: ADF UFF [4_, 5_]. This step
             consists of geometry optimizations and frequency analyses of the same
             compounds used for step 3.

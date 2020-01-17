@@ -444,29 +444,44 @@ def test_bde_schema() -> None:
 
 def test_subset_schema() -> None:
     """Test :data:`CAT.data_handling.validation_schemas.subset_schema`."""
-    subset_dict = {'p': 0.5}
+    subset_dict = {'f': 0.5}
     ref = {
-        'p': 0.5,
+        'f': 0.5,
         'mode': 'uniform',
         'start': None,
         'follow_edge': False,
-        'cluster_size': 1
+        'cluster_size': 1,
+        'p': -2,
+        'randomness': None
     }
 
     assertion.eq(subset_schema.validate(subset_dict), ref)
 
     subset_dict['p'] = 'bob'  # Exception: incorrect type
     assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
-    subset_dict['p'] = -1  # Exception: incorrect value
-    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
     subset_dict['p'] = 0  # Exception: incorrect value
-    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
-    subset_dict['p'] = 1.5  # Exception: incorrect value
     assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
     subset_dict['p'] = 0.33
     assertion.eq(subset_schema.validate(subset_dict)['p'], 0.33)
     subset_dict['p'] = 1
-    assertion.eq(subset_schema.validate(subset_dict)['p'], 1.0)
+    assertion.eq(subset_schema.validate(subset_dict)['p'], 1)
+    subset_dict['p'] = 999
+    assertion.eq(subset_schema.validate(subset_dict)['p'], 999)
+    subset_dict['p'] = -42.5
+    assertion.eq(subset_schema.validate(subset_dict)['p'], -42.5)
+
+    subset_dict['f'] = 'bob'  # Exception: incorrect type
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['f'] = -1  # Exception: incorrect value
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['f'] = 0  # Exception: incorrect value
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['f'] = 1.5  # Exception: incorrect value
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['f'] = 0.33
+    assertion.eq(subset_schema.validate(subset_dict)['f'], 0.33)
+    subset_dict['f'] = 1
+    assertion.eq(subset_schema.validate(subset_dict)['f'], 1.0)
 
     subset_dict['mode'] = 1  # Exception: incorrect type
     assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
@@ -516,4 +531,17 @@ def test_subset_schema() -> None:
     subset_dict['cluster_size'] = 10
     assertion.eq(subset_schema.validate(subset_dict)['cluster_size'], 10)
     subset_dict['cluster_size'] = [1, 5, 10]
-    assertion.eq(subset_schema.validate(subset_dict)['cluster_size'], [1, 5, 10])
+    assertion.eq(subset_schema.validate(subset_dict)['cluster_size'], (1, 5, 10))
+
+    subset_dict['randomness'] = 'bob'  # Exception: incorrect type
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['randomness'] = -1  # Exception: incorrect value
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['randomness'] = 1.5  # Exception: incorrect value
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['randomness'] = 0.33
+    assertion.eq(subset_schema.validate(subset_dict)['randomness'], 0.33)
+    subset_dict['randomness'] = 1
+    assertion.eq(subset_schema.validate(subset_dict)['randomness'], 1.0)
+    subset_dict['randomness'] = 0
+    assertion.eq(subset_schema.validate(subset_dict)['randomness'], 0)
