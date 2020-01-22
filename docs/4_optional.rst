@@ -260,7 +260,7 @@ Core
         * :attr:`subset.f`
         * :attr:`subset.mode`
         * :attr:`subset.follow_edge`
-        * :attr:`subset.p`
+        * :attr:`subset.weight`
         * :attr:`subset.randomness`
         * :attr:`subset.cluster_size`
 
@@ -297,7 +297,7 @@ Core
         It should be noted that all three methods converge towards the same set
         as :math:`f` approaches :math:`1.0`.
 
-        If :math:`\boldsymbol{D} \in \mathbb{R}^{n,n}` is the (symmetric) distance matrix constructed
+        If :math:`\boldsymbol{D} \in \mathbb{R}_{+}^{n,n}` is the (symmetric) distance matrix constructed
         from the dummy atom superset and :math:`\boldsymbol{a} \in \mathbb{N}^{m}` the vector
         of indices which yields the dummy atom subset, then the definition of element :math:`a_{i}`
         is defined below for the ``"uniform"`` distribution.
@@ -306,21 +306,25 @@ Core
         .. math::
             :label: 1
 
-            || \boldsymbol{x} ||_{p} = \left( \sum_{i=0} |x_{i}|^{p} \right)^{\frac{1}{p}}
+            \DeclareMathOperator*{\argmin}{\arg\!\min}
+            a_{i} = \begin{cases}
+                \argmin\limits_{k \in \mathbb{N}} \sum_{\hat{\imath}=0}^{n} f \left( D_{k, \hat{\imath}} \right) ^{-1} &
+                \text{if} & i=0 \\
+                \argmin\limits_{k \in \mathbb{N}} \sum_{\hat{\imath}=0}^{i-1} f \left( D[k, a_{\hat{\imath}}]\ \right) ^{-1} &
+                \text{if} & i > 0
+            \end{cases} \begin{matrix} & \text{with} & f(x) = e^{x} \end{matrix}
 
         .. math::
             :label: 2
 
             \DeclareMathOperator*{\argmax}{\arg\!\max}
-            a_{i} = \begin{cases}
-                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} ||_{p} &
-                \text{if} & i=0 \\
-                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}[k, \boldsymbol{a}[0:i] ||_{p} &
-                \text{if} & i > 0
-            \end{cases} \quad \text{with} \quad p=-2
+            \begin{matrix}
+            \argmin\limits_{k \in \mathbb{N}} \sum_{j=0}^{n} f \left( D_{k, j} \right) ^{-1} =
+            \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} ||_{-2}
+            & \text{if} & f(x) = x^2 \end{matrix}
 
-        For the ``"cluster"`` distribution all :math:`\text{argmax}` operations
-        are exchanged for :math:`\text{argmin}`.
+        For the ``"cluster"`` distribution all :math:`\text{argmin}` operations
+        are exchanged for :math:`\text{argmax}`.
 
         .. note::
             An example of a ``"uniform"``, ``"cluster"`` and ``"random"`` distribution with :math:`f=1/3`.
@@ -335,36 +339,6 @@ Core
 
             .. image:: _images/distribution_p_var.png
                 :scale: 20 %
-                :align: center
-
-
-    .. attribute:: optional.core.subset.p
-
-        :Parameter:     * **Type** - :class:`float` or :class:`int`
-                        * **Default value** – ``-2``
-
-        The order of the p-norm used in computing the
-        ``"uniform"`` and ``"cluster"`` distributions.
-
-        See :eq:`1`, :eq:`2` and (optionally) :eq:`3` for more details.
-        The provided value should be non-zero.
-
-        Using :math:`p < -2` will increase the weight of nearest-neighbors,
-        while :math:`0 > p > -2` yields the opposite trend.
-        :math:`p > 0` is generally not recommended, as the lack of
-        reciprocal (:math:`x^{-2} = \frac{1}{x^{2}}`) will shift the nearest-neighbor
-        optimization to a furthest-neighbor optimization.
-
-        .. note::
-            A demonstration of the :math:`p` parameter for a ``"uniform"``
-            distribution at :math:`f=1/4`.
-
-            The :math:`p` values are (from left to right) set to :math:`\pm 1/10`,
-            :math:`\pm 1/2`, :math:`\pm 1`, :math:`\pm 2` and :math:`\pm 10`.
-            positive :math:`p` values are in the top row; negative ones are in the bottom row.
-
-            .. image:: _images/p.png
-                :scale: 13 %
                 :align: center
 
 
@@ -432,18 +406,19 @@ Core
         .. math::
             :label: 4
 
-            \DeclareMathOperator*{\argmax}{\arg\!\max}
+            \DeclareMathOperator*{\argmin}{\arg\!\min}
             A_{i,j} = \begin{cases}
-                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} ||_{p} &
+                \argmin\limits_{k \in \mathbb{N}} \sum_{\hat{\imath}=0}^{n} f \left( D[k, \, \hat{\imath}] \right) ^{-1} &
                 \text{if} & i=0 & \text{and} & j=0 \\
-                \argmax\limits_{k \in \mathbb{N}}
-                    || \boldsymbol{D}[k; \boldsymbol{A}[0:i, 0:r] ||_{p} &
-                \text{if} & i > 0 & \text{and} & j = 0 \\
-                \argmax\limits_{k \in \mathbb{N}}
-                    \dfrac{|| \boldsymbol{D}[k, \boldsymbol{A}[0:i, 0:r] ||_{p}}
-                    {|| \boldsymbol{D}[k, \boldsymbol{A}[i, 0:j] ||_{p}} &&&
-                \text{if} & j > 0
-            \end{cases} \quad \text{with} \quad p=-2
+            \argmin\limits_{k \in \mathbb{N}}
+                \sum_{\hat{\imath}=0}^{i-1} \sum_{\hat{\jmath}=0}^{r} f \left( D[k, A_{\hat{\imath}, \, \hat{\jmath}}] \right) ^{-1} &
+            \text{if} & i > 0 & \text{and} & j = 0 \\
+            \argmin\limits_{k \in \mathbb{N}}
+            \dfrac
+                { \sum_{\hat{\jmath}=0}^{j-1} f \left( D[k, A_{i, \, \hat{\jmath}}] \right) }
+                { \sum_{\hat{\imath}=0}^{i-1} \sum_{\hat{\jmath}=0}^{r} f \left( D[k, A_{\hat{\imath}, \, \hat{\jmath}}] \right) }
+            &&& \text{if} & j > 0
+            \end{cases}
 
         |
 
@@ -461,6 +436,20 @@ Core
             .. image:: _images/cluster_size_variable.png
                 :scale: 5 %
                 :align: center
+
+
+    .. attribute:: optional.core.subset.weight
+
+        :Parameter:     * **Type** - :class:`str`
+                        * **Default value** – ``"numpy.exp(x)"``
+
+        The function :math:`f(x)` for weighting the distance.
+
+        The default value (``"numpy.exp(x)"``) corresponds to:
+        :math:`\begin{matrix} f(x) = e^{x} & \Rightarrow & f(x)^{-1} = e^{-x} \end{matrix}`.
+
+        For the old default, the p-norm, one can use ``"x**p"``:
+        :math:`\begin{matrix} f(x) = x^p & \Rightarrow & f(x)^{-1} = x^{-p} \end{matrix}`.
 
 
     .. attribute:: optional.core.subset.randomness

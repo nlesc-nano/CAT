@@ -56,10 +56,11 @@ API
 
 """
 
-from typing import (Dict, Collection)
+from typing import Dict, Collection, Callable, Union
 from collections import abc
 
-from schema import (Or, And, Use, Schema)
+import numpy as np
+from schema import Or, And, Use, Schema
 from schema import Optional as Optional_
 
 from scm.plams import CRSJob
@@ -250,6 +251,40 @@ core_schema: Schema = Schema({
         Or(None, dict)
 })
 
+
+e = np.e
+pi = np.pi
+numpy = np
+
+
+def _str_to_callable(func_str: Union[Callable[[np.ndarray], np.ndarray], str]
+                     ) -> Callable[[np.ndarray], np.ndarray]:
+    if not callable(func_str):
+        func = None
+        try:
+            func = lambda x: eval(func_str)
+        except NameError as ex:
+            exc = ex
+            while func is None:  # Keep importing modules as long as NameError's are being raised
+                module = str(exc).split("'")[1]
+                exec(f'import {module}')
+                try:
+                    func = lambda x: eval(func_str)
+                except NameError as ex:
+                    exc = ex
+    else:
+        func = func_str
+
+    # Validate the new function
+    # Ensure that it can take an array and return a new array of the same shape
+    ar1 = np.random.rand(2, 2)
+    ar2 = func(ar1)
+    if ar1.shape != ar2.shape:
+        raise ValueError(f"{func_str} -> y: input and output arrays have non-identical shapes: "
+                         f"{ar1.shape} and {ar2.shape}")
+    return func
+
+
 #: Schema for validating the ``['optional']['core']['subset']`` block.
 subset_schema: Schema = Schema({
     'f':
@@ -276,10 +311,10 @@ subset_schema: Schema = Schema({
                 Use(tuple))
         ),
 
-    Optional_('p', default=-2):
+    Optional_('weight', default=lambda: np.exp):
         Or(
-            And(int, lambda n: n != 0, Use(float)),
-            And(float, lambda n: n != 0)
+            And(Callable, Use(_str_to_callable)),
+            And(str, lambda n: 'x' in n, Use(_str_to_callable))
         ),
 
     Optional_('randomness', default=None):
