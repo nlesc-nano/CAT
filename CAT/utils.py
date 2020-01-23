@@ -28,18 +28,17 @@ import os
 import sys
 import yaml
 import pkg_resources as pkg
+from types import MappingProxyType
 from shutil import rmtree
-from typing import (Callable, Iterable, Optional, Union)
-from os.path import (join, isdir, isfile, exists)
+from typing import Callable, Iterable, Optional, Union, TypeVar, Mapping, Type, Generator
+from os.path import join, isdir, isfile, exists
+from itertools import cycle
 
-from scm.plams import (config, Settings, Molecule, MoleculeError, PeriodicTable, init)
-from scm.plams.interfaces.molecule.rdkit import from_smiles
-from scm.plams.interfaces.adfsuite.ams import AMSJob
-from scm.plams.interfaces.adfsuite.adf import ADFJob
+from scm.plams import (config, Settings, Molecule, MoleculeError, PeriodicTable, init, from_smiles,
+                       AMSJob, ADFJob, Cp2kJob, DiracJob, GamessJob)
+from scm.plams.core.basejob import Job
 from scm.plams.interfaces.thirdparty.orca import ORCAJob
-from scm.plams.interfaces.thirdparty.cp2k import Cp2kJob
-from scm.plams.interfaces.thirdparty.dirac import DiracJob
-from scm.plams.interfaces.thirdparty.gamess import GamessJob
+
 
 from .logger import logger
 from .mol_utils import to_atnum
@@ -47,14 +46,14 @@ from .gen_job_manager import GenJobManager
 
 __all__ = ['check_sys_var', 'dict_concatenate', 'get_template']
 
-_job_dict = {
+_job_dict: Mapping[Type[Job], str] = MappingProxyType({
     ADFJob: 'adf',
     AMSJob: 'ams',
     DiracJob: 'dirac',
     Cp2kJob: 'cp2k',
     GamessJob: 'gamess',
     ORCAJob: 'orca'
-}
+})
 
 
 def type_to_string(job: Callable) -> str:
@@ -201,7 +200,7 @@ class SupressPrint:
 def restart_init(path: str,
                  folder: str,
                  hashing: Optional[str] = 'input') -> None:
-    """A wrapper around the plams.init_ function; used for importing one or more previous jobs.
+    """Wrapper around the plams.init_ function; used for importing one or more previous jobs.
 
     All pickled .dill files in **path**/**folder**/ will be loaded into the
     :class:`GenJobManager` instance initiated by :func:`init`.
@@ -227,7 +226,6 @@ def restart_init(path: str,
         Accepted values are: ``"input"``, ``"runscript"``, ``"input+runscript"`` and ``None``.
 
     """  # noqa
-
     # Create a job manager
     settings = Settings({'counter_len': 3, 'hashing': hashing, 'remove_empty_directories': True})
     manager = GenJobManager(settings, path, folder, hashing)
@@ -269,3 +267,20 @@ def restart_init(path: str,
         except KeyError:
             manager.names[name] = num
     return None
+
+
+T = TypeVar('T')
+
+
+def cycle_accumulate(iterable: Iterable[T], start: T = 0) -> Generator[T, None, None]:
+    """Accumulate and return elements from **iterable** until it is exhausted.
+
+    Then repeat (and keep accumulating) the sequence indefinitely.
+    The elements of **iterable** must have access to the :func:`__iadd__` method,
+    *e.g.* :class:`float`, :class:`int` or :class:`str`.
+
+    """
+    ret = start
+    for i in cycle(iterable):
+        ret += i
+        yield ret

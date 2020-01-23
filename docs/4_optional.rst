@@ -308,20 +308,20 @@ Core
 
             \DeclareMathOperator*{\argmin}{\arg\!\min}
             a_{i} = \begin{cases}
-                \argmin\limits_{k \in \mathbb{N}} \sum_{\hat{\imath}=0}^{n} f \left( D_{k, \hat{\imath}} \right) ^{-1} &
+                \argmin\limits_{k \in \mathbb{N}} \sum_{\hat{\imath}=0}^{n} f \left( D_{k, \hat{\imath}} \right) &
                 \text{if} & i=0 \\
-                \argmin\limits_{k \in \mathbb{N}} \sum_{\hat{\imath}=0}^{i-1} f \left( D[k, a_{\hat{\imath}}]\ \right) ^{-1} &
+                \argmin\limits_{k \in \mathbb{N}} \sum_{\hat{\imath}=0}^{i-1} f \left( D[k, a_{\hat{\imath}}]\ \right) &
                 \text{if} & i > 0
-            \end{cases} \begin{matrix} & \text{with} & f(x) = e^{x} \end{matrix}
+            \end{cases} \begin{matrix} & \text{with} & f(x) = e^{-x} \end{matrix}
 
         .. math::
             :label: 2
 
             \DeclareMathOperator*{\argmax}{\arg\!\max}
             \begin{matrix}
-            \argmin\limits_{k \in \mathbb{N}} \sum_{j=0}^{n} f \left( D_{k, j} \right) ^{-1} =
+            \argmin\limits_{k \in \mathbb{N}} \sum_{j=0}^{n} f \left( D_{k, j} \right) =
             \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} ||_{-2}
-            & \text{if} & f(x) = x^2 \end{matrix}
+            & \text{if} & f(x) = x^-2 \end{matrix}
 
         For the ``"cluster"`` distribution all :math:`\text{argmin}` operations
         are exchanged for :math:`\text{argmax}`.
@@ -408,15 +408,15 @@ Core
 
             \DeclareMathOperator*{\argmin}{\arg\!\min}
             A_{i,j} = \begin{cases}
-                \argmin\limits_{k \in \mathbb{N}} \sum_{\hat{\imath}=0}^{n} f \left( D[k, \, \hat{\imath}] \right) ^{-1} &
+                \argmin\limits_{k \in \mathbb{N}} \sum_{\hat{\imath}=0}^{n} f \left( D[k, \, \hat{\imath}] \right) &
                 \text{if} & i=0 & \text{and} & j=0 \\
             \argmin\limits_{k \in \mathbb{N}}
-                \sum_{\hat{\imath}=0}^{i-1} \sum_{\hat{\jmath}=0}^{r} f \left( D[k, A_{\hat{\imath}, \, \hat{\jmath}}] \right) ^{-1} &
+                \sum_{\hat{\imath}=0}^{i-1} \sum_{\hat{\jmath}=0}^{r} f \left( D[k, A_{\hat{\imath}, \, \hat{\jmath}}] \right) &
             \text{if} & i > 0 & \text{and} & j = 0 \\
             \argmin\limits_{k \in \mathbb{N}}
             \dfrac
-                { \sum_{\hat{\jmath}=0}^{j-1} f \left( D[k, A_{i, \, \hat{\jmath}}] \right) }
                 { \sum_{\hat{\imath}=0}^{i-1} \sum_{\hat{\jmath}=0}^{r} f \left( D[k, A_{\hat{\imath}, \, \hat{\jmath}}] \right) }
+                { \sum_{\hat{\jmath}=0}^{j-1} f \left( D[k, A_{i, \, \hat{\jmath}}] \right) }
             &&& \text{if} & j > 0
             \end{cases}
 
@@ -441,15 +441,24 @@ Core
     .. attribute:: optional.core.subset.weight
 
         :Parameter:     * **Type** - :class:`str`
-                        * **Default value** – ``"numpy.exp(x)"``
+                        * **Default value** – ``"numpy.exp(-x)"``
 
         The function :math:`f(x)` for weighting the distance.
 
-        The default value (``"numpy.exp(x)"``) corresponds to:
-        :math:`\begin{matrix} f(x) = e^{x} & \Rightarrow & f(x)^{-1} = e^{-x} \end{matrix}`.
+        The default value (``weight = "numpy.exp(-x)"``) corresponds to: :math:`f(x) = e^{-x}`.
 
-        For the old default, the p-norm, one can use ``"x**p"``:
-        :math:`\begin{matrix} f(x) = x^p & \Rightarrow & f(x)^{-1} = x^{-p} \end{matrix}`.
+        For the old default, the p-norm with :math:`p=-2`, one can use ``weight = "x**-2"``: :math:`f(x) = x^-2`.
+
+        Custom functions can be specified as long as they satisfy the following constraints:
+        * The function must act an variable by the name of ``x``,
+          a 2D array of positive floats (:math:`x \in \mathbb{R}_{+}^{n, n}`).
+        * The function must take a single array as argument and return a new one.
+        * The function must be able to handle values of ``numpy.nan`` without raising exceptions.
+        * The shape and data type of the output array should not change with respect to the input.
+
+        Modules specified in the weight function will be imported when required,
+        illustrated here with SciPy's :func:`expit<scipy.spatial.expit>`
+        function: ``weight = "scipy.spatial.expit(x)"`` aka ``weight = "1 / (1 + numpy.exp(-x))"``
 
 
     .. attribute:: optional.core.subset.randomness

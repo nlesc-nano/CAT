@@ -81,6 +81,7 @@ from scm.plams.interfaces.thirdparty.gamess import GamessJob
 from scm.plams.interfaces.thirdparty.dftbplus import DFTBPlusJob
 
 from ..utils import (get_template, validate_path, validate_core_atom, check_sys_var)
+from ..logger import logger
 from ..mol_utils import to_atnum
 
 __all__ = ['mol_schema', 'core_schema', 'ligand_schema', 'qd_schema', 'database_schema',
@@ -277,11 +278,15 @@ def _str_to_callable(func_str: Union[Callable[[np.ndarray], np.ndarray], str]
 
     # Validate the new function
     # Ensure that it can take an array and return a new array of the same shape
-    ar1 = np.random.rand(2, 2)
+    ar1 = np.array([[0.0, np.nan],
+                    [np.inf, 5.0]])
     ar2 = func(ar1)
     if ar1.shape != ar2.shape:
         raise ValueError(f"{func_str} -> y: input and output arrays have non-identical shapes: "
                          f"{ar1.shape} and {ar2.shape}")
+    if ar1.dtype != ar2.dtype:
+        raise ValueError(f"{func_str} -> y: input and output arrays have non-identical data types: "
+                         f"'{ar1.dtype.name}' and '{ar2.dtype.name}'")
     return func
 
 
@@ -291,6 +296,12 @@ subset_schema: Schema = Schema({
         Or(
             And(int, lambda n: 0 < n <= 1, Use(float)),
             And(float, lambda n: 0 < n <= 1)
+        ),
+
+    Optional_('p'):
+        Or(
+            And(int, lambda n: abs(n) > 0, Use(float)),
+            And(float, lambda n: abs(n) > 0)
         ),
 
     Optional_('mode', default='uniform'):
@@ -311,7 +322,7 @@ subset_schema: Schema = Schema({
                 Use(tuple))
         ),
 
-    Optional_('weight', default=lambda: np.exp):
+    Optional_('weight', default=lambda: lambda x: np.exp(-x)):
         Or(
             And(Callable, Use(_str_to_callable)),
             And(str, lambda n: 'x' in n, Use(_str_to_callable))
