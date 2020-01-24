@@ -298,8 +298,8 @@ Core
         as :math:`f` approaches :math:`1.0`.
 
         If :math:`\boldsymbol{D} \in \mathbb{R}_{+}^{n,n}` is the (symmetric) distance matrix constructed
-        from the dummy atom superset and :math:`\boldsymbol{a} \in \mathbb{N}^{m}` the vector
-        of indices which yields the dummy atom subset, then the definition of element :math:`a_{i}`
+        from the dummy atom superset and :math:`\boldsymbol{a} \in \mathbb{N}^{m}` is the vector
+        of indices which yields the dummy atom subset. The definition of element :math:`a_{i}`
         is defined below for the ``"uniform"`` distribution.
         All elements of :math:`\boldsymbol{a}` are furthermore constrained to be unique.
 
@@ -314,17 +314,22 @@ Core
                 \text{if} & i > 0
             \end{cases} \begin{matrix} & \text{with} & f(x) = e^{-x} \end{matrix}
 
+        For the ``"cluster"`` distribution all :math:`\text{argmin}` operations
+        are exchanged for :math:`\text{argmax}`.
+
+        The old default, the p-norm with :math:`p=-2`, is equivalent to:
+
         .. math::
             :label: 2
 
             \DeclareMathOperator*{\argmax}{\arg\!\max}
             \begin{matrix}
-            \argmin\limits_{k \in \mathbb{N}} \sum_{j=0}^{n} f \left( D_{k, j} \right) =
-            \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} ||_{-2}
-            & \text{if} & f(x) = x^-2 \end{matrix}
+            \argmin\limits_{k \in \mathbb{N}} \sum_{\hat{\imath}=0}^{n} f \left( D_{k, \hat{\imath}} \right) =
+            \argmax\limits_{k \in \mathbb{N}} \left( \sum_{\hat{\imath}=0}^{n} | D_{k, \hat{\imath}} |^p \right)^{1/p}
+            & \text{if} & f(x) = x^{-2} \end{matrix}
 
-        For the ``"cluster"`` distribution all :math:`\text{argmin}` operations
-        are exchanged for :math:`\text{argmax}`.
+        Note that as the elements of :math:`\boldsymbol{D}` were defined as positive or zero-valued real numbers;
+        operating on :math:`\boldsymbol{D}` is thus equivalent to operating on its absolute.
 
         .. note::
             An example of a ``"uniform"``, ``"cluster"`` and ``"random"`` distribution with :math:`f=1/3`.
@@ -355,7 +360,7 @@ Core
         distributions at the cost of increased computational time.
 
         Given the matrix of Cartesian coordinates :math:`\boldsymbol{X} \in \mathbb{R}^{n, 3}`,
-        the matching edge-distance matrix :math:`\boldsymbol{D}^{\text{edge}} \in \mathbb{R}^{n, n}`
+        the matching edge-distance matrix :math:`\boldsymbol{D}^{\text{edge}} \in \mathbb{R}_{+}^{n, n}`
         and the vector :math:`\boldsymbol{p} \in \mathbb{N}^{m}`, representing a (to-be optimized)
         path as the indices of edge-connected vertices, then element :math:`D_{i,j}^{\text{edge}}`
         is defined as following:
@@ -443,22 +448,26 @@ Core
         :Parameter:     * **Type** - :class:`str`
                         * **Default value** – ``"numpy.exp(-x)"``
 
-        The function :math:`f(x)` for weighting the distance.
-
-        The default value (``weight = "numpy.exp(-x)"``) corresponds to: :math:`f(x) = e^{-x}`.
+        The function :math:`f(x)` for weighting the distance.; its default value corresponds to: :math:`f(x) = e^{-x}`.
 
         For the old default, the p-norm with :math:`p=-2`, one can use ``weight = "x**-2"``: :math:`f(x) = x^-2`.
 
         Custom functions can be specified as long as they satisfy the following constraints:
+
         * The function must act an variable by the name of ``x``,
-          a 2D array of positive floats (:math:`x \in \mathbb{R}_{+}^{n, n}`).
+          a 2D array of positive and/or zero-valued floats (:math:`x \in \mathbb{R}_{+}^{n, n}`).
         * The function must take a single array as argument and return a new one.
-        * The function must be able to handle values of ``numpy.nan`` without raising exceptions.
+        * The function must be able to handle values of ``numpy.nan`` and ``numpy.inf`` without
+          raising exceptions.
         * The shape and data type of the output array should not change with respect to the input.
 
         Modules specified in the weight function will be imported when required,
-        illustrated here with SciPy's :func:`expit<scipy.spatial.expit>`
-        function: ``weight = "scipy.spatial.expit(x)"`` aka ``weight = "1 / (1 + numpy.exp(-x))"``
+        illustrated here with SciPy's :func:`expit<scipy.special.expit>`
+        function: ``weight = "scipy.special.expit(x)"`` aka ``weight = "1 / (1 + numpy.exp(-x))"``
+
+        Multi-line statements are allowed: ``weight = "a = x**2; b = 5 * a; numpy.exp(b)"``.
+        The last part of the statement is assumed to be the to-be returned value
+        (*i.e.* ``return numpy.exp(b)``).
 
 
     .. attribute:: optional.core.subset.randomness

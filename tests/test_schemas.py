@@ -5,12 +5,12 @@ from os.path import join
 
 from schema import SchemaError
 from unittest import mock
-from schema import Schema
 
 from scm.plams import AMSJob, ADFJob, Settings, CRSJob
 from assertionlib import assertion
 
 from CAT.utils import get_template
+from CAT.data_handling.str_to_func import str_to_func
 from CAT.data_handling.validation_schemas import (
     mol_schema, core_schema, ligand_schema, qd_schema, database_schema,
     mongodb_schema, bde_schema, qd_opt_schema, crs_schema, subset_schema
@@ -347,7 +347,7 @@ def test_crs_schema() -> None:
 def test_bde_schema() -> None:
     """Test :data:`CAT.data_handling.validation_schemas.bde_schema`."""
     _bde_s1_default = get_template('qd.yaml')['MOPAC']
-    _bde_s2_default = get_template('qd.yaml')['UFF']
+    # _bde_s2_default = get_template('qd.yaml')['UFF']
 
     bde_dict = Settings({'core_atom': 'Cd', 'lig_count': 2})
     ref = Settings({
@@ -451,11 +451,14 @@ def test_subset_schema() -> None:
         'start': None,
         'follow_edge': False,
         'cluster_size': 1,
-        'p': -2,
         'randomness': None
     }
 
-    assertion.eq(subset_schema.validate(subset_dict), ref)
+    subset_dict = subset_schema.validate(subset_dict)
+    weight = subset_dict.pop('weight')
+
+    assertion.eq(subset_dict, ref)
+    assertion.function_eq(weight, str_to_func('np.exp(-x)'))
 
     subset_dict['p'] = 'bob'  # Exception: incorrect type
     assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
@@ -469,6 +472,29 @@ def test_subset_schema() -> None:
     assertion.eq(subset_schema.validate(subset_dict)['p'], 999)
     subset_dict['p'] = -42.5
     assertion.eq(subset_schema.validate(subset_dict)['p'], -42.5)
+    del subset_dict['p']
+
+    subset_dict['weight'] = 'bob'  # Exception: incorrect type
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['weight'] = 'np.exp(-y)'  # Exception: incorrect value
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['weight'] = 'bob.exp(-x)'  # Exception: ImportError
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['weight'] = 'x.astype(int)'  # Exception: incorrect value
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['weight'] = 'np.linalg.norm(x)'  # Exception: incorrect value
+    assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
+    subset_dict['weight'] = 'np.exp(-x)'
+    subset_schema.validate(subset_dict)
+    subset_dict['weight'] = 'x**2'
+    subset_schema.validate(subset_dict)
+    subset_dict['weight'] = 'scipy.special.expit(x)'
+    subset_schema.validate(subset_dict)
+    subset_dict['weight'] = '1 / (1 + np.exp(-x))'
+    subset_schema.validate(subset_dict)
+    subset_dict['weight'] = 'a = x**2; b = 5 * a; numpy.exp(b)'
+    subset_schema.validate(subset_dict)
+    del subset_dict['weight']
 
     subset_dict['f'] = 'bob'  # Exception: incorrect type
     assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)

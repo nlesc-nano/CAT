@@ -80,6 +80,7 @@ from scm.plams.interfaces.thirdparty.dirac import DiracJob
 from scm.plams.interfaces.thirdparty.gamess import GamessJob
 from scm.plams.interfaces.thirdparty.dftbplus import DFTBPlusJob
 
+from .str_to_func import str_to_func
 from ..utils import (get_template, validate_path, validate_core_atom, check_sys_var)
 from ..logger import logger
 from ..mol_utils import to_atnum
@@ -252,44 +253,6 @@ core_schema: Schema = Schema({
         Or(None, dict)
 })
 
-
-e = np.e
-pi = np.pi
-numpy = np
-
-
-def _str_to_callable(func_str: Union[Callable[[np.ndarray], np.ndarray], str]
-                     ) -> Callable[[np.ndarray], np.ndarray]:
-    if not callable(func_str):
-        func = None
-        try:
-            func = lambda x: eval(func_str)
-        except NameError as ex:
-            exc = ex
-            while func is None:  # Keep importing modules as long as NameError's are being raised
-                module = str(exc).split("'")[1]
-                exec(f'import {module}')
-                try:
-                    func = lambda x: eval(func_str)
-                except NameError as ex:
-                    exc = ex
-    else:
-        func = func_str
-
-    # Validate the new function
-    # Ensure that it can take an array and return a new array of the same shape
-    ar1 = np.array([[0.0, np.nan],
-                    [np.inf, 5.0]])
-    ar2 = func(ar1)
-    if ar1.shape != ar2.shape:
-        raise ValueError(f"{func_str} -> y: input and output arrays have non-identical shapes: "
-                         f"{ar1.shape} and {ar2.shape}")
-    if ar1.dtype != ar2.dtype:
-        raise ValueError(f"{func_str} -> y: input and output arrays have non-identical data types: "
-                         f"'{ar1.dtype.name}' and '{ar2.dtype.name}'")
-    return func
-
-
 #: Schema for validating the ``['optional']['core']['subset']`` block.
 subset_schema: Schema = Schema({
     'f':
@@ -322,10 +285,10 @@ subset_schema: Schema = Schema({
                 Use(tuple))
         ),
 
-    Optional_('weight', default=lambda: lambda x: np.exp(-x)):
+    Optional_('weight', default=lambda: str_to_func('np.exp(-x)')):
         Or(
-            And(Callable, Use(_str_to_callable)),
-            And(str, lambda n: 'x' in n, Use(_str_to_callable))
+            And(Callable, Use(str_to_func)),
+            And(str, lambda n: 'x' in n, Use(str_to_func))
         ),
 
     Optional_('randomness', default=None):

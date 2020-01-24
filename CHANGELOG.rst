@@ -11,6 +11,13 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.7.10
+******
+* The function for applying distance weights during the subset-generation process is now configurable.
+* The default distance weighting function has been changed to ``weight = "np.exp(-x)"``.
+  The old p-norm with ``p=-2`` is still accessible via: ``weight = "x**-2"``
+
+
 0.7.9
 *****
 * Added the option to interpolate between ``"uniform"`` / ``"cluster"`` and ``"random"``.
