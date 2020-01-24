@@ -260,7 +260,7 @@ Core
         * :attr:`subset.f`
         * :attr:`subset.mode`
         * :attr:`subset.follow_edge`
-        * :attr:`subset.p`
+        * :attr:`subset.weight`
         * :attr:`subset.randomness`
         * :attr:`subset.cluster_size`
 
@@ -297,30 +297,39 @@ Core
         It should be noted that all three methods converge towards the same set
         as :math:`f` approaches :math:`1.0`.
 
-        If :math:`\boldsymbol{D} \in \mathbb{R}^{n,n}` is the (symmetric) distance matrix constructed
-        from the dummy atom superset and :math:`\boldsymbol{a} \in \mathbb{N}^{m}` the vector
-        of indices which yields the dummy atom subset, then the definition of element :math:`a_{i}`
+        If :math:`\boldsymbol{D} \in \mathbb{R}_{+}^{n,n}` is the (symmetric) distance matrix constructed
+        from the dummy atom superset and :math:`\boldsymbol{a} \in \mathbb{N}^{m}` is the vector
+        of indices which yields the dummy atom subset. The definition of element :math:`a_{i}`
         is defined below for the ``"uniform"`` distribution.
         All elements of :math:`\boldsymbol{a}` are furthermore constrained to be unique.
 
         .. math::
             :label: 1
 
-            || \boldsymbol{x} ||_{p} = \left( \sum_{i=0} |x_{i}|^{p} \right)^{\frac{1}{p}}
+            \DeclareMathOperator*{\argmin}{\arg\!\min}
+            a_{i} = \begin{cases}
+                \argmin\limits_{k \in \mathbb{N}} \sum_{\hat{\imath}=0}^{n} f \left( D_{k, \hat{\imath}} \right) &
+                \text{if} & i=0 \\
+                \argmin\limits_{k \in \mathbb{N}} \sum_{\hat{\imath}=0}^{i-1} f \left( D[k, a_{\hat{\imath}}]\ \right) &
+                \text{if} & i > 0
+            \end{cases} \begin{matrix} & \text{with} & f(x) = e^{-x} \end{matrix}
+
+        For the ``"cluster"`` distribution all :math:`\text{argmin}` operations
+        are exchanged for :math:`\text{argmax}`.
+
+        The old default, the p-norm with :math:`p=-2`, is equivalent to:
 
         .. math::
             :label: 2
 
             \DeclareMathOperator*{\argmax}{\arg\!\max}
-            a_{i} = \begin{cases}
-                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} ||_{p} &
-                \text{if} & i=0 \\
-                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}[k, \boldsymbol{a}[0:i] ||_{p} &
-                \text{if} & i > 0
-            \end{cases} \quad \text{with} \quad p=-2
+            \begin{matrix}
+            \argmin\limits_{k \in \mathbb{N}} \sum_{\hat{\imath}=0}^{n} f \left( D_{k, \hat{\imath}} \right) =
+            \argmax\limits_{k \in \mathbb{N}} \left( \sum_{\hat{\imath}=0}^{n} | D_{k, \hat{\imath}} |^p \right)^{1/p}
+            & \text{if} & f(x) = x^{-2} \end{matrix}
 
-        For the ``"cluster"`` distribution all :math:`\text{argmax}` operations
-        are exchanged for :math:`\text{argmin}`.
+        Note that as the elements of :math:`\boldsymbol{D}` were defined as positive or zero-valued real numbers;
+        operating on :math:`\boldsymbol{D}` is thus equivalent to operating on its absolute.
 
         .. note::
             An example of a ``"uniform"``, ``"cluster"`` and ``"random"`` distribution with :math:`f=1/3`.
@@ -338,36 +347,6 @@ Core
                 :align: center
 
 
-    .. attribute:: optional.core.subset.p
-
-        :Parameter:     * **Type** - :class:`float` or :class:`int`
-                        * **Default value** – ``-2``
-
-        The order of the p-norm used in computing the
-        ``"uniform"`` and ``"cluster"`` distributions.
-
-        See :eq:`1`, :eq:`2` and (optionally) :eq:`3` for more details.
-        The provided value should be non-zero.
-
-        Using :math:`p < -2` will increase the weight of nearest-neighbors,
-        while :math:`0 > p > -2` yields the opposite trend.
-        :math:`p > 0` is generally not recommended, as the lack of
-        reciprocal (:math:`x^{-2} = \frac{1}{x^{2}}`) will shift the nearest-neighbor
-        optimization to a furthest-neighbor optimization.
-
-        .. note::
-            A demonstration of the :math:`p` parameter for a ``"uniform"``
-            distribution at :math:`f=1/4`.
-
-            The :math:`p` values are (from left to right) set to :math:`\pm 1/10`,
-            :math:`\pm 1/2`, :math:`\pm 1`, :math:`\pm 2` and :math:`\pm 10`.
-            positive :math:`p` values are in the top row; negative ones are in the bottom row.
-
-            .. image:: _images/p.png
-                :scale: 13 %
-                :align: center
-
-
     .. attribute:: optional.core.subset.follow_edge
 
         :Parameter:     * **Type** - :class:`bool`
@@ -381,7 +360,7 @@ Core
         distributions at the cost of increased computational time.
 
         Given the matrix of Cartesian coordinates :math:`\boldsymbol{X} \in \mathbb{R}^{n, 3}`,
-        the matching edge-distance matrix :math:`\boldsymbol{D}^{\text{edge}} \in \mathbb{R}^{n, n}`
+        the matching edge-distance matrix :math:`\boldsymbol{D}^{\text{edge}} \in \mathbb{R}_{+}^{n, n}`
         and the vector :math:`\boldsymbol{p} \in \mathbb{N}^{m}`, representing a (to-be optimized)
         path as the indices of edge-connected vertices, then element :math:`D_{i,j}^{\text{edge}}`
         is defined as following:
@@ -432,18 +411,19 @@ Core
         .. math::
             :label: 4
 
-            \DeclareMathOperator*{\argmax}{\arg\!\max}
+            \DeclareMathOperator*{\argmin}{\arg\!\min}
             A_{i,j} = \begin{cases}
-                \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} ||_{p} &
+                \argmin\limits_{k \in \mathbb{N}} \sum_{\hat{\imath}=0}^{n} f \left( D[k, \, \hat{\imath}] \right) &
                 \text{if} & i=0 & \text{and} & j=0 \\
-                \argmax\limits_{k \in \mathbb{N}}
-                    || \boldsymbol{D}[k; \boldsymbol{A}[0:i, 0:r] ||_{p} &
-                \text{if} & i > 0 & \text{and} & j = 0 \\
-                \argmax\limits_{k \in \mathbb{N}}
-                    \dfrac{|| \boldsymbol{D}[k, \boldsymbol{A}[0:i, 0:r] ||_{p}}
-                    {|| \boldsymbol{D}[k, \boldsymbol{A}[i, 0:j] ||_{p}} &&&
-                \text{if} & j > 0
-            \end{cases} \quad \text{with} \quad p=-2
+            \argmin\limits_{k \in \mathbb{N}}
+                \sum_{\hat{\imath}=0}^{i-1} \sum_{\hat{\jmath}=0}^{r} f \left( D[k, A_{\hat{\imath}, \, \hat{\jmath}}] \right) &
+            \text{if} & i > 0 & \text{and} & j = 0 \\
+            \argmin\limits_{k \in \mathbb{N}}
+            \dfrac
+                { \sum_{\hat{\imath}=0}^{i-1} \sum_{\hat{\jmath}=0}^{r} f \left( D[k, A_{\hat{\imath}, \, \hat{\jmath}}] \right) }
+                { \sum_{\hat{\jmath}=0}^{j-1} f \left( D[k, A_{i, \, \hat{\jmath}}] \right) }
+            &&& \text{if} & j > 0
+            \end{cases}
 
         |
 
@@ -461,6 +441,33 @@ Core
             .. image:: _images/cluster_size_variable.png
                 :scale: 5 %
                 :align: center
+
+
+    .. attribute:: optional.core.subset.weight
+
+        :Parameter:     * **Type** - :class:`str`
+                        * **Default value** – ``"numpy.exp(-x)"``
+
+        The function :math:`f(x)` for weighting the distance.; its default value corresponds to: :math:`f(x) = e^{-x}`.
+
+        For the old default, the p-norm with :math:`p=-2`, one can use ``weight = "x**-2"``: :math:`f(x) = x^-2`.
+
+        Custom functions can be specified as long as they satisfy the following constraints:
+
+        * The function must act an variable by the name of ``x``,
+          a 2D array of positive and/or zero-valued floats (:math:`x \in \mathbb{R}_{+}^{n, n}`).
+        * The function must take a single array as argument and return a new one.
+        * The function must be able to handle values of ``numpy.nan`` and ``numpy.inf`` without
+          raising exceptions.
+        * The shape and data type of the output array should not change with respect to the input.
+
+        Modules specified in the weight function will be imported when required,
+        illustrated here with SciPy's :func:`expit<scipy.special.expit>`
+        function: ``weight = "scipy.special.expit(x)"`` aka ``weight = "1 / (1 + numpy.exp(-x))"``
+
+        Multi-line statements are allowed: ``weight = "a = x**2; b = 5 * a; numpy.exp(b)"``.
+        The last part of the statement is assumed to be the to-be returned value
+        (*i.e.* ``return numpy.exp(b)``).
 
 
     .. attribute:: optional.core.subset.randomness

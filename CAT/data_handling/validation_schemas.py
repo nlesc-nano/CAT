@@ -56,10 +56,11 @@ API
 
 """
 
-from typing import (Dict, Collection)
+from typing import Dict, Collection, Callable, Union
 from collections import abc
 
-from schema import (Or, And, Use, Schema)
+import numpy as np
+from schema import Or, And, Use, Schema
 from schema import Optional as Optional_
 
 from scm.plams import CRSJob
@@ -79,7 +80,9 @@ from scm.plams.interfaces.thirdparty.dirac import DiracJob
 from scm.plams.interfaces.thirdparty.gamess import GamessJob
 from scm.plams.interfaces.thirdparty.dftbplus import DFTBPlusJob
 
+from .str_to_func import str_to_func
 from ..utils import (get_template, validate_path, validate_core_atom, check_sys_var)
+from ..logger import logger
 from ..mol_utils import to_atnum
 
 __all__ = ['mol_schema', 'core_schema', 'ligand_schema', 'qd_schema', 'database_schema',
@@ -258,6 +261,12 @@ subset_schema: Schema = Schema({
             And(float, lambda n: 0 < n <= 1)
         ),
 
+    Optional_('p'):
+        Or(
+            And(int, lambda n: abs(n) > 0, Use(float)),
+            And(float, lambda n: abs(n) > 0)
+        ),
+
     Optional_('mode', default='uniform'):
         And(str, lambda n: n.lower() in {'uniform', 'random', 'cluster'}, Use(str.lower)),
 
@@ -276,10 +285,10 @@ subset_schema: Schema = Schema({
                 Use(tuple))
         ),
 
-    Optional_('p', default=-2):
+    Optional_('weight', default=lambda: str_to_func('np.exp(-x)')):
         Or(
-            And(int, lambda n: n != 0, Use(float)),
-            And(float, lambda n: n != 0)
+            And(Callable, Use(str_to_func)),
+            And(str, lambda n: 'x' in n, Use(str_to_func))
         ),
 
     Optional_('randomness', default=None):

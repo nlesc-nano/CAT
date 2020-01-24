@@ -30,6 +30,7 @@ from CAT.data_handling.validation_schemas import (
 from .validate_ff import validate_ff, update_ff_jobs
 from .validate_mol import validate_mol
 from ..utils import validate_path
+from ..logger import logger
 from ..attachment.ligand_anchoring import get_functional_groups
 
 try:
@@ -74,6 +75,13 @@ def validate_input(s: Settings) -> None:
         s.optional.database.mongodb = mongodb_schema.validate(s.optional.database.mongodb)
     if s.optional.core.subset:
         s.optional.core.subset = subset_schema.validate(s.optional.core.subset)
+        if 'p' in s.optional.core.subset:
+            if 'weight' in s.optional.core.subset:
+                raise KeyError("'p' and 'weight' cannot be simultaneously specified")
+            logger.warn("The 'subset.p' parameter is deprecated; see 'subset.weight'")
+            p = s.optional.core.subset.pop('p')
+            s.optional.core.subset.weight = lambda x: x**p
+
     if s.optional.ligand.optimize:
         s.optional.ligand.optimize = ligand_opt_schema.validate(s.optional.ligand.optimize)
     if s.optional.ligand['cosmo-rs']:

@@ -77,9 +77,9 @@ setup(
         'pandas',
         'pyyaml>=5.1',
         'schema',
+        'AssertionLib>=1.1.1',
         'plams@git+https://github.com/SCM-NV/PLAMS@master',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master',
-        'AssertionLib@git+https://github.com/nlesc-nano/AssertionLib@master'
     ],
     setup_requires=[
         'pytest-runner',

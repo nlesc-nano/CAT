@@ -23,8 +23,8 @@ API
 import reprlib
 import functools
 from types import MappingProxyType
-from typing import Generator, Optional, Iterable, FrozenSet, Any, Union, Callable, Mapping
-from itertools import islice, cycle, takewhile
+from typing import Generator, Optional, Iterable, FrozenSet, Any, Union, Callable, Mapping, Tuple
+from itertools import islice, takewhile
 from collections import abc
 
 import numpy as np
@@ -32,7 +32,8 @@ from scipy.spatial.distance import cdist
 
 from scm.plams import Molecule, Atom, rotation_matrix
 
-from .edge_distance import edge_dist
+from CAT.utils import cycle_accumulate
+from CAT.attachment.edge_distance import edge_dist
 
 __all__ = ['distribute_idx']
 
@@ -112,12 +113,12 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
     if mode in ('uniform', 'cluster'):
         xyz = np.array(core, dtype=float, ndmin=2, copy=False)[idx_ar]
         dist = edge_dist(xyz) if kwargs.get('follow_edge', False) else cdist(xyz, xyz)
-        operation = 'max' if mode == 'uniform' else 'min'
+        operation = 'min' if mode == 'uniform' else 'max'
         generator1 = uniform_idx(dist, operation=operation,
                                  start=kwargs.get('start', None),
                                  cluster_size=kwargs.get('cluster_size', 1),
-                                 p=kwargs.get('p', -2),
-                                 randomness=kwargs.get('randomness', None))
+                                 randomness=kwargs.get('randomness', None),
+                                 weight=kwargs.get('weight', lambda x: np.exp(-x)))
         generator2 = islice(generator1, stop)
         ret = idx_ar[np.fromiter(generator2, count=stop, dtype=int)]
 
@@ -136,64 +137,65 @@ OPERATION_MAPPING: Mapping[Union[str, Callable], Callable] = MappingProxyType({
 })
 
 
-def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2,
+def uniform_idx(dist: np.ndarray, operation: str = 'min',
                 cluster_size: Union[int, Iterable[int]] = 1,
-                start: Optional[int] = None,
-                randomness: Optional[float] = None) -> Generator[int, None, None]:
+                start: Optional[int] = None, randomness: Optional[float] = None,
+                weight: Callable[[np.ndarray], np.ndarray] = lambda x: np.exp(-x)
+                ) -> Generator[int, None, None]:
     r"""Yield the column-indices of **dist** which yield a uniform or clustered distribution.
 
     Given the (symmetric) distance matrix :math:`\boldsymbol{D} \in \mathbb{R}^{n,n}` and
-    the vector :math:`\hat{\boldsymbol{d}} \in \mathbb{N}^{m}`
+    the vector :math:`\boldsymbol{a} \in \mathbb{N}^{m}`
     (representing a subset of indices in :math:`D`),
-    then the :math:`i`'th element :math:`\hat{d}_{i}` is
-    defined below. All elements of :math:`\hat{\boldsymbol{d}}` are
+    then the :math:`i`'th element :math:`a_{i}` is
+    defined below. All elements of :math:`\boldsymbol{a}` are
     furthermore constrained to be unique.
+    :math:`f(x)` is herein a, as of yet unspecified,
+    function for weighting each individual distance.
 
-    Following the convetion used in python, the :math:`\boldsymbol{X}[0:3, 1:5]` notation is
+    Following the convention used in python, the :math:`\boldsymbol{X}[0:3, 1:5]` notation is
     herein used to denote the submatrix created
     by intersecting rows :math:`0` up to (but not including) :math:`3` and
     columns :math:`1` up to (but not including) :math:`5`.
 
     .. math::
 
-        \DeclareMathOperator*{\argmax}{\arg\!\max}
-        \hat{d}_{i} = \begin{cases}
-            \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} ||_{p} &
+        \DeclareMathOperator*{\argmin}{\arg\!\min}
+        a_{i} = \begin{cases}
+            \argmin\limits_{k \in \mathbb{N}} \sum f \bigl( \boldsymbol{D}_{k,:} \bigr) &
             \text{if} & i=0 \\
-            \argmax\limits_{k \in \mathbb{N}}
-                || \boldsymbol{D}[k, \hat{\boldsymbol{d}}[0:i]] ||_{p} &
+            \argmin\limits_{k \in \mathbb{N}}
+                \sum f \bigl( \boldsymbol{D}[k, \boldsymbol{a}[0:i]] \bigr) &
             \text{if} & i > 0
         \end{cases}
 
-    By default :math:`p=-2`.
-    Using a negative Minkowski norm is equivalent to, temporarily, projecting the distance matrix
-    into recipropal space, thus results in an increased weight of all neighbouring atoms.
+    Default weighting function: :math:`f(x) = e^{-x}`.
 
-    The row in :math:`D` corresponding to :math:`\hat{d_{0}}`
+    The row in :math:`D` corresponding to :math:`a_{0}`
     can alternatively be specified by **start**.
 
-    The :math:`\text{argmax}` operation can be exchanged for :math:`\text{argmin}` by settings
-    **operation** to ``"min"``, thus yielding a clustered- rather than uniform-distribution.
+    The :math:`\text{argmin}` operation can be exchanged for :math:`\text{argmax}` by setting
+    **operation** to ``"max"``, thus yielding a clustered- rather than uniform-distribution.
 
     The **cluster_size** parameter allows for the creation of uniformly
     distributed clusters of size :math:`r`.
-    Herein the vector of indices, :math:`\hat{\boldsymbol{d}} \in \mathbb{N}^{m}` is
+    Herein the vector of indices, :math:`\boldsymbol{a} \in \mathbb{N}^{m}` is
     for the purpose of book keeping reshaped
-    into the matrix :math:`\hat{\boldsymbol{D}} \in \mathbb{N}^{q, r} \; \text{with} \; q*r = m`.
-    All elements of :math:`\hat{\boldsymbol{D}}` are, again, constrained to be unique.
+    into the matrix :math:`\boldsymbol{A} \in \mathbb{N}^{q, r} \; \text{with} \; q*r = m`.
+    All elements of :math:`\boldsymbol{A}` are, again, constrained to be unique.
 
     .. math::
 
-        \DeclareMathOperator*{\argmax}{\arg\!\max}
-        \hat{D}_{i,j} = \begin{cases}
-            \argmax\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:} ||_{p} &
-            \text{if} & i=0, j=0 \\
-            \argmax\limits_{k \in \mathbb{N}}
-                || \boldsymbol{D}[k; \boldsymbol{\hat{D}}[0:i, 0:r] ||_{p} &
-            \text{if} & i > 0, j = 0 \\
-            \argmax\limits_{k \in \mathbb{N}}
-                || \boldsymbol{D}[k, \boldsymbol{\hat{D}}[0:i, 0:r] ||_{p} *
-                || \boldsymbol{D}[k, \boldsymbol{\hat{D}}[i, 0:j] ||_{p}^{-1} &
+        \DeclareMathOperator*{\argmin}{\arg\!\min}
+        A_{i,j} = \begin{cases}
+            \argmin\limits_{k \in \mathbb{N}} \sum f \bigl( \boldsymbol{D}_{k,:} \bigr) &
+            \text{if} & i=0; \; j=0 \\
+            \argmin\limits_{k \in \mathbb{N}}
+                \sum f \bigl( \boldsymbol{D}[k; \boldsymbol{A}[0:i, 0:r] \bigl) &
+            \text{if} & i > 0; \; j = 0 \\
+            \argmin\limits_{k \in \mathbb{N}}
+                \dfrac{\sum f \bigl( \boldsymbol{D}[k, \boldsymbol{A}[0:i, 0:r] \bigr)}
+                {\sum f \bigl( \boldsymbol{D}[k, \boldsymbol{A}[i, 0:j] \bigr)} &
             \text{if} & j > 0
         \end{cases}
 
@@ -214,15 +216,6 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2,
         (:math:`\DeclareMathOperator*{\argmax}{\arg\!\max} \argmax\limits_{k \in \mathbb{N}} ||\boldsymbol{D}_{k, :}||_{p}`).
         See **operation**.
 
-    p : :class:`float`
-        The (non-zero) order of the Minkowski norm; used for determining the optimal values of :math:`d_{i>0}`.
-        :math:`p=2` is equivalent to the Euclidian norm:
-
-        .. math::
-
-            || \boldsymbol{x} ||_{p} = \left( \sum_{i=0}^n {| x_{i} |}^{p} \right)^{1/p}
-            \quad \text{with} \quad \boldsymbol{x} \in \mathbb{R}^n
-
     cluster_size : :class:`int` or :class:`Iterable<collections.abc.Iterable>` [:class:`int`]
         An integer or iterable of integers representing the size of clusters.
         Used in conjunction with :code:`operation = "max"` for creating a uniform distribution
@@ -240,22 +233,21 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2,
         will be yielded rather than obeying **operation**.
         Should obey the following condition: :math:`0 \le randomness \le 1`.
 
+    weight : :data:`Callable<typing.Callable>`
+        A callable for applying weights to the distance; default: :math:`e^{-x}`.
+        The callable should take an array as argument and return a new array,
+        *e.g.* :func:`np.exp<numpy.exp>`.
+
     Yields
     ------
     :class:`int`
         Yield the column-indices specified in :math:`\boldsymbol{d}`.
 
     """  # noqa
-    try:
-        p_inv = 1 / p
-    except ZeroDivisionError as ex:
-        raise ValueError("'p' must be non-zero; observed value: "
-                         f"{reprlib.repr(p)}").with_traceback(ex.__traceback__)
-
     # Truncate and square the distance matrix
     dist_sqr = np.array(dist, dtype=float, copy=True)
     np.fill_diagonal(dist_sqr, np.nan)
-    dist_sqr **= p
+    dist_sqr = weight(dist_sqr)
 
     # Use either argmin or argmax
     try:
@@ -263,7 +255,7 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2,
     except KeyError as ex:
         raise ValueError(f"Invalid value for 'operation' ({reprlib.repr(operation)}); "
                          "accepted values: ('min', 'max')").with_traceback(ex.__traceback__)
-    start = arg_func(np.nansum(dist_sqr, axis=1)**p_inv) if start is None else start
+    start = arg_func(np.nansum(dist_sqr, axis=1)) if start is None else start
 
     if randomness is not None:
         arg_func = _parse_randomness(randomness, arg_func, len(dist))
@@ -282,28 +274,26 @@ def uniform_idx(dist: np.ndarray, operation: str = 'max', p: float = -2,
 
     # Return a generator for yielding the remaining indices
     if cluster_size == 1:
-        generator = _min_or_max(dist_sqr, dist_1d_sqr, arg_func, p_inv)
+        generator = _min_or_max(dist_sqr, dist_1d_sqr, arg_func)
     else:
-        generator = _min_and_max(dist_sqr, dist_1d_sqr, arg_func, p_inv, cluster_size)
+        generator = _min_and_max(dist_sqr, dist_1d_sqr, arg_func, cluster_size)
 
     for i in generator:
         yield i
 
 
 def _min_or_max(dist_sqr: np.ndarray, dist_1d_sqr: np.ndarray,
-                arg_func: Callable[[np.ndarray], int], p_inv: float = -0.5
-                ) -> Generator[int, None, None]:
+                arg_func: Callable[[np.ndarray], int]) -> Generator[int, None, None]:
     """Helper function for :func:`uniform_idx` if :code:`cluster_size == 1`."""
     for _ in range(len(dist_1d_sqr)-1):
-        dist_1d = dist_1d_sqr**p_inv
-        i = arg_func(dist_1d)
+        i = arg_func(dist_1d_sqr)
         dist_1d_sqr[i] = np.nan
         dist_1d_sqr += dist_sqr[i]
         yield i
 
 
 def _min_and_max(dist_sqr: np.ndarray, dist_1d_sqr: np.ndarray,
-                 arg_func: Callable[[np.ndarray], int], p_inv: float = -0.5,
+                 arg_func: Callable[[np.ndarray], int],
                  cluster_size: Union[int, Iterable[int]] = 1) -> Generator[int, None, None]:
     """Helper function for :func:`uniform_idx` if :code:`cluster_size != 1`."""
     # Construct a boolean array denoting the start of new clusters
@@ -321,21 +311,20 @@ def _min_and_max(dist_sqr: np.ndarray, dist_1d_sqr: np.ndarray,
             raise TypeError("'cluster_size' expected a non-zero integer or iterable of integers; "
                             f"observed type: '{cluster_size.__class__.__name__}'"
                             ).with_traceback(ex.__traceback__)
-    bool_ar = bool_ar[1:]
+    bool_ar = bool_ar[1:]  # Skip the first element as it was already yielded in uniform_idx()
 
-    j_ar = dist_1d_sqr.copy()
-    for i in bool_ar:
-        if i:
-            dist_1d_sqr += j_ar
-            j_ar[:] = 0.0
-            dist_1d = dist_1d_sqr**p_inv
-        else:
-            dist_1d = dist_1d_sqr**p_inv
-            dist_1d /= j_ar**p_inv
+    dist_cluster = dist_1d_sqr.copy()
+    for bool_ in bool_ar:
+        if bool_:  # The start of a new cluster
+            dist_1d_sqr += dist_cluster
+            dist_cluster[:] = 0
+            dist_1d = dist_1d_sqr
+        else:  # The growth of a cluster
+            dist_1d = dist_1d_sqr / dist_cluster
 
         j = arg_func(dist_1d)
         dist_1d_sqr[j] = np.nan
-        j_ar += dist_sqr[j]
+        dist_cluster += dist_sqr[j]
         yield j
 
 
@@ -379,72 +368,10 @@ def _parse_randomness(randomness: float, arg_func: Callable[[np.ndarray], int],
                              threshold=randomness, idx=np.arange(n))
 
 
-def cycle_accumulate(iterable: Iterable[int], start: int = 0) -> Generator[int, None, None]:
-    """Accumulate and return elements from **iterable** until it is exhausted.
-
-    Then repeat (and accumulate) the sequence indefinitely.
-    The elements of iterable** must have access to the :func:`__iadd__` method.
-
-    """
-    ret = start
-    for i in cycle(iterable):
-        ret += i
-        yield ret
-
-
-def cluster_idx(dist: np.ndarray, start: Optional[int] = None) -> np.ndarray:
-    r"""Return the column-indices of **dist** which yield a clustered distribution.
-
-    Given the (symmetric) distance matrix :math:`D \in \mathbb{R}^{n, n}` and the starting row
-    :math:`\DeclareMathOperator*{\argmin}{\arg\!\min} i = \argmin_{i} ||D_{i, :}||_{2}`,
-    return the column-indices of :math:`D_{i, :}` sorted in order of ascending distance.
-
-    .. math::
-
-        \DeclareMathOperator*{\argmin}{\arg\!\min}
-        d_{i} = \begin{cases}
-            \argmin\limits_{k \in \mathbb{N}} || \boldsymbol{D}_{k,:}|| &&&
-            \text{if} & i=0 \\
-            \argmin\limits_{k \in \mathbb{N}} D_{k, d_{0}} &
-            \text{with} & k \notin \boldsymbol{d}[0, ..., i-1] &
-            \text{if} & i \ne 0
-        \end{cases}
-
-    Parameters
-    ----------
-    dist : :math:`(m, m)` array-like [:class:`float`]
-        A symmetric 2D NumPy array (:code:`(dist == dist.T).all()`) representing the
-        distance matrix :math:`D`.
-
-    start : :class:`int`, optional
-        The index of the starting row in **dist**.
-        If ``None``, start in row:
-        :math:`\DeclareMathOperator*{\argmin}{\arg\!\min} \argmin_{k \in \mathbb{N}} ||D_{k, :}||`.
-
-    Returns
-    -------
-    :math:`(m,)` :class:`numpy.ndarray` [:class:`int`]
-        A 1D array of indices.
-
-    """
-    dist = np.asarray(dist, dtype=float)
-    start = np.linalg.norm(dist, axis=1).argmin() if start is None else start
-
-    try:
-        r = dist[start]
-    except IndexError as ex:
-        if not hasattr(start, '__index__'):
-            raise TypeError("'start' expected an integer or 'None'; observed type: "
-                            f"'{start.__class__.__name__}'").with_traceback(ex.__traceback__)
-        raise ex
-
-    r_arg = r.argsort()
-    idx = np.arange(len(r))
-    return idx[r_arg]
-
-
 def test_distribute(mol: Union[Molecule, str], symbol: str,
-                    f_range: Union[float, Iterable[float]], **kwargs) -> Molecule:
+                    f_range: Union[float, Iterable[float]],
+                    rotate: Optional[Tuple[float, float, float]] = (0.1, -0.1, 0.9),
+                    **kwargs: Any) -> Molecule:
     r"""Test function for :func:`CAT.attachment.distribution.distribute_idx`.
 
     Examples
@@ -476,6 +403,9 @@ def test_distribute(mol: Union[Molecule, str], symbol: str,
     f_range : :class:`float` or :class:`Iterable<collections.abc.Iterable>` :class:`float`
         A float or iterable of floats subject to the following constraint: :math:`0 < f \le 1`.
 
+    rotate : :math:`(3,)` :class:`Sequence<collection.abc.Sequence>` [:class:`float`], optional
+        A sequence of three floats representing a molecular orientation.
+
     \**kwargs : :data:`Any<typing.Any>`
         Further keyword arguments for :func:`CAT.attachment.distribution.distribute_idx`:
         ``follow_edge``, ``mode`` and ``start``.
@@ -495,7 +425,8 @@ def test_distribute(mol: Union[Molecule, str], symbol: str,
     trans = cdist(mol, mol).max() * 1.1
     for i, f in enumerate(f_range):
         mol_tmp = _test_distribute(mol, symbol, f=f, **kwargs)
-        mol_tmp.rotate(rotation_matrix([0, 0, 1], [0.1, -0.1, 0.9]))
+        if rotate is not None:
+            mol_tmp.rotate(rotation_matrix([0, 0, 1], rotate))
         mol_tmp.translate([i*trans, 0, 0])
         ret += mol_tmp
     return ret
