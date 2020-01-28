@@ -11,6 +11,11 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.7.11
+******
+* Updated the ``CAT.attachment.qd_opt_ff`` module in preparation for .
+
+
 0.7.10
 ******
 * The function for applying distance weights during the subset-generation process is now configurable.
