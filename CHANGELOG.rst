@@ -65,6 +65,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
   ``"uniform"`` and ``"cluster"`` will now correctly link to ``np.argmax`` and
   ``np.argmin`` instead of the other way around.
 
+
 0.7.5
 *****
 * Added the ability to populate only a (random-ish) subset of core anchors with ligands.
