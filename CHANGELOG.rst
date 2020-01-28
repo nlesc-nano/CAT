@@ -13,7 +13,8 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.7.11
 ******
-* Updated the ``CAT.attachment.qd_opt_ff`` module in preparation for .
+* Updated the ``CAT.attachment.qd_opt_ff`` module in preparation for
+  https://github.com/nlesc-nano/nano-CAT/pull/26.
 
 
 0.7.10
