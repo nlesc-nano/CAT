@@ -25,7 +25,7 @@ API
 """
 
 import os
-from typing import Container, Iterable, Union, Dict, Tuple, List, Optional, Type, Callable
+from typing import Container, Iterable, Union, Dict, Tuple, List, Optional, Type, Callable, Sequence
 from collections import abc
 
 import numpy as np
@@ -87,24 +87,25 @@ def qd_opt_ff(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],
     set_cp2k_element(s, mol)
 
     if not os.path.isfile(psf_name) or new_psf:
-        psf = get_psf(mol, s.input.force_eval.mm.forcefield.charge)
+        psf = get_psf(mol, s.input.force_eval.mm.forcefield.get('charge', None))
         for at, charge, symbol in zip(mol, psf.charge, psf.atom_type):
             at.properties.charge_float = charge
             at.properties.symbol = symbol
         psf.write(psf_name)
 
     # Run the first job and fix broken angles
-    try:
-        finalize_lj(mol, s.input.force_eval.mm.forcefield.nonbonded['lennard-jones'])
-    except TypeError:
-        pass
+    if s.input.force_eval.mm.forcefield.nonbonded.get('charge', None):
+        try:
+            finalize_lj(mol, s.input.force_eval.mm.forcefield.nonbonded['lennard-jones'])
+        except TypeError:
+            pass
     results = job_func(mol, job, s, name=name, read_template=False, ret_results=True)
     mol.round_coords()
 
     return results
 
 
-def get_psf(mol: Molecule, charges: Union[Settings, Iterable[Settings]]) -> PSFContainer:
+def get_psf(mol: Molecule, charges: Union[None, Settings, Iterable[Settings]]) -> PSFContainer:
     """Construct and return a :class:`PSF` instance.
 
     .. _CHARGE: https://manual.cp2k.org/trunk/CP2K_INPUT/FORCE_EVAL/MM/FORCEFIELD/CHARGE.html
@@ -133,6 +134,8 @@ def get_psf(mol: Molecule, charges: Union[Settings, Iterable[Settings]]) -> PSFC
         charge_dict = {charges.atom: charges.charge}
     elif isinstance(charges, abc.Iterable):
         charge_dict = {i.atom: i.charge for i in charges}
+    elif charges is None:
+        return psf
     else:
         raise TypeError(f"The parameter 'charges' is of invalid type: {repr(type(charges))}")
 
@@ -144,7 +147,9 @@ def get_psf(mol: Molecule, charges: Union[Settings, Iterable[Settings]]) -> PSFC
     return psf
 
 
-def _constrain_charge(psf: PSFContainer, initial_charge: float, atom_set: Container[str]) -> None:
+def _constrain_charge(psf: PSFContainer, initial_charge: float,
+                      atom_set: Optional[Container[str]] = None,
+                      idx_slice: Union[Sequence[int], slice, None] = None) -> None:
     """Set to total molecular charge of **psf** to **initial_charge**.
 
     Atoms in **psf** whose atomic symbol intersects with **charge_set** will *not*
@@ -158,7 +163,7 @@ def _constrain_charge(psf: PSFContainer, initial_charge: float, atom_set: Contai
     initial_charge : float
         The initial charge of the system before the updating of atomic charges.
 
-    charge_set : |Container|_ [|str|_]
+    atom_set : |Container|_ [|str|_]
         A container with atomic symbols.
         Any atom in **psf** whose atomic symbol intersects with **charge_set** will *not*
         be altered.
@@ -170,7 +175,13 @@ def _constrain_charge(psf: PSFContainer, initial_charge: float, atom_set: Contai
         return psf
 
     # Update atomic charges in order to reset the molecular charge to its initial value
-    atom_subset = np.array([at not in atom_set for at in psf.atom_type])
+    if atom_set is None:
+        atom_subset = np.ones(len(psf.atoms), dtype=bool)
+    else:
+        atom_subset = np.array([at not in atom_set for at in psf.atom_type])
+    if idx_slice is not None:
+        atom_subset[idx_slice] = False
+
     charge_correction = initial_charge - psf.charge[atom_subset].sum()
     charge_correction /= np.count_nonzero(atom_subset)
     with pd.option_context('mode.chained_assignment', None):
@@ -197,7 +208,10 @@ def finalize_lj(mol: Molecule, s: List[Settings]) -> None:
     core_at, lig_at = _gather_core_lig_symbols(mol)
 
     # Create a set of all user-specified core/ligand LJ pairs
-    s = [s] if isinstance(s, dict) else s
+    if not s:
+        s = []
+    elif isinstance(s, dict):
+        s = [s]
     atom_pairs = [set(s.atoms.split()) for s in s]
 
     # Check if LJ parameters are present for all atom pairs.

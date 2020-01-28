@@ -56,10 +56,9 @@ API
 
 """
 
-from typing import Dict, Collection, Callable, Union
+from typing import Dict, Collection, Callable
 from collections import abc
 
-import numpy as np
 from schema import Or, And, Use, Schema
 from schema import Optional as Optional_
 
@@ -81,8 +80,7 @@ from scm.plams.interfaces.thirdparty.gamess import GamessJob
 from scm.plams.interfaces.thirdparty.dftbplus import DFTBPlusJob
 
 from .str_to_func import str_to_func
-from ..utils import (get_template, validate_path, validate_core_atom, check_sys_var)
-from ..logger import logger
+from ..utils import get_template, validate_path, validate_core_atom, check_sys_var
 from ..mol_utils import to_atnum
 
 __all__ = ['mol_schema', 'core_schema', 'ligand_schema', 'qd_schema', 'database_schema',

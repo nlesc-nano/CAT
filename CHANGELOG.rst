@@ -11,6 +11,12 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.7.11
+******
+* Updated the ``CAT.attachment.qd_opt_ff`` module in preparation for
+  https://github.com/nlesc-nano/nano-CAT/pull/26.
+
+
 0.7.10
 ******
 * The function for applying distance weights during the subset-generation process is now configurable.
@@ -58,6 +64,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * https://github.com/nlesc-nano/CAT/pull/66: Fixed a bug in the parsing of the mode parameter of ``distribute_idx()``;
   ``"uniform"`` and ``"cluster"`` will now correctly link to ``np.argmax`` and
   ``np.argmin`` instead of the other way around.
+
 
 0.7.5
 *****
