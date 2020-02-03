@@ -106,3 +106,61 @@ per MD iteration.
 
     \Delta \overline{E} = \Delta \overline{E}_{\text{strain}} + \Delta \overline{E}_{\text{int}}
     = \frac{1}{m} \sum_{i=0}^{m} \Delta E_{\text{strain}}(i) + \Delta E_{\text{int}}(i)
+
+|
+
+Examples
+--------
+An example input script using the ``Cd68Se55`` core and ``OC(=O)CC`` ligand.
+
+The :attr:`activation_strain.md` key enables the MD-ASA procedure; :attr:`activation_strain.use_ff` ensures
+that the user-specified forcefield is used during the construction of the MD trajectory.
+
+.. code::
+
+    path: ...
+
+    input_cores:
+        - Cd68Se55.xyz:
+            guess_bonds: False
+
+    input_ligands:
+        - OC(=O)CC
+
+    optional:
+        core:
+            dummy: Cl
+
+        ligand:
+            optimize: True
+            split: True
+
+        qd:
+            activation_strain:
+                use_ff: True
+                md: True
+                job1: Cp2kJob
+
+        forcefield:
+            charge:
+                keys: [input, force_eval, mm, forcefield, charge]
+                Cd: 0.9768
+                Se: -0.9768
+                O2D2: -0.4704
+                C2O3: 0.4524
+            epsilon:
+                unit: kjmol
+                keys: [input, force_eval, mm, forcefield, nonbonded, lennard-jones]
+                Cd Cd: 0.3101
+                Se Se: 0.4266
+                Cd Se: 1.5225
+                Cd O2D2: 1.8340
+                Se O2D2: 1.6135
+            sigma:
+                unit: nm
+                keys: [input, force_eval, mm, forcefield, nonbonded, lennard-jones]
+                Cd Cd: 0.1234
+                Se Se: 0.4852
+                Cd Se: 0.2940
+                Cd O2D2: 0.2471
+                Se O2D2: 0.3526
