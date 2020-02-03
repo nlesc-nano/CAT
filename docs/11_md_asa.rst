@@ -1,7 +1,7 @@
 Ensemble-Averaged Activation Strain Analysis
 ============================================
 .. math::
-    :label: 1
+    :label: 1a
 
     \Delta \overline{E} = \Delta \overline{E}_{\text{strain}} + \Delta \overline{E}_{\text{int}}
 
@@ -34,7 +34,7 @@ As this term quantifies the deviation of a ligand from its equilibrium geometry,
 it is, by definition, always positive.
 
 .. math::
-    :label: 2
+    :label: 2a
 
     \Delta E_{\text{strain}} = E_{\text{lig-pert}} - E_{\text{lig-eq}}
     \quad \Rightarrow \quad
@@ -43,7 +43,7 @@ it is, by definition, always positive.
 
 
 .. math::
-    :label: 3
+    :label: 3a
 
     \Delta E_{\text{strain}} = \Delta V_{\text{bond}} + \Delta V_{\text{angle}} +
     \Delta V_{\text{Urey-Bradley}} + \Delta V_{\text{dihedral}} + \Delta V_{\text{improper}} +
@@ -68,7 +68,7 @@ Coulombic repulsion) or negative (dominated by dispersion and/or Coulombic
 attraction).
 
 .. math::
-    :label: 4
+    :label: 4a
 
     \Delta E_{\text{int}} = \sum_{j=0}^{n} \sum_{k \gt j}^{n} \Delta E_{\text{lig-int}} (j, k)
     \quad \Rightarrow \quad
@@ -76,7 +76,7 @@ attraction).
     \sum_{j=0}^{n} \sum_{k \gt j}^{n} \Delta E_{\text{lig-int}} (i, j, k)
 
 .. math::
-    :label: 5
+    :label: 5a
 
     \Delta E_{\text{int}} = \Delta V_{\text{Lennard-Jones}} + \Delta V_{\text{elstat}}
 
@@ -102,7 +102,7 @@ Division by :math:`n` will thus yield the averaged energy per ligand
 per MD iteration.
 
 .. math::
-    :label: 6
+    :label: 6a
 
     \Delta \overline{E} = \Delta \overline{E}_{\text{strain}} + \Delta \overline{E}_{\text{int}}
     = \frac{1}{m} \sum_{i=0}^{m} \Delta E_{\text{strain}}(i) + \Delta E_{\text{int}}(i)
