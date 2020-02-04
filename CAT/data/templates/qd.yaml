@@ -155,8 +155,7 @@ CP2K_CHARM_md:
                 ensemble: NVT
                 temperature: 300.0
                 timestep: 1.0
-                time_start_val: 5000
-                steps: 10000
+                steps: 15000
                 thermostat:
                     type: CSVR
                     csvr:
@@ -166,6 +165,8 @@ CP2K_CHARM_md:
             method: FIST
             mm:
                 forcefield:
+                    ei_scale14: 0.0
+                    vdw_scale14: 1.0
                     ignore_missing_critical_params: ''
                     parmtype: CHM
                     parm_file_name: null
