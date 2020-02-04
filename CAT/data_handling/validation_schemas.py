@@ -99,7 +99,7 @@ def val_float(value: Any) -> bool:
 
 
 def val_int(value: Any) -> bool:
-    """Check if a float-like object has been passed (:data:`typing.SupportsInt`)."""
+    """Check if a int-like object has been passed (:data:`typing.SupportsInt`)."""
     try:
         value.__int__()
         return float(value).is_integer()
@@ -108,7 +108,7 @@ def val_int(value: Any) -> bool:
 
 
 def val_index(value: Any) -> bool:
-    """Check if a float-like object has been passed (:data:`typing.SupportsIndex`)."""
+    """Check if a index-like object has been passed (:data:`typing.SupportsIndex`)."""
     try:
         value.__index__()
         return True
@@ -822,7 +822,7 @@ asa_schema: Schema = Schema({
     Optional_('md', default=False):
         bool,
 
-    Optional_('iter_start', default=5000):
+    Optional_('iter_start', default=500):
         And(val_index, lambda n: n.__index__() >= 0, Use(__index__)),
 
     Optional_('scale_elstat', default=0.0):
