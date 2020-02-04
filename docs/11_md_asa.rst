@@ -254,12 +254,12 @@ activation_strain
     .. attribute:: optional.qd.activation_strain.job1
 
         :Parameter:     * **Type** - :class:`type` or :class:`str`
-                        * **Default value** – :class:`plams.Cp2kJob<scm.plams.interfaces.thirdparty.cp2k.Cp2kJob>`
+                        * **Default value** – :class:`Cp2kJob<scm.plams.interfaces.thirdparty.cp2k.Cp2kJob>`
 
-        A :class:`type` object of a :class:`plams.Job<scm.plams.core.basejob.Job>` subclass,
+        A :class:`type` object of a :class:`Job<scm.plams.core.basejob.Job>` subclass,
         used for performing the activation strain analysis.
 
-        Should be set to :class:`plams.Cp2kJob<scm.plams.interfaces.thirdparty.cp2k.Cp2kJob>` if :attr:`activation_strain.md = True<optional.qd.activation_strain.md>`.
+        Should be set to :class:`Cp2kJob<scm.plams.interfaces.thirdparty.cp2k.Cp2kJob>` if :attr:`activation_strain.md = True<optional.qd.activation_strain.md>`.
 
 
     .. attribute:: optional.qd.activation_strain.s1
