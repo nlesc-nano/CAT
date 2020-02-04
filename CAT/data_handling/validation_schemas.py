@@ -102,7 +102,7 @@ def val_int(value: Any) -> bool:
     """Check if a float-like object has been passed (:data:`typing.SupportsInt`)."""
     try:
         value.__int__()
-        return True
+        return float(value).is_integer()
     except Exception:
         return False
 
