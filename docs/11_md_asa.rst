@@ -1,3 +1,5 @@
+.. _md_asa:
+
 Ensemble-Averaged Activation Strain Analysis
 ============================================
 .. math::
@@ -113,7 +115,8 @@ Examples
 --------
 An example input script using the ``Cd68Se55`` core and ``OC(=O)CC`` ligand.
 
-The :attr:`activation_strain.md` key enables the MD-ASA procedure; :attr:`activation_strain.use_ff` ensures
+The :attr:`activation_strain.md<optional.qd.activation_strain.md>` key enables the MD-ASA procedure;
+:attr:`activation_strain.use_ff<optional.qd.activation_strain.use_ff>` ensures
 that the user-specified forcefield is used during the construction of the MD trajectory.
 
 .. code::
@@ -164,3 +167,166 @@ that the user-specified forcefield is used during the construction of the MD tra
                 Cd Se: 0.2940
                 Cd O2D2: 0.2471
                 Se O2D2: 0.3526
+
+|
+
+activation_strain
+-----------------
+.. attribute:: optional.qd.activation_strain
+
+    All settings related to the activation strain analyses.
+
+    Example:
+
+    .. code::
+
+        optional:
+            qd:
+                activation_strain:
+                    use_ff: True
+                    md: True
+                    iter_start: 500
+                    scale_elstat: 0.0
+                    scale_lj: 1.0
+
+                    job1: cp2kjob
+                    s1: ...
+
+
+            forcefield:
+                ...
+
+|
+
+    .. attribute:: optional.qd.activation_strain.use_ff
+
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``False``
+
+        Utilize the parameters supplied in the :attr:`optional.forcefield` block.
+
+
+    .. attribute:: optional.qd.activation_strain.md
+
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``False``
+
+        Perform an ensemble-averaged activation strain analysis.
+
+        If ``True``, perform the analysis along an entire molecular dynamics trajectory.
+        If ``False``, only use a single geometry instead.
+
+
+    .. attribute:: optional.qd.activation_strain.iter_start
+
+        :Parameter:     * **Type** - :class:`int`
+                        * **Default value** – ``500``
+
+        The MD iteration at which the ASA will be started.
+
+        All preceding iteration are disgarded, treated as pre-equilibration steps.
+        Note that this refers to the iteration is specified in the .xyz file.
+        For example, if a geometry is written to the .xyz file very 10 iterations
+        (as is the default), then ``iter_start=500`` is equivalent to
+        MD iteration 5000.
+
+
+    .. attribute:: optional.qd.activation_strain.scale_elstat
+
+        :Parameter:     * **Type** - :class:`float`
+                        * **Default value** – ``0.0``
+
+        Scaling factor to apply to all 1,4-nonbonded electrostatic interactions.
+
+        Serves the same purpose as the cp2k EI_SCALE14_ keyword.
+
+
+    .. attribute:: optional.qd.activation_strain.scale_lj
+
+        :Parameter:     * **Type** - :class:`float`
+                        * **Default value** – ``1.0``
+
+        Scaling factor to apply to all 1,4-nonbonded Lennard-Jones interactions.
+
+        Serves the same purpose as the cp2k VDW_SCALE14_ keyword.
+
+
+    .. attribute:: optional.qd.activation_strain.job1
+
+        :Parameter:     * **Type** - :class:`type` or :class:`str`
+                        * **Default value** – :class:`plams.Cp2kJob<scm.plams.interfaces.thirdparty.cp2k.Cp2kJob>`
+
+        A :class:`type` object of a :class:`plams.Job<scm.plams.core.basejob.Job>` subclass,
+        used for performing the activation strain analysis.
+
+        Should be set to :class:`plams.Cp2kJob<scm.plams.interfaces.thirdparty.cp2k.Cp2kJob>` if :attr:`activation_strain.md = True<optional.qd.activation_strain.md>`.
+
+
+    .. attribute:: optional.qd.activation_strain.s1
+
+        :Parameter:     * **Type** - :class:`dict`, :class:`str` or :class:`bool`
+                        * **Default value** – See below
+
+        .. code::
+
+            s1:
+                input:
+                    motion:
+                        print:
+                            trajectory:
+                                each:
+                                    md: 10
+                        md:
+                            ensemble: NVT
+                            temperature: 300.0
+                            timestep: 1.0
+                            steps: 15000
+                            thermostat:
+                                type: CSVR
+                                csvr:
+                                    timecon: 1250
+
+                    force_eval:
+                        method: FIST
+                        mm:
+                            forcefield:
+                                ei_scale14: 0.0
+                                vdw_scale14: 1.0
+                                ignore_missing_critical_params: ''
+                                parmtype: CHM
+                                parm_file_name: null
+                                do_nonbonded: ''
+                                shift_cutoff: .TRUE.
+                                spline:
+                                    emax_spline: 10e10
+                                    r0_nb: 0.2
+                            poisson:
+                                periodic: NONE
+                                ewald:
+                                    ewald_type: NONE
+                        subsys:
+                            cell:
+                                abc: '[angstrom] 100.0 100.0 100.0'
+                                periodic: NONE
+                            topology:
+                                conn_file_format: PSF
+                                conn_file_name: null
+                                coord_file_format: 'OFF'
+                                center_coordinates:
+                                    center_point: 0.0 0.0 0.0
+
+                    global:
+                        print_level: low
+                        project: cp2k
+                        run_type: MD
+
+        The job settings used for calculating the performing the ASA.
+
+        Alternatively, a path can be provided to .json or .yaml file
+        containing the job settings.
+
+        The default settings above are specifically for the ensemble-averaged ASA
+        (:attr:`activation_strain.md = True<optional.qd.activation_strain.md>`.).
+
+.. _EI_SCALE14: https://manual.cp2k.org/trunk/CP2K_INPUT/FORCE_EVAL/MM/FORCEFIELD.html#list_EI_SCALE14
+.. _VDW_SCALE14: https://manual.cp2k.org/trunk/CP2K_INPUT/FORCE_EVAL/MM/FORCEFIELD.html#list_VDW_SCALE14

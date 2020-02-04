@@ -711,6 +711,8 @@ QD
         Accounts for both the destabilizing ligand deformation and (de-)stabilizing
         interaction between all ligands in the absence of the core.
 
+        See md_asa_ for more details.
+
 
     .. attribute:: optional.qd.dissociate
 

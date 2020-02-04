@@ -228,16 +228,16 @@ Arguments - Job Customization
     .. attribute:: optional.qd.dissociate.job1
 
         :Parameter:     * **Type** - :class:`type`, :class:`str` or :class:`bool`
-                        * **Default value** – :class:`plams.AMSJob`
+                        * **Default value** – :class:`plams.AMSJob<scm.plams.interfaces.adfsuite.ams.AMSJob>`
 
-        A :class:`type` object of a :class:`plams.Job` subclass, used for calculating the
+        A :class:`type` object of a :class:`plams.Job<scm.plams.core.basejob.Job>` subclass, used for calculating the
         "electronic" component (|dE_lvl1|) of the bond dissociation energy.
         Involves single point calculations.
 
         Alternatively, an alias can be provided for a specific
         job type (see :ref:`Type Aliases`).
 
-        Setting it to ``True`` will default to :class:`plams.AMSJob`,
+        Setting it to ``True`` will default to :class:`plams.AMSJob<scm.plams.interfaces.adfsuite.ams.AMSJob>`,
         while ``False`` is equivalent to :attr:`optional.qd.dissociate` = ``False``.
 
 
@@ -270,9 +270,9 @@ Arguments - Job Customization
     .. attribute:: optional.qd.dissociate.job2
 
         :Parameter:     * **Type** - :class:`type`, :class:`str` or :class:`bool`
-                        * **Default value** – :class:`plams.AMSJob`
+                        * **Default value** – :class:`plams.AMSJob<scm.plams.interfaces.adfsuite.ams.AMSJob>`
 
-        A :class:`type` object of a :class:`plams.Job` subclass, used for calculating the
+        A :class:`type` object of a :class:`plams.Job<scm.plams.core.basejob.Job>` subclass, used for calculating the
         thermal component (|ddG_lvl2|) of the bond dissociation energy.
         Involves a geometry reoptimizations and frequency analyses.
 
@@ -280,7 +280,7 @@ Arguments - Job Customization
         job type (see :ref:`Type Aliases`).
 
 
-        Setting it to ``True`` will default to :class:`plams.AMSJob`,
+        Setting it to ``True`` will default to :class:`plams.AMSJob<scm.plams.interfaces.adfsuite.ams.AMSJob>`,
         while ``False`` will skip the thermochemical analysis completely.
 
 
