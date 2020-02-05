@@ -122,6 +122,10 @@ def construct_mol_series(df: SettingsDataFrame, core_df: pd.DataFrame,
     qd_df = df
     settings = qd_df.settings
 
+    print(qd_df, '\n')
+    print(qd_df.values, '\n')
+    print(ligand_df, '\n')
+    print(ligand_df.values, '\n')
     mol_list = [_get_mol(i, j, k, l) for i, j, k, l in qd_df.index]
     return pd.Series(mol_list, index=qd_df.index, name=MOL, dtype=object)
 
@@ -158,7 +162,7 @@ def _get_indices(mol: Molecule,
     index = index[3]
     for j, _ in enumerate(index):
         try:
-            k = int(index[j:]) - 1
+            k = index[j:] - 1
             break
         except ValueError:
             pass
