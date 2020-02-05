@@ -74,7 +74,7 @@ setup(
     install_requires=[
         'numpy',
         'scipy',
-        'pandas',
+        'pandas<1.0.0',
         'pyyaml>=5.1',
         'schema',
         'AssertionLib>=1.1.1',
