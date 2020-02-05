@@ -294,7 +294,7 @@ def job_single_point(self, job_type: Type[Job],
 
     # Return results
     if ret_results:
-        return results
+        return job.results
     return None
 
 
@@ -350,7 +350,7 @@ def job_geometry_opt(self, job_type: Type[Job],
 
     # Return results
     if ret_results:
-        return results
+        return job.results
     return None
 
 
@@ -405,7 +405,7 @@ def job_md(self, job_type: Type[Job],
 
     # Return results
     if ret_results:
-        return results
+        return job.results
     return None
 
 
@@ -472,5 +472,5 @@ def job_freq(self, job_type: Type[Job],
 
     # Return results
     if ret_results:
-        return results
+        return job.results
     return None

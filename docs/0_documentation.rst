@@ -15,3 +15,4 @@ look into the customization of the various jobs.
     6_type_aliases
     7_database
     10_context_managers
+    11_md_asa

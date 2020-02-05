@@ -167,11 +167,13 @@ def test_core_schema() -> None:
 
     assertion.eq(core_schema.validate(core_dict), ref)
 
-    core_dict['dummy'] = 1.0  # Exception: incorrect type
+    core_dict['dummy'] = 1.1  # Exception: incorrect value
     assertion.assert_(core_schema.validate, core_dict, exception=SchemaError)
     core_dict['dummy'] = 'H'
     assertion.eq(core_schema.validate(core_dict)['dummy'], 1)
     core_dict['dummy'] = 1
+    assertion.eq(core_schema.validate(core_dict)['dummy'], 1)
+    core_dict['dummy'] = 1.0
     assertion.eq(core_schema.validate(core_dict)['dummy'], 1)
 
 
@@ -222,29 +224,39 @@ def test_mongodb_schema() -> None:
 
     assertion.eq(mongodb_schema.validate(mongodb_dict), ref)
 
-    mongodb_dict['port'] = 5.0  # Exception: incorrect type
+    mongodb_dict['port'] = 5.1  # Exception: incorrect value
     assertion.assert_(mongodb_schema.validate, mongodb_dict, exception=SchemaError)
+    mongodb_dict['port'] = 5.0
+    assertion.eq(mongodb_schema.validate(mongodb_dict)['port'], 5)
+    mongodb_dict['port'] = 5
+    assertion.eq(mongodb_schema.validate(mongodb_dict)['port'], 5)
     mongodb_dict['port'] = 27017
 
-    mongodb_dict['host'] = 5.0  # Exception: incorrect type
+    mongodb_dict['host'] = 5.2  # Exception: incorrect type
     assertion.assert_(mongodb_schema.validate, mongodb_dict, exception=SchemaError)
     mongodb_dict['host'] = 'localhost'
     assertion.eq(mongodb_schema.validate(mongodb_dict)['host'], 'localhost')
     mongodb_dict['host'] = 51
     assertion.eq(mongodb_schema.validate(mongodb_dict)['host'], 51)
+    mongodb_dict['host'] = 51.0
+    assertion.eq(mongodb_schema.validate(mongodb_dict)['host'], 51)
 
-    mongodb_dict['username'] = 5.0  # Exception: incorrect type
+    mongodb_dict['username'] = 5.2  # Exception: incorrect type
     assertion.assert_(mongodb_schema.validate, mongodb_dict, exception=SchemaError)
     mongodb_dict['username'] = 'bob'
     assertion.eq(mongodb_schema.validate(mongodb_dict)['username'], 'bob')
     mongodb_dict['username'] = 52
     assertion.eq(mongodb_schema.validate(mongodb_dict)['username'], 52)
+    mongodb_dict['username'] = 52.0
+    assertion.eq(mongodb_schema.validate(mongodb_dict)['username'], 52)
 
-    mongodb_dict['password'] = 5.0  # Exception: incorrect type
+    mongodb_dict['password'] = 5.2  # Exception: incorrect type
     assertion.assert_(mongodb_schema.validate, mongodb_dict, exception=SchemaError)
     mongodb_dict['password'] = 'secret'
     assertion.eq(mongodb_schema.validate(mongodb_dict)['password'], 'secret')
     mongodb_dict['password'] = 53
+    assertion.eq(mongodb_schema.validate(mongodb_dict)['password'], 53)
+    mongodb_dict['password'] = 53.0
     assertion.eq(mongodb_schema.validate(mongodb_dict)['password'], 53)
 
 
@@ -373,18 +385,22 @@ def test_bde_schema() -> None:
     assertion.is_(bde_schema.validate(bde_dict)['keep_files'], False)
     bde_dict['keep_files'] = True
 
-    bde_dict['core_atom'] = 5.0  # Exception: incorrect type
+    bde_dict['core_atom'] = 5.1  # Exception: incorrect value
     assertion.assert_(bde_schema.validate, bde_dict, exception=SchemaError)
     bde_dict['core_atom'] = 'H'
     assertion.eq(bde_schema.validate(bde_dict)['core_atom'], 1)
     bde_dict['core_atom'] = 1
     assertion.eq(bde_schema.validate(bde_dict)['core_atom'], 1)
+    bde_dict['core_atom'] = 1.0
+    assertion.eq(bde_schema.validate(bde_dict)['core_atom'], 1)
 
-    bde_dict['lig_count'] = 5.0  # Exception: incorrect type
+    bde_dict['lig_count'] = 5.2  # Exception: incorrect value
     assertion.assert_(bde_schema.validate, bde_dict, exception=SchemaError)
     bde_dict['lig_count'] = -1  # Exception: incorrect value
     assertion.assert_(bde_schema.validate, bde_dict, exception=SchemaError)
     bde_dict['lig_count'] = 3
+    assertion.eq(bde_schema.validate(bde_dict)['lig_count'], 3)
+    bde_dict['lig_count'] = 3.0
     assertion.eq(bde_schema.validate(bde_dict)['lig_count'], 3)
 
     bde_dict['core_index'] = 5.0  # Exception: incorrect type
@@ -542,7 +558,7 @@ def test_subset_schema() -> None:
     subset_dict['follow_edge'] = False
     assertion.is_(subset_schema.validate(subset_dict)['follow_edge'], False)
 
-    subset_dict['cluster_size'] = 1.0  # Exception: incorrect type
+    subset_dict['cluster_size'] = 1.2  # Exception: incorrect value
     assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
     subset_dict['cluster_size'] = 'bob'  # Exception: incorrect type
     assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
@@ -556,7 +572,11 @@ def test_subset_schema() -> None:
     assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
     subset_dict['cluster_size'] = 10
     assertion.eq(subset_schema.validate(subset_dict)['cluster_size'], 10)
+    subset_dict['cluster_size'] = 10.0
+    assertion.eq(subset_schema.validate(subset_dict)['cluster_size'], 10)
     subset_dict['cluster_size'] = [1, 5, 10]
+    assertion.eq(subset_schema.validate(subset_dict)['cluster_size'], (1, 5, 10))
+    subset_dict['cluster_size'] = [1.0, 5.0, 10]
     assertion.eq(subset_schema.validate(subset_dict)['cluster_size'], (1, 5, 10))
 
     subset_dict['randomness'] = 'bob'  # Exception: incorrect type

@@ -197,8 +197,7 @@ class SupressPrint:
         self.stdout = None
 
 
-def restart_init(path: str,
-                 folder: str,
+def restart_init(path: str, folder: str,
                  hashing: Optional[str] = 'input') -> None:
     """Wrapper around the plams.init_ function; used for importing one or more previous jobs.
 

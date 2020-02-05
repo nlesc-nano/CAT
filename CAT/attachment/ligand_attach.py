@@ -158,7 +158,7 @@ def _get_indices(mol: Molecule,
     index = index[3]
     for j, _ in enumerate(index):
         try:
-            k = int(index[j:]) - 1
+            k = index[j:] - 1
             break
         except ValueError:
             pass

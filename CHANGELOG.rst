@@ -11,6 +11,16 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.7.12
+******
+* Fixed a bug ``qd_opt_ff()`` where the wrong dictionary key was validated.
+* Multiple updates to the CP2K MD template.
+* Employ a more duck-typing based approach during the ``schema`` validation.
+* Fixed a bug in the ``jobs`` module where incorrect ``Results()`` instances
+  were returned.
+* Multiple documentation updates.
+
+
 0.7.11
 ******
 * Updated the ``CAT.attachment.qd_opt_ff`` module in preparation for
@@ -19,16 +29,20 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.7.10
 ******
-* The function for applying distance weights during the subset-generation process is now configurable.
-* The default distance weighting function has been changed to ``weight = "np.exp(-x)"``.
+* The function for applying distance weights during the
+  subset-generation process is now configurable.
+* The default distance weighting function has been changed to
+  ``weight = "np.exp(-x)"``.
   The old p-norm with ``p=-2`` is still accessible via: ``weight = "x**-2"``
 
 
 0.7.9
 *****
-* Added the option to interpolate between ``"uniform"`` / ``"cluster"`` and ``"random"``.
+* Added the option to interpolate between ``"uniform"`` / ``"cluster"`` and
+  ``"random"``.
 * The order of the ``p``-norm is now configurable.
-* The variable representing the anchor-atom subset size has been changed from ``p`` to ``f``.
+* The variable representing the anchor-atom subset size has been changed
+  from ``p`` to ``f``.
   ``p`` is now reserved for the order of the ``p-norm``.
 * https://github.com/nlesc-nano/CAT/pull/70: Fixed an issue with the
   ``_parse_cluster_size()`` index offset.
@@ -42,17 +56,17 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.7.7
 *****
-* The ``"uniform"`` and ``"cluster"`` distributions are now weighted by the distance
-  rather than using a, less robust, distance truncation.
+* The ``"uniform"`` and ``"cluster"`` distributions are now weighted by
+  the distance rather than using a, less robust, distance truncation.
 
 
 0.7.6
 *****
 * Added the option, when constructing core atom subsets,
-  the use a distance matrix representing the shortest paths along the edges of a polyhedron,
-  rather than through space.
-  Enabling this option will result in more accurate ``"uniform"`` and ``"cluster"``
-  distributions at the cost of increased computational time.
+  the use a distance matrix representing the shortest paths along the
+  edges of a polyhedron, rather than through space.
+  Enabling this option will result in more accurate ``"uniform"`` and
+  ``"cluster"`` distributions at the cost of increased computational time.
 * Updated and improved the ``"uniform"`` and ``"cluster"`` distributions.
 * https://github.com/nlesc-nano/CAT/pull/65: Fixed a bug where ``uniform_idx()`` yielded the rolled,
   rather than unshifted, indices.
@@ -68,18 +82,21 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.7.5
 *****
-* Added the ability to populate only a (random-ish) subset of core anchors with ligands.
+* Added the ability to populate only a (random-ish) subset of
+  core anchors with ligands.
 
 
 0.7.4
 *****
 * The ligand rotation check is now substantially faster:
-  a distance cutoff has been implemented for the construction of distance matrices.
+  a distance cutoff has been implemented for the construction
+  of distance matrices.
 
 
 0.7.3
 *****
-* Added an option perform an ensemble-averaged QD activation strain analyses in Nano-CAT_.
+* Added an option perform an ensemble-averaged QD activation strain
+  analyses in Nano-CAT_.
 * Removed a number of redundant modules.
 * QD optimization now properly respect the ``optional.qd.opt.use_ff`` keyword.
 
@@ -99,7 +116,8 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 0.7.0
 *****
 * Finalize the introduction of a new CAT template system (``WorkFlow()``).
-* WiP: Implement an acitvation strain workflow with custom MATCH-based forcefields in Nano-CAT_.
+* WiP: Implement an acitvation strain workflow with custom MATCH-based
+  forcefields in Nano-CAT_.
 
 
 0.6.5
@@ -115,8 +133,10 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.6.4
 *****
-* Moved the ligand bulkiness workflow from the `ligand` to the `qd` block in the CAT input. See `nano-CAT`_ 0.2.3.
-* Updated the formula for the ligand bulkiness calculation. See `nano-CAT`_ 0.2.3.
+* Moved the ligand bulkiness workflow from the `ligand` to the `qd` block
+  in the CAT input. See `nano-CAT`_ 0.2.3.
+* Updated the formula for the ligand bulkiness calculation.
+  See `nano-CAT`_ 0.2.3.
 
 
 0.6.3
@@ -126,7 +146,8 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.6.2
 *****
-* Added multiple improvements (and bug fixes) to the ligand conformation optimizer.
+* Added multiple improvements (and bug fixes) to the
+  ligand conformation optimizer.
 * Added a context manager for the `plams.Molecule.as_array()` method.
 * Added an optimizer for the ligand vector.
 * Updated the ligand bulkiness workflow in `nano-CAT`_ 0.2.2.
@@ -139,8 +160,10 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.6.0
 *****
-* Implemented an interface to MATCH_ (Multipurpose Atom-Typer for CHARMM) in Nano-CAT.
-* Added a workflow for creating CP2K input files with the MATCH-assigned atom types & charges.
+* Implemented an interface to MATCH_ (Multipurpose Atom-Typer for CHARMM)
+  in Nano-CAT.
+* Added a workflow for creating CP2K input files with
+  the MATCH-assigned atom types & charges.
 * Updated the handling of assertions, see ``CAT.assertions.assertion_manager``.
 
 

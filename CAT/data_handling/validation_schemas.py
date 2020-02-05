@@ -56,7 +56,8 @@ API
 
 """
 
-from typing import Dict, Collection, Callable
+from operator import __index__
+from typing import Dict, Collection, Callable, Any, Optional, TypeVar
 from collections import abc
 
 from schema import Or, And, Use, Schema
@@ -86,6 +87,33 @@ from ..mol_utils import to_atnum
 __all__ = ['mol_schema', 'core_schema', 'ligand_schema', 'qd_schema', 'database_schema',
            'mongodb_schema', 'bde_schema', 'ligand_opt_schema', 'qd_opt_schema', 'crs_schema',
            'asa_schema', 'subset_schema']
+
+
+def val_float(value: Any) -> bool:
+    """Check if a float-like object has been passed (:data:`typing.SupportsFloat`)."""
+    try:
+        value.__float__()
+        return True
+    except Exception:
+        return False
+
+
+def val_int(value: Any) -> bool:
+    """Check if a int-like object has been passed (:data:`typing.SupportsInt`)."""
+    try:
+        value.__int__()
+        return float(value).is_integer()
+    except Exception:
+        return False
+
+
+def val_index(value: Any) -> bool:
+    """Check if a index-like object has been passed (:data:`typing.SupportsIndex`)."""
+    try:
+        value.__index__()
+        return True
+    except Exception:
+        return False
 
 
 def val_job_type(value: type) -> type:
@@ -127,14 +155,20 @@ def str_to_job_type(key: str) -> type:
     raise KeyError(f'No Job type alias available for {repr(_key)}')
 
 
-def to_tuple(collection: Collection) -> tuple:
+T = TypeVar('T')
+
+
+def to_tuple(collection: Collection[T], func: Optional[Callable[[T], Any]] = None) -> tuple:
     """Convert a collection to a sorted tuple."""
     try:
         ret = sorted(collection)
     except TypeError:  # The collection contains a mix of sorting-incompatible objects
         ret = sorted(collection, key=str)
     finally:
-        return tuple(ret)
+        if func is None:
+            return tuple(ret)
+        else:
+            return tuple(func(i) for i in ret)
 
 
 # The **default** parameter of schema.Optional() will automatically call any callable
@@ -201,22 +235,26 @@ mol_schema: Schema = Schema({
         And(str, error=".ligand_smiles expects a string"),
 
     Optional_('column'):
-        And(int, lambda n: n >= 0, error=".column expects an integer larger than or equal to 0"),
+        And(val_index, lambda n: n.__index__() >= 0, Use(int),
+            error=".column expects an integer larger than or equal to 0"),
 
     Optional_('row'):
-        And(int, lambda n: n >= 0, error=".row expects an integer larger than or equal to 0"),
+        And(val_index, lambda n: n.__index__() >= 0, Use(int),
+            error=".row expects an integer larger than or equal to 0"),
 
     Optional_('indices'):
         Or(
             And(
-                int, lambda n: n >= 0, Use(lambda n: (n,)),
+                val_index, lambda n: n.__index__() >= 0,
+                Use(lambda n: to_tuple([n], func=__index__)),
                 error=".indices expects an integer larger than or equal to 0"
             ),
             And(
                 abc.Collection,
-                lambda n: all(isinstance(i, int) and i >= 0 for i in n),
+                lambda n: all(val_index(i) for i in n),
+                lambda n: all(i.__index__() >= 0 for i in n),
                 lambda n: len(n) == len(set(n)),
-                Use(tuple),
+                Use(lambda n: to_tuple(n, func=__index__)),
                 error=".indices expects one or more unique integers larger than or equal to 0"
             ),
             error=".indices expects an atomic index (int) or a list unique atomic indices"
@@ -242,7 +280,7 @@ core_schema: Schema = Schema({
 
     Optional_('dummy', default=17):  # Return a tuple of atomic numbers
         Or(
-            And(int, Use(to_atnum)),
+            And(val_int, Use(lambda n: to_atnum(int(n)))),
             And(str, Use(to_atnum)),
             error='optional.core.dummy expects a valid atomic number (int) or symbol (string)'
         ),
@@ -254,33 +292,30 @@ core_schema: Schema = Schema({
 #: Schema for validating the ``['optional']['core']['subset']`` block.
 subset_schema: Schema = Schema({
     'f':
-        Or(
-            And(int, lambda n: 0 < n <= 1, Use(float)),
-            And(float, lambda n: 0 < n <= 1)
-        ),
+        And(val_float, lambda n: 0 < float(n) <= 1, Use(float)),
 
     Optional_('p'):
-        Or(
-            And(int, lambda n: abs(n) > 0, Use(float)),
-            And(float, lambda n: abs(n) > 0)
-        ),
+        And(val_float, lambda n: abs(float(n)) > 0, Use(float)),
 
     Optional_('mode', default='uniform'):
         And(str, lambda n: n.lower() in {'uniform', 'random', 'cluster'}, Use(str.lower)),
 
     Optional_('start', default=None):
-        Or(None, int),
+        Or(
+            None,
+            And(val_index, Use(__index__))
+        ),
 
     Optional_('follow_edge', default=False):
         bool,
 
     Optional_('cluster_size', default=1):
         Or(
-            And(int, lambda n: n > 0),
+            And(val_int, lambda n: int(n) > 0, Use(int)),
             And(abc.Collection,
-                lambda n: all(isinstance(i, int) for i in n),
-                lambda n: all(i > 0 for i in n),
-                Use(tuple))
+                lambda n: all(val_int(i) for i in n),
+                lambda n: all(int(i) > 0 for i in n),
+                Use(lambda n: to_tuple(n, func=int)))
         ),
 
     Optional_('weight', default=lambda: str_to_func('np.exp(-x)')):
@@ -292,8 +327,7 @@ subset_schema: Schema = Schema({
     Optional_('randomness', default=None):
         Or(
             None,
-            And(int, lambda n: 0 <= n <= 1, Use(float)),
-            And(float, lambda n: 0 <= n <= 1)
+            And(val_float, lambda n: 0 <= float(n) <= 1, Use(float))
         )
 
 })
@@ -474,16 +508,19 @@ qd_schema: Schema = Schema({
 mongodb_schema: Schema = Schema({
     # Optional username for the MongoDB host
     Optional_('username'):
-        Or(str, int, error='optional.database.mongodb.username expects a string or integer'),
+        Or(str, And(val_int, Use(int)),
+           error='optional.database.mongodb.username expects a string or integer'),
 
     Optional_('password'):  # Optional password for the MongoDB host
-        Or(str, int, error='optional.database.mongodb.password expects a string or integer'),
+        Or(str, And(val_int, Use(int)),
+           error='optional.database.mongodb.password expects a string or integer'),
 
     Optional_('host', default='localhost'):  # Name of the MongoDB host
-        Or(str, int, error='optional.database.mongodb.host expects a string or integer'),
+        Or(str, And(val_int, Use(int)),
+           error='optional.database.mongodb.host expects a string or integer'),
 
     Optional_('port', default=27017):  # Port of the MongoDB host
-        And(int, error='optional.database.mongodb.port expects an integer'),
+        And(val_int, Use(int), error='optional.database.mongodb.port expects an integer'),
 
     Optional_(str):  # Other keyword arguments for :class:`pymongo.MongoClient`
         object
@@ -561,14 +598,14 @@ bde_schema: Schema = Schema({
     # Atom type of the to-be dissociated core atom
     'core_atom':
         And(
-            Or(int, str), Use(validate_core_atom),
+            Or(And(val_int, Use(int)), str), Use(validate_core_atom),
             error=('optional.qd.dissociate.core_atom expects a SMILES string, '
                    'atomic number (int) or atomic symbol (str)')
         ),
 
     'lig_count':  # The number of ligands per core_atom
         And(
-            int, lambda n: n >= 0,
+            val_int, lambda n: int(n) >= 0, Use(int),
             error='optional.qd.dissociate.lig_count expects an integer larger than or equal to 0'
         ),
 
@@ -578,14 +615,14 @@ bde_schema: Schema = Schema({
     Optional_('core_core_dist', default=None):
         Or(
             And(
-                Or(int, float), lambda n: n >= 0.0, Use(float),
+                val_float, lambda n: float(n) >= 0.0, Use(float),
                 error=('optional.qd.dissociate.core_core_dist expects an integer or float '
                        'larger than or equal to 0.0')
             )
         ),
     Optional_('lig_core_dist', default=5.0):
         And(
-            Or(int, float), lambda n: n >= 0.0, Use(float),
+            val_float, lambda n: float(n) >= 0.0, Use(float),
             error=('optional.qd.dissociate.lig_core_dist expects an integer or float '
                    'larger than or equal to 0.0')
         ),
@@ -594,15 +631,17 @@ bde_schema: Schema = Schema({
         Or(
             None,
             And(
-                int, lambda n: n >= 0, Use(lambda n: (n,)),
+                val_index, lambda n: n.__index__() >= 0,
+                Use(lambda n: to_tuple([n], func=__index__)),
                 error=('optional.qd.dissociate.core_index expects an integer '
                        'larger than or equal to 0')
             ),
             And(
                 abc.Collection,
-                lambda n: all(isinstance(i, int) and i >= 0 for i in n),
+                lambda n: all(val_index(i) for i in n),
+                lambda n: all(i.__index__() >= 0 for i in n),
                 lambda n: len(n) == len(set(n)),
-                Use(to_tuple),
+                Use(lambda n: to_tuple(n, func=__index__)),
                 error=('optional.qd.dissociate.core_index expects a list of unique integers '
                        'larger than or equal to 0')
             ),
@@ -782,6 +821,15 @@ asa_schema: Schema = Schema({
 
     Optional_('md', default=False):
         bool,
+
+    Optional_('iter_start', default=500):
+        And(val_index, lambda n: n.__index__() >= 0, Use(__index__)),
+
+    Optional_('scale_elstat', default=0.0):
+        And(val_float, Use(float)),
+
+    Optional_('scale_lj', default=1.0):
+        And(val_float, Use(float)),
 
     # Delete files after the calculations are finished
     Optional_('keep_files', default=True):

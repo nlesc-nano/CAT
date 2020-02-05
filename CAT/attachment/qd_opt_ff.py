@@ -93,8 +93,8 @@ def qd_opt_ff(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],
             at.properties.symbol = symbol
         psf.write(psf_name)
 
-    # Run the first job and fix broken angles
-    if s.input.force_eval.mm.forcefield.nonbonded.get('charge', None):
+    # Pull any missing non-covalent parameters from UFF
+    if s.input.force_eval.mm.forcefield.nonbonded.get('lennard-jones', None):
         try:
             finalize_lj(mol, s.input.force_eval.mm.forcefield.nonbonded['lennard-jones'])
         except TypeError:
