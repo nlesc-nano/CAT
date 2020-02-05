@@ -335,12 +335,13 @@ def set_mol_prop(mol: Molecule, mol_dict: Settings) -> None:
     alphabet = itertools.combinations(ascii_letters, 2)
 
     # Set the atomic properties
-    for atom, i in zip(mol, alphabet):
+    for atom, i in zip(mol, itertools.cycle(alphabet)):
         set_atom_prop(atom, i, residue_name)
 
     if not mol.properties.smiles:
-        mol.properties.smiles = Chem.MolToSmiles(Chem.RemoveHs(molkit.to_rdmol(mol)),
-                                                 canonical=True)
+        mol.properties.smiles = Chem.MolToSmiles(
+            Chem.RemoveHs(molkit.to_rdmol(mol)), canonical=True
+        )
 
 
 def set_atom_prop(atom: Atom, at_id: Sequence[str], residue_name: str) -> None:
