@@ -148,8 +148,7 @@ def get_psf(mol: Molecule, charges: Union[None, Settings, Iterable[Settings]]) -
 
 
 def _constrain_charge(psf: PSFContainer, initial_charge: float,
-                      atom_set: Optional[Container[str]] = None,
-                      idx_slice: Union[Sequence[int], slice, None] = None) -> None:
+                      atom_set: Optional[Container[str]] = None) -> None:
     """Set to total molecular charge of **psf** to **initial_charge**.
 
     Atoms in **psf** whose atomic symbol intersects with **charge_set** will *not*
@@ -179,10 +178,8 @@ def _constrain_charge(psf: PSFContainer, initial_charge: float,
         atom_subset = np.ones(len(psf.atoms), dtype=bool)
     else:
         atom_subset = np.array([at not in atom_set for at in psf.atom_type])
-    if idx_slice is not None:
-        atom_subset[idx_slice] = False
 
-    charge_correction = initial_charge - psf.charge[atom_subset].sum()
+    charge_correction = initial_charge - psf.charge.sum()
     charge_correction /= np.count_nonzero(atom_subset)
     with pd.option_context('mode.chained_assignment', None):
         psf.charge[atom_subset] += charge_correction
