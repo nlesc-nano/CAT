@@ -98,16 +98,19 @@ def update_ff_jobs(s: Settings) -> None:
     optimize = s.optional.qd.optimize
     if optimize and optimize.use_ff:
         if optimize.job1 and str(optimize.job1) == str(Cp2kJob):
+            optimize.s1 = Settings() if optimize.s1 is None else optimize.s1
             optimize.s1 += get_template('qd.yaml')['CP2K_CHARM_opt']
             optimize.s1 += ff
 
         if optimize.job2 and str(optimize.job1) == str(Cp2kJob):
+            optimize.s2 = Settings() if optimize.s2 is None else optimize.s2
             optimize.s2 += get_template('qd.yaml')['CP2K_CHARM_opt']
             optimize.s2 += ff
 
     dissociate = s.optional.qd.dissociate
     if dissociate and dissociate.use_ff:
         if dissociate.job1 and str(dissociate.job1) == str(Cp2kJob):
+            dissociate.s1 = Settings() if dissociate.s1 is None else dissociate.s1
             dissociate.s1 += get_template('qd.yaml')['CP2K_CHARM_opt']
             dissociate.s1 += ff
 
@@ -115,5 +118,6 @@ def update_ff_jobs(s: Settings) -> None:
     if activation_strain and activation_strain.use_ff:
         if activation_strain.job1 and str(activation_strain.job1) == str(Cp2kJob):
             key = 'CP2K_CHARM_singlepoint' if not activation_strain.md else 'CP2K_CHARM_md'
+            activation_strain.s1 = Settings() if activation_strain.s1 is None else activation_strain.s1  # noqa
             activation_strain.s1 += get_template('qd.yaml')[key]
             activation_strain.s1 += ff
