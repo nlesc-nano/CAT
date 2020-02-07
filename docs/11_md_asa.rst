@@ -189,6 +189,9 @@ activation_strain
                     scale_elstat: 0.0
                     scale_lj: 1.0
 
+                    distance_upper_bound: "inf"
+                    k: 20
+
                     job1: cp2kjob
                     s1: ...
 
@@ -249,6 +252,27 @@ activation_strain
         Scaling factor to apply to all 1,4-nonbonded Lennard-Jones interactions.
 
         Serves the same purpose as the cp2k VDW_SCALE14_ keyword.
+
+
+    .. attribute:: optional.qd.activation_strain.distance_upper_bound
+
+        :Parameter:     * **Type** - :class:`float` or :class:`str`
+                        * **Default value** – ``"inf"``
+
+        Consider only atom-pairs within this distance for calculating inter-ligand interactions.
+
+        Units are in Angstrom.
+        Using ``"inf"`` will default to the full, untruncated, distance matrix.
+
+
+    .. attribute:: optional.qd.activation_strain.k
+
+        :Parameter:     * **Type** - :class:`int`
+                        * **Default value** – ``20``
+
+        The (maximum) number of to-be considered distances per atom.
+
+        Only relevant when :attr:`distance_upper_bound != "inf"<optional.qd.activation_strain.distance_upper_bound>`.
 
 
     .. attribute:: optional.qd.activation_strain.job1

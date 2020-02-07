@@ -60,6 +60,7 @@ from operator import __index__
 from typing import Dict, Collection, Callable, Any, Optional, TypeVar
 from collections import abc
 
+import numpy as np
 from schema import Or, And, Use, Schema
 from schema import Optional as Optional_
 
@@ -834,6 +835,15 @@ asa_schema: Schema = Schema({
     # Delete files after the calculations are finished
     Optional_('keep_files', default=True):
         And(bool, error='optional.qd.activation_strain.keep_files expects a boolean'),
+
+    Optional_('distance_upper_bound', default=np.inf):
+        Or(
+            And(str, lambda n: 'inf' in n.lower, Use(lambda n: np.inf)),
+            And(val_float, lambda n: float(n) > 0, Use(float))
+        ),
+
+    Optional_('k', default=20):
+        And(val_int, lambda n: int(n) > 0, Use(int)),
 
     # The job type for constructing the COSMO surface
     Optional_('job1', default=None):
