@@ -363,14 +363,16 @@ def test_bde_schema() -> None:
 
     bde_dict = Settings({'core_atom': 'Cd', 'lig_count': 2})
     ref = Settings({
-        'keep_files': True,
         'use_ff': False,
         'core_atom': 48,
         'core_index': None,
         'core_core_dist': None,
         'lig_count': 2,
-        'lig_core_dist': 5.0,
+        'lig_core_pairs': 1,
+        'lig_core_dist': None,
         'topology': None,
+
+        'keep_files': True,
         'job1': AMSJob,
         's1': _bde_s1_default,
         'job2': None,

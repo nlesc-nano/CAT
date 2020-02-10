@@ -30,9 +30,10 @@ import yaml
 import pkg_resources as pkg
 from types import MappingProxyType
 from shutil import rmtree
-from typing import Callable, Iterable, Optional, Union, TypeVar, Mapping, Type, Generator
+from typing import Callable, Iterable, Optional, Union, TypeVar, Mapping, Type, Generator, Iterator
 from os.path import join, isdir, isfile, exists
-from itertools import cycle
+from itertools import cycle, chain, repeat
+from contextlib import redirect_stdout
 
 from scm.plams import (config, Settings, Molecule, MoleculeError, PeriodicTable, init, from_smiles,
                        AMSJob, ADFJob, Cp2kJob, DiracJob, GamessJob)
@@ -56,7 +57,7 @@ _job_dict: Mapping[Type[Job], str] = MappingProxyType({
 })
 
 
-def type_to_string(job: Callable) -> str:
+def type_to_string(job: Type[Job]) -> str:
     """Turn a :class:`type` instance into a :class:`str`."""
     try:
         return _job_dict[job]
@@ -113,7 +114,10 @@ def get_template(template_name: str,
             return Settings(yaml.load(file, Loader=yaml.FullLoader))
 
 
-def validate_path(path: Optional[str]) -> str:
+P = TypeVar('P', str, bytes, os.PathLike)
+
+
+def validate_path(path: Optional[P]) -> P:
     """Validate a provided directory path.
 
     Parameters
@@ -136,11 +140,12 @@ def validate_path(path: Optional[str]) -> str:
         Raised if **path** is not a directory.
 
     """
-    if path in (None, '.', ''):
+    if path in {None, '.', ''}:
         return os.getcwd()
     elif isdir(path):
         return path
-    elif not exists(path):
+
+    if not exists(path):
         raise FileNotFoundError(f"'{path}' not found")
     elif isfile(path):
         raise NotADirectoryError(f"'{path}' is not a directory")
@@ -178,25 +183,6 @@ def validate_core_atom(atom: Union[str, int]) -> Union[Molecule, int]:
     return mol
 
 
-class SupressPrint:
-    """A context manager for supressing :func:`print` calls."""
-
-    def __init__(self) -> None:
-        """Initialize a :class:`SupressPrint` instance."""
-        self.stdout = None
-
-    def __enter__(self) -> None:
-        """Enter the :class:`SupressPrint` context manager."""
-        self.stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
-
-    def __exit__(self, *args) -> None:
-        """Exit the :class:`SupressPrint` context manager."""
-        sys.stdout.close()
-        sys.stdout = self.stdout
-        self.stdout = None
-
-
 def restart_init(path: str, folder: str,
                  hashing: Optional[str] = 'input') -> None:
     """Wrapper around the plams.init_ function; used for importing one or more previous jobs.
@@ -230,7 +216,7 @@ def restart_init(path: str, folder: str,
     manager = GenJobManager(settings, path, folder, hashing)
 
     # Change the default job manager
-    with SupressPrint():
+    with open(os.devnull, 'w') as f_, redirect_stdout(f_):
         init()
     rmtree(config.default_jobmanager.workdir)
     config.default_jobmanager = manager
@@ -283,3 +269,39 @@ def cycle_accumulate(iterable: Iterable[T], start: T = 0) -> Generator[T, None, 
     for i in cycle(iterable):
         ret += i
         yield ret
+
+
+def iter_repeat(iterable: Iterable[T], times: int) -> Iterator[T]:
+    """Iterate over an iterable and apply :func:`itertools.repeat` to each element.
+
+    Examples
+    --------
+    .. code:: python
+
+        >>> iterable = range(3)
+        >>> times = 2
+        >>> iterator = iter_repeat(iterable, n)
+        >>> for i in iterator:
+        ...     print(i)
+        0
+        0
+        1
+        1
+        2
+        2
+
+    Parameters
+    ----------
+    iterable : :class:`Iterable<collections.abc.Iterable>`
+        An iterable.
+
+    times : :class:`int`
+        The number of times each element should be repeated.
+
+    Returns
+    -------
+    :class:`Iterator<collections.abc.Iterator>`
+        An iterator that yields each element from **iterable** multiple **times**.
+
+    """
+    return chain.from_iterable(repeat(i, times) for i in iterable)

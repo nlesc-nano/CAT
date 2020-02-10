@@ -176,10 +176,10 @@ def edge_dist(xyz: np.ndarray, n: float = 1.0,
     dist_sparse = csr_matrix(dist)
 
     # Traverse the edges
-    ret = np.zeros_like(dist)
-    for k in range(xyz_len):
-        ret[k] = dijkstra(dist_sparse, indices=k, return_predecessors=False, min_only=True)
-    return ret
+    return dijkstra(dist_sparse,
+                    directed=False,
+                    indices=np.arange(xyz_len),
+                    return_predecessors=False)
 
 
 def plot_polyhedron(xyz: np.ndarray, triangles: Optional[np.ndarray] = None,
