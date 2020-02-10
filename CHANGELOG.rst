@@ -11,6 +11,13 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.7.13
+******
+* Small optimization improvements to ``edge_dist()``.
+* Moved a number of functions around in the CAT.utils module.
+* Added the ``optional.qd.dissociate.lig_pairs`` keyword for the BDE workflow.
+
+
 0.7.12
 ******
 * Fixed a bug ``qd_opt_ff()`` where the wrong dictionary key was validated.

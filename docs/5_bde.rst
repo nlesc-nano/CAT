@@ -157,7 +157,7 @@ Arguments
         Dissociate all combinations of a single core atom (see :attr:`dissociate.core_atom<optional.qd.dissociate.core_atom>`)
         and the :math:`n` closests ligands within a user-specified radius.
 
-        Serves as an alternative to :attr:`dissociate.lig_core_dist<optional.qd.dissociate.lig_pars>`,
+        Serves as an alternative to :attr:`dissociate.lig_core_dist<optional.qd.dissociate.lig_pairs>`,
         which removes a set number of combinations rather than everything withing a certain radius.
 
         The number of ligands dissociated in combination with a single core atom is controlled by
@@ -170,7 +170,7 @@ Arguments
 |
 
 
-    .. attribute:: optional.qd.dissociate.lig_pars
+    .. attribute:: optional.qd.dissociate.lig_pairs
 
         :Parameter:     * **Type** - :class:`int`, optional
                         * **Default value** – ``None``
