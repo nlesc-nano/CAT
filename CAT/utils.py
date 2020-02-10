@@ -33,6 +33,7 @@ from shutil import rmtree
 from typing import Callable, Iterable, Optional, Union, TypeVar, Mapping, Type, Generator, Iterator
 from os.path import join, isdir, isfile, exists
 from itertools import cycle, chain, repeat
+from contextlib import redirect_stdout
 
 from scm.plams import (config, Settings, Molecule, MoleculeError, PeriodicTable, init, from_smiles,
                        AMSJob, ADFJob, Cp2kJob, DiracJob, GamessJob)
@@ -182,25 +183,6 @@ def validate_core_atom(atom: Union[str, int]) -> Union[Molecule, int]:
     return mol
 
 
-class SupressPrint:
-    """A context manager for supressing :func:`print` calls."""
-
-    def __init__(self) -> None:
-        """Initialize a :class:`SupressPrint` instance."""
-        self.stdout = None
-
-    def __enter__(self) -> None:
-        """Enter the :class:`SupressPrint` context manager."""
-        self.stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
-
-    def __exit__(self, *args) -> None:
-        """Exit the :class:`SupressPrint` context manager."""
-        sys.stdout.close()
-        sys.stdout = self.stdout
-        self.stdout = None
-
-
 def restart_init(path: str, folder: str,
                  hashing: Optional[str] = 'input') -> None:
     """Wrapper around the plams.init_ function; used for importing one or more previous jobs.
@@ -234,7 +216,7 @@ def restart_init(path: str, folder: str,
     manager = GenJobManager(settings, path, folder, hashing)
 
     # Change the default job manager
-    with SupressPrint():
+    with open(os.devnull, 'w') as f_, redirect_stdout(f_):
         init()
     rmtree(config.default_jobmanager.workdir)
     config.default_jobmanager = manager
