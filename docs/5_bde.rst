@@ -38,13 +38,14 @@ Default Settings
         qd:
             dissociate:
                 core_atom: Cd
+                core_index: null
                 lig_count: 2
-                keep_files: True
                 core_core_dist: 5.0  # Ångström
                 lig_core_dist: 5.0  # Ångström
-                core_index: False
+                lig_core_pairs: 1
                 topology: {}
 
+                keep_files: True
                 job1: AMSJob
                 s1: True
                 job2: AMSJob
@@ -64,11 +65,11 @@ Arguments
             qd:
                 dissociate:
                     core_atom: Cd
+                    core_index: null
                     lig_count: 2
-                    keep_files: True
-                    core_core_dist: 5.0  # Ångström
+                    lig_pairs: 1
+                    core_core_dist: null  # Ångström
                     lig_core_dist: 5.0  # Ångström
-                    core_index: False
                     topology:
                         7: vertice
                         8: edge
@@ -79,12 +80,13 @@ Arguments
     .. attribute:: optional.qd.dissociate.core_atom
 
         :Parameter:     * **Type** - :class:`str` or :class:`int`
-                        * **Default value** – ``None``
 
         The atomic number or atomic symbol of the core atoms (:math:`X`) which are to be
         dissociated. The core atoms are dissociated in combination with :math:`n` ligands
-        (:math:`Y`, see :attr:`optional.qd.dissociate.lig_count`).
+        (:math:`Y`, see :attr:`dissociate.lig_count<optional.qd.dissociate.lig_count>`).
         Yields a compound with the general formula |XYn|.
+
+        Atomic indices can also be manually specified with :attr:`dissociate.core_index<optional.qd.dissociate.core_index>`
 
         If one is interested in dissociating ligands in combination with
         a molecular species (*e.g.* :math:`X = {NR_4}^+`) the atomic number (or symbol)
@@ -99,74 +101,27 @@ Arguments
         .. warning::
             This argument has no value be default and thus *must* be provided by the user.
 
-        .. note::
-            The yaml format uses ``null`` rather than ``None`` as in Python.
-
 
     .. attribute:: optional.qd.dissociate.lig_count
 
         :Parameter:     * **Type** - :class:`int`
-                        * **Default value** – ``None``
 
         The number of ligands, :math:`n`, which is to be dissociated in combination
-        with a single core atom (:math:`X`, see :attr:`optional.qd.dissociate.core_atom`).
+        with a single core atom (:math:`X`, see :attr:`dissociate.core_atom<optional.qd.dissociate.core_atom>`).
+
         Yields a compound with the general formula |XYn|.
 
         .. warning::
             This argument has no value be default and thus *must* be provided by the user.
 
-        .. note::
-            The yaml format uses ``null`` rather than ``None`` as in Python.
-
-
-    .. attribute:: optional.qd.dissociate.keep_files
-
-        :Parameter:     * **Type** - :class:`bool`
-                        * **Default value** – ``True``
-
-        Whether to keep or delete all BDE files after all calculations are finished.
-
-
-    .. attribute:: optional.qd.dissociate.core_core_dist
-
-        :Parameter:     * **Type** - :class:`float` or :class:`int`
-                        * **Default value** – ``0.0``
-
-        The maximum to be considered distance (Ångström) between atoms in
-        :attr:`optional.qd.dissociate.core_atom`.
-        Used for determining the topology of the core atom
-        (see :attr:`optional.qd.dissociate.topology`) and whether it is exposed to the
-        surface of the core or not. It is recommended to use a radius which
-        encapsulates a single (complete) shell of neighbours.
-
-        If not specified (or equal to ``0.0``) **CAT** will attempt to guess a suitable value
-        based on the cores' radial distribution function.
-
-
-    .. attribute:: optional.qd.dissociate.lig_core_dist
-
-        :Parameter:     * **Type** - :class:`float` or :class:`int`
-                        * **Default value** – ``5.0``
-
-        Dissociate all possible combinations of :math:`n` ligands and a single core atom
-        (see :attr:`optional.qd.dissociate.core_atom`) within a given radius (Ångström)
-        from aforementioned core atom. The number of ligands dissociated in
-        combination with a single core atom is controlled by
-        :attr:`optional.qd.dissociate.lig_count`.
-
-        .. image:: _images/BDE_XY2.png
-            :scale: 25 %
-            :align: center
-
-|
-
 
     .. attribute:: optional.qd.dissociate.core_index
 
-        :Parameter:     * **Type** - :class:`int` or :class:`tuple` [:class:`int`]
+        :Parameter:     * **Type** - :class:`int` or :class:`list` [:class:`int`], optional
                         * **Default value** – ``None``
 
-        Alternative to :attr:`optional.qd.dissociate.lig_core_dist` and :attr:`optional.qd.dissociate.core_atom`.
+        Alternative to :attr:`dissociate.lig_core_dist<optional.qd.dissociate.lig_core_dist>` and
+        :attr:`dissociate.core_atom<optional.qd.dissociate.core_atom>`.
         Manually specify the indices of all to-be dissociated atoms in the core.
         Core atoms will be dissociated in combination with the :math:`n` closest ligands.
 
@@ -177,19 +132,73 @@ Arguments
             The yaml format uses ``null`` rather than ``None`` as in Python.
 
 
+    .. attribute:: optional.qd.dissociate.core_core_dist
+
+        :Parameter:     * **Type** - :class:`float` or :class:`int`, optional
+                        * **Default value** – ``None``
+
+        The maximum to be considered distance (Ångström) between atoms in
+        :attr:`dissociate.core_atom<optional.qd.dissociate.core_atom>`.
+        Used for determining the topology of the core atom
+
+        (see :attr:`dissociate.topology<optional.qd.dissociate.topology>`) and whether it is exposed to the
+        surface of the core or not. It is recommended to use a radius which
+        encapsulates a single (complete) shell of neighbours.
+
+        If not specified (or equal to ``0.0``) **CAT** will attempt to guess a suitable value
+        based on the cores' radial distribution function.
+
+
+    .. attribute:: optional.qd.dissociate.lig_core_dist
+
+        :Parameter:     * **Type** - :class:`float` or :class:`int`, optional
+                        * **Default value** – ``None``
+
+        Dissociate all combinations of a single core atom (see :attr:`dissociate.core_atom<optional.qd.dissociate.core_atom>`)
+        and the :math:`n` closests ligands within a user-specified radius.
+
+        Serves as an alternative to :attr:`dissociate.lig_core_dist<optional.qd.dissociate.lig_pars>`,
+        which removes a set number of combinations rather than everything withing a certain radius.
+
+        The number of ligands dissociated in combination with a single core atom is controlled by
+        :attr:`dissociate.lig_count<optional.qd.dissociate.lig_count>`.
+
+        .. image:: _images/BDE_XY2.png
+            :scale: 25 %
+            :align: center
+
+|
+
+
+    .. attribute:: optional.qd.dissociate.lig_pars
+
+        :Parameter:     * **Type** - :class:`int`, optional
+                        * **Default value** – ``None``
+
+        Dissociate a user-specified number of combinations of a single core atom (see :attr:`dissociate.core_atom<optional.qd.dissociate.core_atom>`)
+        and the :math:`n` closests ligands.
+
+        Serves as an alternative to :attr:`dissociate.lig_core_dist<optional.qd.dissociate.lig_core_dist>`,
+        removing a preset number of (closest) pairs rather than all combinations within a certain radius.
+
+        The number of ligands dissociated in combination with a single core atom is controlled by
+        :attr:`dissociate.lig_count<optional.qd.dissociate.lig_count>`.
+
+
     .. attribute:: optional.qd.dissociate.topology
 
         :Parameter:     * **Type** - :class:`dict`
                         * **Default value** – ``{}``
 
         A dictionary which translates the number neighbouring core atoms
-        (see :attr:`optional.qd.dissociate.core_atom` and :attr:`optional.qd.dissociate.core_core_dist`)
+        (see :attr:`dissociate.core_atom<optional.qd.dissociate.core_atom>` and
+        :attr:`dissociate.core_core_dist<optional.qd.dissociate.core_core_dist>`)
         into a topology. Keys represent the number of neighbours, values represent
         the matching topology.
 
         .. admonition:: Example
 
-            Given a :attr:`optional.qd.dissociate.core_core_dist` of ``5.0`` Ångström,
+            Given a :attr:`dissociate.core_core_dist<optional.qd.dissociate.core_core_dist>` of ``5.0`` Ångström,
             the following options can be interpreted as following:
 
             .. code::
@@ -218,6 +227,7 @@ Arguments - Job Customization
         optional:
             qd:
                 dissociate:
+                    keep_files: True
                     job1: AMSJob
                     s1: True
                     job2: AMSJob
@@ -225,19 +235,27 @@ Arguments - Job Customization
 
 |
 
+    .. attribute:: optional.qd.dissociate.keep_files
+
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``True``
+
+        Whether to keep or delete all BDE files after all calculations are finished.
+
+
     .. attribute:: optional.qd.dissociate.job1
 
         :Parameter:     * **Type** - :class:`type`, :class:`str` or :class:`bool`
-                        * **Default value** – :class:`plams.AMSJob<scm.plams.interfaces.adfsuite.ams.AMSJob>`
+                        * **Default value** – :class:`AMSJob<scm.plams.interfaces.adfsuite.ams.AMSJob>`
 
-        A :class:`type` object of a :class:`plams.Job<scm.plams.core.basejob.Job>` subclass, used for calculating the
+        A :class:`type` object of a :class:`Job<scm.plams.core.basejob.Job>` subclass, used for calculating the
         "electronic" component (|dE_lvl1|) of the bond dissociation energy.
         Involves single point calculations.
 
         Alternatively, an alias can be provided for a specific
         job type (see :ref:`Type Aliases`).
 
-        Setting it to ``True`` will default to :class:`plams.AMSJob<scm.plams.interfaces.adfsuite.ams.AMSJob>`,
+        Setting it to ``True`` will default to :class:`AMSJob<scm.plams.interfaces.adfsuite.ams.AMSJob>`,
         while ``False`` is equivalent to :attr:`optional.qd.dissociate` = ``False``.
 
 
@@ -270,9 +288,9 @@ Arguments - Job Customization
     .. attribute:: optional.qd.dissociate.job2
 
         :Parameter:     * **Type** - :class:`type`, :class:`str` or :class:`bool`
-                        * **Default value** – :class:`plams.AMSJob<scm.plams.interfaces.adfsuite.ams.AMSJob>`
+                        * **Default value** – :class:`AMSJob<scm.plams.interfaces.adfsuite.ams.AMSJob>`
 
-        A :class:`type` object of a :class:`plams.Job<scm.plams.core.basejob.Job>` subclass, used for calculating the
+        A :class:`type` object of a :class:`Job<scm.plams.core.basejob.Job>` subclass, used for calculating the
         thermal component (|ddG_lvl2|) of the bond dissociation energy.
         Involves a geometry reoptimizations and frequency analyses.
 
@@ -280,7 +298,7 @@ Arguments - Job Customization
         job type (see :ref:`Type Aliases`).
 
 
-        Setting it to ``True`` will default to :class:`plams.AMSJob<scm.plams.interfaces.adfsuite.ams.AMSJob>`,
+        Setting it to ``True`` will default to :class:`AMSJob<scm.plams.interfaces.adfsuite.ams.AMSJob>`,
         while ``False`` will skip the thermochemical analysis completely.
 
 

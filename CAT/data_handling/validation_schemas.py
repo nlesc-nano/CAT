@@ -615,17 +615,32 @@ bde_schema: Schema = Schema({
 
     Optional_('core_core_dist', default=None):
         Or(
+            None,
             And(
-                val_float, lambda n: float(n) >= 0.0, Use(float),
+                val_float, lambda n: float(n) > 0.0, Use(float),
                 error=('optional.qd.dissociate.core_core_dist expects an integer or float '
                        'larger than or equal to 0.0')
             )
         ),
-    Optional_('lig_core_dist', default=5.0):
-        And(
-            val_float, lambda n: float(n) >= 0.0, Use(float),
-            error=('optional.qd.dissociate.lig_core_dist expects an integer or float '
-                   'larger than or equal to 0.0')
+
+    Optional_('lig_core_dist', default=None):
+        Or(
+            None,
+            And(
+                val_float, lambda n: float(n) > 0.0, Use(float),
+                error=('optional.qd.dissociate.lig_core_dist expects an integer or float '
+                       'larger than or equal to 0.0')
+            )
+        ),
+
+    Optional_('lig_core_pairs', default=1):
+        Or(
+            None,
+            And(
+                val_int, lambda n: int(n) > 0, Use(int),
+                error=('optional.qd.dissociate.lig_pairs expects an integer'
+                       'larger than or equal to 0')
+            )
         ),
 
     Optional_('core_index', default=None):
@@ -654,7 +669,8 @@ bde_schema: Schema = Schema({
         Or(
             None,
             And(
-                dict, lambda n: all(isinstance(k, int) for k in n),
+                abc.Mapping, lambda n: all(val_int(k) for k in n.keys()),
+                Use(lambda n: {int(k): v for k, v in n.items()}),
                 error='optional.qd.dissociate.topology expects a dictionary with integers as keys'
                 )
         ),
