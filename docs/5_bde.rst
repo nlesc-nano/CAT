@@ -329,7 +329,8 @@ Arguments - Job Customization
         CAT/data/templates/qd.yaml_, while ``False`` will skip the
         thermochemical analysis completely.
 
-|
+.. automodule:: nanoCAT.bde.dissociate_xyn
+
 
 .. _1: https://www.scm.com/doc/MOPAC/Introduction.html
 .. _2: http://openmopac.net
