@@ -448,7 +448,7 @@ ligand_schema: Schema = Schema({
                    'or a list of unique SMILES string')
         ),
 
-    Optional_('optimize', default=True):  # Optimize the ligands
+    Optional_('optimize', default={'job1': None}):  # Optimize the ligands
         And(
             bool, Use(lambda n: ({'job1': None} if n else False)),
             error='optional.ligand.optimize expects a boolean'

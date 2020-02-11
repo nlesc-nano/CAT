@@ -122,7 +122,7 @@ def test_ligand_schema() -> None:
     ref = {
         'dirname': '.',
         'functional_groups': None,
-        'optimize': True,
+        'optimize': {'job1': None},
         'split': True,
         'cosmo-rs': False
     }
