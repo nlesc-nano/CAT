@@ -839,6 +839,9 @@ asa_schema: Schema = Schema({
     Optional_('md', default=False):
         bool,
 
+    Optional_('dump_csv', default=False):
+        bool,
+
     Optional_('iter_start', default=500):
         And(val_index, lambda n: n.__index__() >= 0, Use(__index__)),
 
