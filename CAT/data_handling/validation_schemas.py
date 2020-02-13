@@ -345,6 +345,7 @@ database_schema: Schema = Schema({
 
     Optional_('read', default=_db_names):  # Attempt to pull structures from the database
         Or(
+            And(None, Use(lambda n: ())),
             And(bool, Use(lambda n: _db_names if n is True else ())),
             And(
                 str,
@@ -364,6 +365,7 @@ database_schema: Schema = Schema({
 
     Optional_('write', default=_db_names):  # Attempt to write structures to the database
         Or(
+            And(None, Use(lambda n: ())),
             And(bool, Use(lambda n: _db_names if n is True else ())),
             And(
                 str,
@@ -383,6 +385,7 @@ database_schema: Schema = Schema({
 
     Optional_('overwrite', default=tuple):  # Allow previous entries to be overwritten
         Or(
+            And(None, Use(lambda n: ())),
             And(bool, Use(lambda n: _db_names if n is True else ())),
             And(
                 str,
