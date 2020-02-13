@@ -412,6 +412,7 @@ database_schema: Schema = Schema({
 
     Optional_('mol_format', default=_format_names):  # Return a tuple of file formats
         Or(
+            And(None, Use(lambda n: ())),
             And(bool, Use(lambda n: _format_names if n is True else ())),
             And(
                 str,
