@@ -13,7 +13,15 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.7.14
 ******
-* Plceholder.
+* Changed the default value of the CP2K ``EI_SCALE14`` keyword from 0.0 to 1.0
+  (*i.e.* the CHARMM forcefield default).
+* Renamed the CAT ``activation_strain.scale_elstat`` keyword to ``.el_scale14``.
+* Renamed the CAT ``activation_strain.scale_lj`` keyword to ``.lj_scale14``.
+* Added the CAT ``activation_strain.dump_csv`` keyword for writing the raw
+  potential energies to a set of .csv files.
+* Added the CAT ``activation_strain.shift_cutoff`` keyword.
+  Sets the value of all non-bonded potential to zero at ``activation_strain.distance_upper_bound``.
+* A number of consistency improvements to the Schemas.
 
 
 0.7.13
