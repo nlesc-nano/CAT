@@ -186,11 +186,14 @@ activation_strain
                     use_ff: True
                     md: True
                     iter_start: 500
-                    scale_elstat: 0.0
-                    scale_lj: 1.0
+                    dump_csv: False
+
+                    el_scale14: 1.0
+                    lj_scale14: 1.0
 
                     distance_upper_bound: "inf"
                     k: 20
+                    shift_cutoff: True
 
                     job1: cp2kjob
                     s1: ...
@@ -234,17 +237,29 @@ activation_strain
         MD iteration 5000.
 
 
-    .. attribute:: optional.qd.activation_strain.scale_elstat
+    .. attribute:: optional.qd.activation_strain.dump_csv
+
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``False``
+
+        Dump a set of .csv files containing all potential energies gathered over the course of the MD simulation.
+
+        For each quantum dot two files are created in the ``.../qd/asa/`` directory,
+        one containing the potentials over the course of the MD simulation (``.qd.csv``) and
+        for the optimized ligand (``.lig.csv``).
+
+
+    .. attribute:: optional.qd.activation_strain.el_scale14
 
         :Parameter:     * **Type** - :class:`float`
-                        * **Default value** – ``0.0``
+                        * **Default value** – ``1.0``
 
         Scaling factor to apply to all 1,4-nonbonded electrostatic interactions.
 
         Serves the same purpose as the cp2k EI_SCALE14_ keyword.
 
 
-    .. attribute:: optional.qd.activation_strain.scale_lj
+    .. attribute:: optional.qd.activation_strain.lj_scale14
 
         :Parameter:     * **Type** - :class:`float`
                         * **Default value** – ``1.0``
@@ -272,6 +287,17 @@ activation_strain
 
         The (maximum) number of to-be considered distances per atom.
 
+        Only relevant when :attr:`distance_upper_bound != "inf"<optional.qd.activation_strain.distance_upper_bound>`.
+
+
+    .. attribute:: optional.qd.activation_strain.shift_cutoff
+
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``True``
+
+        Add a constant to all electrostatic and Lennard-Jones potentials such that the potential is zero at the :attr:`distance upper bound<optional.qd.activation_strain.distance_upper_bound>`.
+
+        Serves the same purpose as the cp2k SHIFT_CUTOFF_ keyword.
         Only relevant when :attr:`distance_upper_bound != "inf"<optional.qd.activation_strain.distance_upper_bound>`.
 
 
@@ -314,7 +340,7 @@ activation_strain
                         method: FIST
                         mm:
                             forcefield:
-                                ei_scale14: 0.0
+                                ei_scale14: 1.0
                                 vdw_scale14: 1.0
                                 ignore_missing_critical_params: ''
                                 parmtype: CHM
@@ -354,3 +380,4 @@ activation_strain
 
 .. _EI_SCALE14: https://manual.cp2k.org/trunk/CP2K_INPUT/FORCE_EVAL/MM/FORCEFIELD.html#list_EI_SCALE14
 .. _VDW_SCALE14: https://manual.cp2k.org/trunk/CP2K_INPUT/FORCE_EVAL/MM/FORCEFIELD.html#list_VDW_SCALE14
+.. _SHIFT_CUTOFF: https://manual.cp2k.org/trunk/CP2K_INPUT/FORCE_EVAL/MM/FORCEFIELD.html#list_SHIFT_CUTOFF

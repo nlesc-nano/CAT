@@ -345,6 +345,7 @@ database_schema: Schema = Schema({
 
     Optional_('read', default=_db_names):  # Attempt to pull structures from the database
         Or(
+            And(None, Use(lambda n: ())),
             And(bool, Use(lambda n: _db_names if n is True else ())),
             And(
                 str,
@@ -364,6 +365,7 @@ database_schema: Schema = Schema({
 
     Optional_('write', default=_db_names):  # Attempt to write structures to the database
         Or(
+            And(None, Use(lambda n: ())),
             And(bool, Use(lambda n: _db_names if n is True else ())),
             And(
                 str,
@@ -383,6 +385,7 @@ database_schema: Schema = Schema({
 
     Optional_('overwrite', default=tuple):  # Allow previous entries to be overwritten
         Or(
+            And(None, Use(lambda n: ())),
             And(bool, Use(lambda n: _db_names if n is True else ())),
             And(
                 str,
@@ -409,6 +412,7 @@ database_schema: Schema = Schema({
 
     Optional_('mol_format', default=_format_names):  # Return a tuple of file formats
         Or(
+            And(None, Use(lambda n: ())),
             And(bool, Use(lambda n: _format_names if n is True else ())),
             And(
                 str,
@@ -839,13 +843,16 @@ asa_schema: Schema = Schema({
     Optional_('md', default=False):
         bool,
 
+    Optional_('dump_csv', default=False):
+        bool,
+
     Optional_('iter_start', default=500):
         And(val_index, lambda n: n.__index__() >= 0, Use(__index__)),
 
-    Optional_('scale_elstat', default=0.0):
+    Optional_('el_scale14', default=1.0):
         And(val_float, Use(float)),
 
-    Optional_('scale_lj', default=1.0):
+    Optional_('lj_scale14', default=1.0):
         And(val_float, Use(float)),
 
     # Delete files after the calculations are finished
@@ -854,9 +861,12 @@ asa_schema: Schema = Schema({
 
     Optional_('distance_upper_bound', default=np.inf):
         Or(
-            And(str, lambda n: 'inf' in n.lower, Use(lambda n: np.inf)),
+            And(str, lambda n: 'inf' in n.lower(), Use(lambda n: np.inf)),
             And(val_float, lambda n: float(n) > 0, Use(float))
         ),
+
+    Optional_('shift_cutoff', default=True):
+        bool,
 
     Optional_('k', default=20):
         And(val_int, lambda n: int(n) > 0, Use(int)),

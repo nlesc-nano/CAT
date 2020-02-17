@@ -80,6 +80,8 @@ CP2K_CHARM_opt:
             method: FIST
             mm:
                 forcefield:
+                    ei_scale14: 1.0
+                    vdw_scale14: 1.0
                     ignore_missing_critical_params: ''
                     parmtype: CHM
                     parm_file_name: null
@@ -115,6 +117,8 @@ CP2K_CHARM_singlepoint:
             method: FIST
             mm:
                 forcefield:
+                    ei_scale14: 1.0
+                    vdw_scale14: 1.0
                     ignore_missing_critical_params: ''
                     parmtype: CHM
                     parm_file_name: null
@@ -165,7 +169,7 @@ CP2K_CHARM_md:
             method: FIST
             mm:
                 forcefield:
-                    ei_scale14: 0.0
+                    ei_scale14: 1.0
                     vdw_scale14: 1.0
                     ignore_missing_critical_params: ''
                     parmtype: CHM
