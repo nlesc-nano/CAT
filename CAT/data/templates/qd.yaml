@@ -96,7 +96,7 @@ CP2K_CHARM_opt:
                         ewald_type: NONE
             subsys:
                 cell:
-                    abc: '[angstrom] 100.0 100.0 100.0'
+                    abc: '[angstrom] 1000.0 1000.0 1000.0'
                     periodic: NONE
                 topology:
                     conn_file_format: PSF
@@ -133,7 +133,7 @@ CP2K_CHARM_singlepoint:
                         ewald_type: NONE
             subsys:
                 cell:
-                    abc: '[angstrom] 100.0 100.0 100.0'
+                    abc: '[angstrom] 1000.0 1000.0 1000.0'
                     periodic: NONE
                 topology:
                     conn_file_format: PSF
@@ -185,7 +185,7 @@ CP2K_CHARM_md:
                         ewald_type: NONE
             subsys:
                 cell:
-                    abc: '[angstrom] 100.0 100.0 100.0'
+                    abc: '[angstrom] 1000.0 1000.0 1000.0'
                     periodic: NONE
                 topology:
                     conn_file_format: PSF
