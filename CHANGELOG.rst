@@ -11,6 +11,11 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.7.14
+******
+* Plceholder.
+
+
 0.7.13
 ******
 * Small optimization improvements to ``edge_dist()``.

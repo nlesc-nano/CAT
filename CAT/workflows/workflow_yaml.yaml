@@ -11,10 +11,11 @@ asa:
         use_ff: [optional, qd, activation_strain, use_ff]
         dump_csv: [optional, qd, activation_strain, dump_csv]
         iter_start: [optional, qd, activation_strain, iter_start]
-        scale_elstat: [optional, qd, activation_strain, scale_elstat]
-        scale_lj: [optional, qd, activation_strain, scale_lj]
+        el_scale14: [optional, qd, activation_strain, el_scale14]
+        lj_scale14: [optional, qd, activation_strain, lj_scale14]
         k: [optional, qd, activation_strain, k]
         distance_upper_bound: [optional, qd, activation_strain, distance_upper_bound]
+        shift_cutoff: [optional, qd, activation_strain, shift_cutoff]
 
         path: [optional, qd, dirname]
         keep_files: [optional, qd, activation_strain, keep_files]

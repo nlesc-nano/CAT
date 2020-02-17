@@ -849,10 +849,10 @@ asa_schema: Schema = Schema({
     Optional_('iter_start', default=500):
         And(val_index, lambda n: n.__index__() >= 0, Use(__index__)),
 
-    Optional_('scale_elstat', default=0.0):
+    Optional_('el_scale14', default=1.0):
         And(val_float, Use(float)),
 
-    Optional_('scale_lj', default=1.0):
+    Optional_('lj_scale14', default=1.0):
         And(val_float, Use(float)),
 
     # Delete files after the calculations are finished
@@ -861,9 +861,12 @@ asa_schema: Schema = Schema({
 
     Optional_('distance_upper_bound', default=np.inf):
         Or(
-            And(str, lambda n: 'inf' in n.lower, Use(lambda n: np.inf)),
+            And(str, lambda n: 'inf' in n.lower(), Use(lambda n: np.inf)),
             And(val_float, lambda n: float(n) > 0, Use(float))
         ),
+
+    Optional_('shift_cutoff', default=True):
+        bool,
 
     Optional_('k', default=20):
         And(val_int, lambda n: int(n) > 0, Use(int)),
