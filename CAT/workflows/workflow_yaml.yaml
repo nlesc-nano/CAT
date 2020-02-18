@@ -119,4 +119,9 @@ bulkiness:
     description: ligand bulkiness calculation
     mol_type: qd
     template:
+        db: [optional, database, db]
+        read: [optional, database, read]
+        write: [optional, database, write]
+        overwrite: [optional, database, overwrite]
+
         path: [optional, qd, dirname]
