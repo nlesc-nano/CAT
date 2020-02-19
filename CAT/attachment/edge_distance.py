@@ -21,52 +21,26 @@ API
 """
 
 import reprlib
-from math import factorial
 from typing import Optional, Any
-from itertools import combinations
 
 import numpy as np
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import dijkstra
 from scipy.spatial import ConvexHull
 
+try:
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+
+    PLT: Optional[ImportError] = None
+    Figure = plt.Figure
+except ImportError as ex:
+    PLT: Optional[ImportError] = ex
+    Figure = 'matplotlib.pyplot.Figure'
+
+from ..utils import array_combinations
+
 __all__ = ['edge_dist']
-
-
-def array_combinations(array: np.ndarray, r: int = 2) -> np.ndarray:
-    """Construct an array with all :func:`combinations<itertools.combinations>` of **ar** along axis 1.
-
-    Parameters
-    ----------
-    array : :math:`(m, k)` array-like
-        A 2D array-like object.
-
-    r : :class:`int`
-        The length of each combination.
-
-    Returns
-    -------
-    :math:`(n, m, r)` :class:`numpy.ndarray`
-        A 3D array with all **ar** combinations (of length ``r``) along axis 1.
-        ``n`` represents the number of combinations: :math:`n! / r! / (n-r)!`.
-
-    """  # noqa
-    ar = np.asarray(array)
-    if ar.ndim != 2:
-        raise ValueError(f"'array' excpected a 2D array; observed dimensionality: {ar.ndim}D")
-    n = ar.shape[1]
-
-    try:
-        combinations_len = int(factorial(n) / factorial(r) / factorial(n - r))
-    except ValueError:
-        raise ValueError(f"'r' ({r}) expects a positive integer larger than or equal to the length "
-                         f"of 'array' axis 1 ({n})")
-
-    shape = combinations_len, len(ar), r
-    ret = np.empty(shape, dtype=ar.dtype)
-    for i, item in enumerate(combinations(range(ar.shape[1]), r=r)):
-        ret[i] = ar[:, item]
-    return ret
 
 
 def to_convex(xyz: np.ndarray, n: float = 1.0) -> np.ndarray:
@@ -183,7 +157,7 @@ def edge_dist(xyz: np.ndarray, n: float = 1.0,
 
 
 def plot_polyhedron(xyz: np.ndarray, triangles: Optional[np.ndarray] = None,
-                    show: bool = True, **kwargs: Any) -> 'matplotlib.pyplot.Figure':
+                    show: bool = True, **kwargs: Any) -> Figure:
     r"""Plot a polyhedron, represented by an array of Cartesian coordinates, with matplotlib.
 
     Parameters
@@ -208,8 +182,8 @@ def plot_polyhedron(xyz: np.ndarray, triangles: Optional[np.ndarray] = None,
         The resulting matplotlib Figure.
 
     """
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d import Axes3D
+    if PLT is not None:
+        raise PLT
 
     if 'cmap' not in kwargs:
         kwargs['cmap'] = plt.cm.Spectral

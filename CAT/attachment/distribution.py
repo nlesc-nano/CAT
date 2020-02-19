@@ -23,22 +23,29 @@ API
 import reprlib
 import functools
 from types import MappingProxyType
-from typing import Generator, Optional, Iterable, FrozenSet, Any, Union, Callable, Mapping, Tuple
+from typing import Generator, Optional, Iterable, FrozenSet, Any, Union, Callable, Mapping
 from itertools import islice, takewhile
 from collections import abc
 
 import numpy as np
 from scipy.spatial.distance import cdist
 
-from scm.plams import Molecule, Atom, rotation_matrix
+from scm.plams import Molecule
 
-from CAT.utils import cycle_accumulate
+from CAT.utils import cycle_accumulate, as_1d_array
 from CAT.attachment.edge_distance import edge_dist
 
 __all__ = ['distribute_idx']
 
 #: A set of allowed values for the **mode** parameter in :func:`get_distribution`.
 MODE_SET: FrozenSet[str] = frozenset({'uniform', 'random', 'cluster'})
+
+#: Map the **operation** parameter in :func:`uniform_idx` to either
+#: :func:`numpy.nanargmin` or :func:`numpy.nanargmax`.
+OPERATION_MAPPING: Mapping[Union[str, Callable], Callable] = MappingProxyType({
+    'min': np.nanargmin, min: np.nanargmin, np.min: np.nanargmin,
+    'max': np.nanargmax, max: np.nanargmax, np.max: np.nanargmax
+})
 
 
 def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[int]], f: float,
@@ -89,14 +96,7 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
 
     """
     # Convert **idx** into an array
-    try:
-        idx_ar = np.array(idx, dtype=int, ndmin=1, copy=False)
-    except (TypeError, ValueError):  # A Collection or Iterator
-        try:
-            idx_ar = np.fromiter(idx, dtype=int)
-        except ValueError as ex:
-            raise TypeError("'idx' expected an integer or iterable of integers; "
-                            f"{ex}").with_traceback(ex.__traceback__)
+    idx_ar = as_1d_array(idx, dtype=int)
 
     # Validate the input
     if mode not in MODE_SET:
@@ -127,14 +127,6 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
 
     # Return a list of `p * len(idx)` atomic indices
     return ret[:stop]
-
-
-#: Map the **operation** parameter in :func:`uniform_idx` to either
-#: :func:`numpy.nanargmin` or :func:`numpy.nanargmax`.
-OPERATION_MAPPING: Mapping[Union[str, Callable], Callable] = MappingProxyType({
-    'min': np.nanargmin, min: np.nanargmin, np.min: np.nanargmin,
-    'max': np.nanargmax, max: np.nanargmax, np.max: np.nanargmax
-})
 
 
 def uniform_idx(dist: np.ndarray, operation: str = 'min',
@@ -364,89 +356,8 @@ def _parse_randomness(randomness: float, arg_func: Callable[[np.ndarray], int],
         tb = ex.__traceback__
         raise ValueError("'randomness' expected a float larger than 0.0 and smaller than 1.0; "
                          f"observed value: {reprlib.repr(randomness)}").with_traceback(tb)
-    return functools.partial(_random_arg_func, arg_func=arg_func,
-                             threshold=randomness, idx=np.arange(n))
 
-
-def test_distribute(mol: Union[Molecule, str], symbol: str,
-                    f_range: Union[float, Iterable[float]],
-                    rotate: Optional[Tuple[float, float, float]] = (0.1, -0.1, 0.9),
-                    **kwargs: Any) -> Molecule:
-    r"""Test function for :func:`CAT.attachment.distribution.distribute_idx`.
-
-    Examples
-    --------
-    .. code:: python
-
-        >>> import numpy as np
-        >>> from scm.plams import Molecule
-
-        >>> mol_input: Molecule = Molecule(...)
-        >>> xyz_output: str = ...
-        >>> at_symbol: str = 'Cl'
-        >>> f_range: numpy.ndarray = 2**-np.arange(8.0)
-
-        >>> mol_out: Molecule = test_distribute(mol_input, at_symbol, f_range)
-        >>> mol_out.write(xyz_output)
-
-        >>> print(len(mol_input) == len(p_range) * len(mol_out))
-        True
-
-    Parameters
-    ----------
-    mol : :class:`Molecule` or :class:`str`
-        A molecule or path+filename containing a molecule.
-
-    symbol : :class:`str`
-        The atomic symbol of the anchor atom.
-
-    f_range : :class:`float` or :class:`Iterable<collections.abc.Iterable>` :class:`float`
-        A float or iterable of floats subject to the following constraint: :math:`0 < f \le 1`.
-
-    rotate : :math:`(3,)` :class:`Sequence<collection.abc.Sequence>` [:class:`float`], optional
-        A sequence of three floats representing a molecular orientation.
-
-    \**kwargs : :data:`Any<typing.Any>`
-        Further keyword arguments for :func:`CAT.attachment.distribution.distribute_idx`:
-        ``follow_edge``, ``mode`` and ``start``.
-
-    Returns
-    -------
-    :class:`Molecule`
-        A Molecule instance containing one molecule for every item in **p_range**
-
-    """
-    if not isinstance(mol, Molecule):
-        mol = Molecule(mol)
-    if not isinstance(f_range, abc.Iterable):
-        f_range = (f_range,)
-
-    ret = Molecule()
-    trans = cdist(mol, mol).max() * 1.1
-    for i, f in enumerate(f_range):
-        mol_tmp = _test_distribute(mol, symbol, f=f, **kwargs)
-        if rotate is not None:
-            mol_tmp.rotate(rotation_matrix([0, 0, 1], rotate))
-        mol_tmp.translate([i*trans, 0, 0])
-        ret += mol_tmp
-    return ret
-
-
-def _test_distribute(mol: Molecule, symbol: str, **kwargs) -> Molecule:
-    """Helper function for :func:`test_distribute`."""
-    if not isinstance(mol, Molecule):
-        mol = Molecule(mol)
-
-    _idx_in = [i for i, at in enumerate(mol) if at.symbol == symbol]
-    idx_in = np.fromiter(_idx_in, count=len(_idx_in), dtype=int)
-    idx_out = distribute_idx(mol, idx_in, **kwargs)
-
-    a = symbol
-    b = 'I' if a != 'I' else 'Br'
-    mol2 = Molecule()
-    for i, at in enumerate(mol):
-        if at.symbol != symbol:
-            continue
-        symbol_new = a if i not in idx_out else b
-        mol2.add_atom(Atom(symbol=symbol_new, coords=at.coords, mol=mol2))
-    return mol2
+    return functools.partial(_random_arg_func,
+                             arg_func=arg_func,
+                             threshold=randomness,
+                             idx=np.arange(n))

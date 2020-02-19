@@ -25,15 +25,19 @@ API
 """
 
 import os
-import sys
 import yaml
 import pkg_resources as pkg
+from math import factorial
 from types import MappingProxyType
 from shutil import rmtree
-from typing import Callable, Iterable, Optional, Union, TypeVar, Mapping, Type, Generator, Iterator
+from typing import Iterable, Optional, Union, TypeVar, Mapping, Type, Generator, Iterator, Any
 from os.path import join, isdir, isfile, exists
-from itertools import cycle, chain, repeat
+from itertools import cycle, chain, repeat, combinations
 from contextlib import redirect_stdout
+from collections import abc
+
+import numpy as np
+from scipy.spatial import cKDTree
 
 from scm.plams import (config, Settings, Molecule, MoleculeError, PeriodicTable, init, from_smiles,
                        AMSJob, ADFJob, Cp2kJob, DiracJob, GamessJob)
@@ -45,7 +49,8 @@ from .logger import logger
 from .mol_utils import to_atnum
 from .gen_job_manager import GenJobManager
 
-__all__ = ['check_sys_var', 'dict_concatenate', 'get_template']
+__all__ = ['check_sys_var', 'dict_concatenate', 'get_template', 'cycle_accumulate', 'iter_repeat',
+           'as_1d_array', 'array_combinations', 'get_nearest_neighbors']
 
 _job_dict: Mapping[Type[Job], str] = MappingProxyType({
     ADFJob: 'adf',
@@ -55,6 +60,10 @@ _job_dict: Mapping[Type[Job], str] = MappingProxyType({
     GamessJob: 'gamess',
     ORCAJob: 'orca'
 })
+
+T = TypeVar('T')
+P = TypeVar('P', str, bytes, os.PathLike)
+Dtype = Union[type, str, np.dtype]
 
 
 def type_to_string(job: Type[Job]) -> str:
@@ -112,9 +121,6 @@ def get_template(template_name: str,
     else:
         with open(template_name, 'r') as file:
             return Settings(yaml.load(file, Loader=yaml.FullLoader))
-
-
-P = TypeVar('P', str, bytes, os.PathLike)
 
 
 def validate_path(path: Optional[P]) -> P:
@@ -254,9 +260,6 @@ def restart_init(path: str, folder: str,
     return None
 
 
-T = TypeVar('T')
-
-
 def cycle_accumulate(iterable: Iterable[T], start: T = 0) -> Generator[T, None, None]:
     """Accumulate and return elements from **iterable** until it is exhausted.
 
@@ -305,3 +308,131 @@ def iter_repeat(iterable: Iterable[T], times: int) -> Iterator[T]:
 
     """
     return chain.from_iterable(repeat(i, times) for i in iterable)
+
+
+def as_1d_array(value: Union[T, Iterable[T]], dtype: Dtype, ndmin: int = 1) -> np.ndarray:
+    """Convert **value**, a scalar or iterable of scalars, into an array."""
+    try:
+        return np.array(value, dtype=dtype, ndmin=ndmin, copy=False)
+
+    except TypeError as ex:
+        if not isinstance(value, abc.Iterable):
+            raise ex
+
+        ret = np.fromiter(value, dtype=dtype)
+        ret.shape += (ndmin - ret.ndmim) * (1,)
+        return ret
+
+
+def array_combinations(array: np.ndarray, r: int = 2, axis: int = -1) -> np.ndarray:
+    r"""Construct an array with all :func:`combinations<itertools.combinations>` of **ar** along a use-specified axis.
+
+    Parameters
+    ----------
+    array : array-like, shape :math:`(m, \dotsc)`
+        An :math:`n` dimensional array-like object.
+
+    r : :class:`int`
+        The length of each combination.
+
+    axis : :class:`int`
+        The axis used for constructing the combinations.
+
+    Returns
+    -------
+    :class:`numpy.ndarray`, shape :math:`(k, \dotsc, r)`
+        A :math:`n+1` dimensional array with all **ar** combinations (of length ``r``)
+        along axis -1.
+        :math:`k` represents the number of combinations: :math:`k = \dfrac{m! / r!}{(m-r)!}`.
+
+    """  # noqa
+    ar = np.array(array, ndmin=1, copy=False)
+    n = ar.shape[axis]
+
+    # Identify the number of combinations
+    try:
+        combinations_len = int(factorial(n) / factorial(r) / factorial(n - r))
+    except ValueError:
+        raise ValueError(f"'r' ({repr(r)}) expects a positive integer larger than or equal to the "
+                         f"length of 'array' axis {repr(axis)} ({repr(n)})")
+
+    # Define the shape of the to-be returned array
+    _shape = list(ar.shape)
+    del _shape[axis]
+    shape = (combinations_len,) + tuple(_shape) + (r,)
+
+    # Create, fill and return the new array
+    ret = np.empty(shape, dtype=ar.dtype)
+    for i, idx in enumerate(combinations(range(n), r=r)):
+        ret[i] = ar.take(idx, axis=axis)
+    return ret
+
+
+def get_nearest_neighbors(center: Union[Molecule, np.ndarray],
+                          neighbor: Union[Molecule, np.ndarray],
+                          k: Union[int, Iterable[int]],
+                          distance_upper_bound: float = np.inf,
+                          return_dist: bool = False, **kwargs: Any) -> np.ndarray:
+    r"""Return the :math:`k` nearest-neighbors (from **neighbor**) for all user-specified atoms in **center**.
+
+    The Euclidean distance is herein used for identifying nearest-neighbors.
+
+    Warning
+    -------
+    Missing neighbors are denoted with :code:`len(center)` if
+    an insufficient amount of neighbors can be identified.
+
+    Parameters
+    ----------
+    center : array-like [:class:`float`], shape :math:`(n, 3)`
+        A 2D array-like object with the Cartesian coordinates of all central atoms.
+
+    neighbor : array-like [:class:`float`], shape :math:`(m, 3)`
+        A 2D array-like object with the Cartesian coordinates of all
+        (potentially) neighboring atoms.
+
+    k : :class:`int` or :data:`Iterable<collections.abc.Iterable>` [:class:`int`]
+        The number of to-be returned nearest neighbors.
+        If :math:`k` is an iterable than it will return all nearest-neighbors specified in there.
+        For example, :code:`[1, 3, 5]` will returned the first, third and fifth nearest-neighbors.
+        Note that counting starts from 1.
+
+    distance_upper_bound : :class:`float`
+        Limit the nearest-neighbor search to neighbors within a certain radius with respect to
+        each atom in **center**.
+
+    return_dist : :class:`bool`
+        If ``True``, return both the indices of the :math:`k` nearest neighbors and the respective
+        :math:`(n, k)` distance matrix.
+
+    \**kwargs : :data:`Any<typing.Any>`
+        Further keyword arguments for SciPy's :class:`cKDTree<scipy.spatial.cKDTree>` class.
+
+    Returns
+    -------
+    :class:`numpy.ndarray` [:class:`int`], shape :math:`(n, k)`
+        A 2D array with indices of the  :math:`k` nearest neighbors.
+
+    See Also
+    --------
+    :class:`cKDTree<scipy.spatial.cKDTree>`
+        kd-tree for quick nearest-neighbor lookup.
+
+    """  # noqa
+    if center is neighbor:
+        xyz1 = xyz2 = np.asarray(center)
+    else:
+        xyz1 = np.array(center, ndmin=2, copy=False)
+        xyz2 = np.array(neighbor, ndmin=2, copy=False)
+
+    if isinstance(k, abc.Iterable):
+        k = as_1d_array(k, dtype=int)
+
+    tree = cKDTree(xyz2, **kwargs)
+    dist, idx = tree.query(xyz1, k=k, distance_upper_bound=distance_upper_bound)
+    if idx.ndim == 1:  # Always return the indices as 2D array
+        idx.shape += (1,)
+
+    if return_dist:
+        return dist, idx
+    return idx
