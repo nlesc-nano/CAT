@@ -1,4 +1,20 @@
-"""A short recipe for accessing the ligand-bulkiness workflow."""
+"""
+CAT.recipes.bulk
+================
+
+A short recipe for accessing the ligand-bulkiness workflow.
+
+Index
+-----
+.. currentmodule:: CAT.recipes.bulk
+.. autosummary::
+    bulk_workflow
+
+API
+---
+.. autofunction:: bulk_workflow
+
+"""
 
 from typing import Iterable, List, Iterator, Callable, Generator, Tuple
 from itertools import chain
@@ -19,10 +35,22 @@ except ImportError as ex:
     raise ImportError("Executing the content of '{__file__}' requires the Nano-CAT package: "
                       "'https://github.com/nlesc-nano/nano-CAT'").with_traceback(tb)
 
+__all__ = ['bulk_workflow']
+
 
 def bulk_workflow(smiles_list: Iterable[str],
                   optimize: bool = True) -> Tuple[List[Molecule], np.ndarray]:
     """Start the CAT ligand bulkiness workflow with an iterable of smiles strings.
+
+    Examples
+    --------
+    .. code:: python
+
+        >>> from CAT.recipes import bulk_workflow
+
+        >>> smiles_list = [...]
+        >>> mol_list, bulk_array = bulk_workflow(smiles_list, optimize=True)
+
 
     Parameters
     ----------
