@@ -1,0 +1,88 @@
+path: /Users/basvanbeek/Documents/CdSe/Week_5
+
+input_cores:
+    - 5nm_model_fullydummy.xyz:
+        guess_bonds: False
+
+input_ligands:
+    - OC(=O)CCCCC
+
+optional:
+    database:
+        write: False
+        mol_format: ['xyz']
+
+    core:
+        dummy: Cl
+
+    ligand:
+        optimize: True
+        split: True
+
+    qd:
+        optimize:
+            use_ff: True
+            job1: Cp2kJob
+            s1:
+                input:
+                    motion:
+                        geo_opt:
+                            max_iter: 200
+                        constraint:
+                            fixed_atoms:
+                                list: '1..5000'
+
+        activation_strain:
+            use_ff: True
+            distance_upper_bound: 10
+            iter_start: 0
+            md: True
+            dump_csv: True
+
+            job1: Cp2kJob
+            s1:
+                input:
+                    motion:
+                        md:
+                            steps: 20
+
+    forcefield:
+        charge:
+            keys: [input, force_eval, mm, forcefield, charge]
+            Cs: 0.346833
+            Pb: 0.754699
+            Br: -0.356978
+            C2O3: 0.134065
+            O2D2: -0.210848
+
+        epsilon:
+            unit: kcalmol
+            keys: [input, force_eval, mm, forcefield, nonbonded, lennard-jones]
+            Cs Cs: 0.04500
+            Cs Pb: 0.172728
+            Cs Br: 0.106278
+            Pb Pb: 0.663000
+            Pb Br: 0.407937
+            Br Br: 0.251000
+            C2O3 Cs: 0.056125
+            C2O3 Pb: 0.215430
+            C2O3 Br: 0.132552
+            O2D2 Cs: 0.073485
+            O2D2 Pb: 0.282064
+            O2D2 Br: 0.173551
+
+        sigma:
+            unit: nm
+            keys: [input, force_eval, mm, forcefield, nonbonded, lennard-jones]
+            Cs Cs: 0.411092
+            Cs Pb: 0.373351
+            Cs Br: 0.363718
+            Pb Pb: 0.626047
+            Pb Br: 0.301847
+            Br Br: 0.344749
+            C2O3 Cs: 0.284040
+            C2O3 Pb: 0.245000
+            C2O3 Br: 0.312075
+            O2D2 Cs: 0.315846
+            O2D2 Pb: 0.261936
+            O2D2 Br: 0.347194

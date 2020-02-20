@@ -2,7 +2,7 @@
 CAT.recipes
 ===========
 
-A number of recipes using the CAT and Nano-CAT packages.
+A number of recipes constructed using the CAT and Nano-CAT packages.
 
 Examples
 --------
@@ -10,6 +10,7 @@ Examples
 
     >>> from CAT.recipes import bulk_workflow
     >>> from CAT.recipes import replace_surface
+    >>> from CAT.recipes import dissociate_surface, row_accumulator
     ...
 
 """
@@ -31,5 +32,6 @@ else:
 
     from .bulk import bulk_workflow
     from .mark_surface import replace_surface
+    from .surface_dissociation import dissociate_surface, row_accumulator
 
-    __all__ = ['bulk_workflow', 'replace_surface']
+    __all__ = ['bulk_workflow', 'replace_surface', 'dissociate_surface', 'row_accumulator']

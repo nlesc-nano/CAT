@@ -2,28 +2,31 @@
 CAT.recipes.surface_dissociation
 ================================
 
-A recipe for identifying surface-atom subsets.
+A recipe for dissociation specific sets of surface atoms.
 
 Index
 -----
-.. currentmodule:: CAT.recipes.mark_surface
+.. currentmodule:: CAT.recipes.surface_dissociation
 .. autosummary::
-    replace_surface
+    dissociate_surface
+    row_accumulator
 
 API
 ---
-.. autofunction:: replace_surface
+.. autofunction:: dissociate_surface
+.. autofunction:: row_accumulator
 
 """
 
-from typing import Tuple, Dict, Sequence, Iterable, Optional
-from pathlib import Path
+from typing import Iterable, Optional, Generator, Any
 
 import numpy as np
-from scipy.spatial import cKDTree
 
 from scm.plams import Molecule
 
+from CAT.utils import get_nearest_neighbors
+from CAT.mol_utils import to_atnum
+from CAT.attachment.distribution_brute import brute_uniform_idx
 try:
     from nanoCAT.bde.dissociate_xyn import dissociate_ligand
     from nanoCAT.bde.identify_surface import identify_surface
@@ -32,93 +35,203 @@ except ImportError as ex:
     raise ImportError("Executing the content of '{__file__}' requires the Nano-CAT package: "
                       "'https://github.com/nlesc-nano/nano-CAT'").with_traceback(tb)
 
-__all__ = ['dissociate_surface']
-
-ArrayDict = Dict[Tuple[int, int], np.ndarray]
+__all__ = ['dissociate_surface', 'row_accumulator']
 
 
-def dissociate_surface():
-    # Read the .xyz file
-    base_path = Path('path/to/my/qd/directory')
-    quantum_dot = Molecule(base_path / 'fancy_qd.xyz')
+def dissociate_surface(mol: Molecule,
+                       idx: np.ndarray,
+                       symbol: str = 'Cl',
+                       lig_count: int = 1,
+                       k: int = 4, **kwargs: Any) -> Generator[Molecule, None, None]:
+    r"""A workflow for dissociating :math:`(XY_{n})_{\le m}` compounds from the surface of **mol**.
 
-    # Put the indices of two opposing Cs atoms right here
-    Cs_array = np.array([
-        [1, 3],
-        [4, 5],
-        [6, 10],
-        [15, 12],
-        [99, 105],
-        [20, 4]
-    ])
-    Cs_array.sort(axis=1)
-    Cs_array = Cs_array[:, ::-1]  # Sort in reverse order, this is important
+    The workflow consists of four distinct steps:
 
-    # Identify all Cl atoms on the surface
-    Cl_array = get_surface(quantum_dot, atom_symbol='Cl')
+    1. Identify which atoms :math:`Y`, as specified by **symbol**,
+       are located on the surface of **mol**.
+    2. Identify which surface atoms are neighbors of :math:`X`, the latter being defined by **idx**.
+    3. Identify which pairs of :math:`n*m` neighboring surface atoms are furthest removed from
+       each other.
+       :math:`n` is defined by **lig_count** and :math:`m`, if applicable, by the index along axis 1
+       of **idx**.
+    4. Yield :math:`(XY_{n})_{\le m}` molecules constructed from **mol**.
 
-    # Construct a dictionary with all 2*Cs & 2*Cl pairs
-    Cs_Cl_dict = get_neighbor_dict(quantum_dot, Cs_array-1, Cl_array)
+    Examples
+    --------
+    .. code:: python
 
-    for Cs_pair, Cl_pair in Cs_Cl_dict.items():
-        filename = 'output'
+        >>> from pathlib import path
 
-        mol = quantum_dot.copy()
-        mark_atoms(mol, Cl_pair)
+        >>> import numpy as np
 
-        for Cs_index in Cs_pair:
-            mol = next(dissociate_ligand(mol, lig_count=1,
-                                        core_index=Cs_index,
-                                        lig_core_pairs=1))
-            filename += f'_{Cs_index}'
-            mol.write(base_path / f'{filename}.xyz')
+        >>> from scm.plams import Molecule
+        >>> from CAT.recipes import dissociate_surface, row_accumulator
+
+        >>> base_path = Path(...)
+        >>> mol = Molecule(base_path / 'mol.xyz')
+
+        # The indices of, e.g., Cs-pairs
+        >>> idx = np.array([
+        ...     [1, 3],
+        ...     [4, 5],
+        ...     [6, 10],
+        ...     [15, 12],
+        ...     [99, 105],
+        ...     [20, 4]
+        ... ])
+
+        # Convert 1- to 0-based indices by substracting 1 from idx
+        >>> mol_generator = dissociate_surface(mol, idx-1, symbol='Cl', lig_count=1)
+
+        >>> iterator = zip(row_accumulator(idx), mol_generator)
+        >>> for i, mol in iterator:
+        ...     mol.write(base_path / f'output{i}.xyz')
 
 
-def get_neighbor_dict(mol: Molecule,
-                      Cs_idx: Sequence[Tuple[int, int]],
-                      Cl_idx: Sequence[int],
-                      k: int = 4) -> ArrayDict:
-    """Create a dictionary with Cs-pairs as keys and Cl-pairs as values."""
+    Parameters
+    ----------
+    mol : :class:`Molecule<scm.plams.mol.molecule.Molecule>`
+        The input molecule.
+
+    idx : array-like, dimensions: :math:`\le 2`
+        An array of indices denoting to-be dissociated atoms (*i.e.* :math:`X`).
+        If a 2D array is provided then all elements along axis 1 will be dissociated
+        in a cumulative manner.
+        :math:`m` is herein defined as the index along axis 1.
+
+    symbol : :class:`str` or :class:`int`
+        An atomic symbol or number defining the super-set of the atoms to-be dissociated in
+        combination with **idx** (*i.e.* :math:`Y`).
+
+    lig_count : :class:`int`
+        The number of atoms specified in **symbol** to-be dissociated in combination
+        with a single atom from **idx** (*i.e.* :math:`n`).
+
+    k : :class:`int`
+        The number of atoms specified in **symbol** which are surrounding a single atom in **idx**.
+
+    \**kwargs : :data:`Any<typing.Any>`
+        Further keyword arguments for
+        :func:`brute_uniform_idx<CAT.attachment.distribution_brute.brute_uniform_idx>`.
+
+    Yields
+    ------
+    :class:`Molecule<scm.plams.mol.molecule.Molecule>`
+        Yields new :math:`(XY_{n})_{m}`-dissociated molecules.
+
+    See Also
+    --------
+    :func:`brute_uniform_idx<CAT.attachment.distribution_brute.brute_uniform_idx>`
+        Brute force approach to creating uniform or clustered distributions.
+
+    :func:`identify_surface<nanoCAT.bde.identify_surface.identify_surface>`
+        Take a molecule and identify which atoms are located on the surface,
+        rather than in the bulk.
+
+    :func:`dissociate_ligand<nanoCAT.bde.dissociate_xyn.dissociate_ligand>`
+        Remove :math:`XY_{n}` from **mol** with the help of the
+        :class:`MolDissociater<nanoCAT.bde.dissociate_xyn.MolDissociater>` class.
+
+    """
+    idx = np.array(idx, ndmin=2, copy=True)
+    if idx.ndim > 2:
+        raise ValueError("'idx' expected a 2D array-like object; "
+                         f"observed dimensionality: {idx.ndim}D")
+    idx.sort(axis=1)
+    idx = idx[:, ::-1]
+
+    # Identify all atoms in **idx** located on the surface
+    idx_surface_superset = _get_surface(mol, symbol=symbol)
+
+    # Construct an array with the indices of opposing surface-atoms
+    n = lig_count * idx.shape[1]
+    idx_surface = _get_opposite_neighbor(mol, idx, idx_surface_superset, n=n, k=k, **kwargs)
+
+    # Dissociate and yield new molecules
+    idx += 1
+    idx_surface += 1
+    for idx_pair, idx_pair_surface in zip(idx, idx_surface):
+        mol_tmp = mol.copy()
+        _mark_atoms(mol_tmp, idx_pair_surface)
+
+        for i in idx_pair:
+            mol_tmp = next(dissociate_ligand(mol_tmp, lig_count=lig_count,
+                                             core_index=i, lig_core_pairs=1,
+                                             **kwargs))
+            yield mol_tmp
+
+
+def row_accumulator(iterable: Iterable[Iterable[Any]]) -> Generator[str, None, None]:
+    """Return a generator which accumulates elements along the nested elements of **iterable**.
+
+    Examples
+    --------
+    .. code:: python
+
+        >>> iterable = [[1, 3],
+        ...             [4, 5],
+        ...             [6, 10]]
+
+        >>> for i in row_accumulator(iterable):
+        ...     print(repr(i))
+        '_1'
+        '_1_3'
+        '_4'
+        '_4_5'
+        '_6'
+        '_6_10'
+
+    Parameters
+    ----------
+    iterable : :class:`Iterable<collections.abc.Iterable>` [:class:`Iterable<collections.abc.Iterable>` [:data:`Any<typing.Any>`]]
+        A nested iterable.
+
+    Yields
+    ------
+    :class:`str`
+        The accumulated nested elements of **iterable** as strings.
+
+    """  # noqa
+    for i in iterable:
+        ret = ''
+        for j in i:
+            ret += f'_{j}'
+            yield ret
+
+
+def _get_opposite_neighbor(mol: Molecule,
+                           idx_center: np.ndarray,
+                           idx_neighbor: np.ndarray,
+                           k: int = 4, n: int = 2,
+                           **kwargs) -> np.ndarray:
+    """Identify the **k** nearest neighbors of **idx_center** and return those furthest removed from each other."""  # noqa
     # Sanitize arguments
     xyz = np.asarray(mol)
-    Cs_idx = np.array(Cs_idx).ravel()
-    Cl_idx = np.asarray(Cl_idx)
-    k2 = 2 * k
+    idx_center = np.array(idx_center, ndmin=2, copy=False)
+    idx_neighbor = np.asarray(idx_neighbor)
 
-    # Find the k Cl atoms closest to each Cs atom
-    tree = cKDTree(xyz[Cl_idx])
-    _, Cl_Cl_idx = tree.query(xyz[Cs_idx], k=k)
-    Cl_Cl_idx.shape = -1, k2
+    # Indices of the **k** nearest neighbors in **neighbor** with respect to **center**
+    xyz1 = xyz[idx_neighbor]
+    xyz2 = xyz[idx_center.ravel()]
+    idx_nn = idx_neighbor[get_nearest_neighbors(xyz2, xyz1, k=k)]
+    idx_nn.shape = -1, idx_nn.shape[1] * idx_center.shape[1]
 
-    # Evaluate all distances within the Cl-neighbor subset
-    xyz_tensor = xyz[Cl_idx[Cl_Cl_idx]]
-    dist = np.linalg.norm(xyz_tensor[..., None, :] - xyz_tensor[:, None, ...], axis=-1)
-    dist.shape = -1, k2**2
-
-    # Find the index-pair yielding the maximum Cl-Cl dist per Cs atom
-    i = np.repeat(np.arange(len(dist)), 2)
-    j = np.ravel(np.unravel_index(dist.argmax(axis=1), shape=(k2, k2)))
-
-    # Parse and return the indices
-    idx_ret = Cl_idx[Cl_Cl_idx[i, j].T]
-    idx_ret.shape = -1, 2
-    Cs_idx.shape = -1, 2
-    idx_ret += 1  # Switch the 1-based indices
-    Cs_idx += 1
-    return {tuple(pair1): pair2 for pair1, pair2 in zip(Cs_idx, idx_ret)}
+    # Find the **n** atoms in **idx_nn** furthest removed from each other
+    return brute_uniform_idx(xyz, idx_nn, n=n, **kwargs)
 
 
-def get_surface(mol: Molecule, atom_symbol: str, max_dist: Optional[float] = None) -> np.ndarray:
-    """Return the (0-based) indices of all atoms, whose atomic symbol is equal to **atom_symbol**, located on the surface."""  # noqa
+def _get_surface(mol: Molecule, symbol: str, max_dist: Optional[float] = None) -> np.ndarray:
+    """Return the indices of all atoms, whose atomic symbol is equal to **atom_symbol**, located on the surface."""  # noqa
     # Identify all atom with atomic symbol **atom_symbol**
-    idx_superset = np.array([i for i, atom in enumerate(mol) if atom.symbol == atom_symbol])
-    xyz = np.asarray(mol)[idx_superset]
+    atnum = to_atnum(symbol)
+    idx = np.array([i for i, atom in enumerate(mol) if atom.atnum == atnum])
+    xyz = np.asarray(mol)
 
     # Identify all atoms on the surface
-    return idx_superset[identify_surface(xyz, max_dist=max_dist)]
+    return idx[identify_surface(xyz[idx], max_dist=max_dist)]
 
 
-def mark_atoms(mol: Molecule, idx: Iterable[int]) -> None:
-    """Mark all atoms in **mol** whose index is in **idx**."""
+def _mark_atoms(mol: Molecule, idx: Iterable[int]) -> None:
+    """Mark all atoms in **mol** whose index is in **idx**; indices should be 1-based."""
     for i in idx:
         mol[i].properties.anchor = True

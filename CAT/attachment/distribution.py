@@ -10,13 +10,11 @@ Index
 .. autosummary::
     distribute_idx
     uniform_idx
-    random_idx
 
 API
 ---
 .. autofunction:: distribute_idx
 .. autofunction:: uniform_idx
-.. autofunction:: random_idx
 
 """
 
@@ -54,11 +52,11 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
 
     Parameters
     ----------
-    core : :math:`(m, 3)` array-like [:class:`float`]
+    core : array-like [:class:`float`], shape :math:`(m, 3)`
         A 2D array-like object (such as a :class:`Molecule` instance) consisting
         of Cartesian coordinates.
 
-    idx : :class:`int` or :math:`(i,)` :class:`Iterable<collections.abc.Iterable>` [:class:`int`]
+    idx : :class:`int` or :class:`Iterable<collections.abc.Iterable>` [:class:`int`], shape :math:`(i,)`
         An integer or iterable of unique integers representing the 0-based indices of
         all anchor atoms in **core**.
 
@@ -81,7 +79,7 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
 
     Returns
     -------
-    :math:`(f*i,)` :class:`numpy.ndarray` [:class:`int`]
+    :class:`numpy.ndarray` [:class:`int`], shape :math:`(f*i,)`
         A 1D array of atomic indices.
         If **idx** has :math:`i` elements,
         then the length of the returned list is equal to :math:`\max(1, f*i)`.
@@ -94,7 +92,7 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
     :func:`cluster_idx`
         Return the column-indices of **dist** which yield a clustered distribution.
 
-    """
+    """  # noqa
     # Convert **idx** into an array
     idx_ar = as_1d_array(idx, dtype=int)
 
@@ -193,7 +191,7 @@ def uniform_idx(dist: np.ndarray, operation: str = 'min',
 
     Parameters
     ----------
-    dist : :math:`(n, n)` :class:`numpy.ndarray` [:class:`float`]
+    dist : :class:`numpy.ndarray` [:class:`float`], shape :math:`(n, n)`
         A symmetric 2D NumPy array (:math:`D_{i,j} = D_{j,i}`) representing the
         distance matrix :math:`D`.
 

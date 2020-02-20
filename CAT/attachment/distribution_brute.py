@@ -62,7 +62,7 @@ def brute_uniform_idx(mol: Union[Molecule, np.ndarray],
     weight : :data:`Callable<typing.Callable>`
         A callable for applying weights to the distance; default: :math:`e^{-x}`.
         The callable should take an array as argument and return a new array,
-        *e.g.* :func:`np.exp<numpy.exp>`.
+        *e.g.* :func:`numpy.exp`.
 
     Returns
     -------

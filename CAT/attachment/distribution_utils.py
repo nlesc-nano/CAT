@@ -64,7 +64,7 @@ def test_distribute(mol: Union[Molecule, str], symbol: str,
     f_range : :class:`float` or :class:`Iterable<collections.abc.Iterable>` :class:`float`
         A float or iterable of floats subject to the following constraint: :math:`0 < f \le 1`.
 
-    rotate : :math:`(3,)` :class:`Sequence<collection.abc.Sequence>` [:class:`float`], optional
+    rotate : :class:`Sequence<collection.abc.Sequence>` [:class:`float`], shape :math:`(3,)`, optional
         A sequence of three floats representing a molecular orientation.
 
     \**kwargs : :data:`Any<typing.Any>`
@@ -76,7 +76,7 @@ def test_distribute(mol: Union[Molecule, str], symbol: str,
     :class:`Molecule`
         A Molecule instance containing one molecule for every item in **p_range**
 
-    """
+    """  # noqa
     if not isinstance(mol, Molecule):
         mol = Molecule(mol)
     if not isinstance(f_range, abc.Iterable):

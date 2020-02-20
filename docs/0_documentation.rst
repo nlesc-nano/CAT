@@ -17,3 +17,10 @@ look into the customization of the various jobs.
     10_context_managers
     11_md_asa
     12_recipes
+
+.. toctree::
+    :hidden:
+
+    _1_identify_surface
+    _2_distribution_brute
+    _3_distribution

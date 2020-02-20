@@ -2,7 +2,8 @@
 
 Recipes
 =======
+.. toctree::
 
-.. automodule:: CAT.recipes.mark_surface
-.. automodule:: CAT.recipes.bulk
-.. automodule:: CAT.recipes.surface_dissociation
+    12_1_recipes.rst
+    12_2_recipes.rst
+    12_3_recipes.rst
