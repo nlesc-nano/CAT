@@ -13,7 +13,20 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.7.15
 ******
-* Placeholder.
+* Moved ``test_distribute()`` to it's own module: ``CAT.attachment.distribution_utils``.
+* Added the ``brute_uniform_idx()`` for creating uniform/clustered distributions
+  in a brute-force manner, *i.e.* by finding the global minimum/maximum within
+  the set of all valid atom combinations.
+* Generalized the ``array_combinations()`` function, it now accepts any
+  array-like object and can generate combinations along any user-specified axis.
+* Added the ``get_nearest_neighbors()`` function for finding the ``k``
+  nearest-neighbors within a molecule.
+* Added a recipe for marking a (sub-)set of surface atoms:
+  ``CAT.recipes.mark_surface()``.
+* Added a recipe for dissociating specific sets of surface atoms:
+  ``CAT.recipes.dissociate_surface()``.
+* Update to the general structure of the ``CAT.recipes`` modules.
+* Multiple minor documentation adjustments.
 
 
 0.7.14
