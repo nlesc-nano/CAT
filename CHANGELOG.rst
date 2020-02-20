@@ -11,6 +11,11 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.7.15
+******
+* Placeholder.
+
+
 0.7.14
 ******
 * Changed the default value of the CP2K ``EI_SCALE14`` keyword from 0.0 to 1.0
