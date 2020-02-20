@@ -112,7 +112,7 @@ def dissociate_surface(mol: Molecule,
 
     \**kwargs : :data:`Any<typing.Any>`
         Further keyword arguments for
-        :func:`brute_uniform_idx<CAT.attachment.distribution_brute.brute_uniform_idx>`.
+        :func:`brute_uniform_idx()<CAT.attachment.distribution_brute.brute_uniform_idx>`.
 
     Yields
     ------
@@ -121,14 +121,14 @@ def dissociate_surface(mol: Molecule,
 
     See Also
     --------
-    :func:`brute_uniform_idx<CAT.attachment.distribution_brute.brute_uniform_idx>`
+    :func:`brute_uniform_idx()<CAT.attachment.distribution_brute.brute_uniform_idx>`
         Brute force approach to creating uniform or clustered distributions.
 
-    :func:`identify_surface<nanoCAT.bde.identify_surface.identify_surface>`
+    :func:`identify_surface()<nanoCAT.bde.identify_surface.identify_surface>`
         Take a molecule and identify which atoms are located on the surface,
         rather than in the bulk.
 
-    :func:`dissociate_ligand<nanoCAT.bde.dissociate_xyn.dissociate_ligand>`
+    :func:`dissociate_ligand()<nanoCAT.bde.dissociate_xyn.dissociate_ligand>`
         Remove :math:`XY_{n}` from **mol** with the help of the
         :class:`MolDissociater<nanoCAT.bde.dissociate_xyn.MolDissociater>` class.
 

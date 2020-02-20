@@ -88,7 +88,7 @@ def replace_surface(mol: Molecule,
 
     \**kwargs : :data:`Any<typing.Any>`
         Further keyword arguments for
-        :func:`distribute_idx<CAT.attachment.distribution.distribute_idx>`.
+        :func:`distribute_idx()<CAT.attachment.distribution.distribute_idx>`.
 
     Returns
     -------
@@ -97,7 +97,7 @@ def replace_surface(mol: Molecule,
 
     See Also
     --------
-    :func:`distribute_idx<CAT.attachment.distribution.distribute_idx>`
+    :func:`distribute_idx()<CAT.attachment.distribution.distribute_idx>`
         Create a new distribution of atomic indices from **idx** of length :code:`f * len(idx)`.
 
     """

@@ -55,8 +55,8 @@ def brute_uniform_idx(mol: Union[Molecule, np.ndarray],
         The number of to-be returned opposing atoms.
 
     operation : :class:`str`
-        Whether to evaluate the weighted distance using :func:`argmin<numpy.nanargmin>` or
-        :func:`argmax<numpy.nanargmax>`.
+        Whether to evaluate the weighted distance using :func:`argmin()<numpy.nanargmin>` or
+        :func:`argmax()<numpy.nanargmax>`.
         Accepted values are ``"min"`` and ``"max"``.
 
     weight : :data:`Callable<typing.Callable>`
@@ -71,7 +71,7 @@ def brute_uniform_idx(mol: Union[Molecule, np.ndarray],
 
     See Also
     --------
-    :func:`uniform_idx<CAT.attachment.distribution.uniform_idx>`
+    :func:`uniform_idx()<CAT.attachment.distribution.uniform_idx>`
         Yield the column-indices of **dist** which yield a uniform or clustered distribution.
 
     """  # noqa

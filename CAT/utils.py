@@ -194,7 +194,7 @@ def restart_init(path: str, folder: str,
     """Wrapper around the plams.init_ function; used for importing one or more previous jobs.
 
     All pickled .dill files in **path**/**folder**/ will be loaded into the
-    :class:`GenJobManager` instance initiated by :func:`init`.
+    :class:`GenJobManager` instance initiated by :func:`init()<scm.plams.core.functions.init>`.
 
     .. _plams.init: https://www.scm.com/doc/plams/components/functions.html#scm.plams.core.functions.init
 
@@ -325,7 +325,7 @@ def as_1d_array(value: Union[T, Iterable[T]], dtype: Dtype, ndmin: int = 1) -> n
 
 
 def array_combinations(array: np.ndarray, r: int = 2, axis: int = -1) -> np.ndarray:
-    r"""Construct an array with all :func:`combinations<itertools.combinations>` of **ar** along a use-specified axis.
+    r"""Construct an array with all :func:`combinations()<itertools.combinations>` of **ar** along a use-specified axis.
 
     Parameters
     ----------

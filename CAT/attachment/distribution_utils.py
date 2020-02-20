@@ -61,14 +61,15 @@ def test_distribute(mol: Union[Molecule, str], symbol: str,
     symbol : :class:`str`
         The atomic symbol of the anchor atom.
 
-    f_range : :class:`float` or :class:`Iterable<collections.abc.Iterable>` :class:`float`
+    f_range : :class:`float` or :class:`Iterable<collections.abc.Iterable>` [:class:`float`]
         A float or iterable of floats subject to the following constraint: :math:`0 < f \le 1`.
 
     rotate : :class:`Sequence<collection.abc.Sequence>` [:class:`float`], shape :math:`(3,)`, optional
         A sequence of three floats representing a molecular orientation.
 
     \**kwargs : :data:`Any<typing.Any>`
-        Further keyword arguments for :func:`CAT.attachment.distribution.distribute_idx`:
+        Further keyword arguments for
+        :func:`distribute_idx()<CAT.attachment.distribution.distribute_idx>`:
         ``follow_edge``, ``mode`` and ``start``.
 
     Returns
