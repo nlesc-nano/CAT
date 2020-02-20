@@ -3,7 +3,7 @@ sphinx_rtd_theme
 sphinx-autodoc-typehints
 numpy
 scipy
-pandas
+pandas<1.0.0
 pyyaml>=5.1
 schema
 plams@git+https://github.com/SCM-NV/PLAMS@master
