@@ -69,7 +69,7 @@ copyright = f'{year}, {author}'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the built documents.
-release = '0.7.14'  # The full version, including alpha/beta/rc tags.
+release = '0.7.15'  # The full version, including alpha/beta/rc tags.
 version = release.rsplit('.', maxsplit=1)[0]
 
 
@@ -105,7 +105,7 @@ html_theme = 'sphinx_rtd_theme'
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {'includehidden': False}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory.

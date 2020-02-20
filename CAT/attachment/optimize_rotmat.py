@@ -1,28 +1,21 @@
 """
-nanoCAT.mol_bulk
-================
+CAT.attachment.optimize_rotmat
+==============================
 
-A module for calculating the bulkiness of ligands.
+A module for optimizing rottion matrices.
 
 Index
 -----
-.. currentmodule:: nanoCAT.mol_bulk
+.. currentmodule:: CAT.attachment.optimize_rotmat
 .. autosummary::
-    init_lig_bulkiness
-    get_cone_angles
-    get_V
-    _export_to_db
-    _get_anchor_idx
-
+    optimize_rotmat
 API
 ---
-.. autofunction:: init_lig_bulkiness
-.. autofunction:: get_cone_angles
-.. autofunction:: get_V
-.. autofunction:: _export_to_db
-.. autofunction:: _get_anchor_idx
+.. autofunction:: optimize_rotmat
 
 """
+
+from typing import Callable
 
 import numpy as np
 from scipy.optimize import minimize
@@ -32,7 +25,21 @@ from scm.plams import rotation_matrix, Atom
 __all__ = ['optimize_rotmat']
 
 
-def optimize_rotmat(mol: np.ndarray, anchor: int = 0) -> np.ndarray:
+def _minimize_func(vec1: np.ndarray, vec2: np.ndarray, xyz: np.ndarray, anchor: int) -> float:
+    """The function whose output is to-be minimized by :func:`scipy.optimize.minimize`."""
+    # Rotate and translate
+    rotmat = rotation_matrix(vec1, vec2)
+    xyz_new = xyz@rotmat
+    xyz_new -= xyz_new[anchor]
+
+    # Apply the cost function: e^(|yz|)
+    yz = xyz_new[:, 1:]
+    distance = np.linalg.norm(yz, axis=1)
+    return np.exp(distance).sum()
+
+
+def optimize_rotmat(mol: np.ndarray, anchor: int = 0,
+                    func: Callable = _minimize_func) -> np.ndarray:
     r"""Find the rotation matrix for **xyz** that minimizes its deviation from the Cartesian X-axis.
 
     A set of vectors, :math:`v`, is constructed for all atoms in **xyz**,
@@ -57,6 +64,11 @@ def optimize_rotmat(mol: np.ndarray, anchor: int = 0) -> np.ndarray:
         An optimized rotation matrix.
         If ``as_vec=True``, instead return the initial vector
         used for constructing the rotation matrix.
+
+    See Also
+    --------
+    :func:`minimize<scipy.optimize.minimize>`
+        Minimization of scalar function of one or more variables.
 
     """
     if hasattr(anchor, '__int__'):  # This encompasses both int and np.integer instances
@@ -83,16 +95,3 @@ def optimize_rotmat(mol: np.ndarray, anchor: int = 0) -> np.ndarray:
     output = minimize(_minimize_func, trial_vec, args=(vec2, xyz_new, i))
     rotmat2 = rotation_matrix(output.x, vec2)
     return (rotmat1.T@rotmat2.T).T
-
-
-def _minimize_func(vec1: np.ndarray, vec2: np.ndarray, xyz: np.ndarray, anchor: int) -> float:
-    """The function whose output is to-be minimized by :func:`scipy.optimize.minimize`."""
-    # Rotate and translate
-    rotmat = rotation_matrix(vec1, vec2)
-    xyz_new = xyz@rotmat
-    xyz_new -= xyz_new[anchor]
-
-    # Apply the cost function: e^(|yz|)
-    yz = xyz_new[:, 1:]
-    distance = np.linalg.norm(yz, axis=1)
-    return np.exp(distance).sum()
