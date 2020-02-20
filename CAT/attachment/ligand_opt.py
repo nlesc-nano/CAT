@@ -49,16 +49,12 @@ from .remove_atoms_cm import RemoveAtoms
 from .optimize_rotmat import optimize_rotmat
 from .as_array import AsArray
 from ..logger import logger
+from ..workflows import WorkFlow, MOL, OPT
 from ..mol_utils import (fix_carboxyl, get_index, from_rdmol, to_atnum)
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.mol_to_file import mol_to_file
-from ..workflows.workflow import WorkFlow
 
 __all__ = ['init_ligand_opt']
-
-# Aliases for pd.MultiIndex columns
-MOL = ('mol', '')
-OPT = ('opt', '')
 
 UFF = AllChem.UFFGetMoleculeForceField
 

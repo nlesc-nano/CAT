@@ -27,7 +27,7 @@ API
 """
 
 from time import time
-from typing import (Optional, Tuple)
+from typing import Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -50,6 +50,8 @@ from .attachment.distribution import distribute_idx
 from .attachment.ligand_attach import init_qd_construction
 from .attachment.ligand_anchoring import init_ligand_anchoring
 
+from .workflows import MOL
+
 try:
     import nanoCAT
     from nanoCAT.asa.asa import init_asa
@@ -68,11 +70,7 @@ try:
 except ImportError as ex:
     DATA_CAT: Optional[ImportError] = ex
 
-
 __all__ = ['prep']
-
-# Aliases for pd.MultiIndex columns
-MOL: Tuple[str, str] = ('mol', '')
 
 
 def prep(arg: Settings, return_mol: bool = True) -> Optional[Tuple[SettingsDataFrame]]:

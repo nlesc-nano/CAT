@@ -21,12 +21,12 @@ API
 
 import argparse
 from os import getcwd
-from os.path import (join, exists)
-from typing import (Optional, List)
+from os.path import join, exists
+from typing import Optional, List
 
 import yaml
 
-from scm.plams.core.settings import Settings
+from scm.plams import Settings
 
 from CAT import base
 from CAT.logger import logger

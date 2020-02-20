@@ -1,1 +1,1 @@
-.. automodule:: CAT.recipes.mark_surface
+.. automodule:: nanoCAT.recipes.mark_surface

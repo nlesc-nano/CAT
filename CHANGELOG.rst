@@ -6,9 +6,17 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 
-0.8.0
+0.9.0
 *****
 * WiP: Added an option the import pre-built quantum dots.
+
+0.8.0
+*****
+* Moved the ``CAT.recipes`` module to Nano-CAT.
+* Moved the ``CAT.attachment.qd_opt_ff`` module to Nano-CAT.
+* Created the ``CAT.workflow.key_map module`` for storing aliases
+  for ``DataFrame()`` columns.
+* Cleaned the modules in ``CAT.workflows``.
 
 
 0.7.15

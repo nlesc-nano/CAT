@@ -9,12 +9,10 @@ Index
 .. currentmodule:: CAT.data_handling.update_qd_df
 .. autosummary::
     update_qd_df
-    _get_core_formula
 
 API
 ---
 .. autofunction:: update_qd_df
-.. autofunction:: _get_core_formula
 
 """
 
@@ -22,12 +20,9 @@ import pandas as pd
 
 from scm.plams import Molecule
 
-__all__ = ['update_qd_df']
+from ..workflows import MOL, OPT, HDF5_INDEX
 
-# Aliases for pd.MultiIndex columns
-MOL = ('mol', '')
-OPT = ('opt', '')
-HDF5_INDEX = ('hdf5 index', '')
+__all__ = ['update_qd_df']
 
 
 def update_qd_df(qd_df: pd.DataFrame) -> None:

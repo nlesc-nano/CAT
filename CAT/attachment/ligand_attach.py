@@ -51,16 +51,11 @@ from scipy.spatial import cKDTree
 from scm.plams import (Molecule, Atom, Settings)
 
 from ..mol_utils import (merge_mol, get_index, round_coords)
+from ..workflows import WorkFlow, HDF5_INDEX, MOL, OPT
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.mol_to_file import mol_to_file
-from ..workflows.workflow import WorkFlow
 
 __all__ = ['init_qd_construction']
-
-# Aliases for pd.MultiIndex columns
-HDF5_INDEX = ('hdf5 index', '')
-MOL = ('mol', '')
-OPT = ('opt', '')
 
 
 def init_qd_construction(ligand_df: SettingsDataFrame, core_df: SettingsDataFrame,

@@ -46,14 +46,14 @@ import os
 import itertools
 from types import MappingProxyType
 from string import ascii_letters
-from typing import (Dict, Iterable, List, Sequence, Optional, Mapping)
+from typing import Dict, Iterable, List, Sequence, Optional, Mapping
 
 import numpy as np
 
 from scm.plams import (Molecule, Atom, Settings)
 import scm.plams.interfaces.molecule.rdkit as molkit
 
-from rdkit import (Chem, RDLogger)
+from rdkit import Chem, RDLogger
 
 from ..logger import logger
 from ..data_handling.validate_mol import validate_mol

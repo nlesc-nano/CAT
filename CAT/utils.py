@@ -44,15 +44,15 @@ from scm.plams import (config, Settings, Molecule, MoleculeError, PeriodicTable,
 from scm.plams.core.basejob import Job
 from scm.plams.interfaces.thirdparty.orca import ORCAJob
 
-
 from .logger import logger
 from .mol_utils import to_atnum
 from .gen_job_manager import GenJobManager
 
-__all__ = ['check_sys_var', 'dict_concatenate', 'get_template', 'cycle_accumulate', 'iter_repeat',
+__all__ = ['JOB_MAP', 'check_sys_var', 'dict_concatenate', 'get_template',
+           'cycle_accumulate', 'iter_repeat',
            'as_1d_array', 'array_combinations', 'get_nearest_neighbors']
 
-_job_dict: Mapping[Type[Job], str] = MappingProxyType({
+JOB_MAP: Mapping[Type[Job], str] = MappingProxyType({
     ADFJob: 'adf',
     AMSJob: 'ams',
     DiracJob: 'dirac',
@@ -69,7 +69,7 @@ Dtype = Union[type, str, np.dtype]
 def type_to_string(job: Type[Job]) -> str:
     """Turn a :class:`type` instance into a :class:`str`."""
     try:
-        return _job_dict[job]
+        return JOB_MAP[job]
     except KeyError:
         logger.error(f"No default settings available for type: '{job.__class__.__name__}'")
         return ''

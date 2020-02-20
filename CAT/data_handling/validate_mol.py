@@ -22,8 +22,8 @@ API
 
 """
 
-from os.path import (join, isfile, isdir, basename)
-from typing import (Sequence, Any, Union, Optional)
+from os.path import join, isfile, isdir, basename
+from typing import Sequence, Any, Union, Optional
 
 from rdkit import Chem
 from scm.plams import Settings, Molecule

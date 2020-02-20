@@ -17,7 +17,7 @@ API
 """
 
 import reprlib
-from typing import Union, Any
+from typing import Union, Any, Mapping, TypeVar
 from collections import abc
 
 from scm.plams import Settings, Cp2kJob
@@ -32,8 +32,10 @@ except ImportError:
 
 __all__ = ['validate_ff', 'update_ff_jobs']
 
+M = TypeVar('M', bound=Mapping)
 
-def validate_ff(s: dict) -> Union[dict, bool]:
+
+def validate_ff(s: M) -> Union[M, bool]:
     """Validate the ``["optional"]["forcefield"]`` block in the CAT input.
 
     Return ``False`` if an empty dictionary is provided.

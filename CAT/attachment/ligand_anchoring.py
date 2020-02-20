@@ -27,11 +27,11 @@ API
 """
 
 from itertools import chain
-from typing import (Sequence, List, Tuple, Optional, Iterable)
+from typing import Sequence, List, Tuple, Optional, Iterable
 
 import pandas as pd
 
-from scm.plams import (Molecule, Settings)
+from scm.plams import Molecule, Settings
 import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit import Chem
@@ -39,16 +39,11 @@ from rdkit import Chem
 from ..logger import logger
 from ..utils import get_template
 from ..mol_utils import separate_mod
+from ..workflows import MOL, FORMULA, HDF5_INDEX, OPT
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.validate_mol import santize_smiles
 
 __all__ = ['init_ligand_anchoring']
-
-# Aliases for pd.MultiIndex columns
-MOL = ('mol', '')
-FORMULA = ('formula', '')
-HDF5_INDEX = ('hdf5 index', '')
-OPT = ('opt', '')
 
 
 def init_ligand_anchoring(ligand_df: SettingsDataFrame) -> SettingsDataFrame:

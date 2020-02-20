@@ -26,8 +26,6 @@ from scm.plams import Molecule, Atom, rotation_matrix
 
 from .distribution import distribute_idx
 
-__all__ = ['test_distribute']
-
 
 def test_distribute(mol: Union[Molecule, str], symbol: str,
                     f_range: Union[float, Iterable[float]],

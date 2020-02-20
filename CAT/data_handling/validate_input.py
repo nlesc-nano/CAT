@@ -21,10 +21,18 @@ from os.path import (join, isdir)
 
 from scm.plams import Settings
 
-from CAT.data_handling.validation_schemas import (
-    core_schema, ligand_schema, qd_schema, database_schema,
-    mongodb_schema, bde_schema, qd_opt_schema, crs_schema, asa_schema,
-    ligand_opt_schema, subset_schema
+from .validation_schemas import (
+    core_schema,
+    ligand_schema,
+    qd_schema,
+    database_schema,
+    mongodb_schema,
+    bde_schema,
+    qd_opt_schema,
+    crs_schema,
+    asa_schema,
+    ligand_opt_schema,
+    subset_schema
 )
 
 from .validate_ff import validate_ff, update_ff_jobs

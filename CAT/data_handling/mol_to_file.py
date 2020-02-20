@@ -17,19 +17,23 @@ API
 """
 
 import os
-from os.path import (join, isdir, isfile, exists)
-from typing import (Iterable, Optional, Container)
+from types import MappingProxyType
+from typing import Iterable, Optional, Container, Mapping, Union, Callable
+from os.path import join, isdir, isfile, exists
 
-from scm.plams import Molecule
-from scm.plams.interfaces.molecule.rdkit import writepdb
+from scm.plams import Molecule, writepdb
 
-# A dictionary mapping file extensions to a function/method for Molecule exporting
-_EXPORT_DICT = {
+__all__ = ['mol_to_file']
+
+MolExportFunc = Callable[[Molecule, Union[str, bytes, os.PathLike]], None]
+
+#: A mapping of file extensions to a Callable for Molecule exporting
+EXPORT_MAPPING: Mapping[str, MolExportFunc] = MappingProxyType({
     'pdb': writepdb,
     'xyz': Molecule.write,
     'mol': Molecule.write,
     'mol2': Molecule.write
-}
+})
 
 
 def mol_to_file(mol_list: Iterable[Molecule],
@@ -71,7 +75,7 @@ def mol_to_file(mol_list: Iterable[Molecule],
         raise NotADirectoryError(f'{path} is not a directory')
 
     condition = isfile if overwrite else lambda n: True
-    export_dict = {k: v for k, v in _EXPORT_DICT.items() if k in mol_format}
+    export_dict = {k: v for k, v in EXPORT_MAPPING.items() if k in mol_format}
     if not export_dict:
         raise ValueError("No valid values found in the mol_format argument; accepted values are: "
                          "'xyz', 'pdb', 'mol' and/or 'mol2'")
