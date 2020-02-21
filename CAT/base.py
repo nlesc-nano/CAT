@@ -404,6 +404,6 @@ def prep_qd(ligand_df: Optional[SettingsDataFrame],
 
 def val_nano_cat(error_message: Optional[str] = None) -> None:
     """Raise an an :exc:`ImportError` if the module-level constant ``NANO_CAT`` is ``False``."""
-    err = error_message or ''
+    err = error_message if error_message is None else ''
     if NANO_CAT is not None:
         raise ImportError(err) from NANO_CAT

@@ -53,6 +53,7 @@ def brute_uniform_idx(mol: Union[Molecule, np.ndarray],
 
     n : :class:`int`
         The number of to-be returned opposing atoms.
+        Should be larger than or equal to 1.
 
     operation : :class:`str`
         Whether to evaluate the weighted distance using :func:`argmin()<numpy.nanargmin>` or
@@ -84,6 +85,9 @@ def brute_uniform_idx(mol: Union[Molecule, np.ndarray],
     # Find the n atoms in mol2 closest to each atom in mol1
     idx = np.array(idx, ndmin=1, copy=False)
     xyz = np.array(mol, ndmin=2, copy=False)
+    if not (0 < n <= idx.shape[-1]):
+        raise ValueError("'n' should be larger than 0 and smaller than or equal to the last axis of"
+                         f" 'idx' ({repr(idx.shape[-1])}); observed value: {repr(n)}")
 
     # Evaluate all combinations of length n constructed from an iterable of size k
     idx2 = np.swapaxes(array_combinations(idx, r=n), 0, 1)
