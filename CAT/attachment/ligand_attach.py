@@ -50,7 +50,7 @@ from scipy.spatial import cKDTree
 
 from scm.plams import (Molecule, Atom, Settings)
 
-from ..mol_utils import (merge_mol, get_index, round_coords)
+from ..mol_utils import (get_index, round_coords)
 from ..workflows import WorkFlow, HDF5_INDEX, MOL, OPT
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.mol_to_file import mol_to_file
@@ -591,7 +591,8 @@ def array_to_qd(mol: Molecule, xyz_array: np.ndarray,
     if mol_out is None:
         return mol_list
     else:
-        mol_out.merge_mol(mol_list)
+        for m in mol_list:
+            mol_out.add_molecule(m)
         return None
 
 

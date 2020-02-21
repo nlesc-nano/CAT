@@ -11,7 +11,6 @@ Index
     from_mol_other
     from_rdmol
     get_index
-    merge_mol
     separate_mod
     to_atnum
     to_symbol
@@ -24,7 +23,6 @@ API
 .. automethod:: from_mol_other
 .. automethod:: from_rdmol
 .. automethod:: get_index
-.. automethod:: merge_mol
 .. automethod:: separate_mod
 .. autofunction:: to_atnum
 .. autofunction:: to_symbol
@@ -141,33 +139,6 @@ def get_index(self, value: Union[Atom, Bond]) -> Union[int, Tuple[int, int]]:
 
     err = "item excepts an instance of 'Atom' or 'Bond'; observed type: '{}'"
     raise TypeError(err.format(value.__class__.__name__))
-
-
-@add_to_class(Molecule)
-def merge_mol(self, mol_list: Union[Molecule, Iterable[Molecule]]) -> None:
-    """Merge two or more molecules into a single molecule.
-
-    No new copies of atoms/bonds are created, all atoms/bonds are moved from
-    mol_list to plams_mol.
-    Performs an inplace update of this instance.
-
-    Parameters
-    ----------
-    mol_list : |plams.Molecule|_ or |list|_ [|plams.Molecule|_]
-        A molecule or list of molecules.
-
-    """
-    if isinstance(mol_list, Molecule):
-        mol_list = (mol_list,)
-
-    for mol in mol_list:
-        for atom in mol.atoms:
-            atom.mol = self
-        for bond in mol.bonds:
-            bond.mol = self
-        self.properties.soft_update(mol.properties)
-        self.atoms += mol.atoms
-        self.bonds += mol.bonds
 
 
 @add_to_class(Molecule)
