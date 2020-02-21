@@ -39,21 +39,21 @@ API
 .. autofunction:: sanitize_dim_3
 
 """
-
+from typing import List, Tuple, Any, Optional, NoReturn, Union
 from collections import abc
-from typing import (List, Tuple, Any, Optional)
 
 import numpy as np
 import pandas as pd
-from scipy.spatial.distance import cdist
 from scipy.spatial import cKDTree
+from scipy.spatial.distance import cdist
 
-from scm.plams import (Molecule, Atom, Settings)
+from scm.plams import Molecule, Atom, Settings, MoleculeError
+from assertionlib.ndrepr import aNDRepr
 
-from ..mol_utils import (get_index, round_coords)
+from ..mol_utils import get_index, round_coords
 from ..workflows import WorkFlow, HDF5_INDEX, MOL, OPT
 from ..settings_dataframe import SettingsDataFrame
-from ..data_handling.mol_to_file import mol_to_file
+from ..data_handling import mol_to_file, WARN_MAP
 
 __all__ = ['init_qd_construction']
 
@@ -456,15 +456,53 @@ def rotation_check_kdtree(xyz: np.ndarray, at_other: np.ndarray, k: int = 10):
     ret = np.empty((a, c, d), order='F')
     distance_upper_bound = _get_distance_upper_bound(at_other)
 
+    at_other_ = at_other
     for i, ar in enumerate(xyz):
-        tree = cKDTree(at_other)
+        tree = cKDTree(at_other_)
         dist, _ = tree.query(ar.reshape(b*c, d), k=k, distance_upper_bound=distance_upper_bound)
         dist.shape = b, c, k
 
         idx_min = np.exp(-dist).sum(axis=(1, 2)).argmin()
-        at_other = np.concatenate((at_other, ar[idx_min]))
+        at_other_ = np.concatenate((at_other_, ar[idx_min]))
         ret[i] = ar[idx_min]
+
+    _evaluate_distance(ret, len(at_other))
     return ret
+
+
+def _evaluate_distance(xyz3D: np.ndarray, core_atom_count: int,
+                       threshold: float = 1.0, action: str = 'warn') -> Union[None, NoReturn]:
+    """Eavluate all the distance matrix of **xyz3D** and perform **action** when distances are below **threshold**."""  # noqa
+    try:
+        action_func = WARN_MAP[action]
+    except KeyError as ex:
+        raise ValueError("'action' expected 'warn', 'raise' or 'ignore'; "
+                         f"observed value: {repr(action)}") from ex
+    else:
+        if action == 'ignore':
+            return None
+
+    xyz = xyz3D.reshape(-1, 3)
+
+    tree = cKDTree(xyz)
+    dist, idx = tree.query(xyz, k=[2])
+    dist = dist.T[0]
+    idx = idx.T[0]
+
+    bool_ar = dist < threshold
+    if bool_ar.any():
+        _idx2 = np.stack([np.arange(len(idx)), idx]).T
+        _idx2 += 1 + core_atom_count
+        _idx2.sort(axis=1)
+
+        idx2 = np.unique(_idx2[bool_ar], axis=0)
+        n = len(idx2)
+
+        exc = MoleculeError(
+            f"\nEncountered >= {n} unique ligand atom-pairs at a distance shorter than "
+            f"{threshold} Angstrom:\n{aNDRepr.repr(idx2.T)}"
+        )
+        action_func(exc)
 
 
 def _get_distance_upper_bound(at_other: np.ndarray, r_min: float = 5.0,

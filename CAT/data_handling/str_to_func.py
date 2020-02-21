@@ -18,31 +18,21 @@ API
 .. autofunction:: compile_func
 
 """
-import warnings
-from types import MappingProxyType, FunctionType, CodeType
-from typing import Callable, Union, NoReturn, Mapping
+from types import FunctionType, CodeType
+from typing import Union, Callable
 
 import numpy as np
 
+from .warn_map import WARN_MAP
+
 __all__ = ['str_to_func']
-
-numpy = np
-
-FUNC_MAP: Mapping[str, Callable[[str], None]] = MappingProxyType({
-    'raise': lambda n: _raise_exc(ValueError(n)),
-    'warn': lambda n: warnings.warn(n, category=RuntimeWarning),
-    'ignore': lambda n: None
-})
-
-
-def _raise_exc(ex: Exception) -> NoReturn: raise ex
 
 
 def str_to_func(func_str: Union[Callable[[np.ndarray], np.ndarray], str],
                 shape: str = 'raise', dtype: str = 'raise') -> Callable[[np.ndarray], np.ndarray]:
     """Convert a string-representation of a function into an actual function and validate its output."""  # noqa
-    shape_func = FUNC_MAP[shape]
-    dtype_func = FUNC_MAP[dtype]
+    shape_func = WARN_MAP[shape]
+    dtype_func = WARN_MAP[dtype]
 
     # Create the new function
     if callable(func_str):  # **func_str** is already a function; no further compilation required
@@ -54,11 +44,11 @@ def str_to_func(func_str: Union[Callable[[np.ndarray], np.ndarray], str],
     ar1 = np.array([[0.0, np.nan], [np.inf, 5.0]])
     ar2 = func(ar1)
     if ar1.shape != ar2.shape:
-        shape_func(f"{func_str} -> y: input and output arrays have non-identical shapes: "
-                   f"{ar1.shape} and {ar2.shape}")
+        shape_func(ValueError(f"{func_str} -> y: input and output arrays have "
+                              f"non-identical shapes: {ar1.shape} and {ar2.shape}"))
     if ar1.dtype != ar2.dtype:
-        dtype_func(f"{func_str} -> y: input and output arrays have non-identical data types: "
-                   f"'{ar1.dtype.name}' and '{ar2.dtype.name}'")
+        dtype_func(ValueError(f"{func_str} -> y: input and output arrays have non-identical "
+                              f"data types: '{ar1.dtype.name}' and '{ar2.dtype.name}'"))
     return func
 
 
