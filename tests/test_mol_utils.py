@@ -8,7 +8,7 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 from assertionlib import assertion
 
 from CAT.mol_utils import (
-    from_mol_other, from_rdmol, get_index, merge_mol, separate_mod,
+    from_mol_other, from_rdmol, get_index, separate_mod,
     to_atnum, to_symbol, adf_connectivity, fix_carboxyl, fix_h
 )
 
@@ -53,22 +53,6 @@ def test_get_index() -> None:
     for bond, j in zip(MOL.bonds, ref):
         i = MOL.get_index(bond)
         assertion.eq(i, j)
-
-
-def test_merge_mol() -> None:
-    """Test :meth:`Molecule.merge_mol`."""
-    mol = MOL.copy()
-    mol_list = [mol.copy() for _ in range(10)]
-    atom_list = list(chain.from_iterable(mol_list)) + mol.atoms
-    bond_list = list(chain.from_iterable(m.bonds for m in mol_list)) + mol.bonds
-    mol.merge_mol(mol_list)
-
-    assertion.eq(len(mol.atoms), len(atom_list))
-    assertion.eq(len(mol.bonds), len(bond_list))
-    for at in mol.atoms:
-        assertion.contains(atom_list, at)
-    for bond in mol.bonds:
-        assertion.contains(bond_list, bond)
 
 
 def test_separate_mod() -> None:

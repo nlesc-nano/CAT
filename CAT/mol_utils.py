@@ -11,7 +11,6 @@ Index
     from_mol_other
     from_rdmol
     get_index
-    merge_mol
     separate_mod
     to_atnum
     to_symbol
@@ -24,7 +23,6 @@ API
 .. automethod:: from_mol_other
 .. automethod:: from_rdmol
 .. automethod:: get_index
-.. automethod:: merge_mol
 .. automethod:: separate_mod
 .. autofunction:: to_atnum
 .. autofunction:: to_symbol
@@ -34,12 +32,11 @@ API
 
 """
 
-from contextlib import AbstractContextManager
-from typing import (Optional, Iterable, Union, Tuple, List)
+from typing import Optional, Iterable, Union, Tuple, List
 
 import numpy as np
 
-from scm.plams import (Molecule, Atom, Bond, MoleculeError, add_to_class, Settings, PTError)
+from scm.plams import Molecule, Atom, Bond, MoleculeError, add_to_class, PTError
 from scm.plams.tools.periodic_table import PeriodicTable
 import scm.plams.interfaces.molecule.rdkit as molkit
 
@@ -141,33 +138,6 @@ def get_index(self, value: Union[Atom, Bond]) -> Union[int, Tuple[int, int]]:
 
     err = "item excepts an instance of 'Atom' or 'Bond'; observed type: '{}'"
     raise TypeError(err.format(value.__class__.__name__))
-
-
-@add_to_class(Molecule)
-def merge_mol(self, mol_list: Union[Molecule, Iterable[Molecule]]) -> None:
-    """Merge two or more molecules into a single molecule.
-
-    No new copies of atoms/bonds are created, all atoms/bonds are moved from
-    mol_list to plams_mol.
-    Performs an inplace update of this instance.
-
-    Parameters
-    ----------
-    mol_list : |plams.Molecule|_ or |list|_ [|plams.Molecule|_]
-        A molecule or list of molecules.
-
-    """
-    if isinstance(mol_list, Molecule):
-        mol_list = (mol_list,)
-
-    for mol in mol_list:
-        for atom in mol.atoms:
-            atom.mol = self
-        for bond in mol.bonds:
-            bond.mol = self
-        self.properties.soft_update(mol.properties)
-        self.atoms += mol.atoms
-        self.bonds += mol.bonds
 
 
 @add_to_class(Molecule)
@@ -427,71 +397,3 @@ def fix_h(mol: Molecule) -> None:
 
     if update:
         mol.from_rdmol(rdmol)
-
-
-class RoundCharge(AbstractContextManager):
-    """A context manager for temporary rounding the :attr:`Atom.properties` ``["charge"]``.
-
-    Examples
-    --------
-    .. code:: python
-
-        >>> print(type(mol))
-        <class 'scm.plams.mol.molecule.Molecule'>
-
-        >>> atom = mol[1]
-        >>> atom.properties.charge = 0.75
-        >>> with RoundCharge(mol)
-        ...     print(atom.properties.charge)
-        1
-
-        >>> print(atom.properties.charge)
-        0.75
-
-    Paramaters
-    ----------
-    mol : |plams.Molecule|_
-        A PLAMS molecule whose atoms may or may not posses the
-        :attr:`Atom.properties` ``["charge"]`` key.
-        See :attr:`RoundCharge.mol`.
-
-    Attributes
-    ----------
-    mol : |plams.Molecule|_
-        A PLAMS molecule whose atoms may or may not posses the
-        :attr:`Atom.properties` ``["charge"]`` key.
-
-    charge : |list|_
-        A list with the original (unrounded) atomic charges stored in
-        :attr:`Atom.properties` ``["charge"]``.
-        Defaults to ``None`` when the context manager is closed.
-
-    """
-
-    def __init__(self, mol: Molecule):
-        """Initialize a :class:`RoundCharge` instance."""
-        self.mol: Molecule = mol
-        self.charge: Optional[list] = None
-
-    def __enter__(self) -> None:
-        """Enter the context manager; populate :attr:`RoundCharge.charge`."""
-        with Settings.EnableMissing():  # Settings instances can now raise KeyErrors
-            self.charge = [self._round_charge(at) for at in self.mol]
-
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
-        """Exit the context manager; depopulate :attr:`RoundCharge.charge`."""
-        for at, charge in zip(self.mol, self.charge):
-            if charge is not None:
-                at.properties.charge = charge
-        self.charge = None
-
-    @staticmethod
-    def _round_charge(at: Atom) -> Optional[int]:
-        """Round the :attr:`Atom.properties` ``["charge"]``; return ``None`` if unavailable."""
-        try:
-            old = at.properties.charge
-            at.properties.charge = round(old)
-        except KeyError:
-            old = None
-        finally:
-            return old
