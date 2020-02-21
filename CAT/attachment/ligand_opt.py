@@ -125,8 +125,7 @@ def allign_axis(mol: Molecule, anchor: Atom):
     try:
         idx = mol.atoms.index(anchor)
     except ValueError as ex:
-        err = "The passed anchor is not in mol"
-        raise MoleculeError(err).with_traceback(ex.__traceback__)
+        raise MoleculeError("The passed anchor is not in mol") from ex
 
     with AsArray(mol) as xyz:  # Allign the molecule with the X-axis
         rotmat = optimize_rotmat(xyz, idx)

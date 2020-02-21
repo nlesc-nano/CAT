@@ -244,7 +244,7 @@ def uniform_idx(dist: np.ndarray, operation: str = 'min',
         arg_func = OPERATION_MAPPING[operation]
     except KeyError as ex:
         raise ValueError(f"Invalid value for 'operation' ({reprlib.repr(operation)}); "
-                         "accepted values: ('min', 'max')").with_traceback(ex.__traceback__)
+                         "accepted values: ('min', 'max')") from ex
     start = arg_func(np.nansum(dist_sqr, axis=1)) if start is None else start
 
     if randomness is not None:
@@ -256,8 +256,8 @@ def uniform_idx(dist: np.ndarray, operation: str = 'min',
     except IndexError as ex:
         if not hasattr(start, '__index__'):
             raise TypeError("'start' expected an integer or 'None'; observed type: "
-                            f"'{start.__class__.__name__}'").with_traceback(ex.__traceback__)
-        raise ValueError("index 'start={start}' is out of bounds: 'len(dist)={len(dist)}'")
+                            f"'{start.__class__.__name__}'") from ex
+        raise ValueError("index 'start={start}' is out of bounds: 'len(dist)={len(dist)}'") from ex
 
     dist_1d_sqr[start] = np.nan
     yield start
@@ -296,11 +296,10 @@ def _min_and_max(dist_sqr: np.ndarray, dist_1d_sqr: np.ndarray,
             bool_ar[::cluster_size] = True
         except ValueError as ex:
             raise ValueError("'cluster_size' cannot be zero; oberved value: "
-                             f"{reprlib.repr(cluster_size)}").with_traceback(ex.__traceback__)
+                             f"{reprlib.repr(cluster_size)}") from ex
         except TypeError as ex:
             raise TypeError("'cluster_size' expected a non-zero integer or iterable of integers; "
-                            f"observed type: '{cluster_size.__class__.__name__}'"
-                            ).with_traceback(ex.__traceback__)
+                            f"observed type: '{cluster_size.__class__.__name__}'") from ex
     bool_ar = bool_ar[1:]  # Skip the first element as it was already yielded in uniform_idx()
 
     dist_cluster = dist_1d_sqr.copy()
@@ -338,7 +337,7 @@ def _parse_cluster_size(ar_size: int, clusters: Iterable[int]) -> np.ndarray:
         return np.fromiter(generator, dtype=int)
     except TypeError as ex:
         raise TypeError("'cluster_size' expected a non-zero integer or iterable of integers; "
-                        f"{ex}").with_traceback(ex.__traceback__)
+                        f"{ex}") from ex
 
 
 def _parse_randomness(randomness: float, arg_func: Callable[[np.ndarray], int],
@@ -349,11 +348,11 @@ def _parse_randomness(randomness: float, arg_func: Callable[[np.ndarray], int],
     except TypeError as ex:
         tb = ex.__traceback__
         raise TypeError("'randomness' expected a float larger than 0.0 and smaller than 1.0; "
-                        f"observed type: '{randomness.__class__.__name__}'").with_traceback(tb)
+                        f"observed type: '{randomness.__class__.__name__}'") from ex
     except AssertionError as ex:
         tb = ex.__traceback__
         raise ValueError("'randomness' expected a float larger than 0.0 and smaller than 1.0; "
-                         f"observed value: {reprlib.repr(randomness)}").with_traceback(tb)
+                         f"observed value: {reprlib.repr(randomness)}") from ex
 
     return functools.partial(_random_arg_func,
                              arg_func=arg_func,

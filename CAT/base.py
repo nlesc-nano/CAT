@@ -73,7 +73,8 @@ except ImportError as ex:
 __all__ = ['prep']
 
 
-def prep(arg: Settings, return_mol: bool = True) -> Optional[Tuple[SettingsDataFrame]]:
+def prep(arg: Settings, return_mol: bool = True
+         ) -> Optional[Tuple[SettingsDataFrame, SettingsDataFrame, SettingsDataFrame]]:
     """Function that handles all tasks related to the three prep functions.
 
     * :func:`.prep_core`
@@ -405,4 +406,4 @@ def val_nano_cat(error_message: Optional[str] = None) -> None:
     """Raise an an :exc:`ImportError` if the module-level constant ``NANO_CAT`` is ``False``."""
     err = error_message or ''
     if NANO_CAT is not None:
-        raise ImportError(err)
+        raise ImportError(err) from NANO_CAT
