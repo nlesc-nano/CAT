@@ -27,7 +27,6 @@ setup(
     packages=[
         'CAT',
         'CAT.attachment',
-        'CAT.recipes',
         'CAT.data',
         'CAT.data.coskf',
         'CAT.data.templates',
