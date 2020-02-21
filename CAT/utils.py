@@ -30,7 +30,8 @@ import pkg_resources as pkg
 from math import factorial
 from types import MappingProxyType
 from shutil import rmtree
-from typing import Iterable, Optional, Union, TypeVar, Mapping, Type, Generator, Iterator, Any
+from typing import (Iterable, Optional, Union, TypeVar, Mapping, Type, Generator, Iterator,
+                    Any, NoReturn)
 from os.path import join, isdir, isfile, exists
 from itertools import cycle, chain, repeat, combinations
 from contextlib import redirect_stdout
@@ -352,9 +353,9 @@ def array_combinations(array: np.ndarray, r: int = 2, axis: int = -1) -> np.ndar
     # Identify the number of combinations
     try:
         combinations_len = int(factorial(n) / factorial(r) / factorial(n - r))
-    except ValueError:
+    except ValueError as ex:
         raise ValueError(f"'r' ({repr(r)}) expects a positive integer larger than or equal to the "
-                         f"length of 'array' axis {repr(axis)} ({repr(n)})")
+                         f"length of 'array' axis {repr(axis)} ({repr(n)})") from ex
 
     # Define the shape of the to-be returned array
     _shape = list(ar.shape)
@@ -429,10 +430,24 @@ def get_nearest_neighbors(center: Union[Molecule, np.ndarray],
         k = as_1d_array(k, dtype=int)
 
     tree = cKDTree(xyz2, **kwargs)
-    dist, idx = tree.query(xyz1, k=k, distance_upper_bound=distance_upper_bound)
+    try:
+        dist, idx = tree.query(xyz1, k=k, distance_upper_bound=distance_upper_bound)
+    except ValueError as ex:
+        _parse_ValueError(ex, k)
+
     if idx.ndim == 1:  # Always return the indices as 2D array
         idx.shape += (1,)
 
     if return_dist:
         return dist, idx
     return idx
+
+
+def _parse_ValueError(ex: Exception, k: Any) -> NoReturn:
+    if isinstance(k, abc.Iterable) and min(k) < 1:
+        raise ValueError("All elements of 'k' must be larger than or equal to 1; "
+                         f"observed minimum: {repr(min(k))}") from ex
+    elif hasattr(k, '__int__') and k < 1:
+        raise ValueError("'k' must be larger than or equal to 1; "
+                         f"observed value: {repr(k)}") from ex
+    raise ex

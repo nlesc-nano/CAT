@@ -79,7 +79,7 @@ def brute_uniform_idx(mol: Union[Molecule, np.ndarray],
         arg_func = OPERATION_MAPPING[operation]
     except KeyError as ex:
         raise ValueError(f"Invalid value for 'operation' ({reprlib.repr(operation)}); "
-                         "accepted values: ('min', 'max')").with_traceback(ex.__traceback__)
+                         "accepted values: ('min', 'max')") from ex
 
     # Find the n atoms in mol2 closest to each atom in mol1
     idx = np.array(idx, ndmin=1, copy=False)
