@@ -25,4 +25,4 @@ try:
 except ImportError as ex:
     __all__ = []
     raise ImportError("Usage of the 'CAT.recipes' module requires the Nano-CAT package: "
-                      "'https://github.com/nlesc-nano/nano-CAT'").with_traceback(ex.__traceback__)
+                      "'https://github.com/nlesc-nano/nano-CAT'") from ex
