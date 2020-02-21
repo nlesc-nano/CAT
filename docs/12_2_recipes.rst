@@ -1,1 +1,1 @@
-.. automodule:: CAT.recipes.bulk
+.. automodule:: nanoCAT.recipes.bulk

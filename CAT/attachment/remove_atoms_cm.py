@@ -25,6 +25,8 @@ from collections import OrderedDict, abc
 
 from scm.plams import Molecule, Atom, MoleculeError
 
+__all__ = ['RemoveAtoms']
+
 
 class RemoveAtoms(AbstractContextManager):
     """A context manager for temporary removing a set of atoms from a molecule.

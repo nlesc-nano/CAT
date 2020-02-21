@@ -24,27 +24,23 @@ API
 
 """
 
-from typing import Tuple, Iterable, Optional, Type
+from typing import Tuple, Iterable, Optional, Type, NoReturn, Any
 
 from scm.plams import Molecule, Settings, AMSJob
 from scm.plams.core.basejob import Job
 
-from .qd_opt_ff import qd_opt_ff
 from ..jobs import job_geometry_opt
-from ..mol_utils import (fix_carboxyl, fix_h, round_coords)
+from ..workflows import WorkFlow, MOL, JOB_SETTINGS_QD_OPT
+from ..mol_utils import fix_carboxyl, fix_h, round_coords
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.mol_to_file import mol_to_file
-from ..workflows.workflow import WorkFlow
+
+try:
+    from nanoCAT.qd_opt_ff import qd_opt_ff
+except ImportError as ex:
+    def qd_opt_ff(*args: Any, ex: Exception = ex, **kwargs: Any) -> NoReturn: raise ex
 
 __all__ = ['init_qd_opt']
-
-# Aliases for pd.MultiIndex columns
-MOL: Tuple[str, str] = ('mol', '')
-OPT: Tuple[str, str] = ('opt', '')
-HDF5_INDEX: Tuple[str, str] = ('hdf5 index', '')
-JOB_SETTINGS_QD_OPT: Tuple[str, str] = ('job_settings_qd_opt', '')
-SETTINGS1: Tuple[str, str] = ('settings', '1')
-SETTINGS2: Tuple[str, str] = ('settings', '2')
 
 
 def init_qd_opt(qd_df: SettingsDataFrame) -> None:

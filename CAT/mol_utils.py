@@ -39,7 +39,7 @@ from typing import (Optional, Iterable, Union, Tuple, List)
 
 import numpy as np
 
-from scm.plams import (Molecule, Atom, Bond, MoleculeError, add_to_class, Settings)
+from scm.plams import (Molecule, Atom, Bond, MoleculeError, add_to_class, Settings, PTError)
 from scm.plams.tools.periodic_table import PeriodicTable
 import scm.plams.interfaces.molecule.rdkit as molkit
 
@@ -234,13 +234,13 @@ def round_coords(self, decimals: int = 3) -> None:
     self.from_array(xyz)
 
 
-def to_atnum(item: Union[str, int, Atom]) -> int:
+def to_atnum(value: Union[str, int, Atom]) -> int:
     """Turn an atomic symbol into an atomic number.
 
     Parameters
     ----------
-    item : |int|_ or |str|_
-        An atomic symbol or number.
+    value : |int|_ or |str|_
+        An Atom, atomic symbol or number.
 
     Returns
     -------
@@ -253,26 +253,31 @@ def to_atnum(item: Union[str, int, Atom]) -> int:
         Raised if **item** is an instance of neither :class:`str` nor :class:`int`.
 
     """
-    if isinstance(item, str):
-        return PeriodicTable.get_atomic_number(item)
-    elif isinstance(item, int):
-        return item
+    if isinstance(value, str):
+        try:
+            return PeriodicTable.get_atomic_number(value)
+        except PTError as ex:
+            ex.args = (ex.args[0] + f': {repr(value)}',)
+            raise ex
+    elif isinstance(value, int):
+        if value not in PeriodicTable.symtonum.values():
+            raise PTError(f'trying to convert incorrect atomic number: {repr(value)}')
+        return value
+
     try:
-        return item.atnum
-    except Exception as ex:
-        tb = ex.__traceback__
-
-    err = "The 'item' paramater expects an instance of 'str', 'int' or 'Atom'; observed type: '{}'"
-    raise TypeError(err.format(item.__class__.__name__)).with_traceback(tb)
+        return value.atnum
+    except AttributeError as ex:
+        raise TypeError("'value' expected an Atom or atomic symbol/number; "
+                        f"observed type: '{value.__class__.__name__}'") from ex
 
 
-def to_symbol(item: Union[str, int, Atom]) -> str:
+def to_symbol(value: Union[str, int, Atom]) -> str:
     """Turn an atomic number into an atomic symbol.
 
     Parameters
     ----------
-    item : |int|_ or |str|_
-        An atomic symbol or number.
+    value : |int|_ or |str|_
+        An Atom, atomic symbol or number.
 
     Returns
     -------
@@ -285,17 +290,23 @@ def to_symbol(item: Union[str, int, Atom]) -> str:
         Raised if **item** is an instance of neither :class:`str` nor :class:`int`.
 
     """
-    if isinstance(item, int):
-        return PeriodicTable.get_symbol(item)
-    elif isinstance(item, str):
-        return item
-    try:
-        return item.symbol
-    except Exception as ex:
-        tb = ex.__traceback__
+    if isinstance(value, int):
+        try:
+            return PeriodicTable.get_symbol(value)
+        except PTError as ex:
+            ex.args = (ex.args[0] + f': {repr(value)}',)
+            raise ex
+    elif isinstance(value, str):
+        if value not in PeriodicTable.symtonum.keys():
+            raise PTError(f'trying to convert incorrect atomic symbol: {repr(value)}')
+        return value
 
-    err = "The 'item' paramater expects an instance of 'str', 'int' or 'Atom'; observed type: '{}'"
-    raise TypeError(err.format(item.__class__.__name__)).with_traceback(tb)
+    try:
+        return value.symbol
+    except AttributeError as ex:
+        tb = ex.__traceback__
+        raise TypeError("'value' expected an Atom or atomic symbol/number; "
+                        f"observed type: '{value.__class__.__name__}'") from ex
 
 
 def adf_connectivity(mol: Molecule) -> List[str]:

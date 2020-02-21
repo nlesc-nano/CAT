@@ -28,6 +28,8 @@ from scm.plams import Molecule, Atom, PT, Bond, MoleculeError, PTError, rotation
 
 from ..mol_utils import separate_mod
 
+__all__ = ['SplitMol']
+
 
 class SplitMol(AbstractContextManager):
     """A context manager for temporary splitting a single molecule into multiple components.

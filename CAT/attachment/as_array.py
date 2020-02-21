@@ -27,6 +27,8 @@ import numpy as np
 
 from scm.plams import Atom, Molecule
 
+__all__ = ['AsArray']
+
 
 class AsArray(AbstractContextManager):
     r"""A context manager for temporary interconverting between PLAMS molecules and NumPy arrays.

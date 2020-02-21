@@ -5,7 +5,7 @@ from pathlib import Path
 from contextlib import AbstractContextManager
 from typing import (
     Optional, Union, Dict, Hashable, MutableMapping, TypeVar, Iterable, Container, Tuple, Callable,
-    Any, List, Type
+    Any, List, Type, Mapping
 )
 
 import numpy as np
@@ -18,19 +18,15 @@ from scm.plams import finish, Settings, Molecule
 from scm.plams.core.basejob import Job
 from assertionlib.dataclass import AbstractDataClass
 
-from ..utils import restart_init, _job_dict
+from .key_map import MOL, OPT
+from .workflow_dicts import WORKFLOW_TEMPLATE
+from ..utils import restart_init, JOB_MAP
 from ..logger import logger
 from ..settings_dataframe import SettingsDataFrame
-from ..workflows.workflow_dicts import finalize_templates as load_templates
-from ..frozen_settings import FrozenSettings
+
+__all__ = ['WorkFlow']
 
 T = TypeVar('T')
-
-ASA_INT = ('ASA', 'E_int')
-ASA_STRAIN = ('ASA', 'E_strain')
-ASA_E = ('ASA', 'E')
-MOL = ('mol', '')
-OPT = ('opt', '')
 
 
 def _return_True(value: Any) -> bool:
@@ -149,7 +145,7 @@ class WorkFlow(AbstractDataClass):
     """
 
     #: Map a name to a workflow template.
-    _WORKFLOW_TEMPLATES: FrozenSettings = load_templates()
+    _WORKFLOW_TEMPLATES: Mapping[str, Mapping] = WORKFLOW_TEMPLATE
 
     #: A context manager for supressing Pandas :exc:`SettingwithCopyWarning`.
     _SUPRESS_SETTINGWITHCOPYWARNING: AbstractContextManager = pd.option_context(
@@ -161,27 +157,27 @@ class WorkFlow(AbstractDataClass):
     @property
     def template(self) -> Dict[str, Tuple[str, ...]]:
         """Get :attr:`WorkFlow._WORKFLOW_TEMPLATES` [:attr:`WorkFlow.name`] [``"template"``]."""
-        return self._WORKFLOW_TEMPLATES[self.name].template
+        return self._WORKFLOW_TEMPLATES[self.name]['template']
 
     @property
     def mol_type(self) -> str:
         """Get :attr:`WorkFlow._WORKFLOW_TEMPLATES` [:attr:`WorkFlow.name`] [``"mol_type"``]."""
-        return self._WORKFLOW_TEMPLATES[self.name].mol_type
+        return self._WORKFLOW_TEMPLATES[self.name]['mol_type']
 
     @property
     def description(self) -> str:
         """Get :attr:`WorkFlow._WORKFLOW_TEMPLATES` [:attr:`WorkFlow.name`] [``"description"``]."""
-        return self._WORKFLOW_TEMPLATES[self.name].description
+        return self._WORKFLOW_TEMPLATES[self.name]['description']
 
     @property
     def import_columns(self) -> Dict[str, Tuple[str, str]]:
         """Get :attr:`WorkFlow._WORKFLOW_TEMPLATES` [:attr:`WorkFlow.name`] [``"import_columns"``]."""  # noqa
-        return self._WORKFLOW_TEMPLATES[self.name].import_columns
+        return self._WORKFLOW_TEMPLATES[self.name]['import_columns']
 
     @property
     def export_columns(self) -> Tuple[Tuple[str, str], ...]:
         """Get :attr:`WorkFlow._WORKFLOW_TEMPLATES` [:attr:`WorkFlow.name`] [``"export_columns"``]."""  # noqa
-        return self._WORKFLOW_TEMPLATES[self.name].export_columns
+        return self._WORKFLOW_TEMPLATES[self.name]['export_columns']
 
     # Getter and setter properties
 
@@ -248,7 +244,7 @@ class WorkFlow(AbstractDataClass):
 
     @jobs.setter
     def jobs(self, value: Union[None, Type[Job], Iterable[None], Iterable[Type[Job]]]) -> None:
-        if isinstance(value, Job):
+        if isinstance(value, type):
             self._jobs = (value,)
         else:
             self._jobs = (None,) if value is None else tuple(value)
@@ -500,7 +496,7 @@ class WorkFlow(AbstractDataClass):
         # Raise a KeyError if a key cannot be found
         with Settings.supress_missing():
             try:  # Extract the correct template
-                template: Dict[str, Tuple[str, ...]] = cls._WORKFLOW_TEMPLATES[name].template
+                template: Dict[str, Tuple[str, ...]] = cls._WORKFLOW_TEMPLATES[name]['template']
             except KeyError as ex:
                 err = (f"Invalid value for the 'name' parameter: {repr(name)}\n"
                        f"Allowed values: {', '.join(repr(k) for k in cls._WORKFLOW_TEMPLATES)}")
@@ -567,7 +563,7 @@ class WorkFlow(AbstractDataClass):
         return ret
 
     @staticmethod
-    def type_to_string(job: Union[Job, Type[Job]]) -> Optional[None]:
+    def type_to_string(job: Union[Job, Type[Job]]) -> Optional[str]:
         """Turn a :class:`type` instance into a :class:`str`.
 
         Accepts one of the following |plams.Job| subclasses:
@@ -593,7 +589,7 @@ class WorkFlow(AbstractDataClass):
             job = type(job)  # Convert a class instance into a class
 
         try:
-            return _job_dict[job]
+            return JOB_MAP[job]
         except KeyError as ex:
             logger.error(f"No default settings available for type: '{job.__class__.__name__}'")
             logger.debug(f'{ex.__class__.__name__}: {ex}', exc_info=True)

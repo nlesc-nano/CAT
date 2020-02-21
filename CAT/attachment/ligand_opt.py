@@ -49,16 +49,12 @@ from .remove_atoms_cm import RemoveAtoms
 from .optimize_rotmat import optimize_rotmat
 from .as_array import AsArray
 from ..logger import logger
+from ..workflows import WorkFlow, MOL, OPT
 from ..mol_utils import (fix_carboxyl, get_index, from_rdmol, to_atnum)
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.mol_to_file import mol_to_file
-from ..workflows.workflow import WorkFlow
 
 __all__ = ['init_ligand_opt']
-
-# Aliases for pd.MultiIndex columns
-MOL = ('mol', '')
-OPT = ('opt', '')
 
 UFF = AllChem.UFFGetMoleculeForceField
 
@@ -129,8 +125,7 @@ def allign_axis(mol: Molecule, anchor: Atom):
     try:
         idx = mol.atoms.index(anchor)
     except ValueError as ex:
-        err = "The passed anchor is not in mol"
-        raise MoleculeError(err).with_traceback(ex.__traceback__)
+        raise MoleculeError("The passed anchor is not in mol") from ex
 
     with AsArray(mol) as xyz:  # Allign the molecule with the X-axis
         rotmat = optimize_rotmat(xyz, idx)

@@ -49,9 +49,9 @@ def optimize_rotmat(mol: np.ndarray, anchor: int = 0,
 
     Parameters
     ----------
-    mol : :math:`n*3` :class:`numpy.ndarray` [:class:`float`]
+    mol : :class:`numpy.ndarray` [:class:`float`], shape :math:`(n,3)`
         An array-like object of Cartesian coordinates.
-        *e.g.* :class:`list`, :class:numpy.ndarray: or |plams.Molecule|.
+        *e.g.* :class:`list`, :class:`numpy.ndarray` or |plams.Molecule|.
 
     anchor : |plams.Atom| or :class:`int`
         The index (0-based) of the anchor atom in **xyz**.
@@ -60,14 +60,14 @@ def optimize_rotmat(mol: np.ndarray, anchor: int = 0,
 
     Returns
     -------
-    :math:`3*3` or :math:`3` :class:`numpy.ndarray` [:class:`float`]
+    :class:`numpy.ndarray` [:class:`float`], shape :math:`(3,3)` or :math:`(3,)`
         An optimized rotation matrix.
         If ``as_vec=True``, instead return the initial vector
         used for constructing the rotation matrix.
 
     See Also
     --------
-    :func:`minimize<scipy.optimize.minimize>`
+    :func:`minimize()<scipy.optimize.minimize>`
         Minimization of scalar function of one or more variables.
 
     """

@@ -11,9 +11,17 @@ from .ligand_opt import init_ligand_opt
 from .ligand_attach import init_qd_construction
 from .ligand_anchoring import init_ligand_anchoring
 
+from .edge_distance import edge_dist
+from .distribution import distribute_idx
+from .distribution_brute import brute_uniform_idx
+
 __all__ = [
     'init_qd_opt',
     'init_ligand_opt',
     'init_qd_construction',
-    'init_ligand_anchoring'
+    'init_ligand_anchoring',
+
+    'edge_dist',
+    'distribute_idx',
+    'brute_uniform_idx'
 ]

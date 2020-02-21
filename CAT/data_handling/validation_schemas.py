@@ -20,8 +20,8 @@ Index
     crs_schema
     asa_schema
     subset_schema
-    _class_dict
-    _class_dict_scm
+    JOB_MAP
+    JOB_MAP_SCM
 
 API
 ---
@@ -49,15 +49,16 @@ API
     :annotation: = schema.Schema
 .. autodata:: subset_schema
     :annotation: = schema.Schema
-.. autodata:: _class_dict
+.. autodata:: JOB_MAP
     :annotation: = dict[str, type]
-.. autodata:: _class_dict_scm
+.. autodata:: JOB_MAP_SCM
     :annotation: = dict[str, type]
 
 """
 
+from types import MappingProxyType
+from typing import Collection, Callable, Any, Optional, TypeVar, Mapping, Type, Tuple
 from operator import __index__
-from typing import Dict, Collection, Callable, Any, Optional, TypeVar
 from collections import abc
 
 import numpy as np
@@ -117,9 +118,37 @@ def val_index(value: Any) -> bool:
         return False
 
 
+#: A dictionary for translating strings into :class:`plams.Job` types for third party software
+JOB_MAP: Mapping[str, Type[Job]] = MappingProxyType({
+    'cp2k': Cp2kJob, 'cp2kjob': Cp2kJob,
+    'orca': ORCAJob, 'orcajob': ORCAJob,
+    'dirac': DiracJob, 'diracjob': DiracJob,
+    'gamess': GamessJob, 'gamessjob': GamessJob,
+    'dftbplus': DFTBPlusJob, 'dftbplusjob': DFTBPlusJob,
+})
+
+
+#: A dictionary for translating strings into :class:`plams.Job` types for ADF
+JOB_MAP_SCM: Mapping[str, Type[Job]] = MappingProxyType({
+    'adf': ADFJob, 'adfjob': ADFJob,
+    'ams': AMSJob, 'amsjob': AMSJob,
+    'uff': UFFJob, 'uffjob': UFFJob,
+    'band': BANDJob, 'bandjob': BANDJob,
+    'dftb': DFTBJob, 'dftbjob': DFTBJob,
+    'mopac': MOPACJob, 'mopacjob': MOPACJob,
+    'reaxff': ReaxFFJob, 'reaxffjob': ReaxFFJob,
+    'crs': CRSJob, 'cosmo-rs': CRSJob, 'crsjob': CRSJob
+})
+
+
+DB_NAMES: Tuple[str, ...] = ('core', 'ligand', 'qd')
+FORMAT_NAMES: Tuple[str, ...] = ('pdb', 'xyz')
+FORMAT_NAMES2: Tuple[str, ...] = ('pdb', 'xyz', 'mol', 'mol2')
+
+
 def val_job_type(value: type) -> type:
-    """Call :func:`.check_sys_var` if value is in :data:`._class_dict_scm`."""
-    if value in _class_dict_scm.values():
+    """Call :func:`.check_sys_var` if value is in :data:`.JOB_MAP_SCM`."""
+    if value in JOB_MAP_SCM.values():
         check_sys_var()
     return value
 
@@ -131,9 +160,9 @@ def str_to_job_type(key: str) -> type:
     ----------
     key : str
         An alias for a :class:`type` object of a PLAMS :class:`Job`.
-        **key** is converted by passing it into :data:`._class_dict` or :data:`._class_dict_scm`.
+        **key** is converted by passing it into :data:`.JOB_MAP` or :data:`.JOB_MAP_SCM`.
         The :func:`check_sys_var` function is called if **key** is present
-        in :data:`._class_dict_scm`.
+        in :data:`.JOB_MAP_SCM`.
 
     Returns
     -------
@@ -143,16 +172,16 @@ def str_to_job_type(key: str) -> type:
     Raises
     ------
     KeyError
-        Raised if the decapitalized **key** is available in neither :data:`._class_dict` nor
-        :data:`._class_dict_scm`.
+        Raised if the decapitalized **key** is available in neither :data:`.JOB_MAP` nor
+        :data:`.JOB_MAP_SCM`.
 
     """
     _key = key.lower()
-    if _key in _class_dict:
-        return _class_dict[_key]
-    elif _key in _class_dict_scm:
+    if _key in JOB_MAP:
+        return JOB_MAP[_key]
+    elif _key in JOB_MAP_SCM:
         check_sys_var()
-        return _class_dict_scm[_key]
+        return JOB_MAP_SCM[_key]
     raise KeyError(f'No Job type alias available for {repr(_key)}')
 
 
@@ -194,28 +223,6 @@ _qd_opt_s2_default = _qd_opt_s1_default
 _crs_s1_default = get_template('qd.yaml')['COSMO-MOPAC']
 _crs_s2_default = get_template('qd.yaml')['COSMO-RS activity coefficient']
 _crs_s2_default.update(get_template('crs.yaml')['MOPAC PM6'])
-
-
-#: A dictionary for translating strings into :class:`plams.Job` types for third party software
-_class_dict: Dict[str, type] = {
-    'cp2k': Cp2kJob, 'cp2kjob': Cp2kJob,
-    'orca': ORCAJob, 'orcajob': ORCAJob,
-    'dirac': DiracJob, 'diracjob': DiracJob,
-    'gamess': GamessJob, 'gamessjob': GamessJob,
-    'dftbplus': DFTBPlusJob, 'dftbplusjob': DFTBPlusJob,
-}
-
-#: A dictionary for translating strings into :class:`plams.Job` types for ADF
-_class_dict_scm: Dict[str, type] = {
-    'adf': ADFJob, 'adfjob': ADFJob,
-    'ams': AMSJob, 'amsjob': AMSJob,
-    'uff': UFFJob, 'uffjob': UFFJob,
-    'band': BANDJob, 'bandjob': BANDJob,
-    'dftb': DFTBJob, 'dftbjob': DFTBJob,
-    'mopac': MOPACJob, 'mopacjob': MOPACJob,
-    'reaxff': ReaxFFJob, 'reaxffjob': ReaxFFJob,
-    'crs': CRSJob, 'cosmo-rs': CRSJob, 'crsjob': CRSJob
-}
 
 
 #: Schema for validating the ``['input_ligands']`` and ``['input_cores']`` blocks.
@@ -333,52 +340,48 @@ subset_schema: Schema = Schema({
 
 })
 
-_db_names = ('core', 'ligand', 'qd')
-_format_names = ('pdb', 'xyz')
-_format_names2 = ('pdb', 'xyz', 'mol', 'mol2')
-
 #: Schema for validating the ``['optional']['database']`` block.
 database_schema: Schema = Schema({
     # path+directory name of the database
     'dirname':
         And(str, error='optional.database.dirname expects a string'),
 
-    Optional_('read', default=_db_names):  # Attempt to pull structures from the database
+    Optional_('read', default=DB_NAMES):  # Attempt to pull structures from the database
         Or(
             And(None, Use(lambda n: ())),
-            And(bool, Use(lambda n: _db_names if n is True else ())),
+            And(bool, Use(lambda n: DB_NAMES if n is True else ())),
             And(
                 str,
-                lambda n: n in _db_names,
+                lambda n: n in DB_NAMES,
                 Use(lambda n: (n,)),
-                error=f'allowed values for optional.database.read are: {repr(_db_names)}'
+                error=f'allowed values for optional.database.read are: {repr(DB_NAMES)}'
             ),
             And(
                 abc.Collection,
-                lambda n: all(i in _db_names for i in n),
+                lambda n: all(i in DB_NAMES for i in n),
                 lambda n: len(n) == len(set(n)),
                 Use(to_tuple),
-                error=f'allowed values for optional.database.read are: {repr(_db_names)}'
+                error=f'allowed values for optional.database.read are: {repr(DB_NAMES)}'
             ),
             error='optional.database.read expects a boolean, string or list of unique strings'
         ),
 
-    Optional_('write', default=_db_names):  # Attempt to write structures to the database
+    Optional_('write', default=DB_NAMES):  # Attempt to write structures to the database
         Or(
             And(None, Use(lambda n: ())),
-            And(bool, Use(lambda n: _db_names if n is True else ())),
+            And(bool, Use(lambda n: DB_NAMES if n is True else ())),
             And(
                 str,
-                lambda n: n in _db_names,
+                lambda n: n in DB_NAMES,
                 Use(lambda n: (n,)),
-                error=f'allowed values for optional.database.write are: {repr(_db_names)}'
+                error=f'allowed values for optional.database.write are: {repr(DB_NAMES)}'
             ),
             And(
                 abc.Collection,
-                lambda n: all(i in _db_names for i in n),
+                lambda n: all(i in DB_NAMES for i in n),
                 lambda n: len(n) == len(set(n)),
                 Use(to_tuple),
-                error=f'allowed values for optional.database.write are: {repr(_db_names)}'
+                error=f'allowed values for optional.database.write are: {repr(DB_NAMES)}'
             ),
             error='optional.database.write expects a boolean, string or list of unique strings'
         ),
@@ -386,19 +389,19 @@ database_schema: Schema = Schema({
     Optional_('overwrite', default=tuple):  # Allow previous entries to be overwritten
         Or(
             And(None, Use(lambda n: ())),
-            And(bool, Use(lambda n: _db_names if n is True else ())),
+            And(bool, Use(lambda n: DB_NAMES if n is True else ())),
             And(
                 str,
-                lambda n: n in _db_names,
+                lambda n: n in DB_NAMES,
                 Use(lambda n: (n,)),
-                error=f'allowed values for optional.database.overwrite are: {repr(_db_names)}'
+                error=f'allowed values for optional.database.overwrite are: {repr(DB_NAMES)}'
             ),
             And(
                 abc.Collection,
-                lambda n: all(i in _db_names for i in n),
+                lambda n: all(i in DB_NAMES for i in n),
                 lambda n: len(n) == len(set(n)),
                 Use(to_tuple),
-                error=f'allowed values for optional.database.overwrite are: {repr(_db_names)}'
+                error=f'allowed values for optional.database.overwrite are: {repr(DB_NAMES)}'
             ),
             error='optional.database.overwrite expects a boolean, string or list of unique strings'
         ),
@@ -410,21 +413,21 @@ database_schema: Schema = Schema({
             error='optional.database.mongodb expects True (boolean) or a dictionary'
         ),
 
-    Optional_('mol_format', default=_format_names):  # Return a tuple of file formats
+    Optional_('mol_format', default=FORMAT_NAMES):  # Return a tuple of file formats
         Or(
             And(None, Use(lambda n: ())),
-            And(bool, Use(lambda n: _format_names if n is True else ())),
+            And(bool, Use(lambda n: FORMAT_NAMES if n is True else ())),
             And(
                 str,
-                lambda n: n in _format_names,
-                error=f'allowed values for optional.database.mol_format are: {repr(_format_names2)}'
+                lambda n: n in FORMAT_NAMES,
+                error=f'allowed values for optional.database.mol_format are: {repr(FORMAT_NAMES2)}'
             ),
             And(
                 abc.Collection,
-                lambda n: all(i in _format_names for i in n),
+                lambda n: all(i in FORMAT_NAMES for i in n),
                 lambda n: len(n) == len(set(n)),
                 Use(to_tuple),
-                error=f'allowed values for optional.database.mol_format are: {repr(_format_names2)}'
+                error=f'allowed values for optional.database.mol_format are: {repr(FORMAT_NAMES2)}'
             ),
             error='optional.database.mol_format expects a boolean, string or list of unique strings'
         )

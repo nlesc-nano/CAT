@@ -30,7 +30,8 @@ import pkg_resources as pkg
 from math import factorial
 from types import MappingProxyType
 from shutil import rmtree
-from typing import Iterable, Optional, Union, TypeVar, Mapping, Type, Generator, Iterator, Any
+from typing import (Iterable, Optional, Union, TypeVar, Mapping, Type, Generator, Iterator,
+                    Any, NoReturn)
 from os.path import join, isdir, isfile, exists
 from itertools import cycle, chain, repeat, combinations
 from contextlib import redirect_stdout
@@ -44,15 +45,15 @@ from scm.plams import (config, Settings, Molecule, MoleculeError, PeriodicTable,
 from scm.plams.core.basejob import Job
 from scm.plams.interfaces.thirdparty.orca import ORCAJob
 
-
 from .logger import logger
 from .mol_utils import to_atnum
 from .gen_job_manager import GenJobManager
 
-__all__ = ['check_sys_var', 'dict_concatenate', 'get_template', 'cycle_accumulate', 'iter_repeat',
+__all__ = ['JOB_MAP', 'check_sys_var', 'dict_concatenate', 'get_template',
+           'cycle_accumulate', 'iter_repeat',
            'as_1d_array', 'array_combinations', 'get_nearest_neighbors']
 
-_job_dict: Mapping[Type[Job], str] = MappingProxyType({
+JOB_MAP: Mapping[Type[Job], str] = MappingProxyType({
     ADFJob: 'adf',
     AMSJob: 'ams',
     DiracJob: 'dirac',
@@ -69,7 +70,7 @@ Dtype = Union[type, str, np.dtype]
 def type_to_string(job: Type[Job]) -> str:
     """Turn a :class:`type` instance into a :class:`str`."""
     try:
-        return _job_dict[job]
+        return JOB_MAP[job]
     except KeyError:
         logger.error(f"No default settings available for type: '{job.__class__.__name__}'")
         return ''
@@ -194,7 +195,7 @@ def restart_init(path: str, folder: str,
     """Wrapper around the plams.init_ function; used for importing one or more previous jobs.
 
     All pickled .dill files in **path**/**folder**/ will be loaded into the
-    :class:`GenJobManager` instance initiated by :func:`init`.
+    :class:`GenJobManager` instance initiated by :func:`init()<scm.plams.core.functions.init>`.
 
     .. _plams.init: https://www.scm.com/doc/plams/components/functions.html#scm.plams.core.functions.init
 
@@ -325,7 +326,7 @@ def as_1d_array(value: Union[T, Iterable[T]], dtype: Dtype, ndmin: int = 1) -> n
 
 
 def array_combinations(array: np.ndarray, r: int = 2, axis: int = -1) -> np.ndarray:
-    r"""Construct an array with all :func:`combinations<itertools.combinations>` of **ar** along a use-specified axis.
+    r"""Construct an array with all :func:`combinations()<itertools.combinations>` of **ar** along a use-specified axis.
 
     Parameters
     ----------
@@ -352,9 +353,9 @@ def array_combinations(array: np.ndarray, r: int = 2, axis: int = -1) -> np.ndar
     # Identify the number of combinations
     try:
         combinations_len = int(factorial(n) / factorial(r) / factorial(n - r))
-    except ValueError:
+    except ValueError as ex:
         raise ValueError(f"'r' ({repr(r)}) expects a positive integer larger than or equal to the "
-                         f"length of 'array' axis {repr(axis)} ({repr(n)})")
+                         f"length of 'array' axis {repr(axis)} ({repr(n)})") from ex
 
     # Define the shape of the to-be returned array
     _shape = list(ar.shape)
@@ -429,10 +430,24 @@ def get_nearest_neighbors(center: Union[Molecule, np.ndarray],
         k = as_1d_array(k, dtype=int)
 
     tree = cKDTree(xyz2, **kwargs)
-    dist, idx = tree.query(xyz1, k=k, distance_upper_bound=distance_upper_bound)
+    try:
+        dist, idx = tree.query(xyz1, k=k, distance_upper_bound=distance_upper_bound)
+    except ValueError as ex:
+        _parse_ValueError(ex, k)
+
     if idx.ndim == 1:  # Always return the indices as 2D array
         idx.shape += (1,)
 
     if return_dist:
         return dist, idx
     return idx
+
+
+def _parse_ValueError(ex: Exception, k: Any) -> NoReturn:
+    if isinstance(k, abc.Iterable) and min(k) < 1:
+        raise ValueError("All elements of 'k' must be larger than or equal to 1; "
+                         f"observed minimum: {repr(min(k))}") from ex
+    elif hasattr(k, '__int__') and k < 1:
+        raise ValueError("'k' must be larger than or equal to 1; "
+                         f"observed value: {repr(k)}") from ex
+    raise ex
