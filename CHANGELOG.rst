@@ -17,6 +17,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * Created the ``CAT.workflow.key_map module`` for storing aliases
   for ``DataFrame()`` columns.
 * Cleaned the modules in ``CAT.workflows``.
+* Updated tests.
 
 
 0.7.15
