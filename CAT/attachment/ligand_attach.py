@@ -243,6 +243,8 @@ def ligand_to_qd(core: Molecule, ligand: Molecule, settings: Settings) -> Molecu
 
     # Attach the rotated ligands to the core, returning the resulting strucutre (PLAMS Molecule).
     lig_array = rot_mol(ligand, vec1, vec2, atoms_other=core.properties.dummies, idx=idx)
+    _evaluate_distance(lig_array, len(core))
+
     qd = core.copy()
     array_to_qd(ligand, lig_array, mol_out=qd)
     qd.round_coords()
@@ -466,12 +468,13 @@ def rotation_check_kdtree(xyz: np.ndarray, at_other: np.ndarray, k: int = 10):
         at_other_ = np.concatenate((at_other_, ar[idx_min]))
         ret[i] = ar[idx_min]
 
-    _evaluate_distance(ret, len(at_other))
     return ret
 
 
-def _evaluate_distance(xyz3D: np.ndarray, core_atom_count: int,
-                       threshold: float = 1.0, action: str = 'warn') -> Union[None, NoReturn]:
+def _evaluate_distance(xyz3D: np.ndarray,
+                       offset: int = 0,
+                       threshold: float = 1.0,
+                       action: str = 'warn') -> Union[None, NoReturn]:
     """Eavluate all the distance matrix of **xyz3D** and perform **action** when distances are below **threshold**."""  # noqa
     try:
         action_func = WARN_MAP[action]
@@ -492,7 +495,7 @@ def _evaluate_distance(xyz3D: np.ndarray, core_atom_count: int,
     bool_ar = dist < threshold
     if bool_ar.any():
         _idx2 = np.stack([np.arange(len(idx)), idx]).T
-        _idx2 += 1 + core_atom_count
+        _idx2 += 1 + offset
         _idx2.sort(axis=1)
 
         idx2 = np.unique(_idx2[bool_ar], axis=0)
