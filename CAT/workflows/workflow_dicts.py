@@ -8,7 +8,7 @@ A module for loading :class:`WorkFlow` templates.
 
 import os
 from types import MappingProxyType
-from typing import Mapping, MutableMapping, Tuple
+from typing import Mapping, MutableMapping
 
 import yaml
 import numpy as np
