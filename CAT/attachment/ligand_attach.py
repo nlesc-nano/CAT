@@ -242,9 +242,7 @@ def ligand_to_qd(core: Molecule, ligand: Molecule, settings: Settings) -> Molecu
     ligand.properties.dummies.properties.anchor = True
 
     # Attach the rotated ligands to the core, returning the resulting strucutre (PLAMS Molecule).
-    lig_array = rot_mol(ligand, vec1, vec2, atoms_other=core.properties.dummies, idx=idx)
-    _evaluate_distance(lig_array, len(core))
-
+    lig_array = rot_mol(ligand, vec1, vec2, atoms_other=core.properties.dummies, core=core, idx=idx)
     qd = core.copy()
     array_to_qd(ligand, lig_array, mol_out=qd)
     qd.round_coords()
@@ -260,6 +258,7 @@ def ligand_to_qd(core: Molecule, ligand: Molecule, settings: Settings) -> Molecu
     })
 
     # Print and return
+    _evaluate_distance(qd)
     return qd
 
 
@@ -350,6 +349,7 @@ def rot_mol(xyz_array: np.ndarray,
             vec2: np.ndarray,
             idx: int = 0,
             atoms_other: Optional[np.ndarray] = None,
+            core: Optional[np.ndarray] = None,
             bond_length: Optional[int] = None,
             step: float = 1/16,
             dist_to_self: bool = True) -> np.ndarray:
@@ -430,10 +430,11 @@ def rot_mol(xyz_array: np.ndarray,
 
     # Returns the conformation of each molecule that maximizes the inter-moleculair distance
     # Or return all conformations if dist_to_self = False and atoms_other = None
-    return rotation_check_kdtree(xyz, at_other)
+    return rotation_check_kdtree(xyz, at_other, core)
 
 
-def rotation_check_kdtree(xyz: np.ndarray, at_other: np.ndarray, k: int = 10):
+def rotation_check_kdtree(xyz: np.ndarray, core_anchor: np.ndarray,
+                          core: np.ndarray, k: int = 10):
     """Perform the rotation check using SciPy's :class:`cKDTree<scipy.spatial.cKDTree.
 
     Parameters
@@ -456,23 +457,28 @@ def rotation_check_kdtree(xyz: np.ndarray, at_other: np.ndarray, k: int = 10):
     """
     a, b, c, d = xyz.shape
     ret = np.empty((a, c, d), order='F')
-    distance_upper_bound = _get_distance_upper_bound(at_other)
+    distance_upper_bound = _get_distance_upper_bound(core_anchor)
 
-    at_other_ = at_other
+    # Shrink down the core, keep the 6 atoms closest to the core-anchor
+    core = np.asarray(core)
+    tree = cKDTree(core)
+    _, idx = tree.query(core_anchor, k=range(2, 7), distance_upper_bound=10)
+    core_subset = core[np.unique(idx.ravel())]
+
+    at_other = core_subset
     for i, ar in enumerate(xyz):
-        tree = cKDTree(at_other_)
+        tree = cKDTree(at_other)
         dist, _ = tree.query(ar.reshape(b*c, d), k=k, distance_upper_bound=distance_upper_bound)
         dist.shape = b, c, k
 
         idx_min = np.exp(-dist).sum(axis=(1, 2)).argmin()
-        at_other_ = np.concatenate((at_other_, ar[idx_min]))
+        at_other = np.concatenate((at_other, ar[idx_min]))
         ret[i] = ar[idx_min]
 
     return ret
 
 
-def _evaluate_distance(xyz3D: np.ndarray,
-                       offset: int = 0,
+def _evaluate_distance(mol: np.ndarray,
                        threshold: float = 1.0,
                        action: str = 'warn') -> Union[None, NoReturn]:
     """Eavluate all the distance matrix of **xyz3D** and perform **action** when distances are below **threshold**."""  # noqa
@@ -485,7 +491,7 @@ def _evaluate_distance(xyz3D: np.ndarray,
         if action == 'ignore':
             return None
 
-    xyz = xyz3D.reshape(-1, 3)
+    xyz = np.asarray(mol)
 
     tree = cKDTree(xyz)
     dist, idx = tree.query(xyz, k=[2])
@@ -495,14 +501,14 @@ def _evaluate_distance(xyz3D: np.ndarray,
     bool_ar = dist < threshold
     if bool_ar.any():
         _idx2 = np.stack([np.arange(len(idx)), idx]).T
-        _idx2 += 1 + offset
+        _idx2 += 1
         _idx2.sort(axis=1)
 
         idx2 = np.unique(_idx2[bool_ar], axis=0)
         n = len(idx2)
 
         exc = MoleculeError(
-            f"\nEncountered >= {n} unique ligand atom-pairs at a distance shorter than "
+            f"\nEncountered >= {n} unique atom-pairs at a distance shorter than "
             f"{threshold} Angstrom:\n{aNDRepr.repr(idx2.T)}"
         )
         action_func(exc)
