@@ -14,7 +14,7 @@
 
 
 ##############################
-Compound Attachment Tool 0.8.0
+Compound Attachment Tool 0.8.1
 ##############################
 
 **CAT** is a collection of tools designed for the construction of various chemical compounds.
