@@ -49,6 +49,7 @@ qd_attach:
         overwrite: [optional, database, overwrite]
 
         path: [optional, qd, dirname]
+        allignment: [optional, core, allignment]
 
 qd_opt:
     description: quantum dot geometry optimization

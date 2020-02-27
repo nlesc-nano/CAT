@@ -25,6 +25,7 @@ Option                                    Description
 
 :attr:`optional.core.dirname`             The name of the directory where all cores will be stored.
 :attr:`optional.core.dummy`               Atomic number of symbol of the core dummy atoms.
+:attr:`optional.core.allignment`          How the to-be attached ligands should be alligned with the core.
 :attr:`optional.core.subset`              Settings related to the partial replacement of core dummy atoms.
 
 :attr:`optional.ligand.dirname`           The name of the directory where all ligands will be stored.
@@ -58,6 +59,7 @@ Default Settings
         core:
             dirname: core
             dummy: Cl
+            allignment: sphere
             subset: null
 
         ligand:
@@ -220,6 +222,7 @@ Core
             core:
                 dirname: core
                 dummy: Cl
+                allignment: sphere
                 subset: null
 
 |
@@ -245,6 +248,32 @@ Core
         The atomic number or atomic symbol of the atoms in the core which are to be
         replaced with ligands. Alternatively, dummy atoms can be manually specified
         with the core_indices variable.
+
+
+    .. attribute:: optional.core.allignment
+
+        :Parameter:     * **Type** - :class:`str`
+                        * **Default value** – ``"sphere"``
+
+        How the to-be attached ligands should be alligned with the core.
+
+        Has two allowed values:
+
+        * ``"sphere"``: Define the core vectors as those drawn from the core anchor
+          atoms to the cores center.
+        * ``"surface"``: Define the core vectors as those orthogonal to the cores
+          surface.
+          The surface is herein defined by a convex hull constructed from the core.
+
+        Note that for a spherical core both approaches are equivalent.
+
+        .. note::
+            An example of a ``"sphere"`` (left) and ``"surface"`` (right) allignment.
+
+            .. image:: _images/allignment.png
+                :scale: 15 %
+                :align: center
+
 
 
     .. attribute:: optional.core.subset
@@ -677,7 +706,7 @@ QD
         Calculate the :math:`V_{bulk}`, a ligand- and core-specific descriptor of a ligands' bulkiness.
 
         .. math::
-            :label: 4
+            :label: 5
 
             V(r_{i}, h_{i}; d, h_{lim}) =
             \sum_{i=1}^{n} e^{r_{i}} (\frac{2 r_{i}}{d} - 1)^{+} (1 - \frac{h_{i}}{h_{lim}})^{+}

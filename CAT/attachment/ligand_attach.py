@@ -39,6 +39,7 @@ API
 .. autofunction:: sanitize_dim_3
 
 """
+
 from typing import List, Tuple, Any, Optional, NoReturn, Union
 from collections import abc
 
@@ -50,6 +51,7 @@ from scipy.spatial.distance import cdist
 from scm.plams import Molecule, Atom, Settings, MoleculeError
 from assertionlib.ndrepr import aNDRepr
 
+from .perp_surface import get_surface_vec
 from ..mol_utils import get_index, round_coords
 from ..workflows import WorkFlow, HDF5_INDEX, MOL, OPT
 from ..settings_dataframe import SettingsDataFrame
@@ -106,16 +108,14 @@ def init_qd_construction(ligand_df: SettingsDataFrame, core_df: SettingsDataFram
     return qd_df
 
 
-def construct_mol_series(df: SettingsDataFrame, core_df: pd.DataFrame,
-                         ligand_df: pd.DataFrame, **kwargs) -> pd.Series:
+def construct_mol_series(qd_df: SettingsDataFrame, core_df: pd.DataFrame,
+                         ligand_df: pd.DataFrame, path: str,
+                         allignment: str = 'sphere', **kwargs: Any) -> pd.Series:
     """Construct a Series of new quantum dots."""
     def _get_mol(i, j, k, l):
         ij = i, j
         kl = k, l
-        return ligand_to_qd(core_df.at[ij, MOL], ligand_df.at[kl, MOL], settings)
-
-    qd_df = df
-    settings = qd_df.settings
+        return ligand_to_qd(core_df.at[ij, MOL], ligand_df.at[kl, MOL], path, allignment=allignment)
 
     mol_list = [_get_mol(i, j, k, l) for i, j, k, l in qd_df.index]
     return pd.Series(mol_list, index=qd_df.index, name=MOL, dtype=object)
@@ -205,7 +205,8 @@ def _get_df(core_index: pd.MultiIndex,
     return SettingsDataFrame(data, index=index, columns=columns, settings=settings)
 
 
-def ligand_to_qd(core: Molecule, ligand: Molecule, settings: Settings) -> Molecule:
+def ligand_to_qd(core: Molecule, ligand: Molecule, path: str,
+                 allignment: str = 'sphere') -> Molecule:
     """Function that handles quantum dot (qd, *i.e.* core + all ligands) operations.
 
     Combine the core and ligands and assign properties to the quantom dot.
@@ -218,8 +219,14 @@ def ligand_to_qd(core: Molecule, ligand: Molecule, settings: Settings) -> Molecu
     ligand : |plams.Molecule|_
         A ligand molecule.
 
-    settings : |plams.Settings|_
-        A settings object containing all (optional) arguments.
+    allignment : :class:`str`
+        How the core vector(s) should be defined.
+        Accepted values are ``"sphere"`` and ``"surface"``:
+
+        * ``"sphere"``: Vectors from the core anchor atoms to the center of the core.
+        * ``"surface"``: Vectors perpendicular to the surface of the core.
+
+        Note that for a perfect sphere both approaches are equivalent.
 
     Returns
     -------
@@ -233,15 +240,20 @@ def ligand_to_qd(core: Molecule, ligand: Molecule, settings: Settings) -> Molecu
         lig_name = ligand.properties.name
         return f'{core_name}__{anchor}_{lig_name}'
 
-    dirname = settings.optional.qd.dirname
-
     # Define vectors and indices used for rotation and translation the ligands
     vec1 = np.array([-1, 0, 0], dtype=float)  # All ligands are already alligned along the X-axis
-    vec2 = np.array(core.get_center_of_mass()) - sanitize_dim_2(core.properties.dummies)
     idx = ligand.get_index(ligand.properties.dummies) - 1
     ligand.properties.dummies.properties.anchor = True
 
     # Attach the rotated ligands to the core, returning the resulting strucutre (PLAMS Molecule).
+    if allignment == 'sphere':
+        vec2 = np.array(core.get_center_of_mass()) - sanitize_dim_2(core.properties.dummies)
+        vec2 /= np.linalg.norm(vec2, axis=1)[..., None]
+    elif allignment == 'surface':
+        vec2 = -get_surface_vec(core, core.as_array(core.properties.dummies))
+    else:
+        raise ValueError(repr(allignment))
+
     lig_array = rot_mol(ligand, vec1, vec2, atoms_other=core.properties.dummies, core=core, idx=idx)
     qd = core.copy()
     array_to_qd(ligand, lig_array, mol_out=qd)
@@ -251,14 +263,14 @@ def ligand_to_qd(core: Molecule, ligand: Molecule, settings: Settings) -> Molecu
     qd.properties = Settings({
         'indices': [i for i, at in enumerate(qd, 1) if
                     at.properties.pdb_info.ResidueName == 'COR' or at.properties.anchor],
-        'path': dirname,
+        'path': path,
         'name': get_name(),
         'job_path': [],
         'prm': ligand.properties.prm
     })
 
     # Print and return
-    _evaluate_distance(qd)
+    _evaluate_distance(qd, qd.properties.name)
     return qd
 
 
@@ -304,15 +316,26 @@ def _get_rotmat1(vec1: np.ndarray, vec2: np.ndarray) -> np.ndarray:
                   [v3, v0, -v1],
                   [-v2, v1, v0]]).T
 
-    if len(u_vec1) > 1 and len(u_vec2) > 1:
-        return np.identity(3) + M + ((M@M).T / (1 + u_vec2.T@u_vec1).T[..., None]).T
-    elif len(u_vec1) == 1:
-        return np.identity(3) + M + ((M@M).T / (1 + u_vec2@u_vec1[0].T).T).T
-    elif len(u_vec2) == 1:
-        return np.identity(3) + M + ((M@M).T / (1 + u_vec2[0]@u_vec1.T).T).T
-    raise ValueError('vec1 and vec2 expect 1- or 2-dimensional array-like objects; '
-                     f'observed shapes: vec1: {np.asarray(vec1).shape} and vec2: '
-                     f'{np.asarray(vec2).shape}')
+    with np.errstate(invalid='ignore'):
+        if len(u_vec1) > 1 and len(u_vec2) > 1:
+            ret = np.identity(3) + M + ((M@M).T / (1 + u_vec2.T@u_vec1).T[..., None]).T
+        elif len(u_vec1) == 1:
+            ret = np.identity(3) + M + ((M@M).T / (1 + u_vec2@u_vec1[0].T).T).T
+        elif len(u_vec2) == 1:
+            ret = np.identity(3) + M + ((M@M).T / (1 + u_vec2[0]@u_vec1.T).T).T
+        else:
+            raise ValueError('vec1 and vec2 expect 1- or 2-dimensional array-like objects; '
+                             f'observed shapes: vec1: {np.asarray(vec1).shape} and vec2: '
+                             f'{np.asarray(vec2).shape}')
+
+    # Ensure that there are no nan values in the rotation matrix
+    isnan = np.isnan(ret)
+    if not isnan.any():
+        return ret
+    else:
+        i = np.unique(np.nonzero(isnan)[0])
+        ret[i] = -np.eye(3)
+        return ret
 
 
 def _get_rotmat2(vec: np.ndarray, step: float = (1/16)) -> np.ndarray:
@@ -478,15 +501,15 @@ def rotation_check_kdtree(xyz: np.ndarray, core_anchor: np.ndarray,
     return ret
 
 
-def _evaluate_distance(mol: np.ndarray,
+def _evaluate_distance(mol: np.ndarray, name: str,
                        threshold: float = 1.0,
                        action: str = 'warn') -> Union[None, NoReturn]:
     """Eavluate all the distance matrix of **xyz3D** and perform **action** when distances are below **threshold**."""  # noqa
     try:
         action_func = WARN_MAP[action]
     except KeyError as ex:
-        raise ValueError("'action' expected 'warn', 'raise' or 'ignore'; "
-                         f"observed value: {repr(action)}") from ex
+        raise ValueError("'action' expected either 'warn', 'raise' or 'ignore'; "
+                         f"observed value: {action!r}") from ex
     else:
         if action == 'ignore':
             return None
@@ -509,7 +532,7 @@ def _evaluate_distance(mol: np.ndarray,
 
         exc = MoleculeError(
             f"\nEncountered >= {n} unique atom-pairs at a distance shorter than "
-            f"{threshold} Angstrom:\n{aNDRepr.repr(idx2.T)}"
+            f"{threshold} Angstrom in {name!r}:\n{aNDRepr.repr(idx2.T)}"
         )
         action_func(exc)
 
