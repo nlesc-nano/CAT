@@ -14,7 +14,7 @@ from .ligand_anchoring import init_ligand_anchoring
 from .edge_distance import edge_dist, plot_polyhedron
 from .distribution import distribute_idx
 from .distribution_brute import brute_uniform_idx
-from .perp_surface import get_surface_vec
+from .perp_surface import get_surface_vec, plot_vectors
 
 __all__ = [
     'init_qd_opt',
@@ -25,5 +25,5 @@ __all__ = [
     'edge_dist', 'plot_polyhedron'
     'distribute_idx',
     'brute_uniform_idx',
-    'get_surface_vec'
+    'get_surface_vec', 'plot_vectors'
 ]

@@ -30,7 +30,7 @@ from scipy.spatial import ConvexHull
 
 try:
     import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d import Axes3D
+    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
 
     PLT: Optional[ImportError] = None
     Figure = plt.Figure
@@ -174,7 +174,7 @@ def plot_polyhedron(xyz: np.ndarray, triangles: Optional[np.ndarray] = None,
 
     \**kwargs : :data:`Any<typing.Any>`
         Further keyword arguments for
-        :meth:`Axes.plot_trisurf<matplotlib.pyplot.Axes.plot_trisurf>`.
+        :meth:`Axes.plot_trisurf()<matplotlib.pyplot.Axes.plot_trisurf>`.
 
     Returns
     -------

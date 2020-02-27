@@ -9,25 +9,37 @@ Index
 .. currentmodule:: CAT.attachment.perp_surface
 .. autosummary::
     get_surface_vec
+    plot_vectors
 
 API
 ---
 .. autofunction:: get_surface_vec
+.. autofunction:: plot_vectors
 
 """
 
-from typing import Union
+from typing import Union, Optional, Any
 
 import numpy as np
 from scipy.spatial import ConvexHull, cKDTree
 
 from scm.plams import Molecule
 
-__all__ = ['get_surface_vec']
+try:
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+
+    PLT: Optional[ImportError] = None
+    Figure = plt.Figure
+except ImportError as ex:
+    PLT: Optional[ImportError] = ex
+    Figure = 'matplotlib.pyplot.Figure'
+
+__all__ = ['get_surface_vec', 'plot_vectors']
 
 
 def get_surface_vec(mol: Union[Molecule, np.ndarray],
-                    anchor: Union[Molecule, np.ndarray]) -> np.ndarray:
+                    anchor: Union[None, Molecule, np.ndarray] = None) -> np.ndarray:
     """Construct a set of vectors perpendicular to the surface of **mol** and assign one to each atom in **anchor**.
 
     Utilizes a convex hull algorithm for identifying and partitioning the surface.
@@ -35,10 +47,11 @@ def get_surface_vec(mol: Union[Molecule, np.ndarray],
     Parameters
     ----------
     mol : array-like [:class:`float`], shape :math:`(n, 3)`
-        A 2D array-like object representing the Cartesian coordinates of a polyhedron.
+        A 2D array-like object with the Cartesian coordinates of a molecule.
 
-    anchor : array-like [:class:`float`], shape :math:`(m, 3)`
-        A 2D array-like object representing the Cartesian coordinates of a polyhedron.
+    anchor : array-like [:class:`float`], shape :math:`(m, 3)`, optional
+        A 2D array-like object with the Cartesian coordinates of a set of anchor atoms.
+        If ``None``, default to **mol**.
 
     Returns
     -------
@@ -53,15 +66,92 @@ def get_surface_vec(mol: Union[Molecule, np.ndarray],
 
     """  # noqa
     xyz = np.array(mol, dtype=float, ndmin=2, copy=False)
-    anchor = np.array(anchor, dtype=float, ndmin=2, copy=False)
+    if anchor is None:
+        anchor = xyz
+    else:
+        anchor = np.array(anchor, dtype=float, ndmin=2, copy=False)
 
+    # Construct the convex hull and extract the vertices
     hull = ConvexHull(xyz)
     simplice = np.swapaxes(xyz[hull.simplices], 0, 1)
     simplice_center = simplice.mean(axis=0)
 
+    # Construct and return the surface vectors
     vec = _get_perp_vecs(*simplice)
     _flip_vec(simplice_center, vec)
     return vec[_find_nearest_center(anchor, simplice_center)]
+
+
+def plot_vectors(vec: np.ndarray,
+                 xyz: Optional[np.ndarray] = None,
+                 show: bool = True, **kwargs: Any) -> Figure:
+    r"""Create a 3D plot of all (3D) vectors in **vec**.
+
+    Parameters
+    ----------
+    vec : array-like [:class:`float`], shape :math:`(n, 3)`
+        A 2D array-like object representing :math:`n` vectors.
+
+    xyz : array-like [:class:`float`], shape :math:`(n, 3)`, optional
+        An array with the Cartesian coordinates defining the
+        origin of each vector in **vec**.
+        If ``None``, default to the origin (:code:`[0, 0, 0]`).
+
+    show : :class:`bool`
+        Show the created figure.
+
+    \**kwargs : :data:`Any<typing.Any>`
+        Further keyword arguments for
+        :meth:`Axes.quiver()<matplotlib.pyplot.Axes.quiver>`
+        such as the **length** keyword.
+
+    Returns
+    -------
+    :class:`Figure<matplotlib.pyplot.Figure>`
+        The resulting matplotlib Figure.
+
+    """
+    if PLT is not None:
+        raise PLT
+
+    # Parse arguments
+    vec = np.array(vec, ndmin=2, dtype=float, copy=False)
+    if xyz is not None:
+        xyz = np.array(xyz, ndmin=2, dtype=float, copy=False)
+    else:
+        xyz = np.array(0.0, ndmin=2)
+
+    # Extract the x, y and z coordinates
+    if xyz.size == 1:
+        x = y = z = xyz
+    else:
+        x, y, z = xyz.T
+
+    # Extract the x, y and z components of the vector
+    u, v, w = vec.T
+
+    # Construct the figure
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1, projection='3d')
+    _set_axis_limit(ax, x, y, z, u, v, w)
+    ax.quiver(x, y, z, u, v, w, **kwargs)
+
+    if show:
+        plt.show(block=True)
+    return fig
+
+
+def _set_axis_limit(ax, x, y, z, u, v, w) -> None:
+    """Set the axis limits for :func:`plot_vectors`."""
+    x_mean = x.mean()
+    y_mean = y.mean()
+    z_mean = z.mean()
+    dx = max(1, max(max(abs(x)), max(abs(u))) - x_mean)
+    dy = max(1, max(max(abs(y)), max(abs(v))) - y_mean)
+    dz = max(1, max(max(abs(z)), max(abs(w))) - z_mean)
+    ax.set_xlim([x_mean-dx, x_mean+dx])
+    ax.set_ylim([y_mean-dy, y_mean+dy])
+    ax.set_zlim([z_mean-dz, z_mean+dz])
 
 
 def _find_nearest_center(anchor: np.ndarray, center: np.ndarray) -> np.ndarray:
