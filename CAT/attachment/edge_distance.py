@@ -101,7 +101,7 @@ def edge_dist(xyz: np.ndarray, n: float = 1.0,
 
     Parameters
     ----------
-    xyz : :class:`numpy.ndarray` [:class:`float`], shape :math:`(m, 3)`
+    xyz : array-like [:class:`float`], shape :math:`(m, 3)`
         A 2D array-like object of Cartesian coordinates representing a polyhedron.
         The supplied polyhedron should be convex in shape.
 
@@ -109,7 +109,7 @@ def edge_dist(xyz: np.ndarray, n: float = 1.0,
         Smoothing factor for constructing a convex hull.
         Should obey :math:`0 <= n <= 1`.
 
-    edges : :class:`numpy.ndarray` [:class:`int`], shape :math:`(n, 2)`, optional
+    edges : array-like [:class:`int`], shape :math:`(n, 2)`, optional
         A 2D array-like object with all indice-pairs in **xyz** representing polyhedron edges.
 
     Returns
@@ -162,10 +162,10 @@ def plot_polyhedron(xyz: np.ndarray, triangles: Optional[np.ndarray] = None,
 
     Parameters
     ----------
-    xyz : :math:`(m, 3)` array-like [:class:`float`]
+    xyz : array-like [:class:`float`], shape :math:`(m, 3)`
         A 2D array-like object representing the Cartesian coordinates of a polyhedron.
 
-    triangles : :math:`(n, 3)` array-like [:class:`int`], optional
+    triangles : array-like [:class:`int`], shape :math:`(n, 3)`, optional
         A 2D array-like object with all indice-pairs in **xyz** representing the triangular
         faces of the **xyz** polygon.
 
