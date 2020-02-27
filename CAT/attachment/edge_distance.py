@@ -40,7 +40,7 @@ except ImportError as ex:
 
 from ..utils import array_combinations
 
-__all__ = ['edge_dist']
+__all__ = ['edge_dist', 'plot_polyhedron']
 
 
 def to_convex(xyz: np.ndarray, n: float = 1.0) -> np.ndarray:
