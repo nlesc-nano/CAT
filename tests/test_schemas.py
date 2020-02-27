@@ -162,6 +162,7 @@ def test_core_schema() -> None:
     ref = {
         'dirname': '.',
         'dummy': 17,
+        'allignment': 'sphere',
         'subset': None
     }
 
@@ -175,6 +176,15 @@ def test_core_schema() -> None:
     assertion.eq(core_schema.validate(core_dict)['dummy'], 1)
     core_dict['dummy'] = 1.0
     assertion.eq(core_schema.validate(core_dict)['dummy'], 1)
+
+    core_dict['allignment'] = 1.1  # Exception: incorrect type
+    assertion.assert_(core_schema.validate, core_dict, exception=SchemaError)
+    core_dict['allignment'] = 'bob'  # Exception: incorrect value
+    assertion.assert_(core_schema.validate, core_dict, exception=SchemaError)
+    core_dict['allignment'] = 'SPHERE'
+    assertion.eq(core_schema.validate(core_dict)['allignment'], 'sphere')
+    core_dict['allignment'] = 'surface'
+    assertion.eq(core_schema.validate(core_dict)['allignment'], 'surface')
 
 
 def test_qd_schema() -> None:

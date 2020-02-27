@@ -10,6 +10,20 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 *****
 * WiP: Added an option the import pre-built quantum dots.
 
+
+0.8.1
+*****
+* Added the ``optional.core.allignment`` keyword for determining how
+  ligands should be alligned with the core.
+  Accepted values are ``"sphere"`` and ``"surface"``.
+* https://github.com/nlesc-nano/CAT/pull/87:
+  Ensure that part of the core-surface is accounted for when rotating ligands.
+* https://github.com/nlesc-nano/CAT/pull/85 & https://github.com/nlesc-nano/CAT/pull/86:
+  Issue a warning when atoms are too close when constructing QDs.
+* https://github.com/nlesc-nano/CAT/pull/85 & https://github.com/nlesc-nano/CAT/pull/86:
+  Improved warning handling.
+
+
 0.8.0
 *****
 * Moved the ``CAT.recipes`` module to Nano-CAT.

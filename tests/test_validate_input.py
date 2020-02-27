@@ -29,6 +29,7 @@ def test_validate_input() -> None:
     ref = Settings()
     ref.core.dirname = join(PATH, 'core')
     ref.core.dummy = 17
+    ref.core.allignment = 'sphere'
     ref.core.subset = None
 
     ref.database.dirname = join(PATH, 'database')

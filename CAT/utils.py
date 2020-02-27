@@ -354,8 +354,8 @@ def array_combinations(array: np.ndarray, r: int = 2, axis: int = -1) -> np.ndar
     try:
         combinations_len = int(factorial(n) / factorial(r) / factorial(n - r))
     except ValueError as ex:
-        raise ValueError(f"'r' ({repr(r)}) expects a positive integer larger than or equal to the "
-                         f"length of 'array' axis {repr(axis)} ({repr(n)})") from ex
+        raise ValueError(f"'r' ({r!r}) expects a positive integer larger than or equal to the "
+                         f"length of 'array' axis {axis!r} ({n!r})") from ex
 
     # Define the shape of the to-be returned array
     _shape = list(ar.shape)
@@ -444,10 +444,11 @@ def get_nearest_neighbors(center: Union[Molecule, np.ndarray],
 
 
 def _parse_ValueError(ex: Exception, k: Any) -> NoReturn:
+    """Post-process a :exc:`ValueError` raised by :func:`get_nearest_neighbors`."""
     if isinstance(k, abc.Iterable) and min(k) < 1:
         raise ValueError("All elements of 'k' must be larger than or equal to 1; "
-                         f"observed minimum: {repr(min(k))}") from ex
+                         f"observed minimum: {min(k)!r}") from ex
     elif hasattr(k, '__int__') and k < 1:
         raise ValueError("'k' must be larger than or equal to 1; "
-                         f"observed value: {repr(k)}") from ex
+                         f"observed value: {k!r}") from ex
     raise ex
