@@ -17,7 +17,7 @@ API
 """
 
 import reprlib
-from typing import Union, Any, Mapping, TypeVar
+from typing import Union, Any, Mapping, TypeVar, Optional
 from collections import abc
 
 from scm.plams import Settings, Cp2kJob
@@ -26,9 +26,10 @@ from CAT.utils import get_template
 
 try:
     from nanoCAT.ff.cp2k_utils import set_cp2k_param
-    NANO_CAT: bool = True
-except ImportError:
-    NANO_CAT: bool = False
+except ImportError as ex:
+    NANO_CAT: Optional[ImportError] = ex
+else:
+    NANO_CAT: Optional[ImportError] = None
 
 __all__ = ['validate_ff', 'update_ff_jobs']
 
@@ -94,6 +95,9 @@ def assertion_msg(obj: Any) -> str:
 
 
 def update_ff_jobs(s: Settings) -> None:
+    if NANO_CAT is not None:
+        raise NANO_CAT
+
     ff = Settings()
     set_cp2k_param(ff, s.optional.forcefield)
 
