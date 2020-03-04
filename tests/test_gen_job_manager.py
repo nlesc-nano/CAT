@@ -53,7 +53,7 @@ def test_load_job() -> None:
     assertion.eq(job.molecule.get_formula(), 'C78Cd68H182O26Se55')
 
 
-def test_check_hash() -> None:
+def _test_check_hash() -> None:
     """Test :meth:`CAT.gen_job_manager.GenJobManager._check_hash`."""
     filename = join(PATH, FOLDER, 'QD_opt_part1', 'QD_opt_part1.hash')
     manager = GenJobManager(SETTINGS, PATH, FOLDER)
@@ -71,7 +71,7 @@ def test_check_hash() -> None:
         assertion.eq(attr1, attr2)
 
 
-def test_remove_job() -> None:
+def _test_remove_job() -> None:
     """Test :meth:`CAT.gen_job_manager.GenJobManager.test_remove_job`."""
     filename = join(PATH, FOLDER, 'QD_opt_part1', 'QD_opt_part1.hash')
     manager = GenJobManager(SETTINGS, PATH, FOLDER)
