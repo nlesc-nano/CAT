@@ -19,7 +19,7 @@ API
 from os import mkdir
 from os.path import (join, isdir)
 
-from scm.plams import Settings
+from scm.plams import Settings, AMSJob
 
 from .validation_schemas import (
     core_schema,
@@ -97,6 +97,9 @@ def validate_input(s: Settings) -> None:
         s.optional.ligand.crs = crs_schema.validate(crs)
     if s.optional.qd.optimize:
         s.optional.qd.optimize = qd_opt_schema.validate(s.optional.qd.optimize)
+        if s.optional.qd.optimize.job1 is not AMSJob:
+            s.optional.qd.optimize.s1 = Settings()
+
     if s.optional.qd.dissociate:
         s.optional.qd.dissociate = bde_schema.validate(s.optional.qd.dissociate)
     if s.optional.qd.activation_strain:
