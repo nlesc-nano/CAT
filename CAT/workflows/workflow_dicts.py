@@ -69,7 +69,9 @@ def finalize_templates():
         'forcefield': {'import_columns': {},
                        'export_columns': ()},
         'bulkiness': {'import_columns': {V_BULK: np.nan},
-                      'export_columns': (V_BULK,)}
+                      'export_columns': (V_BULK,)},
+        'multi_ligand': {'import_columns': {HDF5_INDEX: -1, OPT: False},
+                         'export_columns': (HDF5_INDEX, OPT)},
     }
 
     templates = _load_templates()

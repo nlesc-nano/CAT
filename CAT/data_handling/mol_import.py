@@ -223,7 +223,7 @@ def read_mol_txt(mol_dict: Settings) -> Optional[List[Molecule]]:
         print_exception('read_mol_txt', mol_dict.name, ex)
 
 
-EXTENSION_MAPPING: Mapping[str, Callable[Settings], Optional[Molecule]] = MappingProxyType({
+EXTENSION_MAPPING: Mapping[str, Callable[[Settings], Optional[Molecule]]] = MappingProxyType({
     'xyz': read_mol_xyz,
     'pdb': read_mol_pdb,
     'mol': read_mol_mol,

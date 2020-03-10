@@ -921,7 +921,10 @@ multi_ligand_schema: Schema = Schema({
     Optional_('dummy', default=None):
         Or(
             None,
-            And(abc.Collection, Use(lambda n: to_tuple(n, func=to_atnum)))
+            And(abc.Collection,
+                lambda n: not isinstance(n, str),
+                lambda n: len(set(n)) == len(n),
+                Use(lambda n: to_tuple(n, func=to_atnum)))
         ),
 
     Optional_('f', default=None):
@@ -930,7 +933,8 @@ multi_ligand_schema: Schema = Schema({
             And(
                 abc.Collection,
                 lambda n: all(val_float(i) for i in n),
-                lambda n: all(0 < float(i) <= 1 for i in n),
+                lambda n: all(float(i) > 0 for i in n),
+                lambda n: 0 < sum(float(i) for i in n) <= 1,
                 Use(lambda n: to_tuple(n, func=float))
             )
         ),

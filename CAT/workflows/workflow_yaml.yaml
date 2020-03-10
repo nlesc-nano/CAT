@@ -137,12 +137,12 @@ multi_ligand:
         overwrite: [optional, database, overwrite]
 
         path: [optional, qd, dirname]
-
-        ligands: [optional, qd, multi_ligand, ligands]
+        allignment: [optional, core, allignment]
         opt: [optional, ligand, optimize]
         split: [optional, ligand, split]
         functional_groups: [optional, ligand, functional_groups]
 
+        ligands: [optional, qd, multi_ligand, ligands]
         dummy: [optional, qd, multi_ligand, symbol]
         f: [optional, qd, multi_ligand, f]
         mode: [optional, qd, multi_ligand, uniform]
