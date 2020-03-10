@@ -94,7 +94,7 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
 
     """  # noqa
     # Convert **idx** into an array
-    idx_ar = as_1d_array(idx, dtype=int)
+    idx = as_1d_array(idx, dtype=int)
 
     # Validate the input
     if mode not in MODE_SET:
@@ -103,13 +103,11 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
     elif not (0.0 < f <= 1.0):
         raise ValueError("'f' should be larger than 0.0 and smaller than or equal to 1.0; "
                          f"observed value: {reprlib.repr(f)}")
-    elif f == 1.0:  # Ensure that **idx** is always returned as copy
-        return idx_ar.copy() if idx_ar is idx else idx_ar
 
     # Create an array of indices
-    stop = max(1, int(round(f * len(idx_ar))))
+    stop = max(1, int(round(f * len(idx))))
     if mode in ('uniform', 'cluster'):
-        xyz = np.array(core, dtype=float, ndmin=2, copy=False)[idx_ar]
+        xyz = np.array(core, dtype=float, ndmin=2, copy=False)[idx]
         dist = edge_dist(xyz) if kwargs.get('follow_edge', False) else cdist(xyz, xyz)
         operation = 'min' if mode == 'uniform' else 'max'
         generator1 = uniform_idx(dist, operation=operation,
@@ -118,10 +116,10 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
                                  randomness=kwargs.get('randomness', None),
                                  weight=kwargs.get('weight', lambda x: np.exp(-x)))
         generator2 = islice(generator1, stop)
-        ret = idx_ar[np.fromiter(generator2, count=stop, dtype=int)]
+        ret = idx[np.fromiter(generator2, count=stop, dtype=int)]
 
     elif mode == 'random':
-        ret = np.random.permutation(idx_ar)
+        ret = np.random.permutation(idx)
 
     # Return a list of `p * len(idx)` atomic indices
     return ret[:stop]
