@@ -137,6 +137,7 @@ multi_ligand:
         overwrite: [optional, database, overwrite]
 
         path: [optional, qd, dirname]
+        mol_format: [optional, database, mol_format]
         allignment: [optional, core, allignment]
         opt: [optional, ligand, optimize]
         split: [optional, ligand, split]

@@ -9,6 +9,7 @@ from scm.plams import Molecule
 from CAT.workflow import WorkFlow, MOL
 from CAT.utils import group_by_values
 from CAT.mol_utils import to_symbol
+from CAT.data_handling import mol_to_file
 from CAT.data_handling.mol_import import read_mol
 from CAT.data_handling.validate_mol import validate_mol
 from CAT.attachment.ligand_opt import optimize_ligand, allign_axis
@@ -32,6 +33,11 @@ def init_multi_ligand(qd_df):
     columns = pd.MultiIndex.from_tuples(columns_iter2, names=qd_df.columns.names)
 
     workflow(multi_lig, qd_df[MOL], columns=columns)
+
+    if workflow.mol_format is not None:
+        path = workflow.path
+        mol_format = workflow.mol_format
+        mol_to_file(qd_df[columns].values.ravel(), path, mol_format=mol_format)
 
 
 @overload
@@ -84,7 +90,7 @@ def _multi_lig_dummy(qd_series, ligands, path, dummy,
         yield ret
 
 
-def _multi_lig_f(qd_series, ligands, f, path, **kwargs):
+def _multi_lig_f(qd_series, ligands, path, f, **kwargs):
     raise NotImplementedError
 
 
