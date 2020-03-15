@@ -1,4 +1,5 @@
-from typing import Iterable, Any, overload, Sequence, MutableSequence, Collection, List, Generator
+from typing import (Iterable, Any, overload, Sequence, MutableSequence,
+                    Collection, List, Generator, Union)
 
 import numpy as np
 import pandas as pd
@@ -6,7 +7,7 @@ import pandas as pd
 from rdkit import Chem
 from scm.plams import Molecule
 
-from CAT.workflow import WorkFlow, MOL
+from CAT.workflows import WorkFlow, MOL
 from CAT.utils import group_by_values
 from CAT.mol_utils import to_symbol
 from CAT.data_handling import mol_to_file
@@ -41,22 +42,24 @@ def init_multi_ligand(qd_df):
 
 
 @overload
-def multi_lig(qd_series: pd.Series,
-              ligands: Iterable[str], dummy: Sequence[int],
-              f: None, **kwargs: Any) -> pd.DataFrame:
+def multi_lig(qd_series: pd.Series, ligands: Iterable[str], columns: pd.MultiIndex,
+              dummy: Sequence[Union[str, int]], f: None,
+              **kwargs: Any) -> pd.DataFrame:
     ...
 
 
 @overload
-def multi_lig(qd_series: pd.Series,
-              ligands: Iterable[str], dummy: None,
-              f: Sequence[float], **kwargs: Any) -> pd.DataFrame:
+def multi_lig(qd_series: pd.Series, ligands: Iterable[str], columns: pd.MultiIndex,
+              dummy: None, f: Sequence[float],
+              **kwargs: Any) -> pd.DataFrame:
     ...
 
 
-def multi_lig(qd_series, ligands, columns: pd.MultiIndex, dummy=None, f=None, **kwargs):
-    ligands = smiles_to_lig(list(ligands), kwargs['functional_groups'],
-                            opt=kwargs['opt'], split=kwargs['split'])
+def multi_lig(qd_series, ligands, columns, dummy=None, f=None, **kwargs):
+    ligands = smiles_to_lig(list(ligands),
+                            functional_groups=kwargs['functional_groups'],
+                            opt=kwargs['opt'],
+                            split=kwargs['split'])
 
     if f is not None:
         raise NotImplementedError("'f != None' is not yet implemented")
@@ -71,15 +74,15 @@ def multi_lig(qd_series, ligands, columns: pd.MultiIndex, dummy=None, f=None, **
     return pd.DataFrame(data, index=qd_series.index, columns=columns, dtype=object)
 
 
-def _multi_lig_dummy(qd_series, ligands, path, dummy,
-                     allignment) -> Generator[List[Molecule], None, None]:
+def _multi_lig_dummy(qd_series, ligands, path, dummy, allignment
+                     ) -> Generator[List[Molecule], None, None]:
     """Gogogo."""
     for qd in qd_series:
         atnum_dict = group_by_values(enumerate(at.atnum for at in qd))
         ret = []
 
         for ligand, atnum in zip(ligands, dummy):
-            idx = atnum_dict[dummy]
+            idx = atnum_dict[atnum]
             qd.properties.dummies = np.fromiter(idx, dtype=int, count=len(idx))
 
             qd = ligand_to_qd(qd, ligand, path=path,
