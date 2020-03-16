@@ -53,15 +53,20 @@ __all__ = ['validate_input']
 
 def _validate_multi_lig(s: Settings) -> None:
     """Check that one (and only one!) of ``'f'`` and ``'dummy'`` is specified."""
-    f = s.optional.multi_ligand.f
-    dummy = s.optional.multi_ligand.dummy
+    f = s.optional.qd.multi_ligand.f
+    dummy = s.optional.qd.multi_ligand.dummy
 
     if f is dummy is None:
         raise ValueError("'.multi_ligand.f' and '.multi_ligand.dummy' cannot be "
                          "both unspecified or set to 'None'")
-    elif None not in {f, dummy}:
+    elif None not in (f, dummy):
         raise ValueError("Only one of '.multi_ligand.f' and '.multi_ligand.dummy' "
                          "should be specified")
+
+    if dummy is not None:
+        assert len(dummy) == len(s.optional.qd.multi_ligand.ligands)
+    else:
+        assert len(f) == len(s.optional.qd.multi_ligand.ligands) - 1
 
 
 def validate_input(s: Settings) -> None:

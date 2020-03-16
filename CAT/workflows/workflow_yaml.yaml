@@ -144,7 +144,7 @@ multi_ligand:
         functional_groups: [optional, ligand, functional_groups]
 
         ligands: [optional, qd, multi_ligand, ligands]
-        dummy: [optional, qd, multi_ligand, symbol]
+        dummy: [optional, qd, multi_ligand, dummy]
         f: [optional, qd, multi_ligand, f]
         mode: [optional, qd, multi_ligand, uniform]
         start: [optional, qd, multi_ligand, start]

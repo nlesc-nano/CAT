@@ -5,9 +5,9 @@ import numpy as np
 import pandas as pd
 
 from rdkit import Chem
-from scm.plams import Molecule
+from scm.plams import Molecule, MoleculeError
 
-from CAT.workflows import WorkFlow, MOL
+from CAT.workflows import WorkFlow
 from CAT.utils import group_by_values
 from CAT.mol_utils import to_symbol
 from CAT.data_handling import mol_to_file
@@ -16,6 +16,8 @@ from CAT.data_handling.validate_mol import validate_mol
 from CAT.attachment.ligand_opt import optimize_ligand, allign_axis
 from CAT.attachment.ligand_anchoring import find_substructure
 from CAT.attachment.ligand_attach import ligand_to_qd
+
+__all__ = ['init_multi_ligand']
 
 
 def init_multi_ligand(qd_df):
@@ -32,8 +34,10 @@ def init_multi_ligand(qd_df):
     columns_iter1 = ('/'.join(item for item in sequence[:i]) for i in range(1, 1+len(sequence)))
     columns_iter2 = (('multi ligand', i) for i in columns_iter1)
     columns = pd.MultiIndex.from_tuples(columns_iter2, names=qd_df.columns.names)
+    for k in columns:
+        qd_df[k] = None
 
-    workflow(multi_lig, qd_df[MOL], columns=columns)
+    workflow(multi_lig, qd_df, columns=columns, no_loc=True)
 
     if workflow.mol_format is not None:
         path = workflow.path
@@ -42,20 +46,22 @@ def init_multi_ligand(qd_df):
 
 
 @overload
-def multi_lig(qd_series: pd.Series, ligands: Iterable[str], columns: pd.MultiIndex,
+def multi_lig(qd_series: pd.Series, ligands: Iterable[str],
               dummy: Sequence[Union[str, int]], f: None,
               **kwargs: Any) -> pd.DataFrame:
     ...
 
 
 @overload
-def multi_lig(qd_series: pd.Series, ligands: Iterable[str], columns: pd.MultiIndex,
+def multi_lig(qd_series: pd.Series, ligands: Iterable[str],
               dummy: None, f: Sequence[float],
               **kwargs: Any) -> pd.DataFrame:
     ...
 
 
-def multi_lig(qd_series, ligands, columns, dummy=None, f=None, **kwargs):
+def multi_lig(qd_series, ligands, dummy=None, f=None, **kwargs):
+    """Attach multiple non-unique **ligands** to each qd in **qd_series**."""
+    # Read and parse the SMILES strings
     ligands = smiles_to_lig(list(ligands),
                             functional_groups=kwargs['functional_groups'],
                             opt=kwargs['opt'],
@@ -65,32 +71,37 @@ def multi_lig(qd_series, ligands, columns, dummy=None, f=None, **kwargs):
         raise NotImplementedError("'f != None' is not yet implemented")
 
     if dummy is not None:
-        data = _multi_lig_dummy(qd_series, ligands, kwargs['path'], dummy, kwargs['allignment'])
+        return _multi_lig_dummy(qd_series, ligands, kwargs['path'], dummy, kwargs['allignment'])
     elif f is not None:
-        data = NotImplemented
+        return [[NotImplemented]]
     else:
         raise TypeError("'f' and 'dummy' cannot be both 'None'")
 
-    return pd.DataFrame(data, index=qd_series.index, columns=columns, dtype=object)
 
-
-def _multi_lig_dummy(qd_series, ligands, path, dummy, allignment
-                     ) -> Generator[List[Molecule], None, None]:
+def _multi_lig_dummy(qd_series, ligands, path, dummy, allignment) -> List[List[Molecule]]:
     """Gogogo."""
+    ret_list = []
     for qd in qd_series:
-        atnum_dict = group_by_values(enumerate(at.atnum for at in qd))
         ret = []
+        ret_list.append(ret)
 
         for ligand, atnum in zip(ligands, dummy):
-            idx = atnum_dict[atnum]
-            qd.properties.dummies = np.fromiter(idx, dtype=int, count=len(idx))
+            try:
+                atoms = [at for at in qd if at.atnum == atnum]
+            except KeyError as ex:
+                raise MoleculeError(f'Failed to identify {to_symbol(atnum)!r} in '
+                                    f'{qd.get_formula()!r}') from ex
+            else:
+                for at in atoms:
+                    qd.delete_atom(at)
 
+            coords = Molecule.as_array(None, atom_subset=atoms)
+            qd.properties.dummies = np.array(coords, ndmin=2, dtype=float)
             qd = ligand_to_qd(qd, ligand, path=path,
                               allignment=allignment,
                               idx_subset=qd.properties.indices)
-            del qd.properties.dummies
             ret.append(qd)
-        yield ret
+    return np.array(ret_list, dtype=object).T
 
 
 def _multi_lig_f(qd_series, ligands, path, f, **kwargs):

@@ -515,7 +515,13 @@ qd_schema: Schema = Schema({
             dict,
             And(bool, lambda n: n is False),
             error='optional.qd.dissociate expects False (boolean) or a dictionary'
-        )
+        ),
+
+    Optional_('multi_ligand', default=False):  # Settings for multi-ligand attachment
+        Or(
+            None, dict,
+            error='optional.qd.multi_ligand expects None or dictionary'
+        ),
 })
 
 
