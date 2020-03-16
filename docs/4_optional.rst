@@ -37,6 +37,7 @@ Option                                    Description
 :attr:`optional.qd.dirname`               The name of the directory where all quantum dots will be stored.
 :attr:`optional.qd.construct_qd`          Whether or not the quantum dot should actually be constructed or not.
 :attr:`optional.qd.optimize`              Optimize the quantum dot (i.e. core + all ligands).
+:attr:`optional.qd.multi_ligand`          A workflow for attaching multiple non-unique ligands to a single quantum dot.
 :attr:`optional.qd.bulkiness`             Calculate the :math:`V_{bulk}`, a ligand- and core-sepcific descriptor of a ligands' bulkiness.
 :attr:`optional.qd.activation_strain`     Perform an activation strain analyses.
 :attr:`optional.qd.dissociate`            Calculate the ligand dissociation energy.
@@ -698,6 +699,27 @@ QD
         are frozen during this optimization.
 
 
+    .. attribute:: optional.qd.multi_ligand
+
+        :Parameter:     * **Type** - ``None`` or :class:`dict`
+                        * **Default value** – ``None``
+
+        A workflow for attaching multiple non-unique ligands to a single quantum dot.
+
+        Note that this is considered a seperate workflow besides the normal ligand attachment.
+        Consequently, these structures will *not* be passed to further workflows.
+
+        See :ref:`Multi-ligand` for more details regarding the available options.
+
+        .. note::
+            An example with ``[O-]CCCC`` as main ligand and
+            ``[O-]CCCCCCCCCCCCC`` & ``[O-]C`` as additional ligands.
+
+            .. image:: _images/multi_ligand.png
+                :scale: 13 %
+                :align: center
+
+
     .. attribute:: optional.qd.bulkiness
 
         :Parameter:     * **Type** - :class:`bool`
@@ -740,7 +762,7 @@ QD
         Accounts for both the destabilizing ligand deformation and (de-)stabilizing
         interaction between all ligands in the absence of the core.
 
-        See md_asa_ for more details.
+        See :ref:`md_asa` for more details.
 
 
     .. attribute:: optional.qd.dissociate

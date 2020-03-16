@@ -31,7 +31,7 @@ from math import factorial
 from types import MappingProxyType
 from shutil import rmtree
 from typing import (Iterable, Optional, Union, TypeVar, Mapping, Type, Generator, Iterator,
-                    Any, NoReturn)
+                    Any, NoReturn, Tuple, Dict, Hashable, List)
 from os.path import join, isdir, isfile, exists
 from itertools import cycle, chain, repeat, combinations
 from contextlib import redirect_stdout
@@ -452,3 +452,59 @@ def _parse_ValueError(ex: Exception, k: Any) -> NoReturn:
         raise ValueError("'k' must be larger than or equal to 1; "
                          f"observed value: {k!r}") from ex
     raise ex
+
+
+try:
+    from FOX import group_by_values
+except ImportError:
+    def group_by_values(iterable: Iterable[Tuple[Any, Hashable]],
+                        mapping_type: Type[Mapping] = dict) -> Mapping[Hashable, List[Any]]:
+        """Take an iterable, yielding 2-tuples, and group all first elements by the second.
+
+        Exameple
+        --------
+        .. code:: python
+
+            >>> from typing import Iterator
+
+            >>> str_list: list = ['a', 'a', 'a', 'a', 'a', 'b', 'b', 'b']
+            >>> iterable: Iterator = enumerate(str_list)
+            >>> new_dict: dict = group_by_values(iterable)
+
+            >>> print(new_dict)
+            {'a': [1, 2, 3, 4, 5], 'b': [6, 7, 8]}
+
+        Parameter
+        ---------
+        iterable : :class:`Iterable<collections.abc.Iterable>`
+            An iterable yielding 2 elements upon iteration
+            (*e.g.* :meth:`dict.items` or :func:`enumerate`).
+            The second element must be a :class:`Hashable<collections.abc.Hashable>` and will be used
+            as key in the to-be returned mapping.
+
+        mapping_type : :class:`type` [:class:`MutableMapping<collections.abc.MutableMapping>`]
+            The to-be returned mapping type.
+
+        Returns
+        -------
+        :class:`MutableMapping<collections.abc.MutableMapping>`
+        [:class:`Hashable<collections.abc.Hashable>`, :class:`list` [:data:`Any<typing.Any>`]]
+            A grouped dictionary.
+
+        """  # noqa
+        if issubclass(mapping_type, abc.MutableMapping):
+            ret = mapping_type()
+            mutable = True
+        else:
+            ret = {}
+            mutable = False
+
+        list_append: Dict[Hashable, list.append] = {}
+        for value, key in iterable:
+            try:
+                list_append[key](value)
+            except KeyError:
+                ret[key] = [value]
+                list_append[key] = ret[key].append
+
+        return ret if mutable else mapping_type(ret)

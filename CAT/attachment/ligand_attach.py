@@ -40,7 +40,7 @@ API
 
 """
 
-from typing import List, Tuple, Any, Optional, NoReturn, Union
+from typing import List, Tuple, Any, Optional, NoReturn, Union, Iterable
 from collections import abc
 
 import numpy as np
@@ -206,7 +206,8 @@ def _get_df(core_index: pd.MultiIndex,
 
 
 def ligand_to_qd(core: Molecule, ligand: Molecule, path: str,
-                 allignment: str = 'sphere') -> Molecule:
+                 allignment: str = 'sphere',
+                 idx_subset: Optional[Iterable[int]] = None) -> Molecule:
     """Function that handles quantum dot (qd, *i.e.* core + all ligands) operations.
 
     Combine the core and ligands and assign properties to the quantom dot.
@@ -228,6 +229,10 @@ def ligand_to_qd(core: Molecule, ligand: Molecule, path: str,
 
         Note that for a perfect sphere both approaches are equivalent.
 
+    idx_subset : :class:`Iterable<collections.anc.Iterable>` [:class:`int`], optional
+        An iterable with the (0-based) indices defining a subset of atoms in **core**.
+        Only relevant in the construction of the convex hull when ``allignment=surface``.
+
     Returns
     -------
     |plams.Molecule|_
@@ -240,6 +245,8 @@ def ligand_to_qd(core: Molecule, ligand: Molecule, path: str,
         lig_name = ligand.properties.name
         return f'{core_name}__{anchor}_{lig_name}'
 
+    idx_subset = idx_subset if idx_subset is not None else ...
+
     # Define vectors and indices used for rotation and translation the ligands
     vec1 = np.array([-1, 0, 0], dtype=float)  # All ligands are already alligned along the X-axis
     idx = ligand.get_index(ligand.properties.dummies) - 1
@@ -250,7 +257,8 @@ def ligand_to_qd(core: Molecule, ligand: Molecule, path: str,
         vec2 = np.array(core.get_center_of_mass()) - sanitize_dim_2(core.properties.dummies)
         vec2 /= np.linalg.norm(vec2, axis=1)[..., None]
     elif allignment == 'surface':
-        vec2 = -get_surface_vec(core, core.as_array(core.properties.dummies))
+        vec2 = -get_surface_vec(np.array(core)[idx_subset],
+                                core.as_array(core.properties.dummies))
     else:
         raise ValueError(repr(allignment))
 
@@ -266,7 +274,7 @@ def ligand_to_qd(core: Molecule, ligand: Molecule, path: str,
         'path': path,
         'name': get_name(),
         'job_path': [],
-        'prm': ligand.properties.prm
+        'prm': ligand.properties.get('prm')
     })
 
     # Print and return
@@ -650,7 +658,12 @@ def array_to_qd(mol: Molecule, xyz_array: np.ndarray,
     """
     mol_list = []
     xyz_array = sanitize_dim_3(xyz_array)
-    for i, xyz in enumerate(xyz_array, 2):
+    if mol_out is None:
+        start = 2
+    else:
+        start = 1 + mol_out[-1].properties.get('pdb_info', {}).get('ResidueNumber', 1)
+
+    for i, xyz in enumerate(xyz_array, start=start):
         mol_cp = mol.copy()
         mol_cp.from_array(xyz)
         for at in mol_cp:

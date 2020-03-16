@@ -32,7 +32,8 @@ from .validation_schemas import (
     crs_schema,
     asa_schema,
     ligand_opt_schema,
-    subset_schema
+    subset_schema,
+    multi_ligand_schema
 )
 
 from .validate_ff import validate_ff, update_ff_jobs
@@ -48,6 +49,24 @@ except ImportError:
     DATA_CAT = False
 
 __all__ = ['validate_input']
+
+
+def _validate_multi_lig(s: Settings) -> None:
+    """Check that one (and only one!) of ``'f'`` and ``'dummy'`` is specified."""
+    f = s.optional.qd.multi_ligand.f
+    dummy = s.optional.qd.multi_ligand.dummy
+
+    if f is dummy is None:
+        raise ValueError("'.multi_ligand.f' and '.multi_ligand.dummy' cannot be "
+                         "both unspecified or set to 'None'")
+    elif None not in (f, dummy):
+        raise ValueError("Only one of '.multi_ligand.f' and '.multi_ligand.dummy' "
+                         "should be specified")
+
+    if dummy is not None:
+        assert len(dummy) == len(s.optional.qd.multi_ligand.ligands)
+    else:
+        assert len(f) == len(s.optional.qd.multi_ligand.ligands) - 1
 
 
 def validate_input(s: Settings) -> None:
@@ -88,7 +107,7 @@ def validate_input(s: Settings) -> None:
                 raise KeyError("'p' and 'weight' cannot be simultaneously specified")
             logger.warn("The 'subset.p' parameter is deprecated; see 'subset.weight'")
             p = s.optional.core.subset.pop('p')
-            s.optional.core.subset.weight = lambda x: x**p
+            s.optional.core.subset.weight = lambda x: -(x**p)
 
     if s.optional.ligand.optimize:
         s.optional.ligand.optimize = ligand_opt_schema.validate(s.optional.ligand.optimize)
@@ -104,6 +123,9 @@ def validate_input(s: Settings) -> None:
         s.optional.qd.dissociate = bde_schema.validate(s.optional.qd.dissociate)
     if s.optional.qd.activation_strain:
         s.optional.qd.activation_strain = asa_schema.validate(s.optional.qd.activation_strain)
+    if s.optional.qd.multi_ligand:
+        s.optional.qd.multi_ligand = multi_ligand_schema.validate(s.optional.qd.multi_ligand)
+        _validate_multi_lig(s)
 
     # Create forcefield Job Settings
     if s.optional.forcefield:

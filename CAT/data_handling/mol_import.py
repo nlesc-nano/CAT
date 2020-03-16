@@ -46,7 +46,7 @@ import os
 import itertools
 from types import MappingProxyType
 from string import ascii_letters
-from typing import Dict, Iterable, List, Sequence, Optional, Mapping
+from typing import Dict, Iterable, List, Sequence, Optional, Mapping, Callable
 
 import numpy as np
 
@@ -81,25 +81,14 @@ def read_mol(input_mol: Iterable[Settings]) -> List[Molecule]:
         A list of plams Molecules.
 
     """
-    # Creates a dictionary of file extensions
-    extension_dict = {
-        'xyz': read_mol_xyz,
-        'pdb': read_mol_pdb,
-        'mol': read_mol_mol,
-        'smiles': read_mol_smiles,
-        'folder': read_mol_folder,
-        'txt': read_mol_txt,
-        'plams_mol': read_mol_plams,
-        'rdmol': read_mol_rdkit
-    }
-
     # Create a list of PLAMS molecules
     mol_list = []
     append = mol_list.append
     extend = mol_list.extend
+
     for mol_dict in input_mol:
         try:
-            read_mol = extension_dict[mol_dict.type]
+            read_mol = EXTENSION_MAPPING[mol_dict.type]
         except KeyError as ex:
             logger.error(f'{ex.__class__.__name__}: {ex}')
             continue
@@ -232,6 +221,18 @@ def read_mol_txt(mol_dict: Settings) -> Optional[List[Molecule]]:
         return read_mol(file_list)
     except Exception as ex:
         print_exception('read_mol_txt', mol_dict.name, ex)
+
+
+EXTENSION_MAPPING: Mapping[str, Callable[[Settings], Optional[Molecule]]] = MappingProxyType({
+    'xyz': read_mol_xyz,
+    'pdb': read_mol_pdb,
+    'mol': read_mol_mol,
+    'smiles': read_mol_smiles,
+    'folder': read_mol_folder,
+    'txt': read_mol_txt,
+    'plams_mol': read_mol_plams,
+    'rdmol': read_mol_rdkit
+})
 
 
 def canonicalize_mol(mol: Molecule, inplace: bool = True) -> Optional[Molecule]:

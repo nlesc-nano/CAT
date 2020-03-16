@@ -44,6 +44,7 @@ from .data_handling.mol_import import read_mol
 from .data_handling.update_qd_df import update_qd_df
 from .data_handling.validate_input import validate_input
 
+from .multi_ligand import init_multi_ligand
 from .attachment.qd_opt import init_qd_opt
 from .attachment.ligand_opt import init_ligand_opt
 from .attachment.distribution import distribute_idx
@@ -356,6 +357,7 @@ def prep_qd(ligand_df: Optional[SettingsDataFrame],
     dissociate = ligand_df.settings.optional.qd.dissociate
     activation_strain = ligand_df.settings.optional.qd.activation_strain
     construct_qd = ligand_df.settings.optional.qd.construct_qd
+    multi_ligand = ligand_df.settings.optional.qd.multi_ligand
 
     # Construct the quantum dot DataFrame
     # If construct_qd is False, construct the dataframe without filling it with quantum dots
@@ -386,6 +388,9 @@ def prep_qd(ligand_df: Optional[SettingsDataFrame],
     # Optimize the qd with the core frozen
     if optimize:
         init_qd_opt(qd_df)
+
+    if multi_ligand:
+        init_multi_ligand(qd_df)
 
     # Calculate the interaction between ligands on the quantum dot surface
     if activation_strain:

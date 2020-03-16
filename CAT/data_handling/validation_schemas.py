@@ -20,39 +20,42 @@ Index
     crs_schema
     asa_schema
     subset_schema
+    multi_ligand_schema
     JOB_MAP
     JOB_MAP_SCM
 
 API
 ---
 .. autodata:: mol_schema
-    :annotation: = schema.Schema
+    :annotation: : schema.Schema
 .. autodata:: core_schema
-    :annotation: = schema.Schema
+    :annotation: : schema.Schema
 .. autodata:: ligand_schema
-    :annotation: = schema.Schema
+    :annotation: : schema.Schema
 .. autodata:: qd_schema
-    :annotation: = schema.Schema
+    :annotation: : schema.Schema
 .. autodata:: database_schema
-    :annotation: = schema.Schema
+    :annotation: : schema.Schema
 .. autodata:: mongodb_schema
-    :annotation: = schema.Schema
+    :annotation: : schema.Schema
 .. autodata:: ligand_opt_schema
-    :annotation: = schema.Schema
+    :annotation: : schema.Schema
 .. autodata:: bde_schema
-    :annotation: = schema.Schema
+    :annotation: : schema.Schema
 .. autodata:: qd_opt_schema
-    :annotation: = schema.Schema
+    :annotation: : schema.Schema
 .. autodata:: asa_schema
-    :annotation: = schema.Schema
+    :annotation: : schema.Schema
 .. autodata:: crs_schema
-    :annotation: = schema.Schema
+    :annotation: : schema.Schema
 .. autodata:: subset_schema
-    :annotation: = schema.Schema
+    :annotation: : schema.Schema
+.. autodata:: multi_ligand_schema
+    :annotation: : schema.Schema
 .. autodata:: JOB_MAP
-    :annotation: = dict[str, type]
+    :annotation: : Mapping[str, Type[Job]]
 .. autodata:: JOB_MAP_SCM
-    :annotation: = dict[str, type]
+    :annotation: : Mapping[str, Type[Job]]
 
 """
 
@@ -512,7 +515,13 @@ qd_schema: Schema = Schema({
             dict,
             And(bool, lambda n: n is False),
             error='optional.qd.dissociate expects False (boolean) or a dictionary'
-        )
+        ),
+
+    Optional_('multi_ligand', default=None):  # Settings for multi-ligand attachment
+        Or(
+            None, dict,
+            error='optional.qd.multi_ligand expects None or dictionary'
+        ),
 })
 
 
@@ -903,4 +912,69 @@ asa_schema: Schema = Schema({
             And(str, Use(lambda n: get_template(n, from_cat_data=False))),
             error='optional.qd.activation_strain.s1 expects a string or a dictionary'
         ),
+})
+
+#: Schema for validating the ``['optional']['qd']['multi_ligand']`` block.
+multi_ligand_schema: Schema = Schema({
+    'ligands':
+        And(
+            abc.Collection,
+            lambda n: not isinstance(n, str),
+            lambda n: all(isinstance(i, str) for i in n),
+            Use(tuple)
+        ),
+
+    Optional_('dummy', default=None):
+        Or(
+            None,
+            And(abc.Collection,
+                lambda n: not isinstance(n, str),
+                lambda n: len(set(n)) == len(n),
+                Use(lambda n: to_tuple(n, func=to_atnum)))
+        ),
+
+    Optional_('f', default=None):
+        Or(
+            None,
+            And(
+                abc.Collection,
+                lambda n: all(val_float(i) for i in n),
+                lambda n: all(float(i) > 0 for i in n),
+                lambda n: 0 < sum(float(i) for i in n) <= 1,
+                Use(lambda n: to_tuple(n, func=float))
+            )
+        ),
+
+    Optional_('mode', default='uniform'):
+        And(str, lambda n: n.lower() in {'uniform', 'random', 'cluster'}, Use(str.lower)),
+
+    Optional_('start', default=None):
+        Or(
+            None,
+            And(val_index, Use(__index__))
+        ),
+
+    Optional_('follow_edge', default=False):
+        bool,
+
+    Optional_('cluster_size', default=1):
+        Or(
+            And(val_int, lambda n: int(n) > 0, Use(int)),
+            And(abc.Collection,
+                lambda n: all(val_int(i) for i in n),
+                lambda n: all(int(i) > 0 for i in n),
+                Use(lambda n: to_tuple(n, func=int)))
+        ),
+
+    Optional_('weight', default=lambda: str_to_func('np.exp(-x)')):
+        Or(
+            And(Callable, Use(str_to_func)),
+            And(str, lambda n: 'x' in n, Use(str_to_func))
+        ),
+
+    Optional_('randomness', default=None):
+        Or(
+            None,
+            And(val_float, lambda n: 0 <= float(n) <= 1, Use(float))
+        )
 })

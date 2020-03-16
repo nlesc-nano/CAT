@@ -126,3 +126,29 @@ bulkiness:
         overwrite: [optional, database, overwrite]
 
         path: [optional, qd, dirname]
+
+multi_ligand:
+    description: multi-ligand attachment
+    mol_type: qd
+    template:
+        db: [optional, database, db]
+        read: [optional, database, read]
+        write: [optional, database, write]
+        overwrite: [optional, database, overwrite]
+
+        path: [optional, qd, dirname]
+        mol_format: [optional, database, mol_format]
+        allignment: [optional, core, allignment]
+        opt: [optional, ligand, optimize]
+        split: [optional, ligand, split]
+        functional_groups: [optional, ligand, functional_groups]
+
+        ligands: [optional, qd, multi_ligand, ligands]
+        dummy: [optional, qd, multi_ligand, dummy]
+        f: [optional, qd, multi_ligand, f]
+        mode: [optional, qd, multi_ligand, uniform]
+        start: [optional, qd, multi_ligand, start]
+        follow_edge: [optional, qd, multi_ligand, follow_edge]
+        cluster_size: [optional, qd, multi_ligand, cluster_size]
+        weight: [optional, qd, multi_ligand, weight]
+        randomness: [optional, qd, multi_ligand, randomness]

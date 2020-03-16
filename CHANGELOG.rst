@@ -11,6 +11,11 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.8.2
+*****
+* Added the option to decorate a qd surface with more than one type of ligand.
+
+
 0.8.1
 *****
 * Added the ``optional.core.allignment`` keyword for determining how

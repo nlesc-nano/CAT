@@ -312,7 +312,8 @@ class WorkFlow(AbstractDataClass):
 
     def __call__(self, func: Callable, df: pd.DataFrame,
                  index: Union[slice, pd.Series] = slice(None),
-                 columns: Optional[List[Hashable]] = None, **kwargs) -> None:
+                 columns: Optional[List[Hashable]] = None,
+                 no_loc: bool = False, **kwargs) -> None:
         r"""Initialize the workflow.
 
         Parameters
@@ -334,6 +335,12 @@ class WorkFlow(AbstractDataClass):
             The output of **func** will be fed into :code:`df[columns]`.
             If ``None``, use :attr:`WorkFlow.import_columns` instead.
 
+        no_loc : :class:`bool`
+            If ``True``, substitute :meth:`pandas.DataFrame.loc` for
+            :meth:`pandas.DataFrame.__setitem__`.
+            Usefull to prevent Panda's rather aggressive typecasting when passing object arrays.
+            Note that **no_loc** and **index** cannot be simultaneously specified.
+
         \**kwargs : :data:`Any<typing.Any>`
             Optional keyword arguments for **func**.
 
@@ -344,6 +351,8 @@ class WorkFlow(AbstractDataClass):
 
         """
         # Prepare slices
+        if no_loc and index != slice(None):
+            raise ValueError
         slice1 = index, MOL
         slice2 = index, list(self.import_columns.keys()) if columns is None else columns
 
@@ -351,8 +360,12 @@ class WorkFlow(AbstractDataClass):
         logger.info(f"Starting {self.description}")
         with PlamsInit(path=self.path, folder=self.name), self._SUPRESS_SETTINGWITHCOPYWARNING:
             self_vars = {k.strip('_'): v for k, v in vars(self).items()}
-            value = func(df.loc[slice1], **self_vars, **kwargs)
-            df.loc[slice2] = value
+            value = func(df.loc[slice1], columns=columns, **self_vars, **kwargs)
+            if no_loc:
+                for k, v in zip(slice2[1], value):
+                    df[k] = v
+            else:
+                df.loc[slice2] = value
         logger.info(f"Finishing {self.description}\n")
 
     def from_db(self, df: pd.DataFrame, inplace: bool = True, get_mol: bool = True,

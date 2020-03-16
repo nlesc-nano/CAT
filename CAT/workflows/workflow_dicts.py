@@ -15,7 +15,6 @@ import numpy as np
 
 from .key_map import (
     OPT,
-    MOL,
     HDF5_INDEX,
     JOB_SETTINGS_QD_OPT,
     JOB_SETTINGS_CRS,
@@ -47,7 +46,7 @@ def _load_templates() -> dict:
 def _recursive_mapping_proxy(dct: MutableMapping) -> MappingProxyType:
     """Recursivelly convert **dct**, and all nested mutable mappings, into :class:`MappingProxyType<types.MappingProxyType>` instances."""  # noqa
     for k, v in dct.items():
-        if isinstance(v, MutableMapping):
+        if isinstance(v, dict):
             dct[k] = _recursive_mapping_proxy(v)
     return MappingProxyType(dct)
 
@@ -70,7 +69,9 @@ def finalize_templates():
         'forcefield': {'import_columns': {},
                        'export_columns': ()},
         'bulkiness': {'import_columns': {V_BULK: np.nan},
-                      'export_columns': (V_BULK,)}
+                      'export_columns': (V_BULK,)},
+        'multi_ligand': {'import_columns': {HDF5_INDEX: -1, OPT: False},
+                         'export_columns': (HDF5_INDEX, OPT)},
     }
 
     templates = _load_templates()

@@ -13,7 +13,7 @@ Index
 API
 ---
 .. autodata:: KEY_MAP
-    :annotation: = Mapping[str, Tuple[str, str]]
+    :annotation: : Mapping[str, Tuple[str, str]]
 
 """
 
