@@ -313,7 +313,7 @@ class WorkFlow(AbstractDataClass):
     def __call__(self, func: Callable, df: pd.DataFrame,
                  index: Union[slice, pd.Series] = slice(None),
                  columns: Optional[List[Hashable]] = None,
-                 no_loc : bool = False, **kwargs) -> None:
+                 no_loc: bool = False, **kwargs) -> None:
         r"""Initialize the workflow.
 
         Parameters

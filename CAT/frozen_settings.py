@@ -65,8 +65,11 @@ class FrozenSettings(Settings):
 
     __repr__ = __str__
 
-    def __missing__(self, key: Hashable) -> 'FrozenSettings': return _frozen_settings
-    def __bool__(self) -> bool: return bool(len(self))
+    def __missing__(self, key: Hashable) -> 'FrozenSettings':
+        return _frozen_settings
+
+    def __bool__(self) -> bool:
+        return bool(len(self))
 
     @classmethod
     def _raise_exc(cls, *args, **kwargs) -> NoReturn:

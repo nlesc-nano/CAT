@@ -196,7 +196,8 @@ def test_qd_schema() -> None:
         'optimize': False,
         'dissociate': False,
         'bulkiness': False,
-        'construct_qd': True
+        'construct_qd': True,
+        'multi_ligand': None
     }
 
     assertion.eq(qd_schema.validate(qd_dict), ref)

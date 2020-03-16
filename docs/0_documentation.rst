@@ -17,6 +17,7 @@ look into the customization of the various jobs.
     10_context_managers
     11_md_asa
     12_recipes
+    13_multi_ligand
 
 .. toctree::
     :hidden:

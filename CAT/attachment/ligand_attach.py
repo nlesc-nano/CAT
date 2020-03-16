@@ -658,7 +658,12 @@ def array_to_qd(mol: Molecule, xyz_array: np.ndarray,
     """
     mol_list = []
     xyz_array = sanitize_dim_3(xyz_array)
-    for i, xyz in enumerate(xyz_array, 2):
+    if mol_out is None:
+        start = 2
+    else:
+        start = 1 + mol_out[-1].properties.get('pdb_info', {}).get('ResidueNumber', 1)
+
+    for i, xyz in enumerate(xyz_array, start=start):
         mol_cp = mol.copy()
         mol_cp.from_array(xyz)
         for at in mol_cp:

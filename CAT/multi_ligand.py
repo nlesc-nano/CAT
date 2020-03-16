@@ -1,5 +1,7 @@
+"""A module for attaching multiple non-unique ligands to a single quantum dot."""
+
 from typing import (Iterable, Any, overload, Sequence, MutableSequence,
-                    Collection, List, Generator, Union)
+                    Collection, List, Union)
 
 import numpy as np
 import pandas as pd
@@ -7,15 +9,14 @@ import pandas as pd
 from rdkit import Chem
 from scm.plams import Molecule, MoleculeError
 
-from CAT.workflows import WorkFlow
-from CAT.utils import group_by_values
-from CAT.mol_utils import to_symbol
-from CAT.data_handling import mol_to_file
-from CAT.data_handling.mol_import import read_mol
-from CAT.data_handling.validate_mol import validate_mol
-from CAT.attachment.ligand_opt import optimize_ligand, allign_axis
-from CAT.attachment.ligand_anchoring import find_substructure
-from CAT.attachment.ligand_attach import ligand_to_qd
+from .workflows import WorkFlow
+from .mol_utils import to_symbol
+from .data_handling import mol_to_file
+from .data_handling.mol_import import read_mol
+from .data_handling.validate_mol import validate_mol
+from .attachment.ligand_opt import optimize_ligand, allign_axis
+from .attachment.ligand_anchoring import find_substructure
+from .attachment.ligand_attach import ligand_to_qd
 
 __all__ = ['init_multi_ligand']
 
