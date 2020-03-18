@@ -89,7 +89,8 @@ def _multi_lig_dummy(qd_series, ligands, path, dummy, allignment) -> List[List[M
         for ligand, atnum in zip(ligands, dummy):
             try:
                 atoms = [at for at in qd if at.atnum == atnum]
-            except KeyError as ex:
+                assert atoms
+            except AssertionError as ex:
                 raise MoleculeError(f'Failed to identify {to_symbol(atnum)!r} in '
                                     f'{qd.get_formula()!r}') from ex
             else:
