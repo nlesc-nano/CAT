@@ -43,7 +43,8 @@ def init_multi_ligand(qd_df):
     if workflow.mol_format is not None:
         path = workflow.path
         mol_format = workflow.mol_format
-        mol_to_file(qd_df[columns].values.ravel(), path, mol_format=mol_format)
+        mol_ar_flat = qd_df[columns].values.ravel()
+        mol_to_file(mol_ar_flat, path, mol_format=mol_format)
 
 
 @overload
@@ -79,14 +80,13 @@ def multi_lig(qd_series, ligands, dummy=None, f=None, **kwargs):
         raise TypeError("'f' and 'dummy' cannot be both 'None'")
 
 
-def _multi_lig_dummy(qd_series, ligands, path, dummy, allignment) -> List[List[Molecule]]:
+def _multi_lig_dummy(qd_series, ligands, path, dummy, allignment) -> np.ndarray:
     """Gogogo."""
-    ret_list = []
-    for qd in qd_series:
-        ret = []
-        ret_list.append(ret)
+    ret = np.empty((len(ligands), len(qd_series)), dtype=object)
+    for i, qd in enumerate(qd_series):
+        qd = qd.copy()
 
-        for ligand, atnum in zip(ligands, dummy):
+        for j, (ligand, atnum) in enumerate(zip(ligands, dummy)):
             try:
                 atoms = [at for at in qd if at.atnum == atnum]
                 assert atoms
@@ -102,8 +102,8 @@ def _multi_lig_dummy(qd_series, ligands, path, dummy, allignment) -> List[List[M
             qd = ligand_to_qd(qd, ligand, path=path,
                               allignment=allignment,
                               idx_subset=qd.properties.indices)
-            ret.append(qd)
-    return np.array(ret_list, dtype=object).T
+            ret[j, i] = qd
+    return ret
 
 
 def _multi_lig_f(qd_series, ligands, path, f, **kwargs):
