@@ -80,15 +80,13 @@ def multi_lig(qd_series, ligands, dummy=None, f=None, **kwargs):
         raise TypeError("'f' and 'dummy' cannot be both 'None'")
 
 
-def _multi_lig_dummy(qd_series, ligands, path, dummy, allignment) -> List[List[Molecule]]:
+def _multi_lig_dummy(qd_series, ligands, path, dummy, allignment) -> np.ndarray:
     """Gogogo."""
-    ret_list = []
-    for qd in qd_series:
+    ret = np.empty((len(ligands), len(qd_series)), dtype=object)
+    for i, qd in enumerate(qd_series):
         qd = qd.copy()
-        ret = []
-        ret_list.append(ret)
 
-        for ligand, atnum in zip(ligands, dummy):
+        for j, (ligand, atnum) in enumerate(zip(ligands, dummy)):
             try:
                 atoms = [at for at in qd if at.atnum == atnum]
                 assert atoms
@@ -104,9 +102,8 @@ def _multi_lig_dummy(qd_series, ligands, path, dummy, allignment) -> List[List[M
             qd = ligand_to_qd(qd, ligand, path=path,
                               allignment=allignment,
                               idx_subset=qd.properties.indices)
-            ret.append(qd)
-
-    return ret_list
+            ret[j, i] = qd
+    return ret
 
 
 def _multi_lig_f(qd_series, ligands, path, f, **kwargs):
