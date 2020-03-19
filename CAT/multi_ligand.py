@@ -43,7 +43,8 @@ def init_multi_ligand(qd_df):
     if workflow.mol_format is not None:
         path = workflow.path
         mol_format = workflow.mol_format
-        mol_to_file(qd_df[columns].values.ravel(), path, mol_format=mol_format)
+        mol_ar_flat = qd_df[columns].values.ravel()
+        mol_to_file(mol_ar_flat, path, mol_format=mol_format)
 
 
 @overload
@@ -83,6 +84,7 @@ def _multi_lig_dummy(qd_series, ligands, path, dummy, allignment) -> List[List[M
     """Gogogo."""
     ret_list = []
     for qd in qd_series:
+        qd = qd.copy()
         ret = []
         ret_list.append(ret)
 
@@ -103,7 +105,8 @@ def _multi_lig_dummy(qd_series, ligands, path, dummy, allignment) -> List[List[M
                               allignment=allignment,
                               idx_subset=qd.properties.indices)
             ret.append(qd)
-    return np.array(ret_list, dtype=object).T
+
+    return ret_list
 
 
 def _multi_lig_f(qd_series, ligands, path, f, **kwargs):
