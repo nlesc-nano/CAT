@@ -1,0 +1,1 @@
+.. automodule:: nanoCAT.recipes.charges
