@@ -226,9 +226,12 @@ def _finalize(self):
                 self.status = 'successful'
                 if self.settings.pickle:
                     self.pickle()
-                    filename = join(self.path, self.name + '.hash')
+                    filename = join(self.path, f'{self.name}.hash')
                     with open(filename, 'w') as f:
-                        f.write(self.hash())
+                        try:  # Will raise a TypeError if rerun prevetion is disabled
+                            f.write(self.hash())
+                        except TypeError:
+                            pass
             else:
                 self.status = 'failed'
     else:
