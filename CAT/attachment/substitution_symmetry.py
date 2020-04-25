@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
 
-from scm.plams import Molecule, Settings
+from scm.plams import Molecule
 from scm.plams.tools.geometry import rotation_matrix
 
 
@@ -96,44 +96,38 @@ def supstitution_symmetry(mol):
 
     	mol <plams.Molecule>: A PLAMS molecule
         """
-    dataframe, at_simbols,type_of_symetry = [], [], []
-
-    hatoms = mol.properties.coords_h_atom
-    substituted_atoms = [mol.closest_atom(i) for i in hatoms]
-    not_hatoms = [at for at in substituted_atoms if at.symbol != 'H']
-    
+    dataframe,type_of_symetry = [], []
+    ligand_identity = mol.properties.ligID
+ 
     # Defining C atoms conected to substituents and making Molecule object (cmol) out of them
     catoms = mol.properties.coords_other_arrays
     cmol = Molecule()
     for at in catoms:
         cmol.add_atom(mol.closest_atom(at))
-    
+
     # If substitution is linear, simple combinations without repetition can be applied
-    if len(not_hatoms) <= 2:
-        if len(not_hatoms) == 1:
+    if len(ligand_identity) <= 2:
+        if len(ligand_identity) == 1:
             print ("One does not simply ask for subsymmetry of one atom!")
             pass
-        elif len(not_hatoms) == 0:
-            print ("What is happening?!")
+        elif len(ligand_identity) == 0:
+            print ("What the hell is happening?!")
             pass
         else:
-            atomic_symbols = [at.symbol for at in not_hatoms]
-            mol.properties.subsymmetry = 'linear'
-    
+            subsymmetry = 'linear'
     else:
-        # Defining tree, four or more substituents and caring about their symbols
         # Getting non zero row indices from data frame - defines symmetry type
+        
         dataframe = get_symmetry(cmol,decimals=2)
-        atomic_symbols = [at.symbol for at in not_hatoms]
         type_of_symetry = np.unique(dataframe.to_numpy().nonzero()[0])
-
+        
         # Assign type of symetry and atomic symbols
         if list(type_of_symetry) == [0, 1, 8, 9]:
-            mol.properties.subsymmetry = 'D2h'
+            subsymmetry = 'D2h'
         else:
             print ("Well, Jelena made me to recognize only rectangles and this is not rectangle!")
 
-    return atomic_symbols
+    return subsymmetry
 
 
 def get_symmetry(mol, decimals=2):
@@ -180,57 +174,75 @@ def get_symmetry(mol, decimals=2):
     return df
 
 
-def del_equiv_structures(mols):
+def del_equiv_structures(mols, subsymmetry=None):
     """ 
 	Returnes list of molecules wihout duplicats 	
 
     mols <plams.Molecule>: A list of PLAMS molecules
         """
-    notuniques=[]
+    notunique=[]
    
     for mol in mols:
-        atomic_symbols = supstitution_symmetry(mol)
-        #lig_positions = np.unique(atomic_simbols, return_counts=True)
+        if subsymmetry == None:
+            subsymmetry = supstitution_symmetry(mol)
+        
+        ligID = list(mol.properties.ligID)
+        
+        all_permutations = symm_permutations(subsymmetry, ligID) 
+        
+        notunique.append(all_permutations)
 
-        mol.properties.subsymbols = atomic_symbols
-        # order has two arrays, repeated symbol and number of repetition
-        subsymmetry = mol.properties.subsymmetry 
-        symbol_combination = subsymm_combinations(atomic_symbols, subsymmetry)
-        #print ("combos", symbol_combination)
-        notuniques.append(symbol_combination)
-
-    scos = [sorted(sc) for sc in notuniques]
+    scos = [sorted(sc) for sc in notunique]
     u, indices = np.unique(scos, return_index=True, axis=0)
-    #print ("unique", u)
-    picked_mols = [mols[i] for i in list(indices)]
+    
+    unique_molecules = [mols[i] for i in list(indices)]
 
-    return picked_mols
+    return unique_molecules
 
-def subsymm_combinations(listy,subsymmetry):
-
+def symm_permutations(condition, elements): 
+    """ For given list of elements, makes permutations taking in account symmetry condition
+    <condition>: string 
+    <elements>: list
+    """
     def swap_neighbours(j):
-        # swaping neighbours 1,2,3,4 becomes 2,1,4,3
+        """ swaping neighbours inside a list: 1,2,3,4 becomes 2,1,4,3
+        <j>: a list
+        """
         j[1::2], j[::2] = j[::2],j[1::2]
         return j
     def swap_pairs(j):
-        # swaping pairs 1,2,3,4 becomes 3,4,1,2
+        """ swaping pairs inside a list: 1,2,3,4 becomes 3,4,1,2
+        <j>: a list
+        """
         j[:2], j[2:] = j[2:], j[:2]
         return j
-    
-    # Making a string out of molecule combinations
-    if subsymmetry == 'D2h':
-        a = ''.join(listy)
-        b = ''.join(swap_neighbours(listy))
-        c = ''.join(swap_pairs(listy))
-        d = ''.join(swap_neighbours(listy))
+    def rotate_list(l,n):
+        return l[n:] + l[:n]
+    def swap_two(j):
+        j[0], j[1] = j[1], j[0]
+        return j
+
+    # Making list of all permutations
+    if condition == 'D2h':
+        a = ''.join(elements)
+        b = ''.join(swap_neighbours(elements))
+        c = ''.join(swap_pairs(elements))
+        d = ''.join(swap_neighbours(elements))
         final = []
         final = [a,b,c,d]
-    if subsymmetry == 'linear':
-        a = ''.join(listy)
-        b = ''.join(swap_neighbours(listy))
+    if condition == 'linear':
+        a = ''.join(elements)
+        b = ''.join(swap_neighbours(elements))
         final = []
         final = [a,b]
-
+    if condition == 'triangle':
+        a = ''.join(elements)
+        b = ''.join(swap_two(elements))
+        #c,d = ''.join(rotate_list(a,1)), ''.join(rotate_list(a,2))
+        #e,f = ''.join(rotate_list(b,1)), ''.join(rotate_list(b,2))
+        final = []
+        final = [a,b]#,c,d,e,f]
+        print (final)
     return final
 
 
