@@ -5,7 +5,7 @@ __all__ = ['bob_ligand', 'bob_core', 'substitution', 'multi_substitution']
 from itertools import chain
 
 import numpy as np
-import pandas as pd
+
 from scipy.spatial.distance import cdist
 
 from rdkit.Chem import AllChem
