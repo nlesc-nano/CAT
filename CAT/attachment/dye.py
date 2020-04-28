@@ -19,10 +19,26 @@ from CAT.attachment.ligand_attach import rot_mol
 
 
 def ff_constrained_opt(mol, constrain=[]):
-    """ Perform a constrained FF optimization on a PLAMS molecule.
+    """ Performs a constrained FF optimization on a PLAMS molecule
+
+    Optimisation with rdkit.Chem.AllChem.MMFFGetMoleculeForceField; a PLAMS molecule 
+    is converted to rdkit molecule, optimised with frozen atoms and converted back to 
+    PLAMS molecule.
+    
+    Parameters
+    ----------
+    mol : |plams.Molecule|
+        A PLAMS molecule.
         
-        :parameter mol: A PLAMS molecule.
-        :parameter constrain: A list of indices of to-be frozen atoms.
+    constrain : list
+        A list of indices of to-be frozen atoms.
+    
+    Returns
+    -------
+    |plams.Molecule|
+        Optimized molecular structure
+
+
         """
     rdkit_mol = to_rdmol(mol)
     
@@ -38,11 +54,29 @@ def ff_constrained_opt(mol, constrain=[]):
 
 def connect_ligands_to_core(lig_dict, core, user_min_dist):
     """ Attaches multiple ligands to multiple copies of a single core.
+
+    
     Returns a list of cores with attached ligands, each with the properties.min_distance attribute
     containing the smallest distance between ligand and core.
-
-    ligand_list: An iterable container consisting of PLAMS molecules, each with the properties.lig_h & .lig_other attributes (PLAMS Atoms)
-    core: A PLAMS molecule with the properties.core_h & .core_other attributes (PLAMS Atoms)
+    
+    
+    Parameters
+    ----------
+    lig_dict : dict
+        Ligands that are attached to the core molecule
+        An iterable container consisting of a PLAMS molecules - ligand; 
+        A np.array of PLAMS atom coordinates - atom to be substituted; 
+        A vector array - bond between substituent and rest of the compound; 
+        An int - enumerating ligands
+    core : |plams.Molecule|
+        A PLAMS molecule - core on which ligands are attached
+    user_min_dist : float
+        Value for the minimal bond distance in the new molecule 
+    
+    Returns
+    -------
+    list of PLAMS molecules
+        A list of new molecule that are made core with different ligands attached 
     """
 
     # Unpack the ligand dictionary
@@ -90,26 +124,27 @@ def connect_ligands_to_core(lig_dict, core, user_min_dist):
         lig_cp.properties.name = core.properties.name + "_" + lig.properties.name
         lig_cp.properties.min_distance = min_dist
         
-                
-        # UFF for molecule with frozen core
-        # Defining the connection for ligand and core
+        # Add bond between core and ligand       
         the_h = lig_cp.closest_atom(lig_cp.properties.the_h)        
         core_other = lig_cp.closest_atom(lig_cp.properties.coords_other_arrays[len(new_ligID)-1])
         lig_cp.add_bond(the_h, core_other)
 
-        # number of substitutions left
-        h_gone = len(lig_cp.properties.coords_h_atom) - len(lig_cp.properties.coords_h)
 
-        conn = list(lig_cp).index(core_other)
-        frozen_ind_rdkit = [x for x in range(len(lig_cp)-len(core_cp),len(lig_cp)) if x != conn ] # list rdkit standards, counts from 0
+
+        # Making list of atom indices that will be frozen for optimization
+        # Atom that ligand is conected to is not frozen
+        h_gone = len(lig_cp.properties.coords_h_atom) - len(lig_cp.properties.coords_h)
+        connection = list(lig_cp).index(core_other)
+        frozen_ind_rdkit = [x for x in range(len(lig_cp)-len(core_cp),len(lig_cp)) if x != connection ] # rdkit counts from 0
         
+        # FF for molecule with frozen core
         try:
             lig_cp = ff_constrained_opt(lig_cp, constrain=frozen_ind_rdkit)
         except ValueError:
-            print ("FF optimisation error")
+            print ("FF optimization error")
         
         # Distance between core and ligands
-        frozen_ind_plams = (np.array(frozen_ind_rdkit)+1).tolist()
+        frozen_ind_plams = (np.array(frozen_ind_rdkit)+1).tolist() # plams counts from 1
         frozen_atoms = np.array([lig_cp[c].coords for c in frozen_ind_plams])            
         only_ligands = np.array([lig_cp[l].coords for l in range(1,len(lig_cp)+1) if l not in frozen_ind_plams])
         min_dist = np.nanmin(cdist(only_ligands, frozen_atoms))
@@ -121,6 +156,24 @@ def connect_ligands_to_core(lig_dict, core, user_min_dist):
 
 
 def get_args(core, lig_list, lig_idx):
+    """ Extract the various arguments from core and ligand_list
+
+    Parameters
+    ----------
+    core : |plams.Molecule|
+        A PLAMS molecule with plams_mol.properties attributes
+    lig_list : list 
+        A list with PLAMS molecules with plams_mol.properties attributes
+    lig_idx : 
+        A np.array of PLAMS atom coordinates - atom for substitution
+
+    Returns
+    -------
+    dict
+        A dictionary with properties needed for aligning ligand with the core
+
+    """
+
     # Extract the various arguments from core and ligand_list
     core_other_atom = core.properties.coords_other_atom[0]
     lig_other = [lig[lig.properties.idx_other+1] for lig in lig_list]
@@ -144,9 +197,22 @@ def get_args(core, lig_list, lig_idx):
 
 
 def bob_core(mol):
-    """
-    Marks a PLAMS molecule with the .properties.h & .properties.other attributes.
-    mol <plams.Molecule>: An input molecule with the plams_mol.properties.comment attribute.
+    """ Adds plams_mol.properties attribute to the core
+    
+    Reads the atom indices from comment section in core's .xyz file and adds additional 
+    plams_mol.properties: coordinates of atom that will be substituted, bond vector between the substitution 
+    atom and its connection at the core, coordinates of the connection at the core 
+
+    Parameters
+    ----------
+    mol : |plams.Molecule|
+        An input  PLAMS molecule with atom indices to be substituted in plams_mol.properties.comment  
+
+    Returns
+    -------
+    mol : |plams.Molecule|
+        A PLAMS mol with additional plams_mol.properties
+
     """
     # Read the comment in the second line of the xyz file
     comment = mol.properties.comment
@@ -169,9 +235,22 @@ def bob_core(mol):
 
 
 def bob_ligand(mols):
-    """
-    Marks a PLAMS molecule with the .properties.h & .properties.other attributes.
-    mol <plams.Molecule>: An input molecule with the plams_mol.properties.comment attribute.
+    """Adds plams_mol.properties attribute to the ligand
+    
+    Reads the atom index from comment section in ligand's .xyz file and adds additional 
+    plams_mol.properties: coordinates of atom that will be substituted; bond vector between 
+    the substitution atom and its connection at the ligand; coordinates of the connection 
+    at the ligand; ligands identity - ligands serial number
+
+    Parameters
+    ----------
+    mol : |plams.Molecule|
+        An input  PLAMS molecule with atom indices to be substituted in plams_mol.properties.comment  
+
+    Returns
+    -------
+    mol : |plams.Molecule|
+        A PLAMS mol with additional plams_mol.properties
     """
     ligID = list(range(len(mols)))
     
@@ -195,11 +274,23 @@ def bob_ligand(mols):
         mol.guess_bonds()
 
 
-def substitution(input_ligands, input_cores,min_dist, rep=False):
-    """
-    To every list of cores one type of ligand is added.
-    Mono_subs contaions of key = name of molecule, value = (coordinates of new molecule,
-        shortest distance between core and ligand after its connection).
+def substitution(input_ligands, input_cores,min_dist):
+    """ Substitutes atoms at the core with ligands
+
+
+    Parameters
+    ----------
+    input_ligands : list
+        A list of input PLAMS molecules with index of an atom to be substituted in plams_mol.properties.comment 
+    input_cores : list
+        A list of input PLAMS molecules with list of indices of atoms to be substituted in plams_mol.properties.comment 
+    min_dist : float
+        Minimal distance between core and attached ligands
+
+    Returns
+    -------
+    list 
+        New molecules that are made of ligands attached to the core at position of the first index in the list 
     """
     lig_idx = np.array([lig.properties.idx_other for lig in input_ligands])
     lig_vec = np.array([lig.properties.vec for lig in input_ligands])
