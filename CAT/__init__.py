@@ -1,40 +1,52 @@
-""" A collection of tools designed for the construction,
-and subsequent analysis, of various chemical compounds. """
+"""
+CAT
+===
 
-__author__ = "Bas van Beek"
-__email__ = 'b.f.van.beek@vu.nl'
+A collection of tools designed for the construction of various chemical compounds.
+
+"""
 
 from .__version__ import __version__
 
-from .analysis import (
-    init_asa, CRSJob, CRSResults, job_single_point, job_geometry_opt, job_freq,
-    init_bde, get_thermo, get_entropy, dissociate_ligand, init_solv
+from .jobs import (
+    job_single_point, job_geometry_opt, job_freq
+)
+
+from .thermo_chem import (
+    get_thermo, get_entropy
 )
 
 from .attachment import (
+<<<<<<< HEAD
     qd_opt, optimize_ligand, ligand_to_qd, bob_ligand, bob_core, substitution, multi_substitution
+=======
+    init_qd_opt, init_ligand_opt, init_qd_construction, init_ligand_anchoring
+>>>>>>> master
 )
 
 from .data_handling import (
-    read_database, compare_database, write_database, export_mol, read_mol,
-    set_prop, sanitize_arg_dict
+    read_mol, set_mol_prop
 )
 
-from .base import prep
+from .utils import get_template
 
-from .misc import get_template
+__version__ = __version__
+__author__ = "Bas van Beek"
+__email__ = 'b.f.van.beek@vu.nl'
 
 __all__ = [
-    'init_asa', 'CRSJob', 'CRSResults', 'job_single_point', 'job_geometry_opt', 'job_freq',
-    'init_bde', 'get_thermo', 'get_entropy', 'dissociate_ligand', 'init_solv',
+    'job_single_point', 'job_geometry_opt', 'job_freq',
 
+<<<<<<< HEAD
     'qd_opt', 'optimize_ligand', 'ligand_to_qd', 'substitution', 'multi_substitution',
     'bob_ligand', 'bob_core',
+=======
+    'get_thermo', 'get_entropy',
+>>>>>>> master
 
-    'read_database', 'compare_database', 'write_database', 'export_mol', 'read_mol',
-    'set_prop', 'sanitize_arg_dict',
+    'init_qd_opt', 'init_ligand_opt', 'init_qd_construction', 'init_ligand_anchoring',
 
-    'prep',
+    'read_mol', 'set_mol_prop'
 
     'get_template',
 ]

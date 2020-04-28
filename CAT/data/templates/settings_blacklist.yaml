@@ -1,0 +1,11 @@
+generic:
+    description: null
+    pickle: null
+    ignore_molecule: null
+AMSJob:
+    input:
+        ams: null
+CRSJob:
+    input:
+        compound: null
+        Compound: null
