@@ -37,7 +37,7 @@ setup(
     package_dir={'CAT': 'CAT'},
     package_data={
         'CAT': [
-            'data/templates/*json',
+            'data/templates/*yaml',
             'data/coskf/*coskf',
             'data/CORES/*xyz',
             'data/LIGANDS/*xyz',
