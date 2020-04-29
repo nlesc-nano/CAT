@@ -6,13 +6,12 @@ data
 coskf
 ~~~~~
 
-Various solvent .coskf files from the COSMO(crs)-MOPAC level with PM7 parameters.
+Various solvent .coskf files produced at the COSMO-MOPAC(PM7) level of theory.
 
 ~~~~~~~~~
 templates
 ~~~~~~~~~
-
-Various template input scripts.
+Various templates input scripts and SMILES strings used internally by **CAT**.
 
 ~~~~~
 CORES
@@ -23,5 +22,4 @@ Various .xyz files of example cores.
 ~~~~~~~
 LIGANDS
 ~~~~~~~
-
 Various .xyz files of example ligands.

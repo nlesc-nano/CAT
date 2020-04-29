@@ -1,0 +1,25 @@
+split:
+    - '[N+]C.[F-]'  # ammonium fluoride
+    - '[N+]C.[Cl-]'  # ammonium chloride
+    - '[N+]C.[Br-]'  # ammonium bromide
+    - '[N+]C.[I-]'  # ammonium iodide
+    - 'N(C)[H]'  # amide anion
+    - 'P(C)[H]'  # phosphide anion
+    - 'O(P)[H]'  # phosphorus oxide anion
+    - 'O(C)[H]'  #  alkoxide anion
+    - 'S(C)[H]'  # sulfide anion
+    - 'O(S)[H]'  # sulfoxide anion
+no_split:
+    - '[N+]C'  # ammonium cation
+    - 'NC'  # amine
+    - '[N-]C'  # amide anion
+    - 'PC'  # phosphine
+    - '[P-]C'  # phosphide anion
+    - 'OP'  # phosphorus oxide
+    - '[O-]P'  # phosphorus oxide anion
+    - 'OC'  # alkoxide
+    - '[O-]C'  # alkoxide anion
+    - 'SC'  # sulfide
+    - '[S-]C'  # sulfide anion
+    - 'OS'  # sulfoxide
+    - '[O-]S'  # sulfoxide anion

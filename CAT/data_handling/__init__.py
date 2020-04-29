@@ -1,14 +1,18 @@
-""" Modules related to the importing, exporting and general handling of data. """
+"""
+CAT.data_handling
+=================
 
-from .database import (read_database, compare_database, write_database)
-from .mol_export import export_mol
-from .mol_import import (read_mol, set_prop)
-from .sanitize_input import sanitize_arg_dict
+Modules related to the importing, exporting and general handling of data.
+
+"""
+
+from .mol_import import read_mol, set_mol_prop
+from .warn_map import WARN_MAP
+from .mol_to_file import mol_to_file
 
 
 __all__ = [
-    'read_database', 'compare_database', 'write_database',
-    'export_mol',
-    'read_mol', 'set_prop',
-    'sanitize_arg_dict'
+    'read_mol', 'set_mol_prop',
+    'WARN_MAP',
+    'mol_to_file'
 ]
