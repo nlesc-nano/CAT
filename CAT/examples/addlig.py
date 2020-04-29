@@ -37,7 +37,7 @@ for core in input_cores:
 
 
 # Makes new folders
-new_dir = ['The_new_PDI_structures', 'err_molecules']
+new_dir = ['The_new_structures', 'err_molecules']
 
 if not exists(join(path, new_dir[0])):
     os.makedirs(join(path, new_dir[0]))
@@ -55,10 +55,10 @@ mono = substitution(input_ligands, input_cores, min_dist)
 di = substitution(input_ligands, mono, min_dist)
 di_unique = del_equiv_structures(di, 'linear')
 
-#tri = substitution(input_ligands, di, min_dist)
+tri = substitution(input_ligands, di, min_dist)
 
-#tetra = substitution(input_ligands, tri, min_dist)
-#tetra_unique = del_equiv_structures(tetra, 'D2h')
+tetra = substitution(input_ligands, tri, min_dist)
+tetra_unique = del_equiv_structures(tetra, 'D2h')
 
 # Combine and flatten all new molecules into a generator
 new_molecules = chain.from_iterable([mono, di_unique])#, tri, tetra_unique])
