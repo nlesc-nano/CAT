@@ -5,6 +5,7 @@ from os.path import (join, exists)
 
 from scm.plams.core.functions import read_molecules
 
+import CAT
 from CAT.attachment.dye import bob_ligand, bob_core, substitution
 from CAT.attachment.substitution_symmetry import del_equiv_structures
 
@@ -18,11 +19,11 @@ start = time.time()
 
 # Path to the working folder where are prepared molecules and where folder with new coordinares
 # will be made with the specific name
-path = os.getcwd()
-input_ligands = read_molecules(join(path, 'LIGANDStest'))
+path = join(CAT.__path__[0], 'data')  # os.getcwd()
+input_ligands = read_molecules(join(path, 'LIGANDS'))
 input_ligands = list(input_ligands.values())
 
-input_cores = read_molecules(join(path, 'COREStest'))
+input_cores = read_molecules(join(path, 'CORES'))
 input_cores = list(input_cores.values())
 
 # Bob does what Bob has to do (numbering the ligands)
