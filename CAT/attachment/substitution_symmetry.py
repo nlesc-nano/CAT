@@ -89,11 +89,12 @@ def get_rotmat_axis(rot_range, axis='x'):
 
 
 def supstitution_symmetry(mol):
-    """ Returns atomic symbols of substituted atoms (or first conection of non diatomic ligand)
-    	Writes type of substitution symetry at the molecular properties
+    """ Returns atomic symbols of substituted atoms (or first conection of non diatomic ligand).
 
-    	mol <plams.Molecule>: A PLAMS molecule
-        """
+   	Writes type of substitution symetry at the molecular properties
+
+   	mol <plams.Molecule>: A PLAMS molecule
+    """
     dataframe,type_of_symetry = [], []
     ligand_identity = mol.properties.ligID
 
@@ -107,10 +108,10 @@ def supstitution_symmetry(mol):
     if len(ligand_identity) <= 2:
         if len(ligand_identity) == 1:
             print ("One does not simply ask for subsymmetry of one atom!")
-            pass
+            return
         elif len(ligand_identity) == 0:
             print ("What the hell is happening?!")
-            pass
+            return
         else:
             subsymmetry = 'linear'
     else:
@@ -124,7 +125,7 @@ def supstitution_symmetry(mol):
             subsymmetry = 'D2h'
         else:
             print ("Well, Jelena made me to recognize only rectangles and this is not rectangle!")
-
+            return
     return subsymmetry
 
 
@@ -190,7 +191,13 @@ def del_equiv_structures(mols, subsymmetry=None):
 
         notunique.append(all_permutations)
 
-    scos = [sorted(sc) for sc in notunique]
+    try:
+        scos = [sorted(sc) for sc in notunique]
+    except TypeError:
+        # notunique == [None, ...] if something went wrong in the previous steps
+        # assume that all molecules are unique in such a scenario
+        return mols
+
     u, indices = np.unique(scos, return_index=True, axis=0)
 
     unique_molecules = [mols[i] for i in list(indices)]
@@ -221,6 +228,8 @@ def symm_permutations(condition, elements):
         return j
 
     # Making list of all permutations
+    if condition is None:
+        return None
     if condition == 'D2h':
         a = ''.join(elements)
         b = ''.join(swap_neighbours(elements))
