@@ -10,9 +10,9 @@ from scipy.spatial.distance import cdist
 
 from rdkit.Chem import AllChem
 
-from scm.plams import Atom, Molecule, Settings, PeriodicTable
+from scm.plams import Molecule, Settings
 
-from scm.plams.interfaces.molecule.rdkit import to_rdmol, from_rdmol
+from scm.plams.interfaces.molecule.rdkit import to_rdmol
 
 from CAT.attachment.ligand_attach import rot_mol
 
