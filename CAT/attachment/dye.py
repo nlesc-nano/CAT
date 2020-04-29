@@ -14,16 +14,22 @@ from .ligand_attach import rot_mol
 
 
 def ff_constrained_opt(mol, constrain=()):
-    """ Perform a constrained FF optimization on a PLAMS molecule.
+    """Perform a constrained FF optimization on a PLAMS molecule.
 
-        :parameter mol: A PLAMS molecule.
-        :parameter constrain: A list of indices of to-be frozen atoms.
-        """
+    :parameter mol: A PLAMS molecule.
+    :parameter constrain: A list of indices of to-be frozen atoms.
+    """
     rdkit_mol = to_rdmol(mol)
+    ff_type = AllChem.MMFFGetMoleculeForceField
 
-    ff = AllChem.MMFFGetMoleculeForceField(rdkit_mol, AllChem.MMFFGetMoleculeProperties(rdkit_mol))
-    for f in constrain:
-        ff.AddFixedPoint(f)
+    try:
+        ff = ff_type(rdkit_mol, AllChem.MMFFGetMoleculeProperties(rdkit_mol))
+        for f in constrain:
+            ff.AddFixedPoint(f)
+    except AttributeError:
+        # It seems like the MMF forcefield is not available for all atoms (e.g. As)
+        print(f"Failed to construct the {ff_type.__name__!r} forcefield for {mol.get_formula()}")
+        return mol
 
     ff.Minimize()
     mol.from_rdmol(rdkit_mol)
@@ -59,7 +65,7 @@ def connect_ligands_to_core(lig_dict, core, user_min_dist):
     lig_array, min_dist_array = rot_mol(lig_list, lig_vec, core_vec, **kwarg)
 
     # Reading list of ligands that are already attached to the core
-    old_ligID = core.properties.ligID
+    old_ligID = core.properties.get('ligID', '')
 
     # Combine the rotated ligands and core into new molecules
     ret = []
@@ -85,7 +91,6 @@ def connect_ligands_to_core(lig_dict, core, user_min_dist):
         lig_cp.properties.name = core.properties.name + "_" + lig.properties.name
         lig_cp.properties.min_distance = min_dist
 
-
         # UFF for molecule with frozen core
         # Defining the connection for ligand and core
         the_h = lig_cp.closest_atom(lig_cp.properties.the_h)
@@ -94,14 +99,13 @@ def connect_ligands_to_core(lig_dict, core, user_min_dist):
 
         # number of substitutions left
         h_gone = len(lig_cp.properties.coords_h_atom) - len(lig_cp.properties.coords_h)
-
         conn = list(lig_cp).index(core_other)
-        frozen_ind_rdkit = [x for x in range(len(lig_cp)-len(core_cp),len(lig_cp)) if x != conn ] # list rdkit standards, counts from 0
+        frozen_ind_rdkit = [x for x in range(len(lig_cp)-len(core_cp), len(lig_cp)) if x != conn] # list rdkit standards, counts from 0
 
         try:
             lig_cp = ff_constrained_opt(lig_cp, constrain=frozen_ind_rdkit)
         except ValueError:
-            print ("FF optimisation error")
+            print("FF optimisation error")
 
         # Distance between core and ligands
         frozen_ind_plams = (np.array(frozen_ind_rdkit)+1).tolist()
@@ -134,7 +138,7 @@ def get_args(core, lig_list, lig_idx):
     idx = core.atoms.index(at_h)
     core_array[idx] = np.nan
 
-    return {'atoms_core': core_other_atom, 'atoms_other': core_array,
+    return {'core': core_array, 'atoms_other': core_other_atom,
             'bond_length': bond_length, 'dist_to_self': False, 'idx': lig_idx, 'ret_min_dist': True}
 
 
@@ -190,7 +194,7 @@ def bob_ligand(mols):
         mol.guess_bonds()
 
 
-def substitution(input_ligands, input_cores,min_dist, rep=False):
+def substitution(input_ligands, input_cores, min_dist, rep=False):
     """
     To every list of cores one type of ligand is added.
     Mono_subs contaions of key = name of molecule, value = (coordinates of new molecule,
