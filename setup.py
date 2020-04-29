@@ -23,49 +23,30 @@ setup(
     long_description_content_type='text/x-rst',
     author=['Bas van Beek'],
     author_email='b.f.van.beek@vu.nl',
-<<<<<<< HEAD
-    url='https://github.com/BvB93/CAT',
-    packages=[
-        'CAT',
-        'CAT.analysis',
-=======
     url='https://github.com/nlesc-nano/CAT',
     packages=[
         'CAT',
->>>>>>> master
         'CAT.attachment',
         'CAT.data',
         'CAT.data.coskf',
         'CAT.data.templates',
-<<<<<<< HEAD
         'CAT.data.CORES',
         'CAT.data.LIGANDS',
         'CAT.data_handling',
-=======
-        'CAT.data_handling',
-        'CAT.workflows'
->>>>>>> master
     ],
     package_dir={'CAT': 'CAT'},
     package_data={
         'CAT': [
-<<<<<<< HEAD
-            'data/templates/*json', 
-            'data/coskf/*coskf',
-            'data/CORES/*xyz',
-            'data/LIGANDS/*xyz'
-        ]
-    },
-=======
             'data/templates/*yaml',
             'data/coskf/*coskf',
+            'data/CORES/*xyz',
+            'data/LIGANDS/*xyz',
             'workflows/workflow_yaml.yaml'
         ]
     },
     entry_points={
         'console_scripts': ['init_cat=CAT.data_handling.entry_points:main']
     },
->>>>>>> master
     include_package_data=True,
     license='GNU Lesser General Public License v3 or later',
     zip_safe=False,
@@ -95,21 +76,12 @@ setup(
     install_requires=[
         'numpy',
         'scipy',
-<<<<<<< HEAD
-        'pyyaml',
-        'schema',
-        'openpyxl',
-        'xlrd',
-        'plams@git+https://github.com/SCM-NV/PLAMS@master',
-        'qmflows@git+https://github.com/SCM-NV/qmflows@master'
-=======
         'pandas<1.0.0',
         'pyyaml>=5.1',
         'schema',
         'AssertionLib>=1.1.1',
         'plams@git+https://github.com/SCM-NV/PLAMS@master',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master',
->>>>>>> master
     ],
     setup_requires=[
         'pytest-runner',

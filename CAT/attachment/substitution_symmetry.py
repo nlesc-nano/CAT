@@ -10,8 +10,6 @@ from scm.plams import Molecule
 from scm.plams.tools.geometry import rotation_matrix
 
 
-
-
 def find_equivalent_atoms(mol, idx=None, idx_substract=0):
     """ 
     
@@ -115,6 +113,7 @@ def get_rotmat_axis(rot_range, axis='x'):
 
 
 def supstitution_symmetry(mol):
+<<<<<<< HEAD
     """ 
     Returns atomic symbols of substituted atoms (or first conection of non diatomic ligand)
     Writes type of substitution symetry at the molecular properties
@@ -130,9 +129,17 @@ def supstitution_symmetry(mol):
         Type of subsymmetry
 
         """
+=======
+    """ Returns atomic symbols of substituted atoms (or first conection of non diatomic ligand).
+
+   	Writes type of substitution symetry at the molecular properties
+
+   	mol <plams.Molecule>: A PLAMS molecule
+    """
+>>>>>>> origin/dye
     dataframe,type_of_symetry = [], []
     ligand_identity = mol.properties.ligID
- 
+
     # Defining C atoms conected to substituents and making Molecule object (cmol) out of them
     catoms = mol.properties.coords_other_arrays
     cmol = Molecule()
@@ -143,24 +150,34 @@ def supstitution_symmetry(mol):
     if len(ligand_identity) <= 2:
         if len(ligand_identity) == 1:
             print ("One does not simply ask for subsymmetry of one atom!")
-            pass
+            return
         elif len(ligand_identity) == 0:
+<<<<<<< HEAD
             print ("One does not simply ask for subsymmetry of no atom")
             pass
+=======
+            print ("What the hell is happening?!")
+            return
+>>>>>>> origin/dye
         else:
             subsymmetry = 'linear'
     else:
         # Getting non zero row indices from data frame - defines symmetry type
-        
+
         dataframe = get_symmetry(cmol,decimals=2)
         type_of_symetry = np.unique(dataframe.to_numpy().nonzero()[0])
-        
+
         # Assign type of symetry and atomic symbols
         if list(type_of_symetry) == [0, 1, 8, 9]:
             subsymmetry = 'D2h'
         else:
+<<<<<<< HEAD
             print ("Subsymmetry is not recognized")
 
+=======
+            print ("Well, Jelena made me to recognize only rectangles and this is not rectangle!")
+            return
+>>>>>>> origin/dye
     return subsymmetry
 
 
@@ -179,10 +196,10 @@ def get_symmetry(mol, decimals=2):
     |pd.DataFrame|  
         A Pandas dataframe with the number of equivalent atoms per axis per operation.
     """
-    
+
     if isinstance(mol, Molecule):
          mol = mol.as_array()
-    
+
     # Prepare the dataframe
     columns = ['x', 'y', 'z']
     index = ['2pi / ' + str(i) for i in range(1,9)] + ['reflection', 'inversion']
@@ -216,6 +233,7 @@ def get_symmetry(mol, decimals=2):
 
 
 def del_equiv_structures(mols, subsymmetry=None):
+<<<<<<< HEAD
     """ Returnes list of unique molecules based on subsymmetry
 
     Permutes list of ligands form plams_mol.properties.ligID for each molecule
@@ -232,29 +250,40 @@ def del_equiv_structures(mols, subsymmetry=None):
     -------
     list
         A list of unique molecule for specific subsymmetry
+=======
+    """
+	Returnes list of molecules wihout duplicats
+>>>>>>> origin/dye
 
         """
     notunique=[]
-   
+
     for mol in mols:
         if subsymmetry == None:
             subsymmetry = supstitution_symmetry(mol)
-        
+
         ligID = list(mol.properties.ligID)
-        
-        all_permutations = symm_permutations(subsymmetry, ligID) 
-        
+
+        all_permutations = symm_permutations(subsymmetry, ligID)
+
         notunique.append(all_permutations)
 
-    scos = [sorted(sc) for sc in notunique]
+    try:
+        scos = [sorted(sc) for sc in notunique]
+    except TypeError:
+        # notunique == [None, ...] if something went wrong in the previous steps
+        # assume that all molecules are unique in such a scenario
+        return mols
+
     u, indices = np.unique(scos, return_index=True, axis=0)
-    
+
     unique_molecules = [mols[i] for i in list(indices)]
 
     return unique_molecules
 
-def symm_permutations(condition, elements): 
+def symm_permutations(condition, elements):
     """ For given list of elements, makes permutations taking in account symmetry condition
+<<<<<<< HEAD
 
     Parameters
     ----------
@@ -262,6 +291,10 @@ def symm_permutations(condition, elements):
         Type of subsymmetry
     elements : list
         A list of integers to be permuted
+=======
+    <condition>: string
+    <elements>: list
+>>>>>>> origin/dye
     """
     def swap_neighbours(j):
         """ swaping neighbours inside a list: 1,2,3,4 becomes 2,1,4,3
@@ -282,6 +315,8 @@ def symm_permutations(condition, elements):
         return j
 
     # Making list of all permutations
+    if condition is None:
+        return None
     if condition == 'D2h':
         a = ''.join(elements)
         b = ''.join(swap_neighbours(elements))
@@ -301,10 +336,3 @@ def symm_permutations(condition, elements):
         final = [a,b]
         print (final)
     return final
-
-
-
-
-
-
-

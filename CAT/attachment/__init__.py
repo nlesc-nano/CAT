@@ -2,20 +2,6 @@
 CAT.attachment
 ==============
 
-<<<<<<< HEAD
-from .qd_opt import qd_opt
-from .ligand_opt import optimize_ligand
-from .ligand_attach import ligand_to_qd
-from .dye import (
-    bob_ligand, bob_core, substitution, multi_substitution
-)
-
-__all__ = [
-    'qd_opt',
-    'optimize_ligand',
-    'ligand_to_qd',
-    'bob_ligand', 'bob_core', 'substitution', 'multi_substitution'
-=======
 Modules designed for attaching ligands to cores.
 
 """
@@ -36,9 +22,8 @@ __all__ = [
     'init_qd_construction',
     'init_ligand_anchoring',
 
-    'edge_dist', 'plot_polyhedron'
+    'edge_dist', 'plot_polyhedron',
     'distribute_idx',
     'brute_uniform_idx',
     'get_surface_vec', 'plot_vectors'
->>>>>>> master
 ]
