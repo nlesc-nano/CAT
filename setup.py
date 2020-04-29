@@ -17,118 +17,70 @@ with open('README.rst') as readme_file:
 setup(
     name='CAT',
     version=version['__version__'],
-    description=('A collection of tools designed for the automatic '
-                 'construction of chemical compounds.'),
+    description="A collection of tools designed for the automatic construction, and subsequent analysis, of chemical compounds.",
     long_description=readme + '\n\n',
-    long_description_content_type='text/x-rst',
     author=['Bas van Beek'],
     author_email='b.f.van.beek@vu.nl',
-<<<<<<< HEAD
     url='https://github.com/BvB93/CAT',
     packages=[
         'CAT',
         'CAT.analysis',
-=======
-    url='https://github.com/nlesc-nano/CAT',
-    packages=[
-        'CAT',
->>>>>>> master
         'CAT.attachment',
         'CAT.data',
         'CAT.data.coskf',
         'CAT.data.templates',
-<<<<<<< HEAD
         'CAT.data.CORES',
         'CAT.data.LIGANDS',
         'CAT.data_handling',
-=======
-        'CAT.data_handling',
-        'CAT.workflows'
->>>>>>> master
     ],
     package_dir={'CAT': 'CAT'},
     package_data={
         'CAT': [
-<<<<<<< HEAD
             'data/templates/*json', 
             'data/coskf/*coskf',
             'data/CORES/*xyz',
             'data/LIGANDS/*xyz'
         ]
     },
-=======
-            'data/templates/*yaml',
-            'data/coskf/*coskf',
-            'workflows/workflow_yaml.yaml'
-        ]
-    },
-    entry_points={
-        'console_scripts': ['init_cat=CAT.data_handling.entry_points:main']
-    },
->>>>>>> master
     include_package_data=True,
     license='GNU Lesser General Public License v3 or later',
     zip_safe=False,
     keywords=[
-        'quantum-mechanics',
-        'molecular-mechanics',
-        'science',
-        'chemistry',
-        'python-3',
-        'python-3-6',
-        'python-3-7',
-        'automation',
-        'scientific-workflows'
+        'quantum-mechanics', 'science', 'chemistry', 'python-3', 
+        'automation', 'scientific-workflows'
     ],
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Chemistry'
-        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+        'License :: OSI Approved :: GNU Lesser General Public License',
         'Natural Language :: English',
         'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8'
     ],
     test_suite='tests',
-    python_requires='>=3.6',
     install_requires=[
         'numpy',
         'scipy',
-<<<<<<< HEAD
         'pyyaml',
         'schema',
         'openpyxl',
         'xlrd',
         'plams@git+https://github.com/SCM-NV/PLAMS@master',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master'
-=======
-        'pandas<1.0.0',
-        'pyyaml>=5.1',
-        'schema',
-        'AssertionLib>=1.1.1',
-        'plams@git+https://github.com/SCM-NV/PLAMS@master',
-        'qmflows@git+https://github.com/SCM-NV/qmflows@master',
->>>>>>> master
     ],
     setup_requires=[
         'pytest-runner',
+        'sphinx',
+        'sphinx_rtd_theme',
+        'recommonmark'
     ],
     tests_require=[
         'pytest',
         'pytest-cov',
-        'pytest-mock',
         'pycodestyle',
-        'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel',
-        'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel'
     ],
     extras_require={
-        'test': ['pytest',
-                 'pytest-cov',
-                 'pytest-mock',
-                 'pycodestyle',
-                 'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel',
-                 'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel'],
-        'doc': ['sphinx>=2.0', 'sphinx_rtd_theme', 'sphinx-autodoc-typehints']
+        'test': ['pytest', 'pytest-cov', 'pytest-mock', 'nbsphinx', 'pygraphviz', 'pycodestyle'],
+        'doc': ['sphinx', 'sphinx_rtd_theme', 'nbsphinx']
     }
 )

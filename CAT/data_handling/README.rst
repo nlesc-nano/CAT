@@ -2,24 +2,26 @@
 data_handling
 #############
 
-~~~~~~~~~~~~~~
-mol_import.py_
-~~~~~~~~~~~~~~
+~~~~~~~~~~~
+database.py
+~~~~~~~~~~~
+
+A module which manages all interactions with the database.
+
+~~~~~~~~~~~~~
+mol_export.py
+~~~~~~~~~~~~~
+
+A module related to the exporting of molecules.
+
+~~~~~~~~~~~~~
+mol_import.py
+~~~~~~~~~~~~~
 
 A module related to the importing of molecules.
 
-~~~~~~~~~~~~~~~~~~~
-input_sanitizer.py_
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
+sanitize_input.py
+~~~~~~~~~~~~~~~~~
 
 A module designed for sanitizing and interpreting the input file.
-
-~~~~~~~~~~~~~~~~
-input_parser.py_
-~~~~~~~~~~~~~~~~
-
-A module designed for parsing the input .yaml file.
-
-.. _mol_import.py: https://github.com/BvB93/CAT/tree/master/CAT/data_handling/mol_import.py
-.. _input_sanitizer.py: https://github.com/BvB93/CAT/tree/master/CAT/data_handling/input_sanitizer.py
-.. _input_parser.py: https://github.com/BvB93/CAT/tree/master/CAT/data_handling/input_parser.py

@@ -8,4 +8,4 @@ Contents:
    :maxdepth: 2
 
    includeme
-   0_documentation
+   documentation

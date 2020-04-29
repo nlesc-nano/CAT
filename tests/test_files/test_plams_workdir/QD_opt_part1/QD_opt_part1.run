@@ -1,4 +1,0 @@
-#!/bin/sh
-
-AMS_JOBNAME="QD_opt_part1" AMS_RESULTSDIR=. $ADFBIN/ams <"QD_opt_part1.in"
-
