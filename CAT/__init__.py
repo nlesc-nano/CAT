@@ -6,6 +6,10 @@ A collection of tools designed for the construction of various chemical compound
 
 """
 
+from scm.plams import Settings
+if hasattr(Settings, 'suppress_missing'):
+    Settings.supress_missing = Settings.suppress_missing
+
 from .__version__ import __version__
 
 from .jobs import (
@@ -37,7 +41,7 @@ __all__ = [
 
     'init_qd_opt', 'init_ligand_opt', 'init_qd_construction', 'init_ligand_anchoring',
 
-    'read_mol', 'set_mol_prop'
+    'read_mol', 'set_mol_prop',
 
     'get_template',
 ]

@@ -22,7 +22,7 @@ __all__ = [
     'init_qd_construction',
     'init_ligand_anchoring',
 
-    'edge_dist', 'plot_polyhedron'
+    'edge_dist', 'plot_polyhedron',
     'distribute_idx',
     'brute_uniform_idx',
     'get_surface_vec', 'plot_vectors'
