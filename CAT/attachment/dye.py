@@ -5,34 +5,29 @@ __all__ = ['bob_ligand', 'bob_core', 'substitution', 'multi_substitution']
 from itertools import chain
 
 import numpy as np
-
 from scipy.spatial.distance import cdist
 
 from rdkit.Chem import AllChem
+from scm.plams import Molecule, Settings, to_rdmol
 
-from scm.plams import Atom, Molecule, Settings, PeriodicTable
-
-from scm.plams.interfaces.molecule.rdkit import to_rdmol, from_rdmol
-
-from CAT.attachment.ligand_attach import rot_mol
+from .ligand_attach import rot_mol
 
 
-
-def ff_constrained_opt(mol, constrain=[]):
+def ff_constrained_opt(mol, constrain=()):
     """ Perform a constrained FF optimization on a PLAMS molecule.
-        
+
         :parameter mol: A PLAMS molecule.
         :parameter constrain: A list of indices of to-be frozen atoms.
         """
     rdkit_mol = to_rdmol(mol)
-    
+
     ff = AllChem.MMFFGetMoleculeForceField(rdkit_mol, AllChem.MMFFGetMoleculeProperties(rdkit_mol))
     for f in constrain:
         ff.AddFixedPoint(f)
-    
+
     ff.Minimize()
     mol.from_rdmol(rdkit_mol)
-    
+
     return mol
 
 
@@ -89,11 +84,11 @@ def connect_ligands_to_core(lig_dict, core, user_min_dist):
         lig_cp += core_cp
         lig_cp.properties.name = core.properties.name + "_" + lig.properties.name
         lig_cp.properties.min_distance = min_dist
-        
-                
+
+
         # UFF for molecule with frozen core
         # Defining the connection for ligand and core
-        the_h = lig_cp.closest_atom(lig_cp.properties.the_h)        
+        the_h = lig_cp.closest_atom(lig_cp.properties.the_h)
         core_other = lig_cp.closest_atom(lig_cp.properties.coords_other_arrays[len(new_ligID)-1])
         lig_cp.add_bond(the_h, core_other)
 
@@ -102,15 +97,15 @@ def connect_ligands_to_core(lig_dict, core, user_min_dist):
 
         conn = list(lig_cp).index(core_other)
         frozen_ind_rdkit = [x for x in range(len(lig_cp)-len(core_cp),len(lig_cp)) if x != conn ] # list rdkit standards, counts from 0
-        
+
         try:
             lig_cp = ff_constrained_opt(lig_cp, constrain=frozen_ind_rdkit)
         except ValueError:
             print ("FF optimisation error")
-        
+
         # Distance between core and ligands
         frozen_ind_plams = (np.array(frozen_ind_rdkit)+1).tolist()
-        frozen_atoms = np.array([lig_cp[c].coords for c in frozen_ind_plams])            
+        frozen_atoms = np.array([lig_cp[c].coords for c in frozen_ind_plams])
         only_ligands = np.array([lig_cp[l].coords for l in range(1,len(lig_cp)+1) if l not in frozen_ind_plams])
         min_dist = np.nanmin(cdist(only_ligands, frozen_atoms))
         lig_cp.properties.min_distance = min_dist
@@ -138,7 +133,7 @@ def get_args(core, lig_list, lig_idx):
     core_array = core.as_array()
     idx = core.atoms.index(at_h)
     core_array[idx] = np.nan
-    
+
     return {'atoms_core': core_other_atom, 'atoms_other': core_array,
             'bond_length': bond_length, 'dist_to_self': False, 'idx': lig_idx, 'ret_min_dist': True}
 
@@ -174,14 +169,14 @@ def bob_ligand(mols):
     mol <plams.Molecule>: An input molecule with the plams_mol.properties.comment attribute.
     """
     ligID = list(range(len(mols)))
-    
+
     for mol, id in zip(mols, ligID):
         mol.properties.ligID = id
         mol.guess_bonds()
 
         # Read the comment in the second line of the xyz file
         comment = mol.properties.comment
-    
+
         # Set an attirbute with indices and vectors
         mol.properties.vec = np.empty(3)
 
@@ -217,12 +212,3 @@ def multi_substitution(input_ligands, input_cores, n=1):
         mol_list = substitution(input_ligands, mol_list)
         ret.append(mol_list)
     return list(chain.from_iterable(ret))
-
-
-
-    
-
-
-    
-    
-    

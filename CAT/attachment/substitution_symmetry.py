@@ -10,8 +10,6 @@ from scm.plams import Molecule
 from scm.plams.tools.geometry import rotation_matrix
 
 
-
-
 def find_equivalent_atoms(mol, idx=None, idx_substract=0):
     """ Take a molecule, **mol**, and return the indices of all symmetry equivalent atoms.
     The implemented function is based on finding duplicates in the (sorted) distance matrix,
@@ -98,7 +96,7 @@ def supstitution_symmetry(mol):
         """
     dataframe,type_of_symetry = [], []
     ligand_identity = mol.properties.ligID
- 
+
     # Defining C atoms conected to substituents and making Molecule object (cmol) out of them
     catoms = mol.properties.coords_other_arrays
     cmol = Molecule()
@@ -117,10 +115,10 @@ def supstitution_symmetry(mol):
             subsymmetry = 'linear'
     else:
         # Getting non zero row indices from data frame - defines symmetry type
-        
+
         dataframe = get_symmetry(cmol,decimals=2)
         type_of_symetry = np.unique(dataframe.to_numpy().nonzero()[0])
-        
+
         # Assign type of symetry and atomic symbols
         if list(type_of_symetry) == [0, 1, 8, 9]:
             subsymmetry = 'D2h'
@@ -138,10 +136,10 @@ def get_symmetry(mol, decimals=2):
     return <pd.DataFrame>: A Pandas dataframe with the number of equivalent atoms per axis
     per operation.
     """
-    
+
     if isinstance(mol, Molecule):
          mol = mol.as_array()
-    
+
     # Prepare the dataframe
     columns = ['x', 'y', 'z']
     index = ['2pi / ' + str(i) for i in range(1,9)] + ['reflection', 'inversion']
@@ -175,33 +173,33 @@ def get_symmetry(mol, decimals=2):
 
 
 def del_equiv_structures(mols, subsymmetry=None):
-    """ 
-	Returnes list of molecules wihout duplicats 	
+    """
+	Returnes list of molecules wihout duplicats
 
     mols <plams.Molecule>: A list of PLAMS molecules
         """
     notunique=[]
-   
+
     for mol in mols:
         if subsymmetry == None:
             subsymmetry = supstitution_symmetry(mol)
-        
+
         ligID = list(mol.properties.ligID)
-        
-        all_permutations = symm_permutations(subsymmetry, ligID) 
-        
+
+        all_permutations = symm_permutations(subsymmetry, ligID)
+
         notunique.append(all_permutations)
 
     scos = [sorted(sc) for sc in notunique]
     u, indices = np.unique(scos, return_index=True, axis=0)
-    
+
     unique_molecules = [mols[i] for i in list(indices)]
 
     return unique_molecules
 
-def symm_permutations(condition, elements): 
+def symm_permutations(condition, elements):
     """ For given list of elements, makes permutations taking in account symmetry condition
-    <condition>: string 
+    <condition>: string
     <elements>: list
     """
     def swap_neighbours(j):
@@ -244,10 +242,3 @@ def symm_permutations(condition, elements):
         final = [a,b]#,c,d,e,f]
         print (final)
     return final
-
-
-
-
-
-
-
