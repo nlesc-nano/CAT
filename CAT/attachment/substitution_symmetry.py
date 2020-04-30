@@ -125,7 +125,7 @@ def supstitution_symmetry(mol):
     str
         Type of subsymmetry
     """
-    dataframe,type_of_symetry = [], []
+    dataframe, type_of_symetry = [], []
     ligand_identity = mol.properties.ligID
 
     # Defining C atoms conected to substituents and making Molecule object (cmol) out of them
@@ -137,10 +137,10 @@ def supstitution_symmetry(mol):
     # If substitution is linear, simple combinations without repetition can be applied
     if len(ligand_identity) <= 2:
         if len(ligand_identity) == 1:
-            print ("One does not simply ask for subsymmetry of one atom!")
+            print("One does not simply ask for subsymmetry of one atom!")
             return
         elif len(ligand_identity) == 0:
-            print ("One does not simply ask for subsymmetry of no atom")
+            print("One does not simply ask for subsymmetry of no atom")
             return
         else:
             subsymmetry = 'linear'
@@ -155,7 +155,7 @@ def supstitution_symmetry(mol):
             subsymmetry = 'D2h'
         else:
 
-            print ("Subsymmetry is not recognized")
+            print("Subsymmetry is not recognized")
             return
 
     return subsymmetry
@@ -182,7 +182,7 @@ def get_symmetry(mol, decimals=2):
 
     # Prepare the dataframe
     columns = ['x', 'y', 'z']
-    index = ['2pi / ' + str(i) for i in range(1,9)] + ['reflection', 'inversion']
+    index = ['2pi / ' + str(i) for i in range(1, 9)] + ['reflection', 'inversion']
     data = np.empty((len(index), 3))
     df = pd.DataFrame(data=data, index=index, columns=columns)
     df.index.name = 'Rotations, reflections and inversions'
@@ -207,7 +207,7 @@ def get_symmetry(mol, decimals=2):
         dist_mat = np.array([cdist(i, mol) for i in mol_new]).round(decimals)
         try:
             df[j] = np.bincount(np.where(dist_mat == 0)[0])
-        except (ValueError):
+        except(ValueError):
             print("Something went wrong: Length of values does not match length of index ")
     return df
 
@@ -266,7 +266,7 @@ def symm_permutations(condition, elements):
         A list of integers to be permuted
     """
     def swap_neighbours(j):
-        """ swaping neighbours inside a list: 1,2,3,4 becomes 2,1,4,3
+        """ swaping neighbours inside a list: 1, 2, 3, 4 becomes 2, 1, 4, 3
         <j>: a list
         """
         j[1::2], j[::2] = j[::2],j[1::2]
@@ -303,5 +303,4 @@ def symm_permutations(condition, elements):
         b = ''.join(swap_two_last(elements))
         final = []
         final = [a,b]
-        print (final)
     return final

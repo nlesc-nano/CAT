@@ -125,22 +125,23 @@ def connect_ligands_to_core(lig_dict, core, user_min_dist):
         core_other = lig_cp.closest_atom(lig_cp.properties.coords_other_arrays[len(new_ligID)-1])
         lig_cp.add_bond(the_h, core_other)
 
-        # Making list of atom indices that will be frozen for optimization
+        # Making list of atom indices that will be frozen (FrInd_rdkit)for optimization - rdkit counts from 0!
         # Atom that ligand is conected to is not frozen
-        connection = list(lig_cp).index(core_other)
-        frozen_ind_rdkit = [x for x in range(len(lig_cp)-len(core_cp),len(lig_cp)) if x != connection ] # rdkit counts from 0
+        Conn = list(lig_cp).index(core_other)
+        FrInd_rdkit = [x for x in range(len(lig_cp)-len(core_cp), len(lig_cp)) if x != Conn]
 
         # FF for molecule with frozen core
         try:
-            lig_cp = ff_constrained_opt(lig_cp, constrain=frozen_ind_rdkit)
+            lig_cp = ff_constrained_opt(lig_cp, constrain=FrInd_rdkit)
         except ValueError:
-            print ("FF optimization error")
+            print("FF optimization error")
 
         # Distance between core and ligands
-        frozen_ind_plams = (np.array(frozen_ind_rdkit)+1).tolist() # plams counts from 1
-        frozen_atoms = np.array([lig_cp[c].coords for c in frozen_ind_plams])
-        only_ligands = np.array([lig_cp[l].coords for l in range(1,len(lig_cp)+1) if l not in frozen_ind_plams])
-        min_dist = np.nanmin(cdist(only_ligands, frozen_atoms))
+        FrInd_plams = (np.array(FrInd_rdkit)+1).tolist() # plams counts from 1
+        Fr_atoms = np.array([lig_cp[c].coords for c in FrInd_plams])
+        OnlyLig = np.array([lig_cp[l].coords for l in range(1, len(lig_cp)+1) 
+            if l not in FrInd_plams])
+        min_dist = np.nanmin(cdist(OnlyLig, Fr_atoms))
         lig_cp.properties.min_distance = min_dist
 
         ret.append(lig_cp)
@@ -191,14 +192,16 @@ def get_args(core, lig_list, lig_idx):
 def bob_core(mol):
     """ Adds plams_mol.properties attribute to the core
 
-    Reads the atom indices from comment section in core's .xyz file and adds additional
-    plams_mol.properties: coordinates of atom that will be substituted, bond vector between the substitution
-    atom and its connection at the core, coordinates of the connection at the core
+    Reads the atom indices from comment section in core's .xyz file and adds
+    additional plams_mol.properties: coordinates of atom that will be substituted, 
+    bond vector between the substitution atom and its connection at the core, 
+    coordinates of the connection at the core
 
     Parameters
     ----------
     mol : |plams.Molecule|
-        An input  PLAMS molecule with atom indices to be substituted in plams_mol.properties.comment
+        An input  PLAMS molecule with atom indices to be substituted in 
+        plams_mol.properties.comment
 
     Returns
     -------
@@ -266,30 +269,32 @@ def bob_ligand(mols):
         mol.guess_bonds()
 
 
-
-def substitution(input_ligands, input_cores,min_dist):
+def substitution(input_ligands, input_cores, min_dist):
     """ Substitutes atoms at the core with ligands
 
     Parameters
     ----------
     input_ligands : list
-        A list of input PLAMS molecules with index of an atom to be substituted in plams_mol.properties.comment
-    input_cores : list
-        A list of input PLAMS molecules with list of indices of atoms to be substituted in plams_mol.properties.comment
-    min_dist : float
+        A list of input PLAMS molecules with index of an atom to be substituted in 
+            plams_mol.properties.comment input_cores : list
+        A list of input PLAMS molecules with list of indices of atoms to be 
+            substituted in plams_mol.properties.comment min_dist : float
         Minimal distance between core and attached ligands
 
     Returns
     -------
     list
-        New molecules that are made of ligands attached to the core at position of the first index in the list
+        New molecules that are made of ligands attached to the core at position 
+        of the first index in the list
     """
     lig_idx = np.array([lig.properties.idx_other for lig in input_ligands])
     lig_vec = np.array([lig.properties.vec for lig in input_ligands])
     lig_ID = [lig.properties.ligID for lig in input_ligands]
-    lig_dict = {'lig_list': input_ligands, 'lig_idx': lig_idx, 'lig_vec': lig_vec, 'lig_ID' : lig_ID}
+    lig_dict = {'lig_list': input_ligands, 'lig_idx': lig_idx, 'lig_vec': lig_vec, 
+                'lig_ID' : lig_ID}
     ret = (connect_ligands_to_core(lig_dict, core, min_dist) for core in input_cores)
     return list(chain.from_iterable(ret))
+
 
 def multi_substitution(input_ligands, input_cores, n=1):
     """ Attach ligands to cores; repeat this process n times. """
