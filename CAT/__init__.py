@@ -6,9 +6,7 @@ A collection of tools designed for the construction of various chemical compound
 
 """
 
-from scm.plams import Settings
-if hasattr(Settings, 'suppress_missing'):
-    Settings.supress_missing = Settings.suppress_missing
+from scm.plams import Settings as _Settings
 
 from .__version__ import __version__
 
@@ -29,6 +27,9 @@ from .data_handling import (
 )
 
 from .utils import get_template
+
+if hasattr(_Settings, 'suppress_missing'):
+    _Settings.supress_missing = _Settings.suppress_missing
 
 __version__ = __version__
 __author__ = "Bas van Beek"
