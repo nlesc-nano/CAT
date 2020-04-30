@@ -6,9 +6,24 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 
-0.9.0
+0.x.0
 *****
 * WiP: Added an option the import pre-built quantum dots.
+
+
+0.8.3
+*****
+* Merged all features from the ``dye`` branch into the master.
+* Fixed an issue where custom forcefield settings are not properly parsed:
+  https://github.com/nlesc-nano/CAT/pull/99.
+* Added a try/except clause for job hashing in case rerun prevention is disabled:
+  https://github.com/nlesc-nano/CAT/pull/98.
+* Added new recipes to the documentation:
+  https://github.com/nlesc-nano/CAT/pull/95 & https://github.com/nlesc-nano/CAT/pull/96.
+* Fixed an issue where creating an object array would unpack a Molecule into Atoms:
+  https://github.com/nlesc-nano/CAT/pull/94.
+* Raise an Exception when failing to identify any atoms:
+  https://github.com/nlesc-nano/CAT/pull/93.
 
 
 0.8.2
