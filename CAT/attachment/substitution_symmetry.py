@@ -23,7 +23,7 @@ def find_equivalent_atoms(mol, idx=None, idx_substract=0):
     idx : None, int or list
         An iterable consisting of atomic indices. ALl atoms in 'mol' will be examined if None
     idx_substract : int
-        Substract a constant from all values in 'idx'; 
+        Substract a constant from all values in 'idx';
         usefull for interconverting between 1-based and 0-based indices
 
     Returns
@@ -55,14 +55,14 @@ def reset_origin(mol, at1):
 
     Parameters
     ----------
-    mol : |plams.Molecule| or np.ndarray  
+    mol : |plams.Molecule| or np.ndarray
         A PLAMS molecule or array of xyz coordinates.
     idx : int
         The atomic index of the atom that will be alligned to the x-axis.
 
     Returns
     -------
-    |plams.Molecule| 
+    |plams.Molecule|
         The rotated and translated PLAMS molecule
     """
     if isinstance(mol, Molecule):
@@ -81,14 +81,14 @@ def reset_origin(mol, at1):
 
 
 def get_rotmat_axis(rot_range, axis='x'):
-    """ 
+    """
     Calculate the rotation matrix for rotating a vector along an axis.
     A rotation matrix is constructed for each angle in **rot_range**.
 
     Parameters
     ----------
-    rot_range : |np.ndarray| 
-        An array of rotations in radian. 
+    rot_range : |np.ndarray|
+        An array of rotations in radian.
     """
     ret = np.zeros((len(rot_range), 3, 3))
     ret[:, 0, 0] = ret[:, 1, 1] = ret[:, 2, 2] = np.ones(len(rot_range))
@@ -111,13 +111,13 @@ def get_rotmat_axis(rot_range, axis='x'):
 
 
 def supstitution_symmetry(mol):
-    """ 
+    """
     Returns atomic symbols of substituted atoms (or first conection of non diatomic ligand)
     Writes type of substitution symetry at the molecular properties
 
     Parameters
     ----------
-    mol : |plams.Molecule| 
+    mol : |plams.Molecule|
         A PLAMS molecule
 
     Returns
@@ -166,14 +166,14 @@ def get_symmetry(mol, decimals=2):
 
     Parameters
     ----------
-    mol : |plams.Molecule| 
+    mol : |plams.Molecule|
        A PLAMS molecule or array of xyz coordinates.
     decimals  : int
         The error marigin (number of decimals) in determining equivalent atoms
-    
+
     Returns
     -------
-    |pd.DataFrame|  
+    |pd.DataFrame|
         A Pandas dataframe with the number of equivalent atoms per axis per operation.
     """
 
@@ -216,14 +216,14 @@ def del_equiv_structures(mols, subsymmetry=None):
     """ Returnes list of unique molecules based on subsymmetry
 
     Permutes list of ligands form plams_mol.properties.ligID for each molecule
-    Molecules that have identical list of permutations are equivalent 
+    Molecules that have identical list of permutations are equivalent
 
     Parameters
     ----------
-    mol : |plams.Molecule| 
+    mol : |plams.Molecule|
        A PLAMS molecule or array of xyz coordinates.
     subsymmetry : str
-        A type of subsymmetry 
+        A type of subsymmetry
 
     Returns
     -------
@@ -260,7 +260,7 @@ def symm_permutations(condition, elements):
 
     Parameters
     ----------
-    condition : string 
+    condition : string
         Type of subsymmetry
     elements : list
         A list of integers to be permuted
