@@ -109,7 +109,6 @@ def get_rotmat_axis(rot_range, axis='x'):
     return ret
 
 
-
 def supstitution_symmetry(mol):
     """
     Returns atomic symbols of substituted atoms (or first conection of non diatomic ligand)
@@ -178,7 +177,7 @@ def get_symmetry(mol, decimals=2):
     """
 
     if isinstance(mol, Molecule):
-         mol = mol.as_array()
+        mol = mol.as_array()
 
     # Prepare the dataframe
     columns = ['x', 'y', 'z']
@@ -230,10 +229,10 @@ def del_equiv_structures(mols, subsymmetry=None):
     list
         A list of unique molecule for specific subsymmetry
         """
-    notunique=[]
+    notunique = []
 
     for mol in mols:
-        if subsymmetry == None:
+        if subsymmetry is None:
             subsymmetry = supstitution_symmetry(mol)
 
         ligID = list(mol.properties.ligID)
@@ -255,6 +254,7 @@ def del_equiv_structures(mols, subsymmetry=None):
 
     return unique_molecules
 
+
 def symm_permutations(condition, elements):
     """ For given list of elements, makes permutations taking in account symmetry condition
 
@@ -265,20 +265,24 @@ def symm_permutations(condition, elements):
     elements : list
         A list of integers to be permuted
     """
+
     def swap_neighbours(j):
         """ swaping neighbours inside a list: 1, 2, 3, 4 becomes 2, 1, 4, 3
         <j>: a list
         """
-        j[1::2], j[::2] = j[::2],j[1::2]
+        j[1::2], j[::2] = j[::2], j[1::2]
         return j
+
     def swap_pairs(j):
         """ swaping pairs inside a list: 1,2,3,4 becomes 3,4,1,2
         <j>: a list
         """
         j[:2], j[2:] = j[2:], j[:2]
         return j
+
     def rotate_list(l,n):
         return l[n:] + l[:n]
+
     def swap_two_last(j):
         j[-1], j[-2] = j[-2], j[-1]
         return j
@@ -292,15 +296,15 @@ def symm_permutations(condition, elements):
         c = ''.join(swap_pairs(elements))
         d = ''.join(swap_neighbours(elements))
         final = []
-        final = [a,b,c,d]
+        final = [a, b, c, d]
     if condition == 'linear':
         a = ''.join(elements)
         b = ''.join(swap_neighbours(elements))
         final = []
-        final = [a,b]
+        final = [a, b]
     if condition == 'triangle':
         a = ''.join(elements)
         b = ''.join(swap_two_last(elements))
         final = []
-        final = [a,b]
+        final = [a, b]
     return final
