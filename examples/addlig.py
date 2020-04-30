@@ -20,10 +20,10 @@ start = time.time()
 # Path to the working folder where are prepared molecules and where folder with new coordinares
 # will be made with the specific name
 path = join(CAT.__path__[0], 'data')  # os.getcwd()
-input_ligands = read_molecules(join(path, 'LIGANDS'))
+input_ligands = read_molecules(join(path, 'Ligands'))
 input_ligands = list(input_ligands.values())
 
-input_cores = read_molecules(join(path, 'CORES'))
+input_cores = read_molecules(join(path, 'Cores'))
 input_cores = list(input_cores.values())
 
 # Bob does what Bob has to do (numbering the ligands)
@@ -38,11 +38,8 @@ for core in input_cores:
 
 
 # Makes new folders
-<<<<<<< HEAD:CAT/examples/addlig.py
-new_dir = ['The_new_structures', 'err_molecules']
-=======
+
 new_dir = ['new_molecules', 'err_molecules']
->>>>>>> origin/dye:examples/addlig.py
 
 if not exists(join(path, new_dir[0])):
     os.makedirs(join(path, new_dir[0]))
@@ -58,16 +55,15 @@ min_dist = 1.2
 mono = substitution(input_ligands, input_cores, min_dist)
 
 di = substitution(input_ligands, mono, min_dist)
-di_unique = del_equiv_structures(di)
+di_unique = del_equiv_structures(di,'linear')
 
 tri = substitution(input_ligands, di, min_dist)
 
 tetra = substitution(input_ligands, tri, min_dist)
-<<<<<<< HEAD:CAT/examples/addlig.py
+
 tetra_unique = del_equiv_structures(tetra, 'D2h')
-=======
-tetra_unique = del_equiv_structures(tetra)
->>>>>>> origin/dye:examples/addlig.py
+
+
 
 # Combine and flatten all new molecules into a generator
 new_molecules = chain.from_iterable([mono, di_unique, tri, tetra_unique])
