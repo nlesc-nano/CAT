@@ -11,8 +11,7 @@ from scm.plams.tools.geometry import rotation_matrix
 
 
 def find_equivalent_atoms(mol, idx=None, idx_substract=0):
-    """ 
-    
+    """
     Take a molecule, 'mol', and return the indices of all symmetry equivalent atoms.
     The implemented function is based on finding duplicates in the (sorted) distance matrix,
     as symmetry equivalent atoms have identical inter-atomic distances.
@@ -90,7 +89,6 @@ def get_rotmat_axis(rot_range, axis='x'):
     ----------
     rot_range : |np.ndarray| 
         An array of rotations in radian. 
-
     """
     ret = np.zeros((len(rot_range), 3, 3))
     ret[:, 0, 0] = ret[:, 1, 1] = ret[:, 2, 2] = np.ones(len(rot_range))
@@ -126,8 +124,7 @@ def supstitution_symmetry(mol):
     -------
     str
         Type of subsymmetry
-
-        """
+    """
     dataframe,type_of_symetry = [], []
     ligand_identity = mol.properties.ligID
 
@@ -221,13 +218,13 @@ def del_equiv_structures(mols, subsymmetry=None):
     Permutes list of ligands form plams_mol.properties.ligID for each molecule
     Molecules that have identical list of permutations are equivalent 
 
-	Parameters
+    Parameters
     ----------
     mol : |plams.Molecule| 
        A PLAMS molecule or array of xyz coordinates.
     subsymmetry : str
         A type of subsymmetry 
-    
+
     Returns
     -------
     list
@@ -260,7 +257,7 @@ def del_equiv_structures(mols, subsymmetry=None):
 
 def symm_permutations(condition, elements):
     """ For given list of elements, makes permutations taking in account symmetry condition
-    
+
     Parameters
     ----------
     condition : string 
@@ -282,7 +279,7 @@ def symm_permutations(condition, elements):
         return j
     def rotate_list(l,n):
         return l[n:] + l[:n]
-    def swap_two(j):
+    def swap_two_last(j):
         j[-1], j[-2] = j[-2], j[-1]
         return j
 
@@ -303,7 +300,7 @@ def symm_permutations(condition, elements):
         final = [a,b]
     if condition == 'triangle':
         a = ''.join(elements)
-        b = ''.join(swap_two(elements))
+        b = ''.join(swap_two_last(elements))
         final = []
         final = [a,b]
         print (final)
