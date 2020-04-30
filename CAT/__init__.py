@@ -31,29 +31,6 @@ from .data_handling import (
 
 from .utils import get_template
 
-if hasattr(_Settings, 'suppress_missing'):
-    _Settings.supress_missing = _Settings.suppress_missing
-
-    @add_to_class(_Settings)
-    def find_case(self, key):
-        """Check if this instance contains a key consisting of the same letters as *key*, but possibly with different case.
-
-        If found, return such a key. If not, return *key*.
-        """  # noqa: E501
-        if not isinstance(key, str):
-            return key
-        lowkey = key.lower()
-        for k in self:
-            try:
-                if k.lower() == lowkey:
-                    return k
-            except (AttributeError, TypeError):
-                pass
-        return key
-
-    del add_to_class
-
-
 __version__ = __version__
 __author__ = "Bas van Beek"
 __email__ = 'b.f.van.beek@vu.nl'
