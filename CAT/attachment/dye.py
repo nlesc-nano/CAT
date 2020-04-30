@@ -290,7 +290,6 @@ def substitution(input_ligands, input_cores,min_dist):
     list 
         New molecules that are made of ligands attached to the core at position of the first index in the list 
     """
-def substitution(input_ligands, input_cores, min_dist, rep=False):
     lig_idx = np.array([lig.properties.idx_other for lig in input_ligands])
     lig_vec = np.array([lig.properties.vec for lig in input_ligands])
     lig_ID = [lig.properties.ligID for lig in input_ligands]
