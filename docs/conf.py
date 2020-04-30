@@ -63,13 +63,13 @@ master_doc = 'index'
 # General information about the project.
 project = 'CAT'
 year = str(datetime.datetime.now().year)
-author = 'B. F. van Beek'
+author = 'B. F. van Beek & J. Belic'
 copyright = f'{year}, {author}'
 
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the built documents.
-release = '0.8.2'  # The full version, including alpha/beta/rc tags.
+release = '0.8.3'  # The full version, including alpha/beta/rc tags.
 version = release.rsplit('.', maxsplit=1)[0]
 
 

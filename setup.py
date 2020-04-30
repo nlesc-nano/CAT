@@ -21,7 +21,7 @@ setup(
                  'construction of chemical compounds.'),
     long_description=readme + '\n\n',
     long_description_content_type='text/x-rst',
-    author=['Bas van Beek'],
+    author=['Bas van Beek', 'Jelena Belic'],
     author_email='b.f.van.beek@vu.nl',
     url='https://github.com/nlesc-nano/CAT',
     packages=[
@@ -30,14 +30,17 @@ setup(
         'CAT.data',
         'CAT.data.coskf',
         'CAT.data.templates',
+        'CAT.data.CORES',
+        'CAT.data.LIGANDS',
         'CAT.data_handling',
-        'CAT.workflows'
     ],
     package_dir={'CAT': 'CAT'},
     package_data={
         'CAT': [
             'data/templates/*yaml',
             'data/coskf/*coskf',
+            'data/CORES/*xyz',
+            'data/LIGANDS/*xyz',
             'workflows/workflow_yaml.yaml'
         ]
     },
@@ -77,7 +80,7 @@ setup(
         'pyyaml>=5.1',
         'schema',
         'AssertionLib>=1.1.1',
-        'plams@git+https://github.com/SCM-NV/PLAMS@master',
+        'plams@git+https://github.com/SCM-NV/PLAMS@a5696ce62c09153a9fa67b2b03a750913e1d0924',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master',
     ],
     setup_requires=[
