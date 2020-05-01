@@ -38,11 +38,13 @@ core_dir = join(path, 'CORES')
 ligand_dir = join(path, 'LIGANDS')
 """
 
+
 def add_ligands(core_dir: str, ligand_dir: str, min_dist: float = 1.2) -> Iterator[Molecule]:
     # Time measuring
     start = time.time()
 
-    # Preparing molecules = in the comment section of xyz file, write serial numbers of atoms that will be substituted
+    # Preparing molecules = in the comment section of xyz file,
+    # write serial numbers of atoms that will be substituted
 
     # Path to the working folder where are prepared molecules and where folder with new coordinares
     # will be made with the specific name
@@ -60,15 +62,12 @@ def add_ligands(core_dir: str, ligand_dir: str, min_dist: float = 1.2) -> Iterat
     # Criteria for the minimal interatomic distances
     min_dist = 1.2
 
-    ############################            Substitution              ##################################
-
     # Generate structures by combining ligands and cores
     # If substitution is symmetric, produces equivalent structures, those should be deleted
-
     mono = substitution(input_ligands, input_cores, min_dist)
 
     di = substitution(input_ligands, mono, min_dist)
-    di_unique = del_equiv_structures(di,'linear')
+    di_unique = del_equiv_structures(di, 'linear')
 
     tri = substitution(input_ligands, di, min_dist)
 
@@ -101,6 +100,7 @@ def export_dyes(mol_list: Iterable[Molecule],
         if mol_distance > min_dist:
             mol.write(join(new_dir, f'{name}.xyz'))
         else:
-            # if minimal distance is smaler than given criteria, place structures in different folder
+            # if minimal distance is smaler than given criteria,
+            # place structures in different folder
             mol.write(join(err_dir, f'err_{name}.xyz'))
             print(f"{name}: \n Minimal distance {mol_distance} A is smaller than {min_dist} A")
