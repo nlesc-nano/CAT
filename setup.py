@@ -42,7 +42,9 @@ setup(
             'data/coskf/*coskf',
             'data/CORES/*xyz',
             'data/LIGANDS/*xyz',
-            'workflows/workflow_yaml.yaml'
+            'workflows/workflow_yaml.yaml',
+            'py.typed',
+            '*.pyi'
         ]
     },
     entry_points={
