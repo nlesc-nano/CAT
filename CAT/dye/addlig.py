@@ -9,6 +9,8 @@ import CAT
 from CAT.attachment.dye import bob_ligand, bob_core, substitution
 from CAT.attachment.substitution_symmetry import del_equiv_structures
 
+__all__ = []
+
 ##################################          input             #####################################
 
 
@@ -55,7 +57,7 @@ min_dist = 1.2
 mono = substitution(input_ligands, input_cores, min_dist)
 
 di = substitution(input_ligands, mono, min_dist)
-di_unique = del_equiv_structures(di, 'linear')
+di_unique = del_equiv_structures(di,'linear')
 
 tri = substitution(input_ligands, di, min_dist)
 
@@ -78,7 +80,7 @@ for mol in new_molecules:
         if not exists(join(path, new_dir[1])):
             os.makedirs(join(path, new_dir[1]))
         mol.write(join(path, new_dir[1], 'err_' + mol.properties.name + '.xyz'))
-        print(mol.properties.name + ": \n Minimal distance %f A is smaler than %f A" %
+        print (mol.properties.name + ": \n Minimal distance %f A is smaler than %f A" %
                (mol.properties.min_distance, min_dist))
 
 # The End
