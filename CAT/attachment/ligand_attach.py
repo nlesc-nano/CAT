@@ -383,7 +383,8 @@ def rot_mol(xyz_array: np.ndarray,
             core: Optional[np.ndarray] = None,
             bond_length: Optional[int] = None,
             step: float = 1/16,
-            dist_to_self: bool = True) -> np.ndarray:
+            dist_to_self: bool = True,
+            ret_min_dist: bool = False) -> np.ndarray:
     r"""Rotate **xyz_array**.
 
     Paramaters
@@ -433,15 +434,11 @@ def rot_mol(xyz_array: np.ndarray,
     vec2 = sanitize_dim_2(vec2)
 
     # Define slices
-    if xyz.ndim == 3 and len(xyz) != 1:
-        length = None
-    else:
-        length = max([len(vec1), len(vec2)])
-    idx1 = slice(0, None), idx
-    idx2 = slice(0, length), slice(int(2 / step)), idx
+    idx1 = np.arange(len(xyz)), idx
+    idx2 = np.arange(len(xyz)), slice(None), idx
 
     # Translate xyz[idx] to the origin and rotate
-    xyz -= xyz[idx1]
+    xyz -= xyz[idx1][..., None, :]
     rotmat1 = _get_rotmat1(vec1, vec2)
     xyz = xyz@rotmat1
 
@@ -453,19 +450,20 @@ def rot_mol(xyz_array: np.ndarray,
 
     # Translate the the molecules in xyz_array
     at_other = sanitize_dim_2(atoms_other)
-    xyz += (at_other[:, None, :] - xyz[idx2])[..., None, :]
-    if bond_length:
+    xyz += (at_other[..., None, :] - xyz[idx2])[..., None, :]
+    if bond_length is not None:
         bond_length = np.asarray(bond_length)
         mult = (bond_length / np.linalg.norm(vec2, axis=1))[:, None]
-        xyz -= (vec2 * mult)[:, None, :]
+        xyz -= (vec2 * mult)[:, None, None, :]
 
     # Returns the conformation of each molecule that maximizes the inter-moleculair distance
     # Or return all conformations if dist_to_self = False and atoms_other = None
-    return rotation_check_kdtree(xyz, at_other, core)
+    return rotation_check_kdtree(xyz, at_other, core, ret_min_dist=ret_min_dist)
 
 
-def rotation_check_kdtree(xyz: np.ndarray, core_anchor: np.ndarray,
-                          core: np.ndarray, k: int = 10):
+def rotation_check_kdtree(xyz: np.ndarray, core_anchor: np.ndarray, core: np.ndarray,
+                          k: int = 10,
+                          ret_min_dist: bool = False):
     """Perform the rotation check using SciPy's :class:`cKDTree<scipy.spatial.cKDTree.
 
     Parameters
@@ -488,6 +486,7 @@ def rotation_check_kdtree(xyz: np.ndarray, core_anchor: np.ndarray,
     """
     a, b, c, d = xyz.shape
     ret = np.empty((a, c, d), order='F')
+    min_dist = np.empty(len(ret))
     distance_upper_bound = _get_distance_upper_bound(core_anchor)
 
     # Shrink down the core, keep the 6 atoms closest to the core-anchor
@@ -502,10 +501,15 @@ def rotation_check_kdtree(xyz: np.ndarray, core_anchor: np.ndarray,
         dist, _ = tree.query(ar.reshape(b*c, d), k=k, distance_upper_bound=distance_upper_bound)
         dist.shape = b, c, k
 
-        idx_min = np.exp(-dist).sum(axis=(1, 2)).argmin()
+        weighted_dist = np.exp(-dist).sum(axis=(1, 2))
+        idx_min = weighted_dist.argmin()
         at_other = np.concatenate((at_other, ar[idx_min]))
-        ret[i] = ar[idx_min]
 
+        ret[i] = ar[idx_min]
+        min_dist[i] = weighted_dist[idx_min]
+
+    if ret_min_dist:
+        return ret, min_dist
     return ret
 
 

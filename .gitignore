@@ -106,3 +106,4 @@ venv.bak/
 docs_out/
 .vscode/
 .doctrees/
+new_molecules/

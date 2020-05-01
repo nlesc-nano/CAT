@@ -105,10 +105,10 @@ def qd_opt(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],
 
     # Extra options for AMSJob
     if job1 is AMSJob:
-        s1 = s1.copy()
+        s1 = Settings(s1)
         s1.input.ams.constraints.atom = mol.properties.indices
     if job2 is AMSJob:
-        s2 = s2.copy()
+        s2 = Settings(s2)
         s2.input.ams.constraints.atom = mol.properties.indices
 
     # Run the first job and fix broken angles
