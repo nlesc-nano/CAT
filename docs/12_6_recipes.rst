@@ -1,0 +1,1 @@
+.. automodule:: CAT.dye.addlig
