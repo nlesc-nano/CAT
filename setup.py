@@ -38,7 +38,11 @@ setup(
         'CAT': [
             'data/templates/*yaml',
             'data/coskf/*coskf',
-            'workflows/workflow_yaml.yaml'
+            'data/CORES/*xyz',
+            'data/LIGANDS/*xyz',
+            'workflows/workflow_yaml.yaml',
+            'py.typed',
+            '*.pyi'
         ]
     },
     entry_points={
