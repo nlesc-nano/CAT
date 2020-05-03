@@ -34,6 +34,7 @@ setup(
         'CAT.data.CORES',
         'CAT.data.LIGANDS',
         'CAT.data_handling',
+        'CAT.workflows'
     ],
     package_dir={'CAT': 'CAT'},
     package_data={
