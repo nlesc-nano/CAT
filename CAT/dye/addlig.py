@@ -27,7 +27,7 @@ from os.path import join, exists
 from scm.plams import read_molecules, Molecule
 
 import CAT
-from CAT.attachment.dye import bob_ligand, bob_core, substitution
+from CAT.attachment.dye import label_lig, label_core, substitution
 from CAT.attachment.substitution_symmetry import del_equiv_structures
 
 __all__ = ['add_ligands', 'export_dyes']
@@ -51,13 +51,13 @@ def add_ligands(core_dir: str, ligand_dir: str, min_dist: float = 1.2) -> Iterat
     input_ligands = list(read_molecules(ligand_dir).values())
     input_cores = list(read_molecules(core_dir).values())
 
-    # Bob does what Bob has to do (numbering the ligands)
-    bob_ligand(input_ligands)
+    # Reading the comment section and labeling substitution atom and numbering the ligands
+    label_lig(input_ligands)
 
-    # As it is written so shall it be (reading the comment section)
+    # Reading the comment section and labeling substitution atoms 
     for core in input_cores:
         core.guess_bonds()
-        bob_core(core)
+        label_core(core)
 
     # Criteria for the minimal interatomic distances
     min_dist = 1.2
