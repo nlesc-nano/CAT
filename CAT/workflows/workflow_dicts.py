@@ -7,8 +7,9 @@ A module for loading :class:`WorkFlow` templates.
 """
 
 import os
+import sys
 from types import MappingProxyType
-from typing import Mapping, MutableMapping
+from typing import Mapping, MutableMapping, Tuple, Dict, Any, TYPE_CHECKING
 
 import yaml
 import numpy as np
@@ -33,10 +34,26 @@ from .key_map import (
     V_BULK
 )
 
+if TYPE_CHECKING:
+    if sys.version_info >= (3, 8):
+        from typing import TypedDict
+    else:
+        from typing_extensions import TypedDict
+
+    class _TemplateMapping(TypedDict):
+        description: str
+        mol_type: str
+        template: Mapping[str, Tuple[str, ...]]
+        import_columns: Mapping[Tuple[str, str], float]
+        export_columns: Tuple[Tuple[str, str], ...]
+
+else:
+    from typing import Mapping as _TemplateMapping
+
 __all__ = ['WORKFLOW_TEMPLATE']
 
 
-def _load_templates() -> dict:
+def _load_templates() -> Dict[str, Any]:
     """Load the templates from ``CAT/data/workflow_dicts/workflow_yaml.yaml``."""
     path = os.path.join(os.path.dirname(__file__), 'workflow_yaml.yaml')
     with open(path, 'r') as f:
@@ -87,4 +104,4 @@ def finalize_templates():
 
 #: An immutable mapping with additional values for ``CAT/data/workflow_dicts/workflow_yaml.yaml``.
 #: Contains values which are generally not as easily represented in the .yaml format.
-WORKFLOW_TEMPLATE: Mapping[str, Mapping] = finalize_templates()
+WORKFLOW_TEMPLATE: Mapping[str, _TemplateMapping] = finalize_templates()
