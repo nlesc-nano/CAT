@@ -128,7 +128,7 @@ def get_template(template_name: str,
 def validate_path(path: None) -> str: ...
 @overload
 def validate_path(path: P) -> P: ...
-def validate_path(path):
+def validate_path(path):  # noqa: E302
     """Validate a provided directory path.
 
     Parameters
@@ -269,7 +269,7 @@ def restart_init(path: str, folder: str,
 def cycle_accumulate(iterable: Iterable[T]) -> Generator[T, None, None]: ...
 @overload
 def cycle_accumulate(iterable: Iterable[T], start: T = ...) -> Generator[T, None, None]: ...
-def cycle_accumulate(iterable, start=0):
+def cycle_accumulate(iterable, start=0):  # noqa: E302
     """Accumulate and return elements from **iterable** until it is exhausted.
 
     Then repeat (and keep accumulating) the sequence indefinitely.
