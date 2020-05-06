@@ -31,7 +31,7 @@ from math import factorial
 from types import MappingProxyType
 from shutil import rmtree
 from typing import (Iterable, Optional, Union, TypeVar, Mapping, Type, Generator, Iterator,
-                    Any, NoReturn, Tuple, Dict, Hashable, List)
+                    Any, NoReturn, Tuple, Dict, Hashable, List, overload)
 from os.path import join, isdir, isfile, exists
 from itertools import cycle, chain, repeat, combinations
 from contextlib import redirect_stdout
@@ -124,7 +124,11 @@ def get_template(template_name: str,
             return Settings(yaml.load(file, Loader=yaml.FullLoader))
 
 
-def validate_path(path: Optional[P]) -> P:
+@overload
+def validate_path(path: None) -> str: ...
+@overload
+def validate_path(path: P) -> P: ...
+def validate_path(path):  # noqa: E302
     """Validate a provided directory path.
 
     Parameters
@@ -153,9 +157,9 @@ def validate_path(path: Optional[P]) -> P:
         return path
 
     if not exists(path):
-        raise FileNotFoundError(f"'{path}' not found")
+        raise FileNotFoundError(f"{path!r} not found")
     elif isfile(path):
-        raise NotADirectoryError(f"'{path}' is not a directory")
+        raise NotADirectoryError(f"{path!r} is not a directory")
 
 
 def validate_core_atom(atom: Union[str, int]) -> Union[Molecule, int]:
@@ -261,7 +265,11 @@ def restart_init(path: str, folder: str,
     return None
 
 
-def cycle_accumulate(iterable: Iterable[T], start: T = 0) -> Generator[T, None, None]:
+@overload
+def cycle_accumulate(iterable: Iterable[T]) -> Generator[T, None, None]: ...
+@overload
+def cycle_accumulate(iterable: Iterable[T], start: T = ...) -> Generator[T, None, None]: ...
+def cycle_accumulate(iterable, start=0):  # noqa: E302
     """Accumulate and return elements from **iterable** until it is exhausted.
 
     Then repeat (and keep accumulating) the sequence indefinitely.

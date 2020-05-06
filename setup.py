@@ -83,7 +83,7 @@ setup(
         'pandas<1.0.0',
         'pyyaml>=5.1',
         'schema',
-        'AssertionLib>=1.1.1',
+        'AssertionLib>=2.2.3',
         'plams@git+https://github.com/SCM-NV/PLAMS@a5696ce62c09153a9fa67b2b03a750913e1d0924',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master',
     ],
