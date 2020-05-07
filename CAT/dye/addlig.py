@@ -13,14 +13,14 @@ Index
 
 API
 ---
-.. autofunction:: get_lig_charge
+.. autofunction:: add_ligands
 .. autofunction:: export_dyes
 
 """
 
 import os
 from itertools import chain
-from typing import Iterator, Iterable
+from typing import Iterator, Iterable, Collection
 from os.path import join, exists
 
 from scm.plams import read_molecules, Molecule
@@ -36,7 +36,7 @@ def add_ligands(core_dir: str,
                 ligand_dir: str,
                 min_dist: float = 1.2,
                 n: int = 1,
-                symmetry: Tuple[str] = []) -> Iterator[Molecule]:
+                symmetry: Collection[str] = ()) -> Iterator[Molecule]:
     """Add ligand(s) to one core.
 
     Parameters
@@ -58,6 +58,11 @@ def add_ligands(core_dir: str,
         New structures that are containg core and lingad fragments
 
     """
+    # Validate the symmetry
+    valid_sym = {'linear', 'triangle', 'D2h'}
+    if not valid_sym.issuperset(symmetry):
+        raise ValueError(f"Invalid 'symmetry' value: {symmetry!r}")
+
     input_ligands = list(read_molecules(ligand_dir).values())
     input_cores = list(read_molecules(core_dir).values())
 
@@ -79,19 +84,17 @@ def add_ligands(core_dir: str,
             new_mols.append(poli)
             mono = poli
 
-    if symmetry == []:
+    if not symmetry:
         pass
     elif 'linear' in symmetry:
         new_mols[1] = del_equiv_structures(new_mols[1], 'linear')
     elif 'triangle' in symmetry:
         new_mols[2] = del_equiv_structures(new_mols[2], 'triangle')
     elif 'D2h' in symmetry:
-        new_mols[3] = del_equiv_structures(new_mols[2], 'D2h')
+        new_mols[3] = del_equiv_structures(new_mols[3], 'D2h')
 
     # Combine and flatten all new molecules into a generator
-    ret = chain.from_iterable(new_mols)
-
-    return ret
+    return chain.from_iterable(new_mols)
 
 
 def export_dyes(mol_list: Iterable[Molecule],
@@ -118,7 +121,6 @@ def export_dyes(mol_list: Iterable[Molecule],
         os.makedirs(err_dir)
 
     # Export molecules to folders depending on the minimum core/ligand distance
-    print(mol_list)
     for mol in mol_list:
         name = mol.properties.name
         mol_distance = mol.properties.min_distance
