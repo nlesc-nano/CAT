@@ -1,6 +1,6 @@
 """ A modules for combining (organic) molecules. """
 
-__all__ = ['bob_ligand', 'bob_core', 'substitution', 'multi_substitution']
+__all__ = ['label_lig', 'label_core', 'substitution', 'multi_substitution']
 
 from itertools import chain
 
@@ -189,7 +189,7 @@ def get_args(core, lig_list, lig_idx):
             'bond_length': bond_length, 'dist_to_self': False, 'idx': lig_idx, 'ret_min_dist': True}
 
 
-def bob_core(mol):
+def label_core(mol):
     """ Adds plams_mol.properties attribute to the core
 
     Reads the atom indices from comment section in core's .xyz file and adds
@@ -229,7 +229,7 @@ def bob_core(mol):
     mol.guess_bonds()
 
 
-def bob_ligand(mols):
+def label_lig(mols):
     """Adds plams_mol.properties attribute to the ligand
 
     Reads the atom index from comment section in ligand's .xyz file and adds additional

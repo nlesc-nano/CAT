@@ -28,6 +28,7 @@ setup(
         'CAT',
         'CAT.attachment',
         'CAT.data',
+        'CAT.dye',
         'CAT.data.coskf',
         'CAT.data.templates',
         'CAT.data.CORES',

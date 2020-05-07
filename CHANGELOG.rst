@@ -11,6 +11,11 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.8.4
+*****
+* Turned the ``dye`` functionality into a recipe in ``CAT.recipes``.
+
+
 0.8.3
 *****
 * Merged all features from the ``dye`` branch into the master.
