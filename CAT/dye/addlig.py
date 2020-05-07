@@ -32,7 +32,11 @@ from CAT.attachment.substitution_symmetry import del_equiv_structures
 __all__ = ['add_ligands', 'export_dyes']
 
 
-def add_ligands(core_dir: str, ligand_dir: str, min_dist: float = 1.2, n: int = 1, symmetry: Tuple[str] = []) -> Iterator[Molecule]:
+def add_ligands(core_dir: str,
+                ligand_dir: str,
+                min_dist: float = 1.2,
+                n: int = 1,
+                symmetry: Tuple[str] = []) -> Iterator[Molecule]:
     """Add ligand(s) to one core.
 
     Parameters
@@ -70,7 +74,7 @@ def add_ligands(core_dir: str, ligand_dir: str, min_dist: float = 1.2, n: int = 
     new_mols = []
     new_mols.append(mono)
     if n > 1:
-        for i in range(1,n):
+        for i in range(1, n):
             poli = substitution(input_ligands, mono, min_dist)
             new_mols.append(poli)
             mono = poli
