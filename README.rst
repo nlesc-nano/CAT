@@ -2,7 +2,9 @@
    :target: https://travis-ci.org/nlesc-nano/CAT
 .. image:: https://readthedocs.org/projects/cat/badge/?version=latest
    :target: https://cat.readthedocs.io/en/latest/
-
+.. image:: https://zenodo.org/badge/169708827.svg
+   :target: https://zenodo.org/badge/latestdoi/169708827
+   
 |
 
 .. image:: https://img.shields.io/badge/python-3.6-blue.svg
