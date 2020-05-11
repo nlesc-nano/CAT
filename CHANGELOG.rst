@@ -11,6 +11,11 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.8.6
+*****
+* Added documentation for the new Nano-CAT ``multi_ligand_job()`` recipe.
+
+
 0.8.5
 *****
 * Version bump.

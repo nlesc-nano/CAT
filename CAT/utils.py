@@ -26,13 +26,16 @@ API
 
 import os
 import yaml
+import reprlib
 import pkg_resources as pkg
 from math import factorial
 from types import MappingProxyType
 from shutil import rmtree
 from typing import (Iterable, Optional, Union, TypeVar, Mapping, Type, Generator, Iterator,
-                    Any, NoReturn, Tuple, Dict, Hashable, List, overload)
+                    Any, NoReturn, Tuple, Dict, Hashable, List, overload, ContextManager,
+                    NamedTuple, Generic)
 from os.path import join, isdir, isfile, exists
+from threading import RLock
 from itertools import cycle, chain, repeat, combinations
 from contextlib import redirect_stdout
 from collections import abc
@@ -50,7 +53,7 @@ from .mol_utils import to_atnum
 from .gen_job_manager import GenJobManager
 
 __all__ = ['JOB_MAP', 'check_sys_var', 'dict_concatenate', 'get_template',
-           'cycle_accumulate', 'iter_repeat',
+           'cycle_accumulate', 'iter_repeat', 'SetAttr', 'VersionInfo',
            'as_1d_array', 'array_combinations', 'get_nearest_neighbors']
 
 JOB_MAP: Mapping[Type[Job], str] = MappingProxyType({
@@ -516,3 +519,89 @@ except ImportError:
                 list_append[key] = ret[key].append
 
         return ret if mutable else mapping_type(ret)
+
+
+class SetAttr(ContextManager[None], Generic[T]):
+    """A context manager for temporarily changing an attribute's value.
+
+    The :class:`SetAttr` context manager is thread-safe, reusable and reentrant.
+
+    Examples
+    --------
+    .. code:: python
+
+        >>> from CAT.utils import SetAttr
+
+        >>> class Test:
+        ...     a = False
+
+        >>> print(Test.a)
+        False
+
+        >>> with SetAttr(Test, 'a', True):
+        ...     print(Test.a)
+        True
+
+    """
+
+    @property
+    def attr(self) -> T:
+        """Get or set the :attr:`~SetAttr.name` attribute of :attr:`~SetAttr.obj`."""
+        return getattr(self.obj, self.name)
+
+    @attr.setter
+    def attr(self, value: T) -> None:
+        with self._lock:
+            setattr(self.obj, self.name, value)
+
+    def __repr__(self) -> str:
+        """Implement :func:`str(self)<str>` and :func:`repr(self)<repr>`."""
+        obj = object.__repr__(self.obj)
+        value = reprlib.repr(self.value)
+        return f'{self.__class__.__name__}(obj={obj}, name={self.name!r}, value={value})'
+
+    def __init__(self, obj: Any, name: str, value: T) -> None:
+        """Initialize the :class:`SetAttr` context manager.
+
+        Parameters
+        ----------
+        obj : :data:`~typing.Any`
+            The to-be modified object.
+        name : :class:`str`
+            The name of the to-be modified attribute.
+        value : :data:`~typing.Any`
+            The value to-be assigned to the **name** attribute of **obj**.
+
+        """
+        self.obj = obj
+        self.name = name
+        self.value = value
+
+        self._value = self.attr
+        self._lock = RLock()
+
+    def __enter__(self) -> None:
+        """Enter the context manager; modify :attr:`SetAttr.obj`."""
+        self.attr = self.value
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        """Exit the context manager; restore :attr:`SetAttr.obj`."""
+        self.attr = self._value
+
+
+class VersionInfo(NamedTuple):
+    """A :class:`~collections.namedtuple` representing the version of a package.
+
+    Examples
+    --------
+    .. code:: python
+
+        >>> from CAT.utils import VersionInfo
+
+        >>> version_info = VersionInfo(major=0, minor=8, micro=2)
+
+    """
+
+    major: int
+    minor: int
+    micro: int
