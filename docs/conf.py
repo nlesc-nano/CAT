@@ -202,6 +202,8 @@ intersphinx_mapping = {
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'plams': ('https://www.scm.com/doc/plams/', None),
+    'qmflows': ('https://qmflows.readthedocs.io/en/latest/', None),
+    'FOX': ('https://auto-fox.readthedocs.io/en/latest/', None),
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None)
 }
 
