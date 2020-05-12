@@ -112,12 +112,12 @@ def construct_mol_series(qd_df: SettingsDataFrame, core_df: pd.DataFrame,
                          ligand_df: pd.DataFrame, path: str,
                          allignment: str = 'sphere', **kwargs: Any) -> pd.Series:
     """Construct a Series of new quantum dots."""
-    def _get_mol(i, j, k, l):
+    def _get_mol(i, j, k, m):
         ij = i, j
-        kl = k, l
-        return ligand_to_qd(core_df.at[ij, MOL], ligand_df.at[kl, MOL], path, allignment=allignment)
+        km = k, m
+        return ligand_to_qd(core_df.at[ij, MOL], ligand_df.at[km, MOL], path, allignment=allignment)
 
-    mol_list = [_get_mol(i, j, k, l) for i, j, k, l in qd_df.index]
+    mol_list = [_get_mol(i, j, k, m) for i, j, k, m in qd_df.index]
     return pd.Series(mol_list, index=qd_df.index, name=MOL, dtype=object)
 
 
