@@ -69,7 +69,7 @@ copyright = f'{year}, {author}'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the built documents.
-release = '0.8.5'  # The full version, including alpha/beta/rc tags.
+release = '0.8.6'  # The full version, including alpha/beta/rc tags.
 version = release.rsplit('.', maxsplit=1)[0]
 
 
@@ -202,6 +202,8 @@ intersphinx_mapping = {
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'plams': ('https://www.scm.com/doc/plams/', None),
+    'qmflows': ('https://qmflows.readthedocs.io/en/latest/', None),
+    'FOX': ('https://auto-fox.readthedocs.io/en/latest/', None),
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None)
 }
 

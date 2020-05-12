@@ -30,29 +30,37 @@ import pkg_resources as pkg
 from math import factorial
 from types import MappingProxyType
 from shutil import rmtree
-from typing import (Iterable, Optional, Union, TypeVar, Mapping, Type, Generator, Iterator,
-                    Any, NoReturn, Tuple, Dict, Hashable, List, overload)
 from os.path import join, isdir, isfile, exists
 from itertools import cycle, chain, repeat, combinations
 from contextlib import redirect_stdout
 from collections import abc
+from typing import (
+    Iterable, Union, TypeVar, Mapping, Type, Generator, Iterator,
+    Any, NoReturn, Tuple, Dict, List, overload,  NamedTuple, Callable
+)
 
 import numpy as np
 from scipy.spatial import cKDTree
 
-from scm.plams import (config, Settings, Molecule, MoleculeError, PeriodicTable, init, from_smiles,
-                       AMSJob, ADFJob, Cp2kJob, DiracJob, GamessJob)
 from scm.plams.core.basejob import Job
 from scm.plams.interfaces.thirdparty.orca import ORCAJob
+from scm.plams import (
+    config, Settings, Molecule, MoleculeError, PeriodicTable, init,
+    from_smiles, AMSJob, ADFJob, Cp2kJob, DiracJob, GamessJob
+)
 
+from ._setattr import SetAttr as _SetAttr
 from .logger import logger
 from .mol_utils import to_atnum
 from .gen_job_manager import GenJobManager
 
-__all__ = ['JOB_MAP', 'check_sys_var', 'dict_concatenate', 'get_template',
-           'cycle_accumulate', 'iter_repeat',
-           'as_1d_array', 'array_combinations', 'get_nearest_neighbors']
+__all__ = [
+    'JOB_MAP', 'check_sys_var', 'dict_concatenate', 'get_template', 'VersionInfo',
+    'cycle_accumulate', 'iter_repeat', 'SetAttr', 'VersionInfo',
+    'as_1d_array', 'array_combinations', 'get_nearest_neighbors',
+]
 
+SetAttr = _SetAttr
 JOB_MAP: Mapping[Type[Job], str] = MappingProxyType({
     ADFJob: 'adf',
     AMSJob: 'ams',
@@ -62,7 +70,10 @@ JOB_MAP: Mapping[Type[Job], str] = MappingProxyType({
     ORCAJob: 'orca'
 })
 
-T = TypeVar('T')
+T1 = TypeVar('T1')
+T2 = TypeVar('T2')
+KT = TypeVar('KT')
+VT = TypeVar('VT')
 P = TypeVar('P', str, bytes, os.PathLike)
 Dtype = Union[type, str, np.dtype]
 
@@ -104,24 +115,22 @@ def check_sys_var() -> None:
         raise EnvironmentError(f"ADF/2019 not detected in {os.environ['ADFHOME']}")
 
 
-def dict_concatenate(dict_list: Iterable[dict]) -> dict:
+def dict_concatenate(dict_list: Iterable[Mapping[KT, VT]]) -> Dict[KT, VT]:
     """Concatenates a list of dictionaries."""
-    ret = {}
+    ret: Dict[KT, VT] = {}
     for item in dict_list:
         ret.update(item)
     return ret
 
 
-def get_template(template_name: str,
-                 from_cat_data: bool = True) -> Settings:
+def get_template(template_name: str, from_cat_data: bool = True) -> Settings:
     """Grab a yaml template and return it as Settings object."""
     if from_cat_data:
         path = join('data/templates', template_name)
         xs = pkg.resource_string('CAT', path)
         return Settings(yaml.load(xs.decode(), Loader=yaml.FullLoader))
-    else:
-        with open(template_name, 'r') as file:
-            return Settings(yaml.load(file, Loader=yaml.FullLoader))
+    with open(template_name, 'r') as file:
+        return Settings(yaml.load(file, Loader=yaml.FullLoader))
 
 
 @overload
@@ -162,7 +171,11 @@ def validate_path(path):  # noqa: E302
         raise NotADirectoryError(f"{path!r} is not a directory")
 
 
-def validate_core_atom(atom: Union[str, int]) -> Union[Molecule, int]:
+@overload
+def validate_core_atom(atom: int) -> int: ...
+@overload
+def validate_core_atom(atom: str) -> Union[Molecule, int]: ...
+def validate_core_atom(atom):
     """Parse and validate the ``["optional"]["qd"]["dissociate"]["core_atom"]`` argument."""
     # Potential atomic number or symbol
     if isinstance(atom, int) or atom in PeriodicTable.symtonum:
@@ -172,8 +185,8 @@ def validate_core_atom(atom: Union[str, int]) -> Union[Molecule, int]:
     try:
         mol = from_smiles(atom)
     except Exception as ex:
-        raise ex.__class__(f'Failed to recognize {repr(atom)} as a valid atomic number, '
-                           f'atomic symbol or SMILES string\n\n{ex}')
+        raise ValueError(f'Failed to recognize {atom!r} as a valid atomic number, '
+                         'atomic symbol or SMILES string') from ex
 
     # Double check the SMILES string:
     charge_dict = {}
@@ -194,8 +207,7 @@ def validate_core_atom(atom: Union[str, int]) -> Union[Molecule, int]:
     return mol
 
 
-def restart_init(path: str, folder: str,
-                 hashing: Optional[str] = 'input') -> None:
+def restart_init(path: str, folder: str, hashing: str = 'input') -> None:
     """Wrapper around the plams.init_ function; used for importing one or more previous jobs.
 
     All pickled .dill files in **path**/**folder**/ will be loaded into the
@@ -251,8 +263,8 @@ def restart_init(path: str, folder: str,
 
         # Grab the job name
         try:
-            name, num = f.rsplit('.', 1)
-            num = int(num)
+            name, _num = f.rsplit('.', 1)
+            num = int(_num)
         except ValueError:  # Jobname is not appended with a number
             name = f
             num = 1
@@ -266,9 +278,9 @@ def restart_init(path: str, folder: str,
 
 
 @overload
-def cycle_accumulate(iterable: Iterable[T]) -> Generator[T, None, None]: ...
+def cycle_accumulate(iterable: Iterable[T1]) -> Generator[T1, None, None]: ...
 @overload
-def cycle_accumulate(iterable: Iterable[T], start: T = ...) -> Generator[T, None, None]: ...
+def cycle_accumulate(iterable: Iterable[T1], start: T1 = ...) -> Generator[T1, None, None]: ...
 def cycle_accumulate(iterable, start=0):  # noqa: E302
     """Accumulate and return elements from **iterable** until it is exhausted.
 
@@ -283,7 +295,7 @@ def cycle_accumulate(iterable, start=0):  # noqa: E302
         yield ret
 
 
-def iter_repeat(iterable: Iterable[T], times: int) -> Iterator[T]:
+def iter_repeat(iterable: Iterable[T1], times: int) -> Iterator[T1]:
     """Iterate over an iterable and apply :func:`itertools.repeat` to each element.
 
     Examples
@@ -319,7 +331,7 @@ def iter_repeat(iterable: Iterable[T], times: int) -> Iterator[T]:
     return chain.from_iterable(repeat(i, times) for i in iterable)
 
 
-def as_1d_array(value: Union[T, Iterable[T]], dtype: Dtype, ndmin: int = 1) -> np.ndarray:
+def as_1d_array(value: Any, dtype: Dtype, ndmin: int = 1) -> np.ndarray:
     """Convert **value**, a scalar or iterable of scalars, into an array."""
     try:
         return np.array(value, dtype=dtype, ndmin=ndmin, copy=False)
@@ -465,14 +477,13 @@ def _parse_ValueError(ex: Exception, k: Any) -> NoReturn:
 try:
     from FOX import group_by_values
 except ImportError:
-    def group_by_values(iterable: Iterable[Tuple[Any, Hashable]],
-                        mapping_type: Type[Mapping] = dict) -> Mapping[Hashable, List[Any]]:
+    def group_by_values(iterable: Iterable[Tuple[VT, KT]],
+                        mapping_type: Type[Mapping] = dict) -> Dict[KT, List[VT]]:
         """Take an iterable, yielding 2-tuples, and group all first elements by the second.
 
         Exameple
         --------
         .. code:: python
-
             >>> from typing import Iterator
 
             >>> str_list: list = ['a', 'a', 'a', 'a', 'a', 'b', 'b', 'b']
@@ -482,32 +493,25 @@ except ImportError:
             >>> print(new_dict)
             {'a': [1, 2, 3, 4, 5], 'b': [6, 7, 8]}
 
-        Parameter
-        ---------
-        iterable : :class:`Iterable<collections.abc.Iterable>`
+        Parameters
+        ----------
+        iterable : :class:`~collections.abc.Iterable`
             An iterable yielding 2 elements upon iteration
             (*e.g.* :meth:`dict.items` or :func:`enumerate`).
             The second element must be a :class:`Hashable<collections.abc.Hashable>` and will be used
             as key in the to-be returned mapping.
 
-        mapping_type : :class:`type` [:class:`MutableMapping<collections.abc.MutableMapping>`]
+        mapping_type : :class:`type` [:class:`~collections.abc.MutableMapping`]
             The to-be returned mapping type.
 
         Returns
         -------
-        :class:`MutableMapping<collections.abc.MutableMapping>`
-        [:class:`Hashable<collections.abc.Hashable>`, :class:`list` [:data:`Any<typing.Any>`]]
+        :class:`~collections.abc.MutableMapping` [:class:`~collections.abc.Hashable`, :class:`list` [:data:`~typing.Any`]]
             A grouped dictionary.
 
-        """  # noqa
-        if issubclass(mapping_type, abc.MutableMapping):
-            ret = mapping_type()
-            mutable = True
-        else:
-            ret = {}
-            mutable = False
-
-        list_append: Dict[Hashable, list.append] = {}
+        """  # noqa: E501
+        ret = {}
+        list_append: Dict[KT, Callable[[VT], None]] = {}
         for value, key in iterable:
             try:
                 list_append[key](value)
@@ -515,4 +519,33 @@ except ImportError:
                 ret[key] = [value]
                 list_append[key] = ret[key].append
 
-        return ret if mutable else mapping_type(ret)
+        return ret if mapping_type is dict else mapping_type(ret)
+
+
+class VersionInfo(NamedTuple):
+    """A :class:`~collections.namedtuple` representing the version of a package.
+
+    Examples
+    --------
+    .. code:: python
+
+        >>> from CAT.utils import VersionInfo
+
+        >>> version = '0.8.2'
+        >>> version_info = VersionInfo.from_str(version)
+
+    """
+
+    major: int
+    minor: int
+    micro: int
+
+    @classmethod
+    def from_str(cls, version: str) -> 'VersionInfo':
+        """Construct a :class:`VersionInfo` from a string; *e.g.*: :code:`version='0.8.2'`."""
+        if not isinstance(version, str):
+            cls_name = version.__class__.__name__
+            raise TypeError(f"'version' expected a string; observed type: {cls_name!r}")
+
+        args = (int(i) for i in version.split('.'))
+        return cls(*args)

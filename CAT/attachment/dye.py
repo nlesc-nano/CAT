@@ -140,7 +140,7 @@ def connect_ligands_to_core(lig_dict, core, user_min_dist):
         FrInd_plams = (np.array(FrInd_rdkit)+1).tolist()     # plams counts from 1
         Fr_atoms = np.array([lig_cp[c].coords for c in FrInd_plams])
         OnlyLig = np.array(
-                [lig_cp[l].coords for l in range(1, len(lig_cp)+1) if l not in FrInd_plams])
+                [lig_cp[i].coords for i in range(1, len(lig_cp)+1) if i not in FrInd_plams])
         min_dist = np.nanmin(cdist(OnlyLig, Fr_atoms))
         lig_cp.properties.min_distance = min_dist
 
