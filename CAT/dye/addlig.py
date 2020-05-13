@@ -49,7 +49,7 @@ def add_ligands(core_dir: str,
         Criterion for the minimal interatomic distances
     n: int
         Number of substitutions
-    symmetry: tulpe[str]
+    symmetry: tuple[str]
         Keywords for substitution symmetry for deleting equivalent molecules
 
     Returns
