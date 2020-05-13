@@ -1,6 +1,4 @@
-""" A modules for combining (organic) molecules. """
-
-__all__ = ['label_lig', 'label_core', 'substitution', 'multi_substitution']
+"""A modules for combining (organic) molecules."""
 
 from itertools import chain
 
@@ -9,7 +7,11 @@ from scipy.spatial.distance import cdist
 
 from rdkit.Chem import AllChem
 from scm.plams import Molecule, Settings, to_rdmol
+
 from .ligand_attach import rot_mol
+from ..logger import logger
+
+__all__ = ['label_lig', 'label_core', 'substitution', 'multi_substitution']
 
 
 def ff_constrained_opt(mol, constrain=()):
@@ -41,7 +43,9 @@ def ff_constrained_opt(mol, constrain=()):
             ff.AddFixedPoint(f)
     except AttributeError:
         # It seems like the MMF forcefield is not available for all atoms (e.g. As)
-        print(f"Failed to construct the {ff_type.__name__!r} forcefield for {mol.get_formula()}")
+        logger.warning(
+            f"Failed to construct the {ff_type.__name__!r} forcefield for {mol.get_formula()}"
+        )
         return mol
 
     ff.Minimize()
@@ -134,7 +138,7 @@ def connect_ligands_to_core(lig_dict, core, user_min_dist):
         try:
             lig_cp = ff_constrained_opt(lig_cp, constrain=FrInd_rdkit)
         except ValueError:
-            print("FF optimization error")
+            logger.warning("FF optimization error")
 
         # Distance between core and ligands
         FrInd_plams = (np.array(FrInd_rdkit)+1).tolist()     # plams counts from 1
@@ -185,8 +189,12 @@ def get_args(core, lig_list, lig_idx):
     idx = core.atoms.index(at_h)
     core_array[idx] = np.nan
 
-    return {'core': core_array, 'atoms_other': core_other_atom,
-            'bond_length': bond_length, 'dist_to_self': False, 'idx': lig_idx, 'ret_min_dist': True}
+    return {'core': core_array,
+            'atoms_other': core_other_atom,
+            'bond_length': bond_length,
+            'dist_to_self': False,
+            'idx': lig_idx,
+            'ret_min_dist': True}
 
 
 def label_core(mol):

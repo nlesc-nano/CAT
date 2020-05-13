@@ -25,7 +25,7 @@ from os.path import join, exists
 
 from scm.plams import read_molecules, Molecule
 
-import CAT
+from CAT.logger import logger
 from CAT.attachment.dye import label_lig, label_core, substitution
 from CAT.attachment.substitution_symmetry import del_equiv_structures
 
@@ -129,4 +129,6 @@ def export_dyes(mol_list: Iterable[Molecule],
             mol.write(join(new_dir, f'{name}.xyz'))
         else:
             mol.write(join(err_dir, f'err_{name}.xyz'))
-            print(f"{name}: \n Minimal distance {mol_distance} A is smaller than {min_dist} A")
+            logger.warning(
+                f"{name}: \n Minimal distance {mol_distance} A is smaller than {min_dist} A"
+            )
