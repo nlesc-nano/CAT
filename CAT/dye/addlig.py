@@ -141,7 +141,6 @@ def export_dyes(mol_list: Iterable[Molecule],
                 f"{name}: \n Minimal distance {mol_distance} A is smaller than {min_dist} A"
             )
 
-
 # The functions '_compute_SAS' and 'SA_scores' as well as data set 'SA_score.pkl.gz'
 # are copied and adapted from:
 ###########################################################################
