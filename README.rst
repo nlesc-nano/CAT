@@ -2,6 +2,8 @@
    :target: https://travis-ci.org/nlesc-nano/CAT
 .. image:: https://readthedocs.org/projects/cat/badge/?version=latest
    :target: https://cat.readthedocs.io/en/latest/
+.. image:: https://zenodo.org/badge/169708827.svg
+   :target: https://zenodo.org/badge/latestdoi/169708827
 
 |
 
@@ -14,7 +16,7 @@
 
 
 ##############################
-Compound Attachment Tool 0.8.3
+Compound Attachment Tool 0.8.6
 ##############################
 
 **CAT** is a collection of tools designed for the construction of various chemical compounds.

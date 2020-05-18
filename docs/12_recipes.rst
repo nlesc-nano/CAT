@@ -10,3 +10,4 @@ Recipes
     12_4_recipes.rst
     12_5_recipes.rst
     12_6_recipes.rst
+    12_7_recipes.rst

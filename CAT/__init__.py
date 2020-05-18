@@ -29,11 +29,14 @@ from .data_handling import (
     read_mol, set_mol_prop
 )
 
-from .utils import get_template
+from .utils import get_template, VersionInfo
 
 __version__ = __version__
 __author__ = "Bas van Beek"
 __email__ = 'b.f.van.beek@vu.nl'
+
+version_info = VersionInfo.from_str(__version__)
+del VersionInfo
 
 __all__ = [
     'job_single_point', 'job_geometry_opt', 'job_freq',

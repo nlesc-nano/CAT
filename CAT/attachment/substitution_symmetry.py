@@ -280,8 +280,8 @@ def symm_permutations(condition, elements):
         j[:2], j[2:] = j[2:], j[:2]
         return j
 
-    def rotate_list(l, n):
-        return l[n:] + l[:n]
+    def rotate_list(lst, n):
+        return lst[n:] + lst[:n]
 
     def swap_two_last(j):
         j[-1], j[-2] = j[-2], j[-1]
