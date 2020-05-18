@@ -13,8 +13,9 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.8.7
 *****
+* Replaced ``print()`` calls with ``logger.warning()`` in all dye-related functions.
 * Added a recipe for calculating the synthetic accessibility score (SAS)
-  as adapted from `MolGAN < https://github.com/nicola-decao/MolGAN>`_.
+  as adapted from `MolGAN <https://github.com/nicola-decao/MolGAN>`_.
 
 
 0.8.6
