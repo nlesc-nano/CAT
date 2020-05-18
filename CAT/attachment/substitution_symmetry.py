@@ -1,6 +1,4 @@
-""" Substitution symmetry """
-
-__all__ = ['del_equiv_structures']
+"""Substitution symmetry."""
 
 import numpy as np
 import pandas as pd
@@ -8,6 +6,10 @@ from scipy.spatial.distance import cdist
 
 from scm.plams import Molecule
 from scm.plams.tools.geometry import rotation_matrix
+
+from ..logger import logger
+
+__all__ = ['del_equiv_structures']
 
 
 def find_equivalent_atoms(mol, idx=None, idx_substract=0):
@@ -136,10 +138,10 @@ def supstitution_symmetry(mol):
     # If substitution is linear, simple combinations without repetition can be applied
     if len(ligand_identity) <= 2:
         if len(ligand_identity) == 1:
-            print("One does not simply ask for subsymmetry of one atom!")
+            logger.warning("One does not simply ask for subsymmetry of one atom!")
             return
         elif len(ligand_identity) == 0:
-            print("One does not simply ask for subsymmetry of no atom")
+            logger.warning("One does not simply ask for subsymmetry of no atom")
             return
         else:
             subsymmetry = 'linear'
@@ -153,8 +155,7 @@ def supstitution_symmetry(mol):
         if list(type_of_symetry) == [0, 1, 8, 9]:
             subsymmetry = 'D2h'
         else:
-
-            print("Subsymmetry is not recognized")
+            logger.warning("Subsymmetry is not recognized")
             return
 
     return subsymmetry
@@ -206,8 +207,8 @@ def get_symmetry(mol, decimals=2):
         dist_mat = np.array([cdist(i, mol) for i in mol_new]).round(decimals)
         try:
             df[j] = np.bincount(np.where(dist_mat == 0)[0])
-        except(ValueError):
-            print("Something went wrong: Length of values does not match length of index ")
+        except ValueError:
+            logger.warning("Something went wrong: Length of values does not match length of index")
     return df
 
 

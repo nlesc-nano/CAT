@@ -13,6 +13,8 @@ from scm.plams import (
 
 from .__version__ import __version__
 
+from .logger import logger
+
 from .jobs import (
     job_single_point, job_geometry_opt, job_freq
 )
@@ -38,7 +40,11 @@ __email__ = 'b.f.van.beek@vu.nl'
 version_info = VersionInfo.from_str(__version__)
 del VersionInfo
 
+logger = logger
+
 __all__ = [
+    'logger',
+
     'job_single_point', 'job_geometry_opt', 'job_freq',
 
     'get_thermo', 'get_entropy',
