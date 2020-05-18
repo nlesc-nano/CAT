@@ -142,9 +142,7 @@ def export_dyes(mol_list: Iterable[Molecule],
                 f"{name}: \n Minimal distance {mol_distance} A is smaller than {min_dist} A"
             )
 
-
-
-# The functions '_compute_SAS' and 'SA_scores' as well as data set 'SA_score.pkl.gz' 
+# The functions '_compute_SAS' and 'SA_scores' as well as data set 'SA_score.pkl.gz'
 # are copied and adapted from:
 ###########################################################################
 #    Title: MolGAN: An implicit generative model for small molecular graphs
@@ -153,9 +151,9 @@ def export_dyes(mol_list: Iterable[Molecule],
 #    Availability: https://github.com/nicola-decao/MolGAN
 ###########################################################################
 
-
 SA_model = {i[j]: float(i[0])
-            for i in pickle.load(gzip.open('SA_score.pkl.gz')) for j in range(1, len(i))}
+         for i in pickle.load(gzip.open('SA_score.pkl.gz')) for j in range(1, len(i))}
+
 
 def _compute_SAS(mol):
     fp = rdMolDescriptors.GetMorganFingerprint(mol, 2)
@@ -195,7 +193,7 @@ def _compute_SAS(mol):
         macrocyclePenalty = math.log10(2)
 
     score2 = 0. - sizePenalty - stereoPenalty - \
-             spiroPenalty - bridgePenalty - macrocyclePenalty
+           spiroPenalty - bridgePenalty - macrocyclePenalty
 
     # correction for the fingerprint density
     # not in the original publication, added in version 1.1
