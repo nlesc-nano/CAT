@@ -10,26 +10,34 @@ Index
 .. autosummary::
     add_ligands
     export_dyes
+    sa_scores
 
 API
 ---
 .. autofunction:: add_ligands
 .. autofunction:: export_dyes
+.. autofunction:: sa_scores
 
 """
 
 import os
-from itertools import chain
+import gzip
+import math
+import pickle
 from typing import Iterator, Iterable, Collection
 from os.path import join, exists
+from itertools import chain
 
+import numpy as np
 from scm.plams import read_molecules, Molecule
+from scm.plams.interfaces.molecule.rdkit import to_rdmol
+from rdkit.Chem import rdMolDescriptors, FindMolChiralCenters
 
-import CAT
+from CAT.logger import logger
 from CAT.attachment.dye import label_lig, label_core, substitution
 from CAT.attachment.substitution_symmetry import del_equiv_structures
 
-__all__ = ['add_ligands', 'export_dyes']
+__all__ = ['add_ligands', 'export_dyes', 'sa_scores']
 
 
 def add_ligands(core_dir: str,
@@ -49,7 +57,7 @@ def add_ligands(core_dir: str,
         Criterion for the minimal interatomic distances
     n: int
         Number of substitutions
-    symmetry: tulpe[str]
+    symmetry: tuple[str]
         Keywords for substitution symmetry for deleting equivalent molecules
 
     Returns
@@ -129,4 +137,91 @@ def export_dyes(mol_list: Iterable[Molecule],
             mol.write(join(new_dir, f'{name}.xyz'))
         else:
             mol.write(join(err_dir, f'err_{name}.xyz'))
-            print(f"{name}: \n Minimal distance {mol_distance} A is smaller than {min_dist} A")
+            logger.warning(
+                f"{name}: \n Minimal distance {mol_distance} A is smaller than {min_dist} A"
+            )
+
+# The functions '_compute_SAS' and 'SA_scores' as well as data set 'SA_score.pkl.gz'
+# are copied and adapted from:
+###########################################################################
+#    Title: MolGAN: An implicit generative model for small molecular graphs
+#    Authors: De Cao, Nicola and Kipf, Thomas
+#    Date: 2018
+#    Availability: https://github.com/nicola-decao/MolGAN
+###########################################################################
+
+
+def _compute_sas(mol, sa_model: dict):
+    fp = rdMolDescriptors.GetMorganFingerprint(mol, 2)
+    fps = fp.GetNonzeroElements()
+    score1 = 0.
+    nf = 0
+    # for bitId, v in fps.items():
+    for bitId, v in fps.items():
+        nf += v
+        sfp = bitId
+        score1 += sa_model.get(sfp, -4) * v
+    score1 /= nf
+
+    # features score
+    nAtoms = mol.GetNumAtoms()
+    nChiralCenters = len(FindMolChiralCenters(
+        mol, includeUnassigned=True))
+    ri = mol.GetRingInfo()
+    nSpiro = rdMolDescriptors.CalcNumSpiroAtoms(mol)
+    nBridgeheads = rdMolDescriptors.CalcNumBridgeheadAtoms(mol)
+    nMacrocycles = 0
+    for x in ri.AtomRings():
+        if len(x) > 8:
+            nMacrocycles += 1
+
+    sizePenalty = nAtoms ** 1.005 - nAtoms
+    stereoPenalty = math.log10(nChiralCenters + 1)
+    spiroPenalty = math.log10(nSpiro + 1)
+    bridgePenalty = math.log10(nBridgeheads + 1)
+    macrocyclePenalty = 0.
+
+    # ---------------------------------------
+    # This differs from the paper, which defines:
+    # macrocyclePenalty = math.log10(nMacrocycles+1)
+    # This form generates better results when 2 or more macrocycles are present
+    if nMacrocycles > 0:
+        macrocyclePenalty = math.log10(2)
+
+    score2 = 0. - sizePenalty - stereoPenalty - spiroPenalty - bridgePenalty - macrocyclePenalty
+
+    # correction for the fingerprint density
+    # not in the original publication, added in version 1.1
+    # to make highly symmetrical molecules easier to synthetise
+    score3 = 0.
+    if nAtoms > len(fps):
+        score3 = math.log(float(nAtoms) / len(fps)) * .5
+
+    sascore = score1 + score2 + score3
+
+    # need to transform "raw" value into scale between 1 and 10
+    min = -4.0
+    max = 2.5
+    sascore = 11. - (sascore - min + 1) / (max - min) * 9.
+    # smooth the 10-end
+    if sascore > 8.:
+        sascore = 8. + math.log(sascore + 1. - 9.)
+    if sascore > 10.:
+        sascore = 10.0
+    elif sascore < 1.:
+        sascore = 1.0
+
+    return sascore
+
+
+def _load_sa_model(filename: str):
+    sa_score = pickle.load(gzip.open(filename))
+    return {i[j]: float(i[0]) for i in sa_score for j in range(1, len(i))}
+
+
+def sa_scores(mols: Iterable[Molecule], filename: str = 'SA_score.pkl.gz') -> np.ndarray:
+    """Calculate the synthetic accessibility score for all molecules in **mols**."""
+    sa_model = _load_sa_model(filename)
+    mols = (to_rdmol(mol) for mol in mols)
+    _scores = (_compute_sas(mol, sa_model) if mol is not None else None for mol in mols)
+    return np.array(list(map(lambda x: 10 if x is None else x, _scores)))
