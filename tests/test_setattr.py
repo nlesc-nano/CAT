@@ -42,7 +42,7 @@ def test_setattr() -> None:
     assertion.is_(copy.copy(OBJ), OBJ)
     assertion.is_(copy.deepcopy(OBJ), OBJ)
     assertion.truth(hash(OBJ))
-    assertion.is_(hash(OBJ), OBJ._hash)
+    assertion.eq(hash(OBJ), OBJ._hash)
 
     with OBJ:
         assertion.is_(_Test.a, False)
