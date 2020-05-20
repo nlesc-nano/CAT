@@ -11,6 +11,12 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.8.8
+*****
+* Fixed a bug where ligands weren't properly rotated when
+  using ``optional.ligand.optimize = False``.
+
+
 0.8.7
 *****
 * Replaced ``print()`` calls with ``logger.warning()`` in all dye-related functions.
