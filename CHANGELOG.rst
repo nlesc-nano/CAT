@@ -15,6 +15,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 *****
 * Fixed a bug where ligands weren't properly rotated when
   using ``optional.ligand.optimize = False``.
+* Added tests for ``CAT.utils.SetAttr``.
 
 
 0.8.7
