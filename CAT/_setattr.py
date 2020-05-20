@@ -1,4 +1,10 @@
-"""A module for containing the :class:`SetAttr` class."""
+"""A module for containing the :class:`SetAttr` class.
+
+Notes
+-----
+:class:`SetAttr` should be imported from :mod:`CAT.utils`.
+
+"""
 
 import reprlib
 from threading import RLock

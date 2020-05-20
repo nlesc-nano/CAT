@@ -32,7 +32,7 @@ def _minimize_func(vec1: np.ndarray, vec2: np.ndarray, xyz: np.ndarray, anchor: 
     xyz_new = xyz@rotmat
     xyz_new -= xyz_new[anchor]
 
-    # Apply the cost function: e^(|yz|)
+    # Apply the cost function: e^(||yz||)
     yz = xyz_new[:, 1:]
     distance = np.linalg.norm(yz, axis=1)
     return np.exp(distance).sum()

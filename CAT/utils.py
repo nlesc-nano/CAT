@@ -280,7 +280,7 @@ def restart_init(path: str, folder: str, hashing: str = 'input') -> None:
 @overload
 def cycle_accumulate(iterable: Iterable[T1]) -> Generator[T1, None, None]: ...
 @overload
-def cycle_accumulate(iterable: Iterable[T1], start: T1 = ...) -> Generator[T1, None, None]: ...
+def cycle_accumulate(iterable: Iterable[T1], start: T1) -> Generator[T1, None, None]: ...
 def cycle_accumulate(iterable, start=0):  # noqa: E302
     """Accumulate and return elements from **iterable** until it is exhausted.
 
@@ -547,5 +547,9 @@ class VersionInfo(NamedTuple):
             cls_name = version.__class__.__name__
             raise TypeError(f"'version' expected a string; observed type: {cls_name!r}")
 
-        args = (int(i) for i in version.split('.'))
-        return cls(*args)
+        try:
+            major, minor, micro = (int(i) for i in version.split('.'))
+        except (ValueError, TypeError) as ex:
+            raise ValueError("'version' expected a string consisting of three '.'-separated "
+                             f"integers (e.g. '0.8.2'); observed value: {version!r}") from ex
+        return cls(major=major, minor=minor, micro=micro)
