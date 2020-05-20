@@ -25,7 +25,7 @@ API
 
 """
 
-from typing import Optional
+from typing import Optional, Callable
 
 import pandas as pd
 
@@ -59,14 +59,14 @@ class SettingsSeries(pd.Series):
         super().__init__(data, index, dtype, name, copy, fastpath)
 
     @property
-    def _constructor(self) -> 'SettingsSeries':
+    def _constructor(self) -> Callable[..., 'SettingsSeries']:
         """Construct a :class:`.SettingsSeries` instance."""
         def _series(*args, **kwargs) -> SettingsSeries:
             return SettingsSeries(*args, **kwargs).__finalize__(self)
         return _series
 
     @property
-    def _constructor_expanddim(self) -> 'SettingsDataFrame':
+    def _constructor_expanddim(self) -> Callable[..., 'SettingsDataFrame']:
         """Construct a :class:`.SettingsDataFrame` instance."""
         def _df(*args, **kwargs) -> SettingsDataFrame:
             return SettingsDataFrame(*args, **kwargs).__finalize__(self)
@@ -109,14 +109,14 @@ class SettingsDataFrame(pd.DataFrame):
         super().__init__(data, index, columns, dtype, copy)
 
     @property
-    def _constructor(self) -> 'SettingsDataFrame':
+    def _constructor(self) -> Callable[..., 'SettingsDataFrame']:
         """Construct a :class:`.SettingsDataFrame` instance."""
         def _df(*args, **kwargs) -> SettingsDataFrame:
             return SettingsDataFrame(*args, **kwargs).__finalize__(self)
         return _df
 
     @property
-    def _constructor_sliced(self) -> 'SettingsSeries':
+    def _constructor_sliced(self) -> Callable[..., 'SettingsSeries']:
         """Construct a :class:`.SettingsSeries` instance."""
         def _series(*args, **kwargs) -> SettingsSeries:
             return SettingsSeries(*args, **kwargs).__finalize__(self)

@@ -46,7 +46,7 @@ from .data_handling.validate_input import validate_input
 
 from .multi_ligand import init_multi_ligand
 from .attachment.qd_opt import init_qd_opt
-from .attachment.ligand_opt import init_ligand_opt
+from .attachment.ligand_opt import init_ligand_opt, allign_axis
 from .attachment.distribution import distribute_idx
 from .attachment.ligand_attach import init_qd_construction
 from .attachment.ligand_anchoring import init_ligand_anchoring
@@ -295,6 +295,9 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     # Optimize the ligands
     if optimize:
         init_ligand_opt(ligand_df)
+    else:
+        for lig in ligand_df[MOL]:
+            allign_axis(lig, lig.properties.dummies)
 
     # Perform a COSMO-RS calculation on the ligands
     if crs:

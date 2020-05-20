@@ -1,4 +1,10 @@
-"""A module for containing the :class:`SetAttr` class."""
+"""A module for containing the :class:`SetAttr` class.
+
+Notes
+-----
+:class:`SetAttr` should be imported from :mod:`CAT.utils`.
+
+"""
 
 import reprlib
 from threading import RLock
@@ -87,6 +93,7 @@ class SetAttr(Generic[T1, T2]):
         self._value_old = self.attr
         self._lock = RLock()
 
+    @reprlib.recursive_repr()
     def __repr__(self) -> str:
         """Implement :func:`str(self)<str>` and :func:`repr(self)<repr>`."""
         obj = object.__repr__(self.obj)
