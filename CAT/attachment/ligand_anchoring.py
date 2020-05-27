@@ -209,11 +209,12 @@ def find_substructure(ligand: Molecule,
         ligand_indices.append(idx_tup)
         ref.append(i)
 
-    if condition is not None and not condition(len(ligand_indices)):
-        err = (f"Failed to satisfy the passed condition ({condition!r}) for "
-               f"ligand: {ligand.properties.name!r}")
-        logger.error(err)
-        return []
+    if condition is not None:
+        if not condition(len(ligand_indices)):
+            err = (f"Failed to satisfy the passed condition ({condition!r}) for "
+                   f"ligand: {ligand.properties.name!r}")
+            logger.error(err)
+            return []
     if ligand_indices:
         return [substructure_split(ligand, tup, split) for tup in ligand_indices]
     else:
