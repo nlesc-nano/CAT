@@ -27,7 +27,7 @@ API
 """
 
 from itertools import chain
-from typing import Sequence, List, Tuple, Optional, Iterable
+from typing import Sequence, List, Tuple, Optional, Iterable, Callable
 
 import pandas as pd
 
@@ -121,7 +121,7 @@ def _get_df(mol_list: Sequence[Molecule],
 
 
 def get_functional_groups(functional_groups: Optional[Iterable[str]] = None,
-                          split: bool = True) -> Tuple[Chem.Mol]:
+                          split: bool = True) -> Tuple[Chem.Mol, ...]:
     """Construct a list of RDKit molecules representing functional groups.
 
     Parameters
@@ -168,7 +168,8 @@ def _smiles_to_rdmol(smiles: str) -> Chem.Mol:
 
 def find_substructure(ligand: Molecule,
                       func_groups: Iterable[Chem.Mol],
-                      split: bool = True) -> List[Molecule]:
+                      split: bool = True,
+                      condition: Optional[Callable[[int], bool]] = None) -> List[Molecule]:
     """Identify interesting functional groups within the ligand.
 
     Parameters
@@ -208,11 +209,17 @@ def find_substructure(ligand: Molecule,
         ligand_indices.append(idx_tup)
         ref.append(i)
 
+    if condition is not None:
+        if not condition(len(ligand_indices)):
+            err = (f"Failed to satisfy the passed condition ({condition!r}) for "
+                   f"ligand: {ligand.properties.name!r}")
+            logger.error(err)
+            return []
     if ligand_indices:
         return [substructure_split(ligand, tup, split) for tup in ligand_indices]
     else:
-        err = (f"No functional groups were found (optional.ligand.split = {split}) for "
-               f"ligand: '{ligand.properties.name}'")
+        err = (f"No functional groups were found (optional.ligand.split = {split!r}) for "
+               f"ligand: {ligand.properties.name!r}")
         logger.error(err)
         return []
 
