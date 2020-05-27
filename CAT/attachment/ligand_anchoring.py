@@ -168,8 +168,8 @@ def _smiles_to_rdmol(smiles: str) -> Chem.Mol:
 
 def find_substructure(ligand: Molecule,
                       func_groups: Iterable[Chem.Mol],
-                      condition: Optional[Callable[[int], bool]] = None,
-                      split: bool = True) -> List[Molecule]:
+                      split: bool = True,
+                      condition: Optional[Callable[[int], bool]] = None) -> List[Molecule]:
     """Identify interesting functional groups within the ligand.
 
     Parameters
