@@ -35,13 +35,14 @@ API
 """
 
 import itertools
-from typing import (List, Tuple, Union, Set, Iterable)
+from typing import List, Iterable, Union, Set, Optional, Type, Tuple
 
 import numpy as np
 
 import rdkit
 import scm.plams.interfaces.molecule.rdkit as molkit
-from scm.plams import (Molecule, Atom, Bond, MoleculeError, add_to_class, Units)
+from scm.plams import (Molecule, Atom, Bond, MoleculeError, add_to_class, Units, Settings)
+from scm.plams.core.basejob import Job
 from rdkit.Chem import AllChem
 
 from .mol_split_cm import SplitMol
@@ -49,10 +50,11 @@ from .remove_atoms_cm import RemoveAtoms
 from .optimize_rotmat import optimize_rotmat
 from .as_array import AsArray
 from ..logger import logger
-from ..workflows import WorkFlow, MOL, OPT
-from ..mol_utils import (fix_carboxyl, get_index, from_rdmol, to_atnum)
+from ..workflows import WorkFlow, MOL
+from ..mol_utils import (fix_carboxyl, to_atnum)
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.mol_to_file import mol_to_file
+from ..jobs import job_geometry_opt
 
 __all__ = ['init_ligand_opt']
 
@@ -83,7 +85,38 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
         mol_to_file(ligand_df.loc[idx, MOL], path, mol_format=mol_format)
 
 
-def start_ligand_jobs(ligand_list: Iterable[Molecule], **kwargs) -> None:
+def start_ligand_jobs(ligand_list: Iterable[Molecule],
+                      jobs: Iterable[Optional[Type[Job]]],
+                      settings: Iterable[Optional[Settings]],
+                      **kwargs) -> None:
+    """Loop over all molecules in ``ligand_df.loc[idx]`` and perform geometry optimizations."""
+    job, *job_tail = jobs
+    s, *s_tail = settings
+
+    if job_tail or s_tail:
+        raise ValueError
+
+    if job is None:
+        _start_ligand_jobs_uff(ligand_list)
+    else:
+        _start_ligand_jobs_plams(ligand_list, job, s)
+    return None
+
+
+def _start_ligand_jobs_plams(ligand_list: Iterable[Molecule],
+                             job: Type[Job], settings: Settings) -> None:
+    """Loop over all molecules in ``ligand_df.loc[idx]`` and perform geometry optimizations."""
+    for ligand in ligand_list:
+        try:
+            optimize_ligand(ligand)
+        except Exception as ex:
+            logger.debug(f'{ex.__class__.__name__}: {ex}', exc_info=True)
+        ligand.job_geometry_opt(job, settings, name='ligand_opt')
+        ligand.round_coords()
+    return None
+
+
+def _start_ligand_jobs_uff(ligand_list: Iterable[Molecule]) -> None:
     """Loop over all molecules in ``ligand_df.loc[idx]`` and perform geometry optimizations."""
     for ligand in ligand_list:
         logger.info(f'UFFGetMoleculeForceField: {ligand.properties.name} optimization has started')
