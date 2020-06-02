@@ -32,7 +32,7 @@ try:
     PLT: Optional[ImportError] = None
     Figure = plt.Figure
 except ImportError as ex:
-    PLT: Optional[ImportError] = ex
+    PLT = ex
     Figure = 'matplotlib.pyplot.Figure'
 
 __all__ = ['get_surface_vec', 'plot_vectors']
