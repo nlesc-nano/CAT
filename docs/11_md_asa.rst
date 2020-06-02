@@ -119,7 +119,7 @@ The :attr:`activation_strain.md<optional.qd.activation_strain.md>` key enables t
 :attr:`activation_strain.use_ff<optional.qd.activation_strain.use_ff>` ensures
 that the user-specified forcefield is used during the construction of the MD trajectory.
 
-.. code::
+.. code:: yaml
 
     path: ...
 
@@ -178,7 +178,7 @@ activation_strain
 
     Example:
 
-    .. code::
+    .. code:: yaml
 
         optional:
             qd:
@@ -317,7 +317,7 @@ activation_strain
         :Parameter:     * **Type** - :class:`dict`, :class:`str` or :class:`bool`
                         * **Default value** – See below
 
-        .. code::
+        .. code:: yaml
 
             s1:
                 input:

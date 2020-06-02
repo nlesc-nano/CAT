@@ -35,23 +35,24 @@ API
 """
 
 import itertools
-from typing import List, Iterable, Union, Set, Optional, Type, Tuple
+from types import MappingProxyType
+from typing import List, Iterable, Union, Set, Optional, Type, Tuple, Mapping, Callable
 
 import numpy as np
 
 import rdkit
 import scm.plams.interfaces.molecule.rdkit as molkit
-from scm.plams import (Molecule, Atom, Bond, MoleculeError, add_to_class, Units, Settings)
-from scm.plams.core.basejob import Job
 from rdkit.Chem import AllChem
+from scm.plams.core.basejob import Job
+from scm.plams import (Molecule, Atom, Bond, MoleculeError, add_to_class, Units,
+                       Settings, AMSJob, ADFJob, Cp2kJob)
 
 from .mol_split_cm import SplitMol
 from .remove_atoms_cm import RemoveAtoms
 from .optimize_rotmat import optimize_rotmat
-from .as_array import AsArray
 from ..logger import logger
 from ..workflows import WorkFlow, MOL
-from ..mol_utils import (fix_carboxyl, to_atnum)
+from ..mol_utils import fix_carboxyl, to_atnum
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.mol_to_file import mol_to_file
 from ..jobs import job_geometry_opt
@@ -85,33 +86,64 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
         mol_to_file(ligand_df.loc[idx, MOL], path, mol_format=mol_format)
 
 
+def _set_charge_adfjob(s: Settings, charge: int) -> None:
+    s.input.charge = charge
+
+
+def _set_charge_amsjob(s: Settings, charge: int) -> None:
+    if s.get('uff') is not None:
+        return
+    s.input.ams.system.charge = charge
+
+
+def _set_charge_cp2kjob(s: Settings, charge: int) -> None:
+    if s.get('dft') is None:
+        return
+    s.input.force_eval.dft.charge = charge
+
+
+ChargeFunc = Callable[[Settings, int], None]
+CHARGE_FUNC_MAPPING: Mapping[Type[Job], ChargeFunc] = MappingProxyType({
+    ADFJob: _set_charge_adfjob,
+    AMSJob: _set_charge_amsjob,
+    Cp2kJob: _set_charge_cp2kjob,
+})
+
+
 def start_ligand_jobs(ligand_list: Iterable[Molecule],
                       jobs: Iterable[Optional[Type[Job]]],
                       settings: Iterable[Optional[Settings]],
-                      **kwargs) -> None:
+                      use_ff: bool = False, **kwargs) -> None:
     """Loop over all molecules in ``ligand_df.loc[idx]`` and perform geometry optimizations."""
-    job, *job_tail = jobs
-    s, *s_tail = settings
+    _j1, job = jobs
+    _s1, s = settings
 
-    if job_tail or s_tail:
-        raise ValueError
+    if job not in {None, AMSJob, ADFJob, Cp2kJob}:
+        raise NotImplementedError(f"job1: {job.__class__} = {job!r}")
+    elif use_ff:
+        raise NotImplementedError(f"use_ff: {use_ff.__class__} = {use_ff!r}")
 
     if job is None:
         _start_ligand_jobs_uff(ligand_list)
     else:
-        _start_ligand_jobs_plams(ligand_list, job, s)
+        charge_func = CHARGE_FUNC_MAPPING[job]
+        _start_ligand_jobs_plams(ligand_list, job, s, charge_func)
     return None
 
 
 def _start_ligand_jobs_plams(ligand_list: Iterable[Molecule],
-                             job: Type[Job], settings: Settings) -> None:
+                             job: Type[Job], settings: Settings,
+                             charge_func: ChargeFunc) -> None:
     """Loop over all molecules in ``ligand_df.loc[idx]`` and perform geometry optimizations."""
     for ligand in ligand_list:
         try:
             optimize_ligand(ligand)
         except Exception as ex:
             logger.debug(f'{ex.__class__.__name__}: {ex}', exc_info=True)
-        ligand.job_geometry_opt(job, settings, name='ligand_opt')
+
+        s = Settings(settings)
+        charge_func(s, int(sum(at.properties.get('charge', 0) for at in ligand)))
+        ligand.job_geometry_opt(job, s, name='ligand_opt')
         ligand.round_coords()
     return None
 
@@ -160,11 +192,12 @@ def allign_axis(mol: Molecule, anchor: Atom):
     except ValueError as ex:
         raise MoleculeError("The passed anchor is not in mol") from ex
 
-    with AsArray(mol) as xyz:  # Allign the molecule with the X-axis
-        rotmat = optimize_rotmat(xyz, idx)
-        xyz[:] = xyz@rotmat.T
-        xyz -= xyz[idx]
-        xyz[:] = xyz.round(decimals=3)
+    xyz = mol.as_array()  # Allign the molecule with the X-axis
+    rotmat = optimize_rotmat(xyz, idx)
+    xyz[:] = xyz@rotmat.T
+    xyz -= xyz[idx]
+    xyz[:] = xyz.round(decimals=3)
+    mol.from_array(xyz)
 
 
 def split_mol(plams_mol: Molecule, anchor: Atom) -> List[Bond]:
@@ -396,8 +429,15 @@ def rdmol_as_array(rdmol: rdkit.Chem.Mol) -> np.ndarray:
         return (pos.x, pos.y, pos.z)
 
     conf = rdmol.GetConformer(id=-1)
-    x, y, z = zip(*[get_xyz(at) for at in rdmol.GetAtoms()])
-    return np.array((x, y, z)).T
+    atoms = rdmol.GetAtoms()
+
+    count = len(atoms)
+    shape = count, 3
+
+    iterator = itertools.chain.from_iterable(get_xyz(at) for at in atoms)
+    ret = np.fromiter(iterator, count=count, dtype=float)
+    ret.shape = shape
+    return ret
 
 
 def _find_idx(mol: Molecule, bond: Bond) -> List[int]:

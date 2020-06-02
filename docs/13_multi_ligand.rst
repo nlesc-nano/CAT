@@ -10,7 +10,7 @@ Multi-ligand attachment
 
     Example:
 
-    .. code::
+    .. code:: yaml
 
         optional:
             qd:

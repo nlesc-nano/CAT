@@ -6,7 +6,7 @@ path
 Default Settings
 ~~~~~~~~~~~~~~~~
 
-.. code::
+.. code:: yaml
 
     path: null
 
