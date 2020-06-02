@@ -7,8 +7,9 @@ Notes
 """
 
 import reprlib
+from types import TracebackType
+from typing import Generic, TypeVar, NoReturn, Dict, Any, Optional, Type
 from threading import RLock
-from typing import Generic, TypeVar, NoReturn, Dict, Any, Optional
 
 __all__ = ['SetAttr']
 
@@ -60,7 +61,7 @@ class SetAttr(Generic[T1, T2]):
 
     @property
     def value(self) -> T2:
-        """The value to-be assigned to the :attr:`name` attribute of :attr:`obj`."""
+        """The value to-be assigned to the :attr:`name` attribute of :attr:`SetAttr.obj`."""
         return self._value
 
     @property
@@ -78,11 +79,11 @@ class SetAttr(Generic[T1, T2]):
 
         Parameters
         ----------
-        obj : :data:`~typing.Any`
+        obj : :class:`object`
             The to-be modified object.
         name : :class:`str`
             The name of the to-be modified attribute.
-        value : :data:`~typing.Any`
+        value : :class:`object`
             The value to-be assigned to the **name** attribute of **obj**.
 
         """
@@ -100,11 +101,11 @@ class SetAttr(Generic[T1, T2]):
         value = reprlib.repr(self.value)
         return f'{self.__class__.__name__}(obj={obj}, name={self.name!r}, value={value})'
 
-    def __eq__(self, value: Any) -> bool:
+    def __eq__(self, value: object) -> bool:
         """Implement :func:`self == value<object.__eq__>`."""
         if type(self) is not type(value):
             return False
-        return self.obj is value.obj and self.name == value.name and self.value == value.value
+        return self.obj is value.obj and self.name == value.name and self.value == value.value  # type: ignore  # noqa: E501
 
     def __reduce__(self) -> NoReturn:
         """Unsupported operation, raise a :exc:`TypeError`."""
@@ -115,7 +116,7 @@ class SetAttr(Generic[T1, T2]):
         return self
 
     def __deepcopy__(self: ST, memo: Optional[Dict[int, Any]] = None) -> ST:
-        """Implement :func:`copy.deepcopy(self, memo=...)<copy.deepcopy>`."""
+        """Implement :func:`copy.deepcopy(self, memo=memo)<copy.deepcopy>`."""
         return self
 
     def __hash__(self) -> int:
@@ -123,7 +124,7 @@ class SetAttr(Generic[T1, T2]):
 
         Warnings
         --------
-        A :exc:`TypeError` will still be raised if :attr:`SetAttr.value` is not hashable.
+        A :exc:`TypeError` will be raised if :attr:`SetAttr.value` is not hashable.
 
         """
         try:
@@ -137,6 +138,8 @@ class SetAttr(Generic[T1, T2]):
         """Enter the context manager, modify :attr:`SetAttr.obj`."""
         self.attr = self.value
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
+    def __exit__(self, exc_type: Optional[Type[BaseException]],
+                 exc_value: Optional[BaseException],
+                 traceback: Optional[TracebackType]) -> None:
         """Exit the context manager, restore :attr:`SetAttr.obj`."""
         self.attr = self._value_old

@@ -27,7 +27,7 @@ below.
 Default Settings
 ~~~~~~~~~~~~~~~~
 
-::
+.. code:: yaml
 
     path: None
 
@@ -43,7 +43,7 @@ Default Settings
 Verbose default Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-::
+.. code:: yaml
 
     path: None
 
@@ -87,7 +87,7 @@ Verbose default Settings
 Maximum verbose default Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-::
+.. code:: yaml
 
     path: None
 
@@ -115,10 +115,15 @@ Maximum verbose default Settings
 
         ligand:
             dirname: ligand
-            optimize: True
             split: True
             functional_groups: null
             cosmo-rs: False
+            optimize:
+                use_ff: False
+                job1: null
+                s1: null
+                job2: null
+                s2: null
 
         qd:
             dirname: qd

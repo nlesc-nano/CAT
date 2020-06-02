@@ -9,7 +9,7 @@ Importing Quantum Dots
 Default Settings
 ~~~~~~~~~~~~~~~~
 
-.. code::
+.. code:: yaml
 
     input_qd:
         - Cd68Se55_ethoxide.xyz:

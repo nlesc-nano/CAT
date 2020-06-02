@@ -32,7 +32,7 @@ surface of the core. The calculation consists of five distinct steps:
 Default Settings
 ~~~~~~~~~~~~~~~~
 
-.. code::
+.. code:: yaml
 
     optional:
         qd:
@@ -59,7 +59,7 @@ Arguments
 .. attribute:: optional.qd.dissociate
     :noindex:
 
-    .. code::
+    .. code:: yaml
 
         optional:
             qd:
@@ -201,7 +201,7 @@ Arguments
             Given a :attr:`dissociate.core_core_dist<optional.qd.dissociate.core_core_dist>` of ``5.0`` Ångström,
             the following options can be interpreted as following:
 
-            .. code::
+            .. code:: yaml
 
                 optional:
                     qd:
@@ -222,7 +222,7 @@ Arguments - Job Customization
 .. attribute:: optional.qd.dissociate
     :noindex:
 
-    .. code::
+    .. code:: yaml
 
         optional:
             qd:
@@ -264,7 +264,7 @@ Arguments - Job Customization
         :Parameter:     * **Type** - :class:`dict`, :class:`str` or :class:`bool`
                         * **Default value** – See below
 
-        .. code::
+        .. code:: yaml
 
             s1:
                 input:
@@ -307,7 +307,7 @@ Arguments - Job Customization
         :Parameter:     * **Type** - :class:`dict`, :class:`str` or :class:`bool`
                         * **Default value** – See below
 
-        .. code::
+        .. code:: yaml
 
             s2:
                 input:

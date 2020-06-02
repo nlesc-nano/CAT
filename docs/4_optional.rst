@@ -46,7 +46,7 @@ Option                                    Description
 Default Settings
 ~~~~~~~~~~~~~~~~
 
-.. code::
+.. code:: yaml
 
     optional:
         database:
@@ -93,7 +93,7 @@ Database
 
     Example:
 
-    .. code::
+    .. code:: yaml
 
         optional:
             database:
@@ -136,7 +136,7 @@ Database
 
             Example #1:
 
-            .. code::
+            .. code:: yaml
 
                 optional:
                     database:
@@ -144,7 +144,7 @@ Database
 
             Example #2:
 
-            .. code::
+            .. code:: yaml
 
                 optional:
                     database:
@@ -217,7 +217,7 @@ Core
 
     Example:
 
-    .. code::
+    .. code:: yaml
 
         optional:
             core:
@@ -537,7 +537,7 @@ Ligand
 
     Example:
 
-    .. code::
+    .. code:: yaml
 
         optional:
             ligand:
@@ -562,7 +562,7 @@ Ligand
 
     .. attribute:: optional.ligand.optimize
 
-        :Parameter:     * **Type** - :class:`bool`
+        :Parameter:     * **Type** - :class:`bool` or :class:`dict`
                         * **Default value** – ``True``
 
         Optimize the geometry of the to-be attached ligands.
@@ -572,6 +572,21 @@ Ligand
         while checking for the optimal dihedral angle. The ligand fragments are
         biased towards more linear conformations to minimize inter-ligand
         repulsion once the ligands are attached to the core.
+
+        After the conformation search a final (unconstrained) geometry optimization
+        is performed, RDKit UFF again being the default level of theory.
+        Custom job types and settings can, respectivelly, be specified with the
+        ``job2`` and ``s2`` keys.
+
+        .. note::
+
+            .. code:: yaml
+
+                optional:
+                    ligand:
+                        optimize:
+                            job2: ADFJob
+
 
 
     .. attribute:: optional.ligand.functional_groups
@@ -653,7 +668,7 @@ QD
 
     Example:
 
-    .. code::
+    .. code:: yaml
 
         optional:
             qd:

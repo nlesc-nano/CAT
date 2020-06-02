@@ -68,7 +68,7 @@ import numpy as np
 from schema import Or, And, Use, Schema
 from schema import Optional as Optional_
 
-from scm.plams import CRSJob
+from scm.plams import CRSJob, Settings
 from scm.plams.core.basejob import Job
 
 from scm.plams.interfaces.adfsuite.adf import ADFJob
@@ -463,9 +463,15 @@ ligand_schema: Schema = Schema({
         ),
 
     Optional_('optimize', default={'job1': None}):  # Optimize the ligands
-        And(
-            bool, Use(lambda n: ({'job1': None} if n else False)),
-            error='optional.ligand.optimize expects a boolean'
+        Or(
+            And(
+                bool, Use(lambda n: ({'job1': None} if n else False)),
+                error='optional.ligand.cosmo-rs expects a boolean or dictionary'
+            ),
+            And(
+                dict,
+                error='optional.ligand.cosmo-rs expects a boolean or dictionary'
+            )
         ),
 
     Optional_('split', default=True):  # Remove a counterion from the function group
@@ -557,8 +563,12 @@ ligand_opt_schema: Schema = Schema({
     Optional_('keep_files', default=True):
         And(bool, error='optional.ligand.optimize.keep_files expects a boolean'),
 
-    # The Job type for the conformation search
-    Optional_('job1', default=None):
+    # The Job type and settings for the conformation search
+    Optional_('job1', default=None): None,
+    Optional_('s1', default=None): dict,
+
+    # The Job type for the final geometry optimization
+    Optional_('job2', default=None):
         Or(
             None,
             And(
@@ -571,37 +581,11 @@ ligand_opt_schema: Schema = Schema({
                 error=('optional.ligand.optimize.job1 expects a string '
                        'that is a valid plams.Job alias')
             ),
-            error='optional.ligand.optimize.job1 expects a string or a type object'
-        ),
-
-    # The Job Settings for the conformation search
-    Optional_('s1', default=None):
-        Or(
-            None,
-            dict,
-            And(str, Use(lambda n: get_template(n, from_cat_data=False))),
-            error='optional.ligand.optimize.s1 expects a string or a dictionary'
-        ),
-
-    # The Job type for the final geometry optimization
-    Optional_('job2', default=None):
-        Or(
-            None,
-            And(
-                And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
-                error=('optional.ligand.optimize.job2 expects a type object '
-                       'that is a subclass of plams.Job')
-            ),
-            And(
-                str, Use(str_to_job_type),
-                error=('optional.ligand.optimize.job2 expects a string '
-                       'that is a valid plams.Job alias')
-            ),
             error='optional.ligand.optimize.job2 expects a string or a type object'
         ),
 
     # The Job Settings for the final geometry optimization
-    Optional_('s2', default=None):
+    Optional_('s2', default=Settings):
         Or(
             None,
             dict,

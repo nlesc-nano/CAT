@@ -42,7 +42,7 @@ def test_validate_input() -> None:
 
     ref.ligand['cosmo-rs'] = False
     ref.ligand.dirname = join(PATH, 'ligand')
-    ref.ligand.optimize = {'job1': None, 'job2': None, 's1': None, 's2': None,
+    ref.ligand.optimize = {'job1': None, 'job2': None, 's1': None, 's2': Settings(),
                            'use_ff': False, 'keep_files': True}
     ref.ligand.split = True
 

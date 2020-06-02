@@ -14,16 +14,21 @@ API
 ---
 .. autoclass:: RemoveAtoms
     :members:
-    :private-members:
-    :special-members:
 
 """
 
-from typing import Iterable, Union, Sequence
+import sys
+from typing import Iterable, Union, Sequence, Optional, cast, Tuple
 from contextlib import AbstractContextManager
-from collections import OrderedDict, abc
+from collections import abc
 
-from scm.plams import Molecule, Atom, MoleculeError
+from scm.plams import Molecule, Atom, Bond, MoleculeError
+
+if sys.version_info >= (3, 8):
+    # dict.__reversed__() was added in Python 3.8
+    from builtins import dict as OrderedDict
+else:
+    from collections import OrderedDict
 
 __all__ = ['RemoveAtoms']
 
@@ -75,7 +80,7 @@ class RemoveAtoms(AbstractContextManager):
         A sequence of PLAMS atoms belonging to :attr:`RemoveAtoms.mol`.
         Setting a value will convert it into a sequence of atoms.
 
-    bonds : |OrderedDict| [|plams.Bond|, ``None``], optional
+    _bonds : |OrderedDict| [|plams.Bond|, ``None``]
         A ordered dictionary of PLAMS bonds connected to one or more atoms in
         :attr:`RemoveAtoms.atoms`.
         All values are ``None``, the dictionary serving as an improvised ``OrderedSet``.
@@ -90,23 +95,23 @@ class RemoveAtoms(AbstractContextManager):
 
     @atoms.setter
     def atoms(self, value: Union[Atom, Iterable[Atom]]) -> None:
-        if isinstance(value, Atom):
+        if isinstance(value, Atom):  # It's an atom
             self._atoms = (value,)
-        elif not isinstance(value, abc.Sequence):
+        elif not hasattr(value, '__reversed__'):  # It's an Iterator or Collection
             self._atoms = tuple(value)
         else:
-            self._atoms = value
+            self._atoms = value  # It's a Sequence (probably)
 
     def __init__(self, mol: Molecule, atoms: Union[Atom, Iterable[Atom]]) -> None:
         """Initialize a :class:`RemoveAtoms` instance."""
         self.mol = mol
-        self.atoms = atoms
-        self.bonds = None
+        self.atoms = cast(Sequence[Atom], atoms)
+        self._bonds: 'OrderedDict[Bond, None]' = OrderedDict()  # An improvised "OrderedSet"
 
     def __enter__(self) -> None:
         """Enter the context manager; delete all atoms in :class:`RemoveAtoms.atoms`."""
         mol = self.mol
-        self.bonds = bonds_set = OrderedDict()  # An improvised "OrderedSet"
+        bonds_set = self._bonds
         for atom in self.atoms:
             for bond in atom.bonds:
                 bonds_set[bond] = None
@@ -117,9 +122,9 @@ class RemoveAtoms(AbstractContextManager):
         mol = self.mol
         for atom in reversed(self.atoms):
             mol.add_atom(atom)
-        for bond in reversed(self.bonds):
+        for bond in reversed(self._bonds):
             try:
                 mol.add_bond(bond)
             except MoleculeError:
                 pass  # One of the bonded atoms has been manually deleted by the user: skip it
-        self.bonds = None
+        self._bonds = OrderedDict()

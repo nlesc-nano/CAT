@@ -11,6 +11,12 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.8.9
+*****
+* Added the option to perform ligand geometry optimizations at
+  arbitrary levels of theory.
+
+
 0.8.8
 *****
 * Fixed a bug where ligands weren't properly rotated when
