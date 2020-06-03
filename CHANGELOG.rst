@@ -11,6 +11,11 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.9.0
+*****
+* Moved a number of functions to the `nanoutils <https://github.com/nlesc-nano/Nano-Utils>`_ package.
+
+
 0.8.9
 *****
 * Added the option to perform ligand geometry optimizations at

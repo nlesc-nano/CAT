@@ -11,6 +11,8 @@ from scm.plams import (
     add_to_class
 )
 
+from nanoutils import VersionInfo
+
 from .__version__ import __version__
 
 from .logger import logger
@@ -31,7 +33,7 @@ from .data_handling import (
     read_mol, set_mol_prop
 )
 
-from .utils import get_template, VersionInfo
+from .utils import get_template
 
 __version__ = __version__
 __author__ = "Bas van Beek"
@@ -39,8 +41,6 @@ __email__ = 'b.f.van.beek@vu.nl'
 
 version_info = VersionInfo.from_str(__version__)
 del VersionInfo
-
-logger = logger
 
 __all__ = [
     'logger',

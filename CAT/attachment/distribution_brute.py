@@ -22,9 +22,9 @@ from typing import Union, Callable
 import numpy as np
 
 from scm.plams import Molecule
+from nanoutils import array_combinations
 
 from .distribution import OPERATION_MAPPING
-from ..utils import array_combinations
 
 __all__ = ['brute_uniform_idx']
 
