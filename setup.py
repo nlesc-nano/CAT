@@ -78,6 +78,7 @@ setup(
     test_suite='tests',
     python_requires='>=3.6',
     install_requires=[
+        'Nano-Utils>=0.3.0',
         'numpy',
         'scipy',
         'pandas<1.0.0',

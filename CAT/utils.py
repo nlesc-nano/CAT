@@ -49,18 +49,15 @@ from scm.plams import (
     from_smiles, AMSJob, ADFJob, Cp2kJob, DiracJob, GamessJob
 )
 
-from ._setattr import SetAttr as _SetAttr
 from .logger import logger
 from .mol_utils import to_atnum
 from .gen_job_manager import GenJobManager
 
 __all__ = [
     'JOB_MAP', 'check_sys_var', 'dict_concatenate', 'get_template', 'VersionInfo',
-    'cycle_accumulate', 'iter_repeat', 'SetAttr', 'VersionInfo',
-    'as_1d_array', 'array_combinations', 'get_nearest_neighbors',
+    'cycle_accumulate', 'iter_repeat', 'get_nearest_neighbors'
 ]
 
-SetAttr = _SetAttr
 JOB_MAP: Mapping[Type[Job], str] = MappingProxyType({
     ADFJob: 'adf',
     AMSJob: 'ams',
@@ -331,64 +328,6 @@ def iter_repeat(iterable: Iterable[T1], times: int) -> Iterator[T1]:
     return chain.from_iterable(repeat(i, times) for i in iterable)
 
 
-def as_1d_array(value: Any, dtype: Dtype, ndmin: int = 1) -> np.ndarray:
-    """Convert **value**, a scalar or iterable of scalars, into an array."""
-    try:
-        return np.array(value, dtype=dtype, ndmin=ndmin, copy=False)
-
-    except TypeError as ex:
-        if not isinstance(value, abc.Iterable):
-            raise ex
-
-        ret = np.fromiter(value, dtype=dtype)
-        ret.shape += (ndmin - ret.ndmim) * (1,)
-        return ret
-
-
-def array_combinations(array: np.ndarray, r: int = 2, axis: int = -1) -> np.ndarray:
-    r"""Construct an array with all :func:`combinations()<itertools.combinations>` of **ar** along a use-specified axis.
-
-    Parameters
-    ----------
-    array : array-like, shape :math:`(m, \dotsc)`
-        An :math:`n` dimensional array-like object.
-
-    r : :class:`int`
-        The length of each combination.
-
-    axis : :class:`int`
-        The axis used for constructing the combinations.
-
-    Returns
-    -------
-    :class:`numpy.ndarray`, shape :math:`(k, \dotsc, r)`
-        A :math:`n+1` dimensional array with all **ar** combinations (of length ``r``)
-        along axis -1.
-        :math:`k` represents the number of combinations: :math:`k = \dfrac{m! / r!}{(m-r)!}`.
-
-    """  # noqa
-    ar = np.array(array, ndmin=1, copy=False)
-    n = ar.shape[axis]
-
-    # Identify the number of combinations
-    try:
-        combinations_len = int(factorial(n) / factorial(r) / factorial(n - r))
-    except ValueError as ex:
-        raise ValueError(f"'r' ({r!r}) expects a positive integer larger than or equal to the "
-                         f"length of 'array' axis {axis!r} ({n!r})") from ex
-
-    # Define the shape of the to-be returned array
-    _shape = list(ar.shape)
-    del _shape[axis]
-    shape = (combinations_len,) + tuple(_shape) + (r,)
-
-    # Create, fill and return the new array
-    ret = np.empty(shape, dtype=ar.dtype)
-    for i, idx in enumerate(combinations(range(n), r=r)):
-        ret[i] = ar.take(idx, axis=axis)
-    return ret
-
-
 def get_nearest_neighbors(center: Union[Molecule, np.ndarray],
                           neighbor: Union[Molecule, np.ndarray],
                           k: Union[int, Iterable[int]],
@@ -472,84 +411,3 @@ def _parse_ValueError(ex: Exception, k: Any) -> NoReturn:
         raise ValueError("'k' must be larger than or equal to 1; "
                          f"observed value: {k!r}") from ex
     raise ex
-
-
-try:
-    from FOX import group_by_values
-except ImportError:
-    def group_by_values(iterable: Iterable[Tuple[VT, KT]],
-                        mapping_type: Type[Mapping] = dict) -> Dict[KT, List[VT]]:
-        """Take an iterable, yielding 2-tuples, and group all first elements by the second.
-
-        Exameple
-        --------
-        .. code:: python
-            >>> from typing import Iterator
-
-            >>> str_list: list = ['a', 'a', 'a', 'a', 'a', 'b', 'b', 'b']
-            >>> iterable: Iterator = enumerate(str_list)
-            >>> new_dict: dict = group_by_values(iterable)
-
-            >>> print(new_dict)
-            {'a': [1, 2, 3, 4, 5], 'b': [6, 7, 8]}
-
-        Parameters
-        ----------
-        iterable : :class:`~collections.abc.Iterable`
-            An iterable yielding 2 elements upon iteration
-            (*e.g.* :meth:`dict.items` or :func:`enumerate`).
-            The second element must be a :class:`Hashable<collections.abc.Hashable>` and will be used
-            as key in the to-be returned mapping.
-
-        mapping_type : :class:`type` [:class:`~collections.abc.MutableMapping`]
-            The to-be returned mapping type.
-
-        Returns
-        -------
-        :class:`~collections.abc.MutableMapping` [:class:`~collections.abc.Hashable`, :class:`list` [:data:`~typing.Any`]]
-            A grouped dictionary.
-
-        """  # noqa: E501
-        ret = {}
-        list_append: Dict[KT, Callable[[VT], None]] = {}
-        for value, key in iterable:
-            try:
-                list_append[key](value)
-            except KeyError:
-                ret[key] = [value]
-                list_append[key] = ret[key].append
-
-        return ret if mapping_type is dict else mapping_type(ret)
-
-
-class VersionInfo(NamedTuple):
-    """A :class:`~collections.namedtuple` representing the version of a package.
-
-    Examples
-    --------
-    .. code:: python
-
-        >>> from CAT.utils import VersionInfo
-
-        >>> version = '0.8.2'
-        >>> version_info = VersionInfo.from_str(version)
-
-    """
-
-    major: int
-    minor: int
-    micro: int
-
-    @classmethod
-    def from_str(cls, version: str) -> 'VersionInfo':
-        """Construct a :class:`VersionInfo` from a string; *e.g.*: :code:`version='0.8.2'`."""
-        if not isinstance(version, str):
-            cls_name = version.__class__.__name__
-            raise TypeError(f"'version' expected a string; observed type: {cls_name!r}")
-
-        try:
-            major, minor, micro = (int(i) for i in version.split('.'))
-        except (ValueError, TypeError) as ex:
-            raise ValueError("'version' expected a string consisting of three '.'-separated "
-                             f"integers (e.g. '0.8.2'); observed value: {version!r}") from ex
-        return cls(major=major, minor=minor, micro=micro)

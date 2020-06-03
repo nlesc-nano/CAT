@@ -29,8 +29,9 @@ import numpy as np
 from scipy.spatial.distance import cdist
 
 from scm.plams import Molecule
+from nanoutils import as_nd_array
 
-from CAT.utils import cycle_accumulate, as_1d_array
+from CAT.utils import cycle_accumulate
 from CAT.attachment.edge_distance import edge_dist
 
 __all__ = ['distribute_idx']
@@ -94,7 +95,7 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
 
     """  # noqa
     # Convert **idx** into an array
-    idx = as_1d_array(idx, dtype=int)
+    idx = as_nd_array(idx, dtype=int)
 
     # Validate the input
     if mode not in MODE_SET:

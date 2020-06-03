@@ -28,6 +28,8 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import dijkstra
 from scipy.spatial import ConvexHull
 
+from nanoutils import array_combinations
+
 try:
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
@@ -35,10 +37,8 @@ try:
     PLT: Optional[ImportError] = None
     Figure = plt.Figure
 except ImportError as ex:
-    PLT: Optional[ImportError] = ex
+    PLT = ex
     Figure = 'matplotlib.pyplot.Figure'
-
-from ..utils import array_combinations
 
 __all__ = ['edge_dist', 'plot_polyhedron']
 
