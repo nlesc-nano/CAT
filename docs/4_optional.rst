@@ -667,7 +667,7 @@ Ligand
                         * **Default value** – ``False``
 
 
-        Perform a conceptual DFT (CDFT) calculation with ADF on the ligand.
+        Perform a conceptual DFT (CDFT) calculation with `ADF <https://www.scm.com/doc/ADF/Input/Advanced_analysis.html#conceptual-dft>`_ on the ligand.
 
         All global descriptors are, if installed, stored in the database.
         This includes the following properties:
@@ -695,6 +695,22 @@ Ligand
           The only value that should be supplied here (if any) is ``"ADFJob"``.
         * ``"s1"``: The job Settings used for running the CDFT calculation.
           Can be left blank to use the default template (:data:`nanoCAT.cdft.cdft`).
+
+        .. admonition:: Examples
+
+            .. code:: yaml
+
+                optional:
+                    ligand:
+                        cdft: True
+
+            .. code:: yaml
+
+                optional:
+                    ligand:
+                        cdft:
+                            job1: ADFJob
+                            s1: ...  # Insert custom settings here
 
 |
 
