@@ -110,11 +110,11 @@ def finalize_templates():
                                     CDFT_ELECTROPHILICITY: np.nan, CDFT_DELTAF_MINUS: np.nan,
                                     CDFT_DELTAF_PLUS: np.nan, CDFT_MU_MINUS: np.nan,
                                     CDFT_MU_PLUS: np.nan},
-                 'export_columns': (JOB_SETTINGS_CDFT, SETTINGS_CDFT, CDFT_MU, CDFT_CHI, CDFT_ETA, CDFT_S,
-                                    CDFT_GAMMA, CDFT_OMEGA, CDFT_NUCLEOFUGE, CDFT_ELECTROFUGE,
-                                    CDFT_W_MINUS, CDFT_W_PLUS, CDFT_ELECTROPHILICITY,
-                                    CDFT_DELTAF_MINUS, CDFT_DELTAF_PLUS, CDFT_MU_MINUS,
-                                    CDFT_MU_PLUS)},
+                 'export_columns': (JOB_SETTINGS_CDFT, SETTINGS_CDFT, CDFT_MU, CDFT_CHI, CDFT_ETA,
+                                    CDFT_S, CDFT_GAMMA, CDFT_OMEGA, CDFT_NUCLEOFUGE,
+                                    CDFT_ELECTROFUGE, CDFT_W_MINUS, CDFT_W_PLUS,
+                                    CDFT_ELECTROPHILICITY, CDFT_DELTAF_MINUS, CDFT_DELTAF_PLUS,
+                                    CDFT_MU_MINUS, CDFT_MU_PLUS)},
     }
 
     templates = _load_templates()
