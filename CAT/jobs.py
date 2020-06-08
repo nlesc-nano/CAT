@@ -38,12 +38,9 @@ from os.path import join
 
 import numpy as np
 
-from scm.plams import (Molecule, Settings, Results, config, add_to_class, ResultsError)
 from scm.plams.core.basejob import Job
-from scm.plams.tools.units import Units
-
-from scm.plams.interfaces.adfsuite.ams import AMSJob
-from scm.plams.interfaces.thirdparty.cp2k import Cp2kResults
+from scm.plams import (Molecule, Settings, Results, config, add_to_class, ResultsError, 
+                       ADFJob, AMSJob, Units, Cp2kResults)
 
 import qmflows
 
