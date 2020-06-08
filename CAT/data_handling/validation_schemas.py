@@ -993,7 +993,7 @@ cdft_schema: Schema = Schema({
         ),
 
     # The Job Settings for the final geometry optimization
-    Optional_('s2', default=Settings):
+    Optional_('s1', default=Settings):
         Or(
             None,
             dict,
