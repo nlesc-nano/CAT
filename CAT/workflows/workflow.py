@@ -20,7 +20,7 @@ from pathlib import Path
 from contextlib import AbstractContextManager
 from typing import (
     Optional, Union, Dict, Hashable, MutableMapping, TypeVar, Iterable, Container, Tuple, Callable,
-    Any, List, Type, Mapping
+    Any, List, Type, Mapping, TYPE_CHECKING
 )
 
 import numpy as np
@@ -38,6 +38,9 @@ from .workflow_dicts import WORKFLOW_TEMPLATE
 from ..utils import restart_init, JOB_MAP
 from ..logger import logger
 from ..settings_dataframe import SettingsDataFrame
+
+if TYPE_CHECKING:
+    from dataCAT import Database
 
 __all__ = ['WorkFlow']
 
