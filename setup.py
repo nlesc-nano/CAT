@@ -14,15 +14,6 @@ with open(os.path.join(here, 'CAT', '__version__.py')) as f:
 with open('README.rst', encoding='utf-8') as readme_file:
     readme = readme_file.read()
 
-tests_require = [
-    'pytest',
-    'pytest-cov',
-    'pytest-mock',
-    'pycodestyle',
-    'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel',
-    'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel'
-]
-
 docs_require = [
     'sphinx>=2.1',
     'sphinx_rtd_theme',
@@ -30,12 +21,27 @@ docs_require = [
     'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel'
 ]
 
+tests_require = [
+    'pytest>=5.4.0',
+    'pytest-cov',
+    'flake8>=3.8.0',
+    'pyflakes>=2.1.1',
+    'pytest-flake8>=1.0.6',
+    'pydocstyle>=5.0.0',
+    'pytest-pydocstyle>=2.1',
+    'pytest-mock',
+    'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel',
+    'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel',
+    'auto-fox@git+https://github.com/nlesc-nano/auto-FOX@devel'
+]
+tests_require += docs_require
+
 setup(
     name='CAT',
     version=version['__version__'],
     description=('A collection of tools designed for the automatic '
                  'construction of chemical compounds.'),
-    long_description=readme + '\n\n',
+    long_description=f'{readme}\n\n',
     long_description_content_type='text/x-rst',
     author=['Bas van Beek', 'Jelena Belic'],
     author_email='b.f.van.beek@vu.nl',
@@ -78,23 +84,28 @@ setup(
         'python-3',
         'python-3-6',
         'python-3-7',
+        'python-3-8',
         'automation',
         'scientific-workflows'
     ],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
-        'Topic :: Scientific/Engineering :: Chemistry'
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Natural Language :: English',
+        'Operating System :: Unix',
+        'Operating System :: MacOS',
+        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8'
+        'Programming Language :: Python :: 3.8',
+        'Topic :: Scientific/Engineering :: Chemistry'
+        'Typing :: Typed'
     ],
     test_suite='tests',
     python_requires='>=3.6',
     install_requires=[
-        'Nano-Utils>=0.3.0',
+        'Nano-Utils>=0.4.3',
         'numpy',
         'scipy',
         'pandas<1.0.0',

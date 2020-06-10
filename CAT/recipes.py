@@ -1,8 +1,4 @@
-"""
-CAT.recipes
-===========
-
-A number of recipes constructed using the CAT and Nano-CAT packages.
+"""A number of recipes constructed using the CAT and Nano-CAT packages.
 
 Examples
 --------
@@ -17,6 +13,8 @@ Examples
     ...
 
 """
+
+# flake8: noqa: F403,F401
 
 try:
     from nanoCAT import recipes as _recipes

@@ -52,16 +52,12 @@ def multi_lig(qd_series: pd.Series, ligands: Iterable[str],
               dummy: Sequence[Union[str, int]], f: None,
               **kwargs: Any) -> pd.DataFrame:
     ...
-
-
-@overload
+@overload  # noqa: E302
 def multi_lig(qd_series: pd.Series, ligands: Iterable[str],
               dummy: None, f: Sequence[float],
               **kwargs: Any) -> pd.DataFrame:
     ...
-
-
-def multi_lig(qd_series, ligands, dummy=None, f=None, **kwargs):
+def multi_lig(qd_series, ligands, dummy=None, f=None, **kwargs):  # noqa: E302
     """Attach multiple non-unique **ligands** to each qd in **qd_series**."""
     # Read and parse the SMILES strings
     ligands = smiles_to_lig(list(ligands),

@@ -1,8 +1,4 @@
-"""
-CAT.frozen_settings
-===================
-
-A module which adds the :class:`.FrozenSettings` class, an immutable counterpart to plams.Settings_.
+"""A module which adds the :class:`.FrozenSettings` class, an immutable counterpart to plams.Settings_.
 
 .. _plams.Settings: https://www.scm.com/doc/plams/components/settings.html
 
@@ -19,13 +15,14 @@ API
     :private-members:
     :special-members:
 
-"""
+"""  # noqa: E501
 
 import copy
 import textwrap
 from typing import (NoReturn, Hashable)
 
 from scm.plams import Settings
+from nanoutils import set_docstring
 
 __all__ = ['FrozenSettings']
 
@@ -66,9 +63,11 @@ class FrozenSettings(Settings):
     __repr__ = __str__
 
     def __missing__(self, key: Hashable) -> 'FrozenSettings':
+        """Return :data:`_frozen_settings`."""
         return _frozen_settings
 
     def __bool__(self) -> bool:
+        """Implement :class:`bool(self)<bool>`."""
         return bool(len(self))
 
     @classmethod
@@ -78,15 +77,15 @@ class FrozenSettings(Settings):
 
     __delitem__ = __setitem__ = set_nested = _raise_exc
 
+    @set_docstring(Settings.flatten.__doc__)
     def flatten(self, flatten_list: bool = True) -> 'FrozenSettings':
         ret = super().flatten(flatten_list)
         return type(self)(ret)
-    flatten.__doc__ = Settings.flatten.__doc__
 
+    @set_docstring(Settings.unflatten.__doc__)
     def unflatten(self, unflatten_list: bool = True) -> 'FrozenSettings':
         ret = super().unflatten(unflatten_list)
         return type(self)(ret)
-    unflatten.__doc__ = Settings.unflatten.__doc__
 
     def __hash__(self) -> int:
         """Return the hash of this instance; pull it from :attr:`._hash` if possible."""

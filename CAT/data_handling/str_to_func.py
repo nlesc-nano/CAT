@@ -1,9 +1,5 @@
 
-"""
-CAT.data_handling.str_to_func
-=============================
-
-A module for creating new functions from a strings.
+"""A module for creating new functions from a strings.
 
 Index
 -----
@@ -62,7 +58,7 @@ def compile_func(func_str: str) -> FunctionType:
     # Load all module specified in **func_str**
     while True:
         try:
-            x = _x.copy()
+            _x.copy()
             exec(func_str)
         except NameError as ex:
             module = str(ex).split("'")[1]

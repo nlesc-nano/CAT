@@ -11,6 +11,12 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.9.3
+*****
+* Switched from travis to GitHub Actions.
+* Added tests using flake8, pydocstyle and doctest.
+
+
 0.9.2
 *****
 * Updated the Database documentation (see https://github.com/nlesc-nano/data-CAT/pull/23).

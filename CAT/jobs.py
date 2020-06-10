@@ -1,8 +1,4 @@
-"""
-CAT.jobs
-========
-
-A module designed for running Jobs.
+"""A module designed for running Jobs.
 
 Index
 -----
@@ -47,7 +43,7 @@ import qmflows
 from .logger import (logger, log_start, log_succes, log_fail, log_copy)
 from .thermo_chem import get_thermo
 from .utils import type_to_string
-from .mol_utils import (adf_connectivity, from_mol_other)
+from .mol_utils import adf_connectivity
 
 __all__ = ['job_single_point', 'job_geometry_opt', 'job_freq']
 
@@ -163,7 +159,7 @@ def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
         energy = mol.properties.energy.E = results.get_energy(unit='kcal/mol')
         if job_preset in ('geometry optimization', 'frequency analysis'):
             mol_new = results.get_main_molecule() or Molecule()
-            mol.from_mol_other(mol_new)
+            mol.from_array(mol_new)
 
         if job_preset == 'frequency analysis':
             freq = mol.properties.frequencies = results.get_frequencies()
