@@ -1,6 +1,4 @@
-"""
-CAT.logger
-==========
+"""The CAT logger.
 
 Index
 -----

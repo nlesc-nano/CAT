@@ -1,8 +1,4 @@
-"""
-CAT.data_handling.validation_schemas
-====================================
-
-A module designed for sanitizing and interpreting the input file.
+"""A module designed for sanitizing and interpreting the input file.
 
 Index
 -----
