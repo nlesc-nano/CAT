@@ -11,6 +11,14 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.9.2
+*****
+* Updated the Database documentation (see ...).
+* Upped the minimum Sphinx version to 2.1.
+* Removed ``sphinx-autodoc-typehints``.
+* Removed ``requirements.txt`` in favor of ``.readthedocs.yml``.
+
+
 0.9.1
 *****
 * Added a new conceptual DFT (CDFT) workflow to Nano-CAT
