@@ -22,7 +22,6 @@ import textwrap
 from typing import (NoReturn, Hashable)
 
 from scm.plams import Settings
-from nanoutils import set_docstring
 
 __all__ = ['FrozenSettings']
 
@@ -77,7 +76,6 @@ class FrozenSettings(Settings):
 
     __delitem__ = __setitem__ = set_nested = _raise_exc
 
-    @set_docstring(Settings.flatten.__doc__)
     def flatten(self, flatten_list: bool = True) -> 'FrozenSettings':
         """Return a flattened copy of this instance.
 
@@ -89,7 +87,6 @@ class FrozenSettings(Settings):
         ret = super().flatten(flatten_list)
         return type(self)(ret)
 
-    @set_docstring(Settings.unflatten.__doc__)
     def unflatten(self, unflatten_list: bool = True) -> 'FrozenSettings':
         """Return a nested copy of this instance.
 
