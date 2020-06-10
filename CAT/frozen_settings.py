@@ -22,7 +22,6 @@ import textwrap
 from typing import (NoReturn, Hashable)
 
 from scm.plams import Settings
-from nanoutils import set_docstring
 
 __all__ = ['FrozenSettings']
 
@@ -77,13 +76,24 @@ class FrozenSettings(Settings):
 
     __delitem__ = __setitem__ = set_nested = _raise_exc
 
-    @set_docstring(Settings.flatten.__doc__)
     def flatten(self, flatten_list: bool = True) -> 'FrozenSettings':
+        """Return a flattened copy of this instance.
+
+        New keys are constructed by concatenating the (nested) keys of this instance into tuples.
+        Opposite of the :meth:`.Settings.unflatten` method.
+        If *flatten_list* is ``True``, all nested lists will be flattened as well. Dictionary keys are replaced with list indices in such case.
+
+        """  # noqa: E501
         ret = super().flatten(flatten_list)
         return type(self)(ret)
 
-    @set_docstring(Settings.unflatten.__doc__)
     def unflatten(self, unflatten_list: bool = True) -> 'FrozenSettings':
+        """Return a nested copy of this instance.
+
+        New keys are constructed by expanding the keys of this instance (*e.g.* tuples) into new nested |Settings| instances.
+        If *unflatten_list* is ``True``, integers will be interpretted as list indices and are used for creating nested lists.
+        Opposite of the :meth:`.flatten` method.
+        """  # noqa: E501
         ret = super().unflatten(unflatten_list)
         return type(self)(ret)
 

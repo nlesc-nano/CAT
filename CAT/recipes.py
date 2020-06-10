@@ -9,7 +9,6 @@ Examples
     >>> from CAT.recipes import dissociate_surface, row_accumulator
     >>> from CAT.recipes import coordination_number
     >>> from CAT.recipes import add_ligands, export_dyes, sa_scores
-    >>> from CAT.recipes import mutli_ligand_job
     ...
 
 """

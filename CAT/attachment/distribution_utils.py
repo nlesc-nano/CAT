@@ -39,7 +39,7 @@ def test_distribute(mol: Union[Molecule, str], symbol: str,
         >>> mol_input = Molecule()
         >>> xyz_output: str = ...
         >>> at_symbol = 'Cl'
-        >>> f_range: numpy.ndarray = 2**-np.arange(8.0)
+        >>> f_range: np.ndarray = 2**-np.arange(8.0)
 
         >>> mol_out: Molecule = test_distribute(mol_input, at_symbol, f_range)  # doctest: +SKIP
         >>> mol_out.write(xyz_output)  # doctest: +SKIP

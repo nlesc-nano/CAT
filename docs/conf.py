@@ -203,10 +203,10 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/', None),
+    'python': ('https://docs.python.org/3/', None),
     'h5py': ('https://docs.h5py.org/en/latest/', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
-    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
     'plams': ('https://www.scm.com/doc/plams/', None),
     'qmflows': ('https://qmflows.readthedocs.io/en/latest/', None),
     'FOX': ('https://auto-fox.readthedocs.io/en/latest/', None),
