@@ -13,7 +13,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.9.2
 *****
-* Updated the Database documentation (see ...).
+* Updated the Database documentation (see https://github.com/nlesc-nano/data-CAT/pull/23).
 * Upped the minimum Sphinx version to 2.1.
 * Removed ``sphinx-autodoc-typehints``.
 * Removed ``requirements.txt`` in favor of ``.readthedocs.yml``.
