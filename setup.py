@@ -14,6 +14,22 @@ with open(os.path.join(here, 'CAT', '__version__.py')) as f:
 with open('README.rst', encoding='utf-8') as readme_file:
     readme = readme_file.read()
 
+tests_require = [
+    'pytest',
+    'pytest-cov',
+    'pytest-mock',
+    'pycodestyle',
+    'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel',
+    'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel'
+]
+
+docs_require: [
+    'sphinx>=2.1',
+    'sphinx_rtd_theme',
+    'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel',
+    'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel'
+]
+
 setup(
     name='CAT',
     version=version['__version__'],
@@ -91,21 +107,9 @@ setup(
     setup_requires=[
         'pytest-runner',
     ],
-    tests_require=[
-        'pytest',
-        'pytest-cov',
-        'pytest-mock',
-        'pycodestyle',
-        'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel',
-        'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel'
-    ],
+    tests_require=tests_require,
     extras_require={
-        'test': ['pytest',
-                 'pytest-cov',
-                 'pytest-mock',
-                 'pycodestyle',
-                 'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel',
-                 'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel'],
-        'doc': ['sphinx>=2.1', 'sphinx_rtd_theme']
+        'test': tests_require,
+        'doc': docs_require
     }
 )
