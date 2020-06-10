@@ -23,7 +23,7 @@ tests_require = [
     'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel'
 ]
 
-docs_require: [
+docs_require = [
     'sphinx>=2.1',
     'sphinx_rtd_theme',
     'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel',
