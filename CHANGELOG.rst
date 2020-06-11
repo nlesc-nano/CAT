@@ -11,6 +11,13 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.9.4
+*****
+* Fixed an issue where certain `AMSJobs` would have duplicate keys.
+* Fixed an issue where certain ligands weren't exported when constructing
+  multi-ligand quantum dots (see https://github.com/nlesc-nano/CAT/issues/115).
+
+
 0.9.3
 *****
 * Switched from travis to GitHub Actions.

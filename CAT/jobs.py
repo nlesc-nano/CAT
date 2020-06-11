@@ -43,7 +43,6 @@ import qmflows
 from .logger import (logger, log_start, log_succes, log_fail, log_copy)
 from .thermo_chem import get_thermo
 from .utils import type_to_string
-from .mol_utils import adf_connectivity
 
 __all__ = ['job_single_point', 'job_geometry_opt', 'job_freq']
 
@@ -56,10 +55,9 @@ def get_main_molecule(self) -> Optional[Molecule]:
     except TypeError:
         pass
 
-    for file in self.files:
-        if '.xyz' in file:
-            filename = join(self.job.path, file)
-            return _xyz_to_mol(filename)
+    iterator = (join(self.job.path, f) for f in self.files if '.xyz' in f)
+    for filename in iterator:
+        return _xyz_to_mol(filename)
     raise ResultsError(f'Failed to retrieve main molecule from {self.job.name}')
 
 
@@ -85,7 +83,8 @@ def get_energy(self, index: int = -1, unit: str = 'Hartree') -> float:
 def _get_name(name: str) -> str:
     manager = config.default_jobmanager
     if name in manager.names:
-        return name + '.' + str(1 + manager.names[name]).zfill(manager.settings.counter_len)
+        number = str(1 + manager.names[name]).zfill(manager.settings.counter_len)
+        return f'{name}.{number}'
     return name
 
 
@@ -98,15 +97,15 @@ def pre_process_settings(mol: Molecule, s: Settings,
     ret.update(s)
 
     if job_type is AMSJob:
-        ret.input.ams.system.pop('Charge', None)
-        ret.input.ams.system.pop('BondOrders', None)
-        ret.input.ams.system.bondorders._1 = adf_connectivity(mol)
+        mol.properties.pop('charge', None)
+        # ret.input.ams.system.BondOrders._1 = adf_connectivity(mol)
         if 'uff' not in s.input:
-            ret.input.ams.system.charge = sum(
-                [at.properties.get('charge', 0) for at in mol]
-            )
+            ret.input.ams.system.charge = int(sum(
+                at.properties.get('charge', 0) for at in mol
+            ))
+
     elif job_type is ADFJob:
-        ret.input.pop('Charge', None)
+        mol.properties.pop('charge', None)
         if not ret.input.charge:
             ret.input.charge = int(sum(at.properties.get('charge', 0) for at in mol))
     return ret
@@ -141,7 +140,7 @@ def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
 
     """
     if job_preset not in JOB_PRESETS:
-        raise ValueError(f'Invalid value for job_preset: {repr(job_preset)}')
+        raise ValueError(f'Invalid value for job_preset: {job_preset!r}')
 
     # Unpack arguments
     job = results.job
@@ -194,11 +193,12 @@ def _get_results_error(results: Results) -> ResultsError:
     """Raise a :exc:`ResultsError` with the content of ``results['$JN.err']`` as error mesage."""
     filename = results['$JN.err']
     with open(filename, 'r') as f:
-        for _item in f:
-            item = _item.rstrip('\n')
+        iterator = (i.rstrip('\n') for i in f)
+        for item in iterator:
             if item:
                 return ResultsError(item)
-        return ResultsError()
+        else:
+            return ResultsError()
 
 
 @add_to_class(Job)
@@ -288,7 +288,7 @@ def job_single_point(self, job_type: Type[Job],
     results = job.run()
     retrieve_results(self, results, 'single point')
 
-    inp_name = join(job.path, job.name + '.in')
+    inp_name = join(job.path, f'{job.name}.in')
     try:
         self.properties.job_path.append(inp_name)
     except TypeError:
@@ -344,7 +344,7 @@ def job_geometry_opt(self, job_type: Type[Job],
     results = job.run()
     retrieve_results(self, results, 'geometry optimization')
 
-    inp_name = join(job.path, job.name + '.in')
+    inp_name = join(job.path, f'{job.name}.in')
     try:
         self.properties.job_path.append(inp_name)
     except TypeError:
@@ -399,7 +399,7 @@ def job_md(self, job_type: Type[Job],
     results = job.run()
     retrieve_results(self, results, 'MD calculation')
 
-    inp_name = join(job.path, job.name + '.in')
+    inp_name = join(job.path, f'{job.name}.in')
     try:
         self.properties.job_path.append(inp_name)
     except TypeError:
@@ -466,7 +466,7 @@ def job_freq(self, job_type: Type[Job],
     results = job.run()
     retrieve_results(self, results, 'frequency analysis')
 
-    inp_name = join(job.path, _name + '.in')
+    inp_name = join(job.path, f'{_name}.in')
     try:
         self.properties.job_path.append(inp_name)
     except TypeError:

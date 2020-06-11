@@ -14,3 +14,4 @@ def pytest_configure(config: Any) -> None:
     """
     logging.getLogger("flake8").setLevel(logging.ERROR)
     logging.getLogger("filelock").setLevel(logging.WARNING)
+    logging.getLogger("CAT").setLevel(logging.WARNING)
