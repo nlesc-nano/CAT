@@ -4,10 +4,10 @@ Examples
 --------
 .. code:: python
 
-    >>> from CAT.recipes import bulk_workflow
-    >>> from CAT.recipes import replace_surface
-    >>> from CAT.recipes import dissociate_surface, row_accumulator
-    >>> from CAT.recipes import coordination_number
+    >>> from CAT.recipes import bulk_workflow  # doctest: +SKIP
+    >>> from CAT.recipes import replace_surface  # doctest: +SKIP
+    >>> from CAT.recipes import dissociate_surface, row_accumulator  # doctest: +SKIP
+    >>> from CAT.recipes import coordination_number  # doctest: +SKIP
     >>> from CAT.recipes import add_ligands, export_dyes, sa_scores
     ...
 

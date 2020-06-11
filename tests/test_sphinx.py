@@ -1,15 +1,23 @@
 """Test the :mod:`sphinx` documentation generation."""
 
 from os.path import join
-from sphinx.application import Sphinx
+from typing import Optional
 
-from nanoutils import delete_finally
+from sphinx.application import Sphinx
+from nanoutils import delete_finally, ignore_if
+
+try:
+    import nanoCAT
+    NANOCAT_EX: Optional[ImportError] = None
+except ImportError as ex:
+    NANOCAT_EX = ex
 
 SRCDIR = CONFDIR = 'docs'
 OUTDIR = join('tests', 'test_files', 'build')
 DOCTREEDIR = join('tests', 'test_files', 'build', 'doctrees')
 
 
+@ignore_if(NANOCAT_EX)
 @delete_finally(OUTDIR)
 def test_sphinx_build() -> None:
     """Test :meth:`sphinx.application.Sphinx.build`."""

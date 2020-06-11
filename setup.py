@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
+import sys
 
 from setuptools import setup
 
@@ -17,8 +18,6 @@ with open('README.rst', encoding='utf-8') as readme_file:
 docs_require = [
     'sphinx>=2.1',
     'sphinx_rtd_theme',
-    'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel',
-    'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel'
 ]
 
 tests_require = [
@@ -30,10 +29,12 @@ tests_require = [
     'pydocstyle>=5.0.0',
     'pytest-pydocstyle>=2.1',
     'pytest-mock',
-    'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel',
-    'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel; python_version>"3.6"',
-    'auto-fox@git+https://github.com/nlesc-nano/auto-FOX@devel; python_version>"3.6"'
+    'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel'
 ]
+
+if sys.version_info[1] > 6:
+    docs_require.append('nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel')
+    docs_require.append('nano-CAT@git+https://github.com/nlesc-nano/auto-FOX@devel')
 tests_require += docs_require
 
 setup(
