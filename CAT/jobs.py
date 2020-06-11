@@ -43,7 +43,6 @@ import qmflows
 from .logger import (logger, log_start, log_succes, log_fail, log_copy)
 from .thermo_chem import get_thermo
 from .utils import type_to_string
-from .mol_utils import adf_connectivity
 
 __all__ = ['job_single_point', 'job_geometry_opt', 'job_freq']
 
@@ -99,7 +98,7 @@ def pre_process_settings(mol: Molecule, s: Settings,
 
     if job_type is AMSJob:
         mol.properties.pop('charge', None)
-        ret.input.ams.system.BondOrders._1 = adf_connectivity(mol)
+        # ret.input.ams.system.BondOrders._1 = adf_connectivity(mol)
         if 'uff' not in s.input:
             ret.input.ams.system.charge = int(sum(
                 at.properties.get('charge', 0) for at in mol
