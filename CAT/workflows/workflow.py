@@ -607,6 +607,7 @@ class WorkFlow(AbstractDataClass):
             * ``Cp2kJob``
             * ``GamessJob``
             * ``ORCAJob``
+            * ``CRSJob``
 
         Parameters
         ----------

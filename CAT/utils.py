@@ -42,7 +42,7 @@ from scm.plams.core.basejob import Job
 from scm.plams.interfaces.thirdparty.orca import ORCAJob
 from scm.plams import (
     config, Settings, Molecule, MoleculeError, PeriodicTable, init,
-    from_smiles, AMSJob, ADFJob, Cp2kJob, DiracJob, GamessJob
+    from_smiles, AMSJob, ADFJob, Cp2kJob, DiracJob, GamessJob, CRSJob
 )
 
 from .logger import logger
@@ -60,7 +60,8 @@ JOB_MAP: Mapping[Type[Job], str] = MappingProxyType({
     DiracJob: 'dirac',
     Cp2kJob: 'cp2k',
     GamessJob: 'gamess',
-    ORCAJob: 'orca'
+    ORCAJob: 'orca',
+    CRSJob: 'cosmo-rs'
 })
 
 T1 = TypeVar('T1')
