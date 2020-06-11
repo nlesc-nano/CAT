@@ -17,10 +17,11 @@ jobs:
             fail-fast: false
             matrix:
                 os: [ubuntu-latest, macos-latest]
-                version: [3.7, 3.8]
+                version: [3.6, 3.7, 3.8]
 
         steps:
-            - uses: actions/checkout@v2
+            - name: Checkout ${{ GITHUB_WORKSPACE }}
+              uses: actions/checkout@v2
 
             - name: Set up Conda with Python ${{ matrix.version }} on ${{ matrix.os }}
               uses: s-weigand/setup-conda@v1

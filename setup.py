@@ -31,8 +31,8 @@ tests_require = [
     'pytest-pydocstyle>=2.1',
     'pytest-mock',
     'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel',
-    'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel',
-    'auto-fox@git+https://github.com/nlesc-nano/auto-FOX@devel'
+    'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel; python_version>"3.6"',
+    'auto-fox@git+https://github.com/nlesc-nano/auto-FOX@devel; python_version>"3.6"'
 ]
 tests_require += docs_require
 
