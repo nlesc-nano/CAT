@@ -11,7 +11,7 @@ from nanoutils import delete_finally, ignore_if
 from CAT.base import prep
 
 try:
-    import nanoCAT
+    import nanoCAT  # noqa: F401
     NANOCAT_EX: Optional[ImportError] = None
 except ImportError as ex:
     NANOCAT_EX = ex

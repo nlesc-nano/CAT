@@ -7,7 +7,7 @@ from sphinx.application import Sphinx
 from nanoutils import delete_finally, ignore_if
 
 try:
-    import nanoCAT
+    import nanoCAT  # noqa: F401
     NANOCAT_EX: Optional[ImportError] = None
 except ImportError as ex:
     NANOCAT_EX = ex
