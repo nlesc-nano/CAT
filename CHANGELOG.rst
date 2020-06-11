@@ -16,6 +16,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * Fixed an issue where certain `AMSJobs` would have duplicate keys.
 * Fixed an issue where certain ligands weren't exported when constructing
   multi-ligand quantum dots (see https://github.com/nlesc-nano/CAT/issues/115).
+* Re-enabled tests for Python 3.6 (see https://github.com/nlesc-nano/CAT/issues/125).
 
 
 0.9.3
