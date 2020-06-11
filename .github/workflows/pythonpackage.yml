@@ -20,7 +20,7 @@ jobs:
                 version: [3.6, 3.7, 3.8]
 
         steps:
-            - name: Checkout ${{ GITHUB_WORKSPACE }}
+            - name: Checkout $GITHUB_REF
               uses: actions/checkout@v2
 
             - name: Set up Conda with Python ${{ matrix.version }} on ${{ matrix.os }}
