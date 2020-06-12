@@ -170,11 +170,15 @@ def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
         log_succes(job, mol, job_preset, name)
 
     except Exception as ex:  # Failed to retrieve results
+        if job_preset == 'geometry optimization':
+            mol.properties.is_opt = False
         mol.properties.soft_update(nan_dict)
         log_fail(job, mol, job_preset, name)
         logger.debug(f'{ex.__class__.__name__}: {ex}', exc_info=True)
 
     else:
+        if job_preset == 'geometry optimization':
+            mol.properties.is_opt = True
         if job.status != 'copied':
             return None
 

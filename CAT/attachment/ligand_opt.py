@@ -143,7 +143,6 @@ def _start_ligand_jobs_plams(ligand_list: Iterable[Molecule],
         charge_func(s, int(sum(at.properties.get('charge', 0) for at in ligand)))
         ligand.job_geometry_opt(job, s, name='ligand_opt')
         ligand.round_coords()
-        ligand.properties.is_opt = True
     return None
 
 
