@@ -427,8 +427,9 @@ def rdmol_as_array(rdmol: rdkit.Chem.Mol) -> np.ndarray:
     conf = rdmol.GetConformer(id=-1)
     atoms = rdmol.GetAtoms()
 
-    count = len(atoms)
-    shape = count, 3
+    atom_count = len(atoms)
+    count = 3 * atom_count
+    shape = atom_count, 3
 
     iterator = itertools.chain.from_iterable(get_xyz(at) for at in atoms)
     ret = np.fromiter(iterator, count=count, dtype=float)
