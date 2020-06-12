@@ -154,6 +154,9 @@ def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
     }
 
     try:
+        if job.status not in {'failed', 'crashed'}:
+            raise _get_results_error(results)
+
         # Read all relevant results
         energy = mol.properties.energy.E = results.get_energy(unit='kcal/mol')
         if job_preset in ('geometry optimization', 'frequency analysis'):
