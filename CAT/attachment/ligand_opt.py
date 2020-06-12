@@ -136,11 +136,14 @@ def _start_ligand_jobs_plams(ligand_list: Iterable[Molecule],
             optimize_ligand(ligand)
         except Exception as ex:
             logger.debug(f'{ex.__class__.__name__}: {ex}', exc_info=True)
+            ligand.properties.is_opt = False
+            continue
 
         s = Settings(settings)
         charge_func(s, int(sum(at.properties.get('charge', 0) for at in ligand)))
         ligand.job_geometry_opt(job, s, name='ligand_opt')
         ligand.round_coords()
+        ligand.properties.is_opt = True
     return None
 
 
@@ -151,10 +154,12 @@ def _start_ligand_jobs_uff(ligand_list: Iterable[Molecule]) -> None:
         try:
             optimize_ligand(ligand)
         except Exception as ex:
+            ligand.properties.is_opt = False
             logger.error(f'UFFGetMoleculeForceField: {ligand.properties.name} optimization '
                          'has failed')
             logger.debug(f'{ex.__class__.__name__}: {ex}', exc_info=True)
         else:
+            ligand.properties.is_opt = True
             logger.info(f'UFFGetMoleculeForceField: {ligand.properties.name} optimization '
                         'is successful')
     return None
