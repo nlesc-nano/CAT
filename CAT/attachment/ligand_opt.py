@@ -136,6 +136,7 @@ def _start_ligand_jobs_plams(ligand_list: Iterable[Molecule],
             optimize_ligand(ligand)
         except Exception as ex:
             logger.debug(f'{ex.__class__.__name__}: {ex}', exc_info=True)
+            continue
 
         s = Settings(settings)
         charge_func(s, int(sum(at.properties.get('charge', 0) for at in ligand)))
