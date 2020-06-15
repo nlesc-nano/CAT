@@ -16,6 +16,8 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * Fixed a bug where rdkit molecules were not properly converted into numpy arrays.
 * Only perform `optional.ligand.optimize.job2` if the preceding UFF optimization finishes without crashing.
 * Remove a ligand if its optimization fails (_i.e._ an exception is raised).
+* Fixed an issue where ligand anchoring groups could not be explicitly specified
+  ([docs](https://cat.readthedocs.io/en/latest/3_input_core_ligand.html#indices)).
 
 
 0.9.4
