@@ -563,19 +563,18 @@ class WorkFlow(AbstractDataClass):
         kwargs['settings'] = pop_and_concatenate(kwargs, 's')
         return cls.from_dict(kwargs)
 
-    def get_recipe(self) -> Dict[str, JobRecipe]:
+    def get_recipe(self) -> Dict[Tuple[str], JobRecipe]:
         """Create a recipe for :meth:`WorkFlow.to_db`."""
         settings_names = [i[1:] for i in self.export_columns if i[0] == 'settings']
-        import pdb; pdb.set_trace()
         uff_fallback = {
             'key': f'RDKit_{rdkit.__version__}', 'value': f'{UFF.__module__}.{UFF.__name__}'
         }
 
-        ret: Dict[str, JobRecipe] = Settings()
+        ret: Dict[Tuple[str], JobRecipe] = Settings()
         for name, job, settings in zip(settings_names, self.jobs, self.settings):
             # job is None, *i.e.* it's an RDKit UFF optimziation
             if job is None:
-                ret[name].update(uff_fallback)
+                ret[name].update(uff_fallback)  # type: ignore
                 continue
 
             settings = Settings(settings)
