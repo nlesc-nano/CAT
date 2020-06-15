@@ -56,12 +56,12 @@ def _return_true(value: object) -> bool:
     return True
 
 
-def _lt_0(value) -> int:
+def _lt_0(value) -> bool:
     """Return if **value** is smaller than ``0``."""
     return value < 0
 
 
-def pop_and_concatenate(mapping: MutableMapping[Hashable, T], base_key: Hashable,
+def pop_and_concatenate(mapping: MutableMapping[str, T], base_key: object,
                         filter_func: Callable[[Any], bool] = _return_true) -> Tuple[T, ...]:
     """Take a key and :meth:`pop<dict.pop>` all values from **mapping**.
 
@@ -109,7 +109,7 @@ def pop_and_concatenate(mapping: MutableMapping[Hashable, T], base_key: Hashable
 
     """
     i = 1
-    ret = []
+    ret: List[T] = []
     while True:
         key = f'{base_key}{i}'
         try:
@@ -122,8 +122,8 @@ def pop_and_concatenate(mapping: MutableMapping[Hashable, T], base_key: Hashable
             i += 1
 
 
-OptionalJobType = Union[None, Type[Job], Iterable[None], Iterable[Type[Job]]]
-OptionalSettings = Union[None, Settings, Iterable[None], Iterable[Settings]]
+OptionalJobType = Union[None, Type[Job], Iterable[Optional[Type[Job]]]]
+OptionalSettings = Union[None, Settings, Iterable[Optional[Settings]]]
 
 
 class WorkFlow(AbstractDataClass):
@@ -217,9 +217,9 @@ class WorkFlow(AbstractDataClass):
         return self._read
 
     @read.setter
-    def read(self, value: Union[bool, Container]) -> None:
+    def read(self, value: Union[bool, Container[str]]) -> None:
         try:
-            self._read = bool(self.db) and self.mol_type in value
+            self._read = bool(self.db) and self.mol_type in value  # type: ignore
         except TypeError:  # value is not a container
             self._read = bool(value)
 
@@ -234,7 +234,7 @@ class WorkFlow(AbstractDataClass):
         return self._write
 
     @write.setter
-    def write(self, value: Union[bool, Container]) -> None:
+    def write(self, value: Union[bool, Container[str]]) -> None:
         try:
             self._write = bool(self.db) and self.mol_type in value
         except TypeError:  # value is not a container
@@ -251,7 +251,7 @@ class WorkFlow(AbstractDataClass):
         return self._overwrite
 
     @overwrite.setter
-    def overwrite(self, value: Union[bool, Container]) -> None:
+    def overwrite(self, value: Union[bool, Container[str]]) -> None:
         try:
             self._overwrite = bool(self.db) and self.mol_type in value
         except TypeError:  # value is not a container
@@ -268,7 +268,7 @@ class WorkFlow(AbstractDataClass):
         return self._jobs
 
     @jobs.setter
-    def jobs(self, value: Union[None, Type[Job], Iterable[None], Iterable[Type[Job]]]) -> None:
+    def jobs(self, value: Union[None, Type[Job], Iterable[Optional[Type[Job]]]]) -> None:
         if isinstance(value, type):
             self._jobs = (value,)
         else:
@@ -285,7 +285,7 @@ class WorkFlow(AbstractDataClass):
         return self._settings
 
     @settings.setter
-    def settings(self, value: Union[None, Settings, Iterable[None], Iterable[Settings]]) -> None:
+    def settings(self, value: Union[None, Settings, Iterable[Optional[Settings]]]) -> None:
         if isinstance(value, Settings):
             self._settings = (value,)
         else:
@@ -295,10 +295,10 @@ class WorkFlow(AbstractDataClass):
 
     def __init__(self, name: str,
                  db: Optional['Database'] = None,
-                 read: Union[bool, Container] = False,
-                 write: Union[bool, Container] = False,
-                 overwrite: Union[bool, Container] = False,
-                 path: Optional[str] = None,
+                 read: Union[bool, Container[str]] = False,
+                 write: Union[bool, Container[str]] = False,
+                 overwrite: Union[bool, Container[str]] = False,
+                 path: Union[None, str, 'os.PathLike[str]'] = None,
                  keep_files: bool = True,
                  read_template: bool = True,
                  jobs: OptionalJobType = None,
@@ -318,7 +318,7 @@ class WorkFlow(AbstractDataClass):
         self.write = cast(bool, write)
         self.overwrite = cast(bool, overwrite)
 
-        self.path: str = path if path is not None else os.getcwd()
+        self.path: Union[str, 'os.PathLike[str]'] = path if path is not None else os.getcwd()
         self.keep_files = keep_files
         self.read_template = read_template
         self.jobs = cast(Tuple[Optional[Type[Job]], ...], jobs)
@@ -582,7 +582,7 @@ class WorkFlow(AbstractDataClass):
         return ret
 
     @staticmethod
-    def _isnull(df: pd.DataFrame, columns: List[Hashable]) -> pd.DataFrame:
+    def _isnull(df: pd.DataFrame, columns: list) -> pd.DataFrame:
         """A more expansive version of the :func:`pandas.isnull` function.
 
         :class:`int` series now also return ``True`` if smaller than ``0`` and :class:`bool`
@@ -677,7 +677,9 @@ class WorkFlow(AbstractDataClass):
 class PlamsInit(AbstractContextManager):
     """A context manager for calling :func:`.restart_init` and |plams.finish|."""
 
-    def __init__(self, path: str, folder: str, hashing: str = 'input'):
+    def __init__(self, path: Union[str, 'os.PathLike[str]'],
+                 folder: Union[str, 'os.PathLike[str]'],
+                 hashing: str = 'input'):
         self.path = path
         self.folder = folder
         self.hashing = hashing
