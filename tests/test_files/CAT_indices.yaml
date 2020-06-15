@@ -7,9 +7,9 @@ input_ligands:
     - 'CCCOCCC(O)=O':
         indices: [1]
     - 'CCCNCCC(O)=O':
-        indices: [1]
+        indices: 1
     - 'CCCCCCC(O)=O':
-        indices: [1]
+        indices: 1
 
 optional:
     core:
