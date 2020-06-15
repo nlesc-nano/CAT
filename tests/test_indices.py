@@ -28,7 +28,7 @@ def test_cat() -> None:
 
     ref = {('CCCOCCC(=O)O', 'C5'),
            ('CCCNCCC(=O)O', 'C5'),
-           ('CCCCCCC(=O)O', 'C6')}
+           ('CCCCCCC(=O)[O-]', 'O8')}
     assertion.eq(set(ligand_df.index), ref)
 
     for (name, i), mol in ligand_df[MOL].items():
