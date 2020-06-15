@@ -151,12 +151,29 @@ def read_mol_mol(mol_dict: Settings) -> Optional[Molecule]:
 def read_mol_smiles(mol_dict: Settings) -> Optional[Molecule]:
     """Read a SMILES string."""
     try:
-        mol = molkit.from_smiles(mol_dict.mol)
+        mol = _from_smiles(mol_dict.mol)
+        mol.properties.smiles = Chem.CanonSmiles(mol_dict.mol)
+
+        if mol_dict.get('indices'):
+            for i in mol_dict.indices:
+                mol[i].properties.anchor = True
+
+        canonicalize_mol(mol)
+        if mol_dict.get('indices'):
+            mol_dict.indices = tuple(i for i, at in enumerate(mol, 1) if
+                                     at.properties.pop('anchor', False))
+
         if mol_dict.guess_bonds and not mol_dict.is_qd:
             mol.guess_bonds()
         return mol
     except Exception as ex:
         print_exception('read_mol_smiles', mol_dict.name, ex)
+
+
+def _from_smiles(smiles):
+    rdkit_mol = Chem.AddHs(Chem.MolFromSmiles(smiles))
+    rdkit_mol.SetProp('smiles', smiles)
+    return molkit.get_conformations(rdkit_mol, 1, None, None, rms=0.1)
 
 
 def read_mol_plams(mol_dict: Settings) -> Optional[Molecule]:

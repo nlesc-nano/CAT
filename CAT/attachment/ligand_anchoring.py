@@ -72,7 +72,7 @@ def init_ligand_anchoring(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
 
         # Manual specification of a functional group
         if len(dummies) == 1:  # optional.ligand.split = False
-            lig.properties.dummies = dummies[0] - 1
+            lig.properties.dummies = (dummies[0] - 1,)
             _split = False
         elif len(dummies) == 2:  # optional.ligand.split = True
             lig.properties.dummies = tuple(i - 1 for i in dummies)
