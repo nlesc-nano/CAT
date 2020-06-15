@@ -170,10 +170,14 @@ def read_mol_smiles(mol_dict: Settings) -> Optional[Molecule]:
         print_exception('read_mol_smiles', mol_dict.name, ex)
 
 
-def _from_smiles(smiles):
-    rdkit_mol = Chem.AddHs(Chem.MolFromSmiles(smiles))
-    rdkit_mol.SetProp('smiles', smiles)
-    return molkit.get_conformations(rdkit_mol, 1, None, None, rms=0.1)
+def _from_smiles(smiles: str) -> Molecule:
+    sanitize = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_ADJUSTHS
+    _rdmol = Chem.MolFromSmiles(smiles, sanitize=False)
+    Chem.rdmolops.SanitizeMol(_rdmol, sanitizeOps=sanitize)
+
+    rdmol = Chem.AddHs(_rdmol)
+    rdmol.SetProp('smiles', smiles)
+    return molkit.get_conformations(rdmol, 1, None, None, rms=0.1)
 
 
 def read_mol_plams(mol_dict: Settings) -> Optional[Molecule]:
