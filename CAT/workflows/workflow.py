@@ -35,13 +35,17 @@ from scm.plams.core.basejob import Job
 from assertionlib import AbstractDataClass, NDRepr
 
 from .key_map import MOL, OPT
-from .workflow_dicts import WORKFLOW_TEMPLATE
+from .workflow_dicts import WORKFLOW_TEMPLATE, _TemplateMapping
 from ..utils import restart_init, JOB_MAP
 from ..logger import logger
 from ..settings_dataframe import SettingsDataFrame
 
 if TYPE_CHECKING:
     from dataCAT import Database
+    from dataCAT.database import JobRecipe
+else:
+    Database = 'dataCAT.Database'
+    JobRecipe = 'dataCAT.database.JobRecipe'
 
 __all__ = ['WorkFlow']
 
@@ -170,7 +174,7 @@ class WorkFlow(AbstractDataClass):
     """
 
     #: Map a name to a workflow template.
-    _WORKFLOW_TEMPLATES: Mapping[str, Mapping] = WORKFLOW_TEMPLATE
+    _WORKFLOW_TEMPLATES: Mapping[str, _TemplateMapping] = WORKFLOW_TEMPLATE
 
     #: A context manager for supressing Pandas :exc:`SettingwithCopyWarning`.
     _SUPRESS_SETTINGWITHCOPYWARNING: AbstractContextManager = pd.option_context(
@@ -294,7 +298,7 @@ class WorkFlow(AbstractDataClass):
     # Methods and magic methods
 
     def __init__(self, name: str,
-                 db: Optional['Database'] = None,
+                 db: Optional[Database] = None,
                  read: Union[bool, Container[str]] = False,
                  write: Union[bool, Container[str]] = False,
                  overwrite: Union[bool, Container[str]] = False,
@@ -539,16 +543,16 @@ class WorkFlow(AbstractDataClass):
         if isinstance(settings, SettingsDataFrame):
             settings = settings.settings
 
-        kwargs = {'name': name}
+        kwargs: Dict[str, Any] = {'name': name}
 
         # Raise a KeyError if a key cannot be found
         with Settings.supress_missing():
             try:  # Extract the correct template
-                template: Dict[str, Tuple[str, ...]] = cls._WORKFLOW_TEMPLATES[name]['template']
+                template = cls._WORKFLOW_TEMPLATES[name]['template']
             except KeyError as ex:
-                err = (f"Invalid value for the 'name' parameter: {repr(name)}\n"
+                err = (f"Invalid value for the 'name' parameter: {name!r}\n"
                        f"Allowed values: {', '.join(repr(k) for k in cls._WORKFLOW_TEMPLATES)}")
-                raise ValueError(err).with_traceback(ex.__traceback__)
+                raise ValueError(err) from ex
 
             # Create a dictionary with keyword arguments
             for k, v in template.items():
@@ -559,14 +563,15 @@ class WorkFlow(AbstractDataClass):
         kwargs['settings'] = pop_and_concatenate(kwargs, 's')
         return cls.from_dict(kwargs)
 
-    def get_recipe(self) -> Settings:
+    def get_recipe(self) -> Dict[str, JobRecipe]:
         """Create a recipe for :meth:`WorkFlow.to_db`."""
         settings_names = [i[1:] for i in self.export_columns if i[0] == 'settings']
+        import pdb; pdb.set_trace()
         uff_fallback = {
             'key': f'RDKit_{rdkit.__version__}', 'value': f'{UFF.__module__}.{UFF.__name__}'
         }
 
-        ret = Settings()
+        ret: Dict[str, JobRecipe] = Settings()
         for name, job, settings in zip(settings_names, self.jobs, self.settings):
             # job is None, *i.e.* it's an RDKit UFF optimziation
             if job is None:
@@ -577,8 +582,8 @@ class WorkFlow(AbstractDataClass):
             if self.read_template:  # Update the settings using a QMFlows template
                 template = qmflows.geometry['specific'][self.type_to_string(job)].copy()
                 settings.soft_update(template)
-            ret[name].key = job
-            ret[name].value = settings
+            ret[name]['key'] = job
+            ret[name]['value'] = settings
         return ret
 
     @staticmethod
