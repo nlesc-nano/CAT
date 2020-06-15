@@ -31,7 +31,7 @@ import qmflows
 from rdkit.Chem.AllChem import UFFGetMoleculeForceField as UFF  # noqa: N814
 from scm.plams import finish, Settings, Molecule
 from scm.plams.core.basejob import Job
-from assertionlib.dataclass import AbstractDataClass
+from assertionlib import AbstractDataClass, aNDRepr
 
 from .key_map import MOL, OPT
 from .workflow_dicts import WORKFLOW_TEMPLATE
@@ -386,7 +386,13 @@ class WorkFlow(AbstractDataClass):
                 for k, v in zip(slice2[1], value):
                     df[k] = v
             else:
-                df.loc[slice2] = value
+                try:
+                    df.loc[slice2] = value
+                except ValueError as ex:
+                    logger.debug(f"df = {aNDRepr.repr(df)}")
+                    logger.debug(f"slice2 = {aNDRepr.repr(slice2)}")
+                    logger.debug(f"value = {aNDRepr.repr(value)}")
+                    raise ex
         logger.info(f"Finishing {self.description}\n")
 
     def from_db(self, df: pd.DataFrame, inplace: bool = True, get_mol: bool = True,
