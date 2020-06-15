@@ -566,6 +566,7 @@ class WorkFlow(AbstractDataClass):
     def get_recipe(self) -> Dict[Tuple[str], JobRecipe]:
         """Create a recipe for :meth:`WorkFlow.to_db`."""
         settings_names = [i[1:] for i in self.export_columns if i[0] == 'settings']
+        import pdb; pdb.set_trace()
         uff_fallback = {
             'key': f'RDKit_{rdkit.__version__}', 'value': f'{UFF.__module__}.{UFF.__name__}'
         }
