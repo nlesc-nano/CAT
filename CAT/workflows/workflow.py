@@ -18,9 +18,10 @@ import operator
 from shutil import rmtree
 from pathlib import Path
 from contextlib import AbstractContextManager
+from collections import abc
 from typing import (
     Optional, Union, Dict, Hashable, MutableMapping, TypeVar, Iterable, Container, Tuple, Callable,
-    Any, List, Type, Mapping, TYPE_CHECKING
+    Any, List, Type, Mapping, TYPE_CHECKING, cast
 )
 
 import numpy as np
@@ -31,7 +32,7 @@ import qmflows
 from rdkit.Chem.AllChem import UFFGetMoleculeForceField as UFF  # noqa: N814
 from scm.plams import finish, Settings, Molecule
 from scm.plams.core.basejob import Job
-from assertionlib import AbstractDataClass, aNDRepr
+from assertionlib import AbstractDataClass, NDRepr
 
 from .key_map import MOL, OPT
 from .workflow_dicts import WORKFLOW_TEMPLATE
@@ -43,6 +44,9 @@ if TYPE_CHECKING:
     from dataCAT import Database
 
 __all__ = ['WorkFlow']
+
+NDRepr.repr_SettingsDataFrame = NDRepr.repr_DataFrame  # type: ignore
+aNDRepr = NDRepr()
 
 T = TypeVar('T')
 
@@ -304,26 +308,25 @@ class WorkFlow(AbstractDataClass):
         super().__init__()
 
         if name not in self._WORKFLOW_TEMPLATES:
-            err = (f"Invalid value for the 'name' parameter: {repr(name)}\n"
-                   f"Allowed values: {', '.join(repr(k) for k in self._WORKFLOW_TEMPLATES)}")
-            raise ValueError(err)
+            raise ValueError(f"Invalid value for the 'name' parameter: {name!r}\n"
+                             f"Allowed values: {list(self._WORKFLOW_TEMPLATES.keys())!r}")
 
-        self.name: str = name
+        self.name = name
         self.db = db
 
-        self.read: bool = read
-        self.write: bool = write
-        self.overwrite: bool = overwrite
+        self.read = cast(bool, read)
+        self.write = cast(bool, write)
+        self.overwrite = cast(bool, overwrite)
 
         self.path: str = path if path is not None else os.getcwd()
-        self.keep_files: bool = keep_files
-        self.read_template: bool = read_template
-        self.jobs: Iterable[Job] = jobs
-        self.settings: Iterable[Settings] = settings
+        self.keep_files = keep_files
+        self.read_template = read_template
+        self.jobs = cast(Tuple[Optional[Type[Job]], ...], jobs)
+        self.settings = cast(Tuple[Optional[Settings], ...], settings)
 
         for k, v in kwargs.items():
             if hasattr(self, k):
-                raise AttributeError(f"An attribute by the name of '{k}' already exists")
+                raise AttributeError(f"An attribute by the name of {k!r} already exists")
             setattr(self, k, v)
 
     @AbstractDataClass.inherit_annotations()
@@ -331,6 +334,7 @@ class WorkFlow(AbstractDataClass):
         iterator = super()._str_iterator()
         return ((k.strip('_'), v) for k, v in iterator)
 
+    # TODO: Ensure that func allways returns an array-like object (no iterators)
     def __call__(self, func: Callable, df: pd.DataFrame,
                  index: Union[slice, pd.Series] = slice(None),
                  columns: Optional[List[Hashable]] = None,
@@ -382,7 +386,10 @@ class WorkFlow(AbstractDataClass):
         with PlamsInit(path=self.path, folder=self.name), self._SUPRESS_SETTINGWITHCOPYWARNING:
             self_vars = {k.strip('_'): v for k, v in vars(self).items()}
             value = func(df.loc[slice1], columns=columns, **self_vars, **kwargs)
-            if no_loc:
+
+            if not isinstance(value, abc.Iterator) and not np.any(value):
+                return
+            elif no_loc:
                 for k, v in zip(slice2[1], value):
                     df[k] = v
             else:
@@ -390,13 +397,14 @@ class WorkFlow(AbstractDataClass):
                     df.loc[slice2] = value
                 except ValueError as ex:
                     logger.debug(f"df = {aNDRepr.repr(df)}")
-                    logger.debug(f"slice2 = {aNDRepr.repr(slice2)}")
+                    logger.debug(f"index = {aNDRepr.repr(slice2[0])}")
+                    logger.debug(f"columns = {aNDRepr.repr(slice2[1])}")
                     logger.debug(f"value = {aNDRepr.repr(value)}")
                     raise ex
         logger.info(f"Finishing {self.description}\n")
 
     def from_db(self, df: pd.DataFrame, inplace: bool = True, get_mol: bool = True,
-                columns: Optional[Dict[Hashable, Any]] = None) -> Union[slice, pd.Series]:
+                columns: Optional[Mapping] = None) -> Union[slice, pd.Series]:
         """Ensure that all required keys are present in **df** and import from the database.
 
         Returns a :class:`pandas.index` with all to-be updated rows, as based on how many
@@ -432,7 +440,7 @@ class WorkFlow(AbstractDataClass):
 
         """
         # Add all necasary keys to **df**
-        import_columns = self.import_columns if columns is None else columns
+        import_columns: Mapping = self.import_columns if columns is None else columns
         for key, value in import_columns.items():
             if key not in df:
                 df[key] = value
