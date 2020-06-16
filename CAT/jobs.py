@@ -154,7 +154,7 @@ def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
     }
 
     try:
-        if job.status not in {'failed', 'crashed'}:
+        if job.status in {'failed', 'crashed'}:
             raise _get_results_error(results)
 
         # Read all relevant results
