@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '2.1'
+needs_sphinx = '2.4'
 
 
 # Output is processed with HTML4 writer.
@@ -224,6 +224,11 @@ autodoc_member_order = 'bysource'
 # False to disable support for NumPy style docstrings.
 # Defaults to True.
 napoleon_numpy_docstring = True
+
+# True to use the :ivar: role for instance variables.
+# False to use the .. attribute:: directive instead.
+# Defaults to False.
+napoleon_use_ivar = False
 
 
 # True to parse NumPy style docstrings.
