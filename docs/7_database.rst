@@ -77,18 +77,80 @@ Index
     OpenQD
     OpenYaml
 
+    PDBTuple
+    DTYPE_ATOM
+    DTYPE_BOND
+
 
 API
 ---
 .. autoclass:: Database
     :members:
+
 .. autoclass:: DFProxy
+
 .. autoclass:: OpenLig
     :members:
     :inherited-members:
+
 .. autoclass:: OpenQD
     :members:
     :inherited-members:
+
 .. autoclass:: OpenYaml
     :members:
     :inherited-members:
+
+.. autoclass:: PDBTuple
+    :members:
+
+.. data:: DTYPE_ATOM
+    :value: pandas.DataFrame(...)
+
+    A :class:`pandas.DataFrame` representing the dtype of :attr:`PDBTuple.atoms`.
+
+    Most field names are based on to their, identically named, counterpart as produced by
+    :func:`readpdb()<scm.plams.interfaces.molecule.rdkit.readpdb>`,
+    the data in question being stored in the
+    :class:`Atom.properties.pdb_info<scm.plams.mol.atom.Atom>` block.
+
+    There are four exception to this general rule:
+
+    * ``coords``: Based on :class:`Atom.coords<scm.plams.mol.atom.Atom>`.
+    * ``symbol``: Based on :class:`Atom.symbol<scm.plams.mol.atom.Atom>`.
+    * ``charge``: Based on :class:`Atom.properties.charge<scm.plams.mol.atom.Atom>`.
+    * ``charge_float``: Based on :class:`Atom.properties.charge_float<scm.plams.mol.atom.Atom>`.
+
+    .. code:: python
+
+        >>> from dataCAT import DTYPE_ATOM
+        >>> print(DTYPE_ATOM)  # doctest: +SKIP
+                         dtype  shape
+        name
+        IsHeteroAtom      bool      0
+        SerialNumber     int16      0
+        Name               |S4      0
+        ResidueName        |S3      0
+        ChainId            |S1      0
+        ResidueNumber    int16      0
+        coords         float32      3
+        Occupancy      float32      0
+        TempFactor     float32      0
+        symbol             |S4      0
+        charge            int8      0
+        charge_float   float64      0
+
+
+.. data:: DTYPE_BOND
+    :value: pandas.DataFrame(...)
+
+    A :class:`pandas.DataFrame` representing the dtype of :attr:`PDBTuple.bonds`.
+
+    .. code:: python
+
+        >>> from dataCAT import DTYPE_BOND
+        >>> print(DTYPE_BOND)
+               dtype  shape
+        name
+        atoms  int32      2
+        order   int8      0
