@@ -170,9 +170,15 @@ def optimize_ligand(ligand: Molecule) -> None:
 
     # Split the branched ligand into linear fragments and optimize them individually
     bonds = split_mol(ligand, anchor)
-    with SplitMol(ligand, bonds) as mol_frags:
-        for mol in mol_frags:
-            mol.set_dihed(180.0, anchor)
+    context = SplitMol(ligand, bonds)
+    with context as mol_frags:
+        for mol, at_dict in zip(mol_frags, context._at_pairs):
+            for at, cap in at_dict.items():
+                if at in mol:
+                    break
+            else:
+                raise MoleculeError
+            mol.set_dihed(180.0, anchor, cap)
 
     # Find the optimal dihedrals angle between the fragments
     for bond in bonds:
@@ -376,7 +382,8 @@ def neighbors_mod(self, atom: Atom, exclude: Union[int, str] = 1) -> List[Atom]:
 
 
 @add_to_class(Molecule)
-def set_dihed(self, angle: float, anchor: Atom, opt: bool = True, unit: str = 'degree') -> None:
+def set_dihed(self, angle: float, anchor: Atom, cap: Atom,
+              opt: bool = True, unit: str = 'degree') -> None:
     """Change all valid dihedral angles into a specific value.
 
     Performs an inplace update of this instance.
@@ -396,6 +403,8 @@ def set_dihed(self, angle: float, anchor: Atom, opt: bool = True, unit: str = 'd
         The input unit.
 
     """
+    cap_atnum = cap.atnum
+    cap.atnum = 0
     angle = Units.convert(angle, unit, 'degree')
     bond_iter = (bond for bond in self.bonds if bond.atom1.atnum != 1 and bond.atom2.atnum != 1
                  and bond.order == 1 and not self.in_ring(bond))
@@ -423,6 +432,7 @@ def set_dihed(self, angle: float, anchor: Atom, opt: bool = True, unit: str = 'd
             else:
                 self.rotate_bond(bond, bond.atom1, -dihed, unit='degree')
 
+    cap.atnum = cap_atnum
     if opt:
         rdmol = molkit.to_rdmol(self)
         AllChem.UFFGetMoleculeForceField(rdmol).Minimize()
