@@ -77,7 +77,7 @@ Index
     OpenQD
     OpenYaml
 
-    PDBTuple
+    PDBContainer
     DTYPE_ATOM
     DTYPE_BOND
 
@@ -101,13 +101,14 @@ API
     :members:
     :inherited-members:
 
-.. autoclass:: PDBTuple
+.. autoclass:: PDBContainer
     :members:
 
 .. data:: DTYPE_ATOM
-    :value: pandas.DataFrame(...)
+    :type: Mapping[str, numpy.dtype]
+    :value: ...
 
-    A :class:`pandas.DataFrame` representing the dtype of :attr:`PDBTuple.atoms`.
+    A mapping representing the dtype of :attr:`PDBContainer.atoms`.
 
     Most field names are based on to their, identically named, counterpart as produced by
     :func:`readpdb()<scm.plams.interfaces.molecule.rdkit.readpdb>`,
@@ -116,7 +117,7 @@ API
 
     There are four exception to this general rule:
 
-    * ``coords``: Based on :class:`Atom.coords<scm.plams.mol.atom.Atom>`.
+    * ``x``, ``y`` & ``z``: Based on :class:`Atom.coords<scm.plams.mol.atom.Atom>`.
     * ``symbol``: Based on :class:`Atom.symbol<scm.plams.mol.atom.Atom>`.
     * ``charge``: Based on :class:`Atom.properties.charge<scm.plams.mol.atom.Atom>`.
     * ``charge_float``: Based on :class:`Atom.properties.charge_float<scm.plams.mol.atom.Atom>`.
@@ -124,33 +125,40 @@ API
     .. code:: python
 
         >>> from dataCAT import DTYPE_ATOM
-        >>> print(DTYPE_ATOM)  # doctest: +SKIP
-                         dtype  shape
-        name
-        IsHeteroAtom      bool      0
-        SerialNumber     int16      0
-        Name               |S4      0
-        ResidueName        |S3      0
-        ChainId            |S1      0
-        ResidueNumber    int16      0
-        coords         float32      3
-        Occupancy      float32      0
-        TempFactor     float32      0
-        symbol             |S4      0
-        charge            int8      0
-        charge_float   float64      0
+        >>> print(DTYPE_ATOM)
+        mappingproxy({
+            'IsHeteroAtom': dtype('bool'),
+            'SerialNumber': dtype('int16'),
+            'Name': dtype('S4'),
+            'ResidueName': dtype('S3'),
+            'ChainId': dtype('S1'),
+            'ResidueNumber': dtype('int16'),
+            'x': dtype('float32'),
+            'y': dtype('float32'),
+            'z': dtype('float32'),
+            'Occupancy': dtype('float32'),
+            'TempFactor': dtype('float32'),
+            'symbol': dtype('S4'),
+            'charge': dtype('int8'),
+            'charge_float': dtype('float64')
+        })
 
 
 .. data:: DTYPE_BOND
-    :value: pandas.DataFrame(...)
+    :type: Mapping[str, numpy.dtype]
+    :value: ...
 
-    A :class:`pandas.DataFrame` representing the dtype of :attr:`PDBTuple.bonds`.
+    A mapping representing the dtype of :attr:`PDBContainer.bonds`.
+
+    Field names are based on to their, identically named,
+    counterpart in :class:`~scm.plams.mol.bond.Bond`.
 
     .. code:: python
 
         >>> from dataCAT import DTYPE_BOND
         >>> print(DTYPE_BOND)
-               dtype  shape
-        name
-        atoms  int32      2
-        order   int8      0
+        mappingproxy({
+            'atom1': dtype('int32'),
+            'atom2': dtype('int32'),
+            'order': dtype('int8')
+        })
