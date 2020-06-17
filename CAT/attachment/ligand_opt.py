@@ -397,16 +397,16 @@ def set_dihed(self, angle: float, anchor: Atom, opt: bool = True, unit: str = 'd
 
     """
     angle = Units.convert(angle, unit, 'degree')
-    bond_list = [bond for bond in self.bonds if bond.atom1.atnum != 1 and bond.atom2.atnum != 1
-                 and bond.order == 1 and not self.in_ring(bond)]
+    bond_iter = (bond for bond in self.bonds if bond.atom1.atnum != 1 and bond.atom2.atnum != 1
+                 and bond.order == 1 and not self.in_ring(bond))
 
-    for bond in bond_list:
+    for bond in bond_iter:
         # Gather lists of all non-hydrogen neighbors
         n1, n2 = self.neighbors_mod(bond.atom1), self.neighbors_mod(bond.atom2)
 
         # Remove all atoms in `bond`
-        n1 = [atom for atom in n1 if atom != bond.atom2]
-        n2 = [atom for atom in n2 if atom != bond.atom1]
+        n1 = [atom for atom in n1 if atom is not bond.atom2]
+        n2 = [atom for atom in n2 if atom is not bond.atom1]
 
         # Remove all non-subsituted atoms
         # A special case consists of anchor atoms; they can stay
@@ -496,13 +496,13 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int],
         bond = mol[bond_tuple]
         atom = mol[bond_tuple[0]]
         mol.rotate_bond(bond, atom, angle, unit='degree')
-    rmol_list = [molkit.to_rdmol(mol, properties=False) for mol in mol_list]
+    rdmol_list = [molkit.to_rdmol(mol, properties=False) for mol in mol_list]
 
     # Optimize the (constrained) geometry for all dihedral angles in angle_list
     # The geometry that yields the minimum energy is returned
     uff = AllChem.UFFGetMoleculeForceField
     fixed = _find_idx(mol, bond)
-    for rdmol in rmol_list:
+    for rdmol in rdmol_list:
         ff = uff(rdmol)
         for f in fixed:
             ff.AddFixedPoint(f)
@@ -515,7 +515,7 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int],
     except ValueError:
         i = -1  # Default to the origin as anchor
 
-    for rdmol in rmol_list:
+    for rdmol in rdmol_list:
         xyz = rdmol_as_array(rdmol)
         if i == -1:  # Default to the origin as anchor
             xyz = np.vstack([xyz, [0, 0, 0]])
@@ -527,6 +527,6 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int],
 
     # Perform an unconstrained optimization on the best geometry and update the geometry of ligand
     i = np.argmin(cost_list)
-    rdmol_best = rmol_list[i]
+    rdmol_best = rdmol_list[i]
     uff(rdmol).Minimize()
     ligand.from_rdmol(rdmol_best)
