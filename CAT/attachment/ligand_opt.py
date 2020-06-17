@@ -32,7 +32,8 @@ API
 
 import itertools
 from types import MappingProxyType
-from typing import List, Iterable, Union, Set, Optional, Type, Tuple, Mapping, Callable
+from typing import List, Iterable, Union, Set, Optional, Type, Tuple, Mapping, Callable, Sequence
+from collections import ChainMap
 
 import numpy as np
 
@@ -172,13 +173,10 @@ def optimize_ligand(ligand: Molecule) -> None:
     bonds = split_mol(ligand, anchor)
     context = SplitMol(ligand, bonds)
     with context as mol_frags:
-        for mol, at_dict in zip(mol_frags, context._at_pairs):
-            for at, cap in at_dict.items():
-                if at in mol:
-                    break
-            else:
-                raise MoleculeError
-            mol.set_dihed(180.0, anchor, cap)
+        cap_dict = ChainMap(*context._at_pairs)
+        for mol in mol_frags:
+            cap_list = [cap for at, cap in cap_dict.items() if at in mol]
+            mol.set_dihed(180.0, anchor, cap_list)
 
     # Find the optimal dihedrals angle between the fragments
     for bond in bonds:
@@ -382,7 +380,7 @@ def neighbors_mod(self, atom: Atom, exclude: Union[int, str] = 1) -> List[Atom]:
 
 
 @add_to_class(Molecule)
-def set_dihed(self, angle: float, anchor: Atom, cap: Atom,
+def set_dihed(self, angle: float, anchor: Atom, cap: Sequence[Atom],
               opt: bool = True, unit: str = 'degree') -> None:
     """Change all valid dihedral angles into a specific value.
 
@@ -403,8 +401,11 @@ def set_dihed(self, angle: float, anchor: Atom, cap: Atom,
         The input unit.
 
     """
-    cap_atnum = cap.atnum
-    cap.atnum = 0
+    cap_atnum = []
+    for at in cap:
+        cap_atnum.append(at.atnum)
+        at.atnum = 0
+
     angle = Units.convert(angle, unit, 'degree')
     bond_iter = (bond for bond in self.bonds if bond.atom1.atnum != 1 and bond.atom2.atnum != 1
                  and bond.order == 1 and not self.in_ring(bond))
@@ -432,7 +433,9 @@ def set_dihed(self, angle: float, anchor: Atom, cap: Atom,
             else:
                 self.rotate_bond(bond, bond.atom1, -dihed, unit='degree')
 
-    cap.atnum = cap_atnum
+    for at, atnum in zip(cap, cap_atnum):
+        at.atnum = atnum
+
     if opt:
         rdmol = molkit.to_rdmol(self)
         AllChem.UFFGetMoleculeForceField(rdmol).Minimize()
