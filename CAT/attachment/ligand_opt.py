@@ -412,6 +412,12 @@ def set_dihed(self, angle: float, anchor: Atom, cap: Sequence[Atom],
 
     # Correction factor for, most importantly, tri-valent anchors (e.g. P(R)(R)R)
     dihed_cor = angle / 2
+    neighbors = anchor.neighbors()
+    if len(neighbors) > 2:
+        atom_list = [anchor] + sorted(neighbors, key=lambda at: -at.atnum)[:3]
+        improper = get_dihed(atom_list)
+        dihed_cor *= np.sign(improper)
+
     for bond in bond_iter:
         # Gather lists of all non-hydrogen neighbors
         n1, n2 = self.neighbors_mod(bond.atom1), self.neighbors_mod(bond.atom2)
