@@ -442,7 +442,7 @@ def set_dihed(self, angle: float, anchor: Atom, cap: Sequence[Atom],
 
     if opt:
         rdmol = molkit.to_rdmol(self)
-        ff = UFF(rdmol)
+        UFF(rdmol).Minimize()
         self.from_rdmol(rdmol)
 
 
