@@ -298,8 +298,8 @@ def get_frag_size(self, bond: Bond, anchor: Atom) -> int:
     def dfs(at1: Atom, atom_set: Set[Atom]):
         at1._visited = True
         atom_set.add(at1)
-        for bond in at1.bonds:
-            at2 = bond.other_end(at1)
+        for at2 in at1.neighbors():
+
             if at2._visited:
                 continue
             dfs(at2, atom_set)
@@ -379,6 +379,11 @@ def neighbors_mod(self, atom: Atom, exclude: Union[int, str] = 1) -> List[Atom]:
     return [b.other_end(atom) for b in atom.bonds if b.other_end(atom).atnum != exclude]
 
 
+FREEZE_NEIGHBORS = frozenset({
+    15, 33, 51, 83, 115  # The pnictogens (except N)
+})
+
+
 @add_to_class(Molecule)
 def set_dihed(self, angle: float, anchor: Atom, cap: Sequence[Atom],
               opt: bool = True, unit: str = 'degree') -> None:
@@ -438,8 +443,19 @@ def set_dihed(self, angle: float, anchor: Atom, cap: Sequence[Atom],
 
     if opt:
         rdmol = molkit.to_rdmol(self)
-        AllChem.UFFGetMoleculeForceField(rdmol).Minimize()
+        ff = AllChem.UFFGetMoleculeForceField(rdmol)
+
+        # Freeze the anchor and its direct neighbors
+        # The is necasary to yield reasonable geometries for the H-capped fragment
+        # for some species (e.g. P)
+        if anchor.atnum in FREEZE_NEIGHBORS and anchor in self:
+            for at in anchor.neighbors():
+                ff.AddFixedPoint(self.index(at) - 1)
+            ff.AddFixedPoint(self.index(anchor) - 1)
+
+        ff.Minimize()
         self.from_rdmol(rdmol)
+        import pdb; pdb.set_trace()
 
 
 def rdmol_as_array(rdmol: rdkit.Chem.Mol) -> np.ndarray:
@@ -521,6 +537,9 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int],
             ff.AddFixedPoint(f)
         ff.Minimize()
 
+    m_list = [molkit.from_rdmol(m) for m in rdmol_list]
+    import pdb; pdb.set_trace()
+
     # Find the conformation with the optimal ligand vector
     cost_list = []
     try:
@@ -539,7 +558,7 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int],
         cost_list.append(cost)
 
     # Perform an unconstrained optimization on the best geometry and update the geometry of ligand
-    i = np.argmin(cost_list)
-    rdmol_best = rdmol_list[i]
+    j = np.argmin(cost_list)
+    rdmol_best = rdmol_list[j]
     uff(rdmol).Minimize()
     ligand.from_rdmol(rdmol_best)
