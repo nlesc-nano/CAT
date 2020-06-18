@@ -379,11 +379,6 @@ def neighbors_mod(self, atom: Atom, exclude: Union[int, str] = 1) -> List[Atom]:
     return [b.other_end(atom) for b in atom.bonds if b.other_end(atom).atnum != exclude]
 
 
-FREEZE_NEIGHBORS = frozenset({
-    15, 33, 51, 83, 115  # The pnictogens (except N)
-})
-
-
 @add_to_class(Molecule)
 def set_dihed(self, angle: float, anchor: Atom, cap: Sequence[Atom],
               opt: bool = True, unit: str = 'degree') -> None:
@@ -415,6 +410,8 @@ def set_dihed(self, angle: float, anchor: Atom, cap: Sequence[Atom],
     bond_iter = (bond for bond in self.bonds if bond.atom1.atnum != 1 and bond.atom2.atnum != 1
                  and bond.order == 1 and not self.in_ring(bond))
 
+    # Correction factor for, most importantly, tri-valent anchors (e.g. P(R)(R)R)
+    dihed_cor = angle / 2
     for bond in bond_iter:
         # Gather lists of all non-hydrogen neighbors
         n1, n2 = self.neighbors_mod(bond.atom1), self.neighbors_mod(bond.atom2)
@@ -436,26 +433,17 @@ def set_dihed(self, angle: float, anchor: Atom, cap: Sequence[Atom],
             if anchor not in bond:
                 self.rotate_bond(bond, bond.atom1, angle - dihed, unit='degree')
             else:
+                dihed -= dihed_cor
                 self.rotate_bond(bond, bond.atom1, -dihed, unit='degree')
+                dihed_cor *= -1
 
     for at, atnum in zip(cap, cap_atnum):
         at.atnum = atnum
 
     if opt:
         rdmol = molkit.to_rdmol(self)
-        ff = AllChem.UFFGetMoleculeForceField(rdmol)
-
-        # Freeze the anchor and its direct neighbors
-        # The is necasary to yield reasonable geometries for the H-capped fragment
-        # for some species (e.g. P)
-        if anchor.atnum in FREEZE_NEIGHBORS and anchor in self:
-            for at in anchor.neighbors():
-                ff.AddFixedPoint(self.index(at) - 1)
-            ff.AddFixedPoint(self.index(anchor) - 1)
-
-        ff.Minimize()
+        ff = UFF(rdmol)
         self.from_rdmol(rdmol)
-        import pdb; pdb.set_trace()
 
 
 def rdmol_as_array(rdmol: rdkit.Chem.Mol) -> np.ndarray:
@@ -529,16 +517,12 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int],
 
     # Optimize the (constrained) geometry for all dihedral angles in angle_list
     # The geometry that yields the minimum energy is returned
-    uff = AllChem.UFFGetMoleculeForceField
     fixed = _find_idx(mol, bond)
     for rdmol in rdmol_list:
-        ff = uff(rdmol)
+        ff = UFF(rdmol)
         for f in fixed:
             ff.AddFixedPoint(f)
         ff.Minimize()
-
-    m_list = [molkit.from_rdmol(m) for m in rdmol_list]
-    import pdb; pdb.set_trace()
 
     # Find the conformation with the optimal ligand vector
     cost_list = []
@@ -560,5 +544,5 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int],
     # Perform an unconstrained optimization on the best geometry and update the geometry of ligand
     j = np.argmin(cost_list)
     rdmol_best = rdmol_list[j]
-    uff(rdmol).Minimize()
+    UFF(rdmol).Minimize()
     ligand.from_rdmol(rdmol_best)
