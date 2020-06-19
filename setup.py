@@ -29,7 +29,7 @@ tests_require = [
     'pydocstyle>=5.0.0',
     'pytest-pydocstyle>=2.1',
     'pytest-mock',
-    'data-CAT@git+https://github.com/nlesc-nano/data-CAT@master'
+    'data-CAT@git+https://github.com/nlesc-nano/data-CAT@devel'
 ]
 
 if sys.version_info[1] > 6:
