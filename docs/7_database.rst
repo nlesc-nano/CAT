@@ -102,10 +102,10 @@ API
     :inherited-members:
 
 .. autoclass:: PDBContainer
-    :members:
+    :members: atoms, bonds, atom_count, bond_count, __getitem__, __len__, from_molecules, to_molecules, from_hdf5, to_hdf5
 
 .. data:: DTYPE_ATOM
-    :type: Mapping[str, numpy.dtype]
+    :type: Mapping[str, np.dtype]
     :value: ...
 
     A mapping representing the dtype of :attr:`PDBContainer.atoms`.
@@ -115,37 +115,36 @@ API
     the data in question being stored in the
     :class:`Atom.properties.pdb_info<scm.plams.mol.atom.Atom>` block.
 
-    There are four exception to this general rule:
+    There are six exception to this general rule:
 
-    * ``x``, ``y`` & ``z``: Based on :class:`Atom.coords<scm.plams.mol.atom.Atom>`.
+    * ``x``, ``y`` & ``z``: Based on :class:`Atom.x<scm.plams.mol.atom.Atom>`,
+      :class:`Atom.y<scm.plams.mol.atom.Atom>` and :class:`Atom.z<scm.plams.mol.atom.Atom>`.
     * ``symbol``: Based on :class:`Atom.symbol<scm.plams.mol.atom.Atom>`.
     * ``charge``: Based on :class:`Atom.properties.charge<scm.plams.mol.atom.Atom>`.
     * ``charge_float``: Based on :class:`Atom.properties.charge_float<scm.plams.mol.atom.Atom>`.
 
     .. code:: python
 
-        >>> from dataCAT import DTYPE_ATOM
-        >>> print(DTYPE_ATOM)
         mappingproxy({
-            'IsHeteroAtom': dtype('bool'),
-            'SerialNumber': dtype('int16'),
-            'Name': dtype('S4'),
-            'ResidueName': dtype('S3'),
-            'ChainId': dtype('S1'),
+            'IsHeteroAtom':  dtype('bool'),
+            'SerialNumber':  dtype('int16'),
+            'Name':          dtype('S4'),
+            'ResidueName':   dtype('S3'),
+            'ChainId':       dtype('S1'),
             'ResidueNumber': dtype('int16'),
-            'x': dtype('float32'),
-            'y': dtype('float32'),
-            'z': dtype('float32'),
-            'Occupancy': dtype('float32'),
-            'TempFactor': dtype('float32'),
-            'symbol': dtype('S4'),
-            'charge': dtype('int8'),
-            'charge_float': dtype('float64')
+            'x':             dtype('float32'),
+            'y':             dtype('float32'),
+            'z':             dtype('float32'),
+            'Occupancy':     dtype('float32'),
+            'TempFactor':    dtype('float32'),
+            'symbol':        dtype('S4'),
+            'charge':        dtype('int8'),
+            'charge_float':  dtype('float64')
         })
 
 
 .. data:: DTYPE_BOND
-    :type: Mapping[str, numpy.dtype]
+    :type: Mapping[str, np.dtype]
     :value: ...
 
     A mapping representing the dtype of :attr:`PDBContainer.bonds`.
@@ -155,8 +154,6 @@ API
 
     .. code:: python
 
-        >>> from dataCAT import DTYPE_BOND
-        >>> print(DTYPE_BOND)
         mappingproxy({
             'atom1': dtype('int32'),
             'atom2': dtype('int32'),
