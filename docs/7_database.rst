@@ -102,7 +102,7 @@ API
     :inherited-members:
 
 .. autoclass:: PDBContainer
-    :members: atoms, bonds, atom_count, bond_count, __getitem__, __len__, from_molecules, to_molecules, from_hdf5, to_hdf5
+    :members: atoms, bonds, atom_count, bond_count, __getitem__, __len__, keys, values, items, from_molecules, to_molecules, create_hdf5_group, from_hdf5, to_hdf5
 
 .. data:: DTYPE_ATOM
     :type: Mapping[str, np.dtype]
