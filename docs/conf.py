@@ -257,14 +257,6 @@ napoleon_use_admonition_for_notes = True
 napoleon_use_admonition_for_references = True
 
 
-# This value contains a list of modules to be mocked up.
-# This is useful when some external dependencies are not met at build time and break the building process.
-# You may only specify the root package of the dependencies themselves and omit the sub-modules:
-autodoc_mock_imports = [
-    'rdkit',
-    'h5py',
-]
-
 # A string of reStructuredText that will be included at the end of every source file that is read.
 # This is a possible place to add substitutions that should be available in every file (another being rst_prolog).
 rst_epilog = """
