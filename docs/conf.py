@@ -213,7 +213,8 @@ intersphinx_mapping = {
     'qmflows': ('https://qmflows.readthedocs.io/en/latest/', None),
     'FOX': ('https://auto-fox.readthedocs.io/en/latest/', None),
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
-    'pymongo': ('https://pymongo.readthedocs.io/en/stable/', None)
+    'pymongo': ('https://pymongo.readthedocs.io/en/stable/', None),
+    'nanoutils': ('https://nano-utils.readthedocs.io/en/latest/', None),
 }
 
 
