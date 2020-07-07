@@ -20,16 +20,13 @@ from shutil import rmtree
 from pathlib import Path
 from collections import abc
 from typing import (
-    Optional, Union, Dict, Hashable, MutableMapping, TypeVar, Iterable, Container, Tuple, Callable,
+    Optional, Union, Dict, MutableMapping, TypeVar, Iterable, Container, Tuple, Callable,
     Any, List, Type, Mapping, TYPE_CHECKING, cast, ClassVar, ContextManager
 )
 
 import numpy as np
 import pandas as pd
 
-import rdkit
-import qmflows
-from rdkit.Chem.AllChem import UFFGetMoleculeForceField as UFF  # noqa: N814
 from scm.plams import finish, Settings, Molecule
 from scm.plams.core.basejob import Job
 from assertionlib import AbstractDataClass, NDRepr
