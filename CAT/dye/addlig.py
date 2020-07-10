@@ -20,7 +20,7 @@ import os
 import gzip
 import math
 import pickle
-from typing import Iterator, Iterable, Collection
+from typing import Iterator, Iterable, Collection, Optional, Dict
 from os.path import join, exists
 from itertools import chain
 
@@ -29,6 +29,7 @@ from scm.plams import read_molecules, Molecule
 from scm.plams.interfaces.molecule.rdkit import to_rdmol
 from rdkit.Chem import rdMolDescriptors, FindMolChiralCenters, Mol
 
+from nanoutils import PathType
 from CAT.logger import logger
 from CAT.attachment.dye import label_lig, label_core, substitution
 from CAT.attachment.substitution_symmetry import del_equiv_structures
@@ -149,7 +150,7 @@ def export_dyes(mol_list: Iterable[Molecule],
 ###########################################################################
 
 
-def _compute_sas(mol: Mol, sa_model: dict) -> float:
+def _compute_sas(mol: Mol, sa_model: Dict[int, float]) -> float:
     fp = rdMolDescriptors.GetMorganFingerprint(mol, 2)
     fps = fp.GetNonzeroElements()
     score1 = 0.
@@ -212,14 +213,14 @@ def _compute_sas(mol: Mol, sa_model: dict) -> float:
     return sascore
 
 
-def _load_sa_model(filename: str):
+def _load_sa_model(filename: PathType) -> Dict[int, float]:
     sa_score = pickle.load(gzip.open(filename))
     return {j: float(i0) for i0, *i in sa_score for j in i}
 
 
-def sa_scores(mols: Iterable[Molecule], filename: str = 'SA_score.pkl.gz') -> np.ndarray:
+def sa_scores(mols: Iterable[Molecule], filename: Optional[PathType] = None) -> np.ndarray:
     """Calculate the synthetic accessibility score for all molecules in **mols**."""
-    sa_model = _load_sa_model(filename)
+    sa_model = _load_sa_model(filename) if filename is not None else {}
     rdmols = (to_rdmol(mol) for mol in mols)
 
     try:
