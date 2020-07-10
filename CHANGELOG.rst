@@ -14,6 +14,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 0.9.6
 *****
 * Updated the documentation for https://github.com/nlesc-nano/data-CAT/pull/25.
+* Relax the pandas version requirement.
 
 
 0.9.5
