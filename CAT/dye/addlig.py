@@ -215,7 +215,7 @@ def _compute_sas(mol: Mol, sa_model: Dict[int, float]) -> float:
 
 def _load_sa_model(filename: PathType) -> Dict[int, float]:
     sa_score = pickle.load(gzip.open(filename))
-    return {j: float(i0) for i0, *i in sa_score for j in i}
+    return {j: i0 for i0, *i in sa_score for j in i}
 
 
 def sa_scores(mols: Iterable[Molecule], filename: Optional[PathType] = None) -> np.ndarray:
