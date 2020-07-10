@@ -109,7 +109,7 @@ setup(
         'Nano-Utils>=0.4.3',
         'numpy',
         'scipy',
-        'pandas<1.0.0',
+        'pandas',
         'pyyaml>=5.1',
         'schema',
         'AssertionLib>=2.2.3',
