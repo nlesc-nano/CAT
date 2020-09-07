@@ -6,6 +6,7 @@ asa:
         read: [optional, database, read]
         write: [optional, database, write]
         overwrite: [optional, database, overwrite]
+        thread_safe: [optional, database, thread_safe]
 
         md: [optional, qd, activation_strain, md]
         use_ff: [optional, qd, activation_strain, use_ff]
@@ -30,6 +31,7 @@ ligand_opt:
         read: [optional, database, read]
         write: [optional, database, write]
         overwrite: [optional, database, overwrite]
+        thread_safe: [optional, database, thread_safe]
 
         path: [optional, ligand, dirname]
         use_ff: [optional, ligand, optimize, use_ff]
@@ -47,6 +49,7 @@ qd_attach:
         read: [optional, database, read]
         write: [optional, database, write]
         overwrite: [optional, database, overwrite]
+        thread_safe: [optional, database, thread_safe]
 
         path: [optional, qd, dirname]
         allignment: [optional, core, allignment]
@@ -59,6 +62,7 @@ qd_opt:
         read: [optional, database, read]
         write: [optional, database, write]
         overwrite: [optional, database, overwrite]
+        thread_safe: [optional, database, thread_safe]
 
         path: [optional, qd, dirname]
         use_ff: [optional, qd, optimize, use_ff]
@@ -77,6 +81,7 @@ crs:
         read: [optional, database, read]
         write: [optional, database, write]
         overwrite: [optional, database, overwrite]
+        thread_safe: [optional, database, thread_safe]
 
         path: [optional, ligand, dirname]
         keep_files: [optional, ligand, crs, keep_files]
@@ -93,6 +98,7 @@ bde:
         read: [optional, database, read]
         write: [optional, database, write]
         overwrite: [optional, database, overwrite]
+        thread_safe: [optional, database, thread_safe]
 
         path: [optional, qd, dirname]
         keep_files: [optional, qd, dissociate, keep_files]
@@ -124,6 +130,7 @@ bulkiness:
         read: [optional, database, read]
         write: [optional, database, write]
         overwrite: [optional, database, overwrite]
+        thread_safe: [optional, database, thread_safe]
 
         path: [optional, qd, dirname]
 
@@ -135,6 +142,7 @@ multi_ligand:
         read: [optional, database, read]
         write: [optional, database, write]
         overwrite: [optional, database, overwrite]
+        thread_safe: [optional, database, thread_safe]
 
         path: [optional, qd, dirname]
         mol_format: [optional, database, mol_format]
@@ -161,6 +169,7 @@ cdft:
         read: [optional, database, read]
         write: [optional, database, write]
         overwrite: [optional, database, overwrite]
+        thread_safe: [optional, database, thread_safe]
 
         path: [optional, ligand, dirname]
         keep_files: [optional, ligand, cdft, keep_files]

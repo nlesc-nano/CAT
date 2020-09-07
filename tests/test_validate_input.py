@@ -44,6 +44,7 @@ def test_validate_input() -> None:
     ref.database.overwrite = ()
     ref.database.read = ('core', 'ligand', 'qd')
     ref.database.write = ('core', 'ligand', 'qd')
+    ref.database.thread_safe = False
     ref.database.db = Database(ref.database.dirname, **ref.database.mongodb)
 
     ref.ligand['cosmo-rs'] = False

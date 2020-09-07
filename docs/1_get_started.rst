@@ -61,6 +61,7 @@ Verbose default Settings
             read: True
             write: True
             overwrite: False
+            thread_safe: False
             mol_format: (pdb, xyz)
             mongodb: False
 
@@ -105,6 +106,7 @@ Maximum verbose default Settings
             read: (core, ligand, qd)
             write: (core, ligand, qd)
             overwrite: False
+            thread_safe: False
             mol_format: (pdb, xyz)
             mongodb: False
 

@@ -349,6 +349,8 @@ database_schema: Schema = Schema({
     'dirname':
         And(str, error='optional.database.dirname expects a string'),
 
+    Optional_('thread_safe', default=False): bool,
+
     Optional_('read', default=DB_NAMES):  # Attempt to pull structures from the database
         Or(
             And(None, Use(lambda n: ())),
