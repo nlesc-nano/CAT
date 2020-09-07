@@ -226,7 +226,11 @@ def parallel_init(path: Union[str, 'os.PathLike[str]'],
     """
     if hashing != 'input':
         raise ValueError(f"Invalid value: {hashing!r}")
+
     folder_ = f'{folder}.{threading.get_ident()}'
+    path_abs = join(path, folder_)
+    if isdir(path_abs):
+        rmtree(path_abs)
     init(path=path, folder=folder_)
 
     # Not quite thread-safe, but as long as all threads assign a single value

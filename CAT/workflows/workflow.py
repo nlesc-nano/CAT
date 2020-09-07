@@ -15,6 +15,7 @@ API
 
 import os
 import operator
+import threading
 from shutil import rmtree
 from pathlib import Path
 from collections import abc
@@ -524,7 +525,8 @@ class WorkFlow(AbstractDataClass):
 
         # Remove the PLAMS results directories
         if not self.keep_files:
-            rmtree(Path(self.path) / self.name)
+            name = self.name if not self.thread_safe else f'{self.name}.{threading.get_ident()}'
+            rmtree(Path(self.path) / name)
 
     @classmethod
     def from_template(cls, settings: Union[Settings, SettingsDataFrame], name: str) -> 'WorkFlow':
