@@ -89,9 +89,9 @@ def test_database_schema() -> None:
         'read': ('core', 'ligand', 'qd'),
         'write': ('core', 'ligand', 'qd'),
         'overwrite': (),
+        'thread_safe': False,
         'mongodb': {},
         'mol_format': ('pdb', 'xyz')
-
     }
 
     assertion.eq(database_schema.validate(db_dict), ref)

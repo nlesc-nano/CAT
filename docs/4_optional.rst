@@ -20,6 +20,7 @@ Option                                    Description
 :attr:`optional.database.read`            Attempt to read results from the database before starting calculations.
 :attr:`optional.database.write`           Export results to the database.
 :attr:`optional.database.overwrite`       Allow previous results in the database to be overwritten.
+:attr:`optional.database.thread_safe`     Ensure that the created workdir has a thread-safe name.
 :attr:`optional.database.mol_format`      The file format(s) for exporting moleculair structures.
 :attr:`optional.database.mongodb`         Options related to the MongoDB format.
 
@@ -55,6 +56,7 @@ Default Settings
             read: True
             write: True
             overwrite: False
+            thread_safe: False
             mol_format: (pdb, xyz)
             mongodb: False
 
@@ -182,6 +184,16 @@ Database
         that structures written for a specific subset.
 
         See :attr:`optional.database.read` for a similar relevant example.
+
+
+    .. attribute:: optional.database.thread_safe
+
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** - ``False``
+
+        Ensure that the created workdir has a thread-safe name.
+
+        Note that this disables the restarting of partially completed jobs.
 
 
     .. attribute:: optional.database.mol_format

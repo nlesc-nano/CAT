@@ -35,7 +35,7 @@ from assertionlib import AbstractDataClass, NDRepr
 
 from .key_map import MOL, OPT
 from .workflow_dicts import WORKFLOW_TEMPLATE, _TemplateMapping
-from ..utils import restart_init, JOB_MAP
+from ..utils import restart_init, parallel_init, JOB_MAP
 from ..logger import logger
 from ..settings_dataframe import SettingsDataFrame
 
@@ -311,6 +311,7 @@ class WorkFlow(AbstractDataClass):
                  read_template: bool = True,
                  jobs: OptionalJobType = None,
                  settings: OptionalSettings = None,
+                 thread_safe: bool = False,
                  **kwargs: Any) -> None:
         """Initialize a :class:`WorkFlow` instance; see also :meth:`Workflow.from_template`."""
         super().__init__()
@@ -328,6 +329,7 @@ class WorkFlow(AbstractDataClass):
 
         self.path: Union[str, 'os.PathLike[str]'] = path if path is not None else os.getcwd()
         self.keep_files = keep_files
+        self.thread_safe = thread_safe
         self.read_template = read_template
         self.jobs = cast(Tuple[Optional[Type[Job]], ...], jobs)
         self.settings = cast(Tuple[Optional[Settings], ...], settings)
@@ -391,7 +393,8 @@ class WorkFlow(AbstractDataClass):
 
         # Run the workflow
         logger.info(f"Starting {self.description}")
-        with PlamsInit(path=self.path, folder=self.name), self._SUPRESS_SETTINGWITHCOPYWARNING:
+        with PlamsInit(path=self.path, folder=self.name,
+                       thread_safe=self.thread_safe), self._SUPRESS_SETTINGWITHCOPYWARNING:
             self_vars = {k.strip('_'): v for k, v in vars(self).items()}
             value = func(df.loc[slice1], columns=columns, **self_vars, **kwargs)
 
@@ -687,14 +690,19 @@ class PlamsInit(ContextManager[None]):
 
     def __init__(self, path: Union[str, 'os.PathLike[str]'],
                  folder: Union[str, 'os.PathLike[str]'],
-                 hashing: str = 'input'):
+                 hashing: str = 'input',
+                 *, thread_safe: bool = False):
         self.path = path
         self.folder = folder
         self.hashing = hashing
+        self.thread_safe = thread_safe
 
     def __enter__(self) -> None:
         """Enter the context manager; call :func:`.restart_init`."""
-        restart_init(self.path, self.folder, self.hashing)
+        if not self.thread_safe:
+            restart_init(self.path, self.folder, self.hashing)
+        else:
+            parallel_init(self.path, self.folder, self.hashing)
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         """Exit the context manager; call |plams.finish|."""

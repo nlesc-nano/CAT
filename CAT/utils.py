@@ -22,6 +22,7 @@ API
 
 import os
 import yaml
+import threading
 import pkg_resources as pkg
 from types import MappingProxyType
 from shutil import rmtree
@@ -203,6 +204,36 @@ def validate_core_atom(atom):  # noqa: E302
         raise MoleculeError(f'The SMILES string {repr(atom)} contains more than one charged atom: '
                             f'charged atom count: {charge_count}')
     return mol
+
+
+def parallel_init(path: Union[str, 'os.PathLike[str]'],
+                  folder: Union[str, 'os.PathLike[str]'],
+                  hashing: str = 'input') -> None:
+    """Construct a workdir with a thread-safe name.
+
+    Serves as a wrapper around :func:`plams.init<scm.plams.core.functions.init>`.
+
+    Paramaters
+    ----------
+    path : str
+        The path to the PLAMS workdir.
+    folder : str
+        The name of the PLAMS workdir.
+    hashing : str
+        The type of hashing used by the PLAMS :class:`JobManager`.
+        Only ``"input"`` is considered an acceptable value here.
+
+    """
+    if hashing != 'input':
+        raise ValueError(f"Invalid value: {hashing!r}")
+    folder_ = f'{folder}.{threading.get_ident()}'
+    init(path=path, folder=folder_)
+
+    # Not quite thread-safe, but as long as all threads assign a single value
+    # there should be no problem
+    config.log.file = 3
+    config.log.stdout = 0
+    return None
 
 
 def restart_init(path: Union[str, 'os.PathLike[str]'],
