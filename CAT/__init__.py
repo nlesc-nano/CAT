@@ -1,5 +1,7 @@
 """**CAT**: A collection of tools designed for the construction of various chemical compounds."""  # noqa: E501
 
+# flake8: noqa: E402
+
 import logging
 _mpl_logger = logging.getLogger('matplotlib')
 _mpl_logger.setLevel(logging.INFO)
