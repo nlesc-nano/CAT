@@ -16,6 +16,7 @@ input_ligands:
     - CCCCCCCCP(=O)(CCCCCCCC)CCCCCCCC
     - CCCCCCCCC(=O)[O-]
     - CCCCCCCC(CCCCCCCC)C(=O)[O-]
+    - O=C(c1oc(S(=O)(CCCC(F)(F)F)=O)cc1)[O-]
 
 optional:
     database:
@@ -39,5 +40,6 @@ optional:
 
     qd:
         dirname: QD
+        construct_qd: False
         optimize: False
         dissociate: False

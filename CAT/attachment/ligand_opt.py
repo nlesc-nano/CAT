@@ -33,7 +33,7 @@ API
 import itertools
 from types import MappingProxyType
 from typing import List, Iterable, Union, Set, Optional, Type, Tuple, Mapping, Callable, Sequence
-from collections import ChainMap
+from collections import ChainMap, Counter
 
 import numpy as np
 
@@ -224,8 +224,12 @@ def split_mol(plams_mol: Molecule, anchor: Atom) -> List[Bond]:
 
     """
     def _in_ring(bond: Bond) -> bool:
-        """Check if one of the atoms in **bond** is part of a ring system."""
-        return (plams_mol.in_ring(bond.atom1) or plams_mol.in_ring(bond.atom2))
+        """Check if **bond** is part of a ring system."""
+        return plams_mol.in_ring(bond)
+
+    def _besides_ring(atom: Atom) -> bool:
+        """Check if any neighboring atoms are part of a ring system."""
+        return any(plams_mol.in_ring(at) for at in atom.neighbors())
 
     def _is_valid_bond(bond: Bond) -> bool:
         """Check if one atom in **bond** has at least 3 neighbours and the other at least 2."""
@@ -234,22 +238,33 @@ def split_mol(plams_mol: Molecule, anchor: Atom) -> List[Bond]:
 
     def _get_frag_size(bond: Bond) -> int:
         """Return the size of the largest fragment were **plams_mol** to be split along **bond**."""
+        if getattr(bond, '_besides_ring', False):
+            del bond._besides_ring
+            return np.inf
         return plams_mol.get_frag_size(bond, anchor)
 
     # Temporary remove hydrogen atoms
     atom_gen = (at for at in plams_mol if at.atnum == 1)
     with RemoveAtoms(plams_mol, atom_gen):
         # Remove undesired bonds
-        bond_list = [bond for bond in plams_mol.bonds if not _in_ring(bond)]
+        bond_list = [b for b in plams_mol.bonds if not _in_ring(b) and _is_valid_bond(b)]
 
-        # Remove even more undesired bonds
-        for bond in reversed(bond_list):
-            if not _is_valid_bond(bond):
-                bond_list.remove(bond)
-
-    atom_list = list(itertools.chain.from_iterable((bond.atom1, bond.atom2) for bond in bond_list))
-    atom_set = {atom for atom in atom_list if atom_list.count(atom) >= 3}
+    atom_count = Counter(itertools.chain.from_iterable((b.atom1, b.atom2) for b in bond_list))
+    atom_set = {a for a, i in atom_count.items() if i >= 3}
     atom_dict = {atom: [bond for bond in atom.bonds if bond in bond_list] for atom in atom_set}
+    for b in bond_list:
+        if plams_mol.in_ring(b.atom1):
+            key = b.atom1
+        elif plams_mol.in_ring(b.atom2):
+            key = b.atom2
+        else:
+            continue
+
+        b._besides_ring = True
+        if key not in atom_dict:
+            atom_dict[key] = 3 * [b]
+        else:
+            atom_dict[key] += (3 - len(atom_dict[key])) * [b]
 
     # Fragment the molecule such that the anchor on the largest fragment
     ret = []
@@ -429,9 +444,11 @@ def set_dihed(self, angle: float, anchor: Atom, cap: Sequence[Atom],
         # Remove all non-subsituted atoms
         # A special case consists of anchor atoms; they can stay
         if len(n1) > 1:
-            n1 = [atom for atom in n1 if (len(self.neighbors_mod(atom)) > 1 or atom is anchor)]
+            n1 = [atom for atom in n1 if
+                  (len(self.neighbors_mod(atom)) > 1 or atom is anchor or atom.atnum == 0)]
         if len(n2) > 1:
-            n2 = [atom for atom in n2 if (len(self.neighbors_mod(atom)) > 1 or atom is anchor)]
+            n2 = [atom for atom in n2 if
+                  (len(self.neighbors_mod(atom)) > 1 or atom is anchor or atom.atnum == 0)]
 
         # Set `bond` in an anti-periplanar conformation
         if n1 and n2:
