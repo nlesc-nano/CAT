@@ -15,6 +15,7 @@ API
 
 """
 
+import sys
 import copy
 import reprlib
 from typing import Iterable, Union, Dict, Tuple, NoReturn, Any, Type
@@ -23,6 +24,11 @@ from contextlib import AbstractContextManager
 from scm.plams import Molecule, Atom, PT, Bond, MoleculeError, PTError, rotation_matrix
 
 from ..mol_utils import separate_mod  # noqa: F401
+
+if sys.version_info >= (3, 7):
+    from builtins import dict as OrderedDict
+else:
+    from collections import OrderedDict
 
 __all__ = ['SplitMol']
 
@@ -136,13 +142,16 @@ class SplitMol(AbstractContextManager):
     """####################################### Properties #######################################"""
 
     @property
-    def bonds(self) -> Dict[Bond, int]:
+    def bonds(self) -> Dict[Bond, None]:
         """Getter: Return :attr:`SplitMol.bonds`. Setter: Assign the provided value as a dictionary with bonds as keys and their matching index as value."""  # noqa
         return self._bonds
 
     @bonds.setter
     def bonds(self, value: Union[Bond, Iterable[Bond]]) -> None:
-        self._bonds = {value} if isinstance(value, Bond) else set(value)
+        if isinstance(value, Bond):
+            self._bonds = {value: None}
+        else:
+            self._bonds = OrderedDict((i, None) for i in value)
 
     @property
     def cap_type(self) -> str:
@@ -212,8 +221,8 @@ class SplitMol(AbstractContextManager):
         mark = self._at_pairs
         bonds = self.bonds
 
-        iterator = enumerate(zip(mark, bonds), start=(1 - len(bonds)))
-        for i, (atom_dict, bond) in iterator:
+        _iterator = enumerate(zip(mark, bonds), start=(1 - len(bonds)))
+        for i, (atom_dict, bond) in _iterator:
             # Extract atoms
             iterator = iter(atom_dict.items())
             atom1, atom1_cap = next(iterator)
