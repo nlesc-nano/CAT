@@ -555,7 +555,7 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int],
     # Find the conformation with the optimal ligand vector
     cost_list = []
     try:
-        i = mol.atoms.index(anchor)
+        i = ligand.atoms.index(anchor)
     except ValueError:
         i = -1  # Default to the origin as anchor
 
