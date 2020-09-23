@@ -35,7 +35,5 @@ def test_main() -> None:
     iterator = ((f, Molecule(LIG_PATH / f), Molecule(PATH_REF / f)) for
                 f in os.listdir(PATH_REF) if f.endswith('xyz'))
 
-    for f, mol, mol_ref in iterator:
-        if not f.endswith('xyz'):
-            continue
-        np.testing.assert_allclose(mol, mol_ref, err_msg=f, rtol=0, atol=10**-2)
+    for msg, mol, mol_ref in iterator:
+        np.testing.assert_allclose(mol, mol_ref, err_msg=msg, rtol=0, atol=10**-2)

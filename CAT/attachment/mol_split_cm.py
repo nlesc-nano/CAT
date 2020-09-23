@@ -15,6 +15,7 @@ API
 
 """
 
+import sys
 import copy
 import reprlib
 from typing import Iterable, Union, Dict, Tuple, NoReturn, Any, Type
@@ -23,6 +24,11 @@ from contextlib import AbstractContextManager
 from scm.plams import Molecule, Atom, PT, Bond, MoleculeError, PTError, rotation_matrix
 
 from ..mol_utils import separate_mod  # noqa: F401
+
+if sys.version_info >= (3, 7):
+    from builtins import dict as OrderedDict
+else:
+    from collections import OrderedDict
 
 __all__ = ['SplitMol']
 
@@ -136,13 +142,16 @@ class SplitMol(AbstractContextManager):
     """####################################### Properties #######################################"""
 
     @property
-    def bonds(self) -> Dict[Bond, int]:
+    def bonds(self) -> Dict[Bond, None]:
         """Getter: Return :attr:`SplitMol.bonds`. Setter: Assign the provided value as a dictionary with bonds as keys and their matching index as value."""  # noqa
         return self._bonds
 
     @bonds.setter
     def bonds(self, value: Union[Bond, Iterable[Bond]]) -> None:
-        self._bonds = {value} if isinstance(value, Bond) else set(value)
+        if isinstance(value, Bond):
+            self._bonds = {value: None}
+        else:
+            self._bonds = OrderedDict((i, None) for i in value)
 
     @property
     def cap_type(self) -> str:
@@ -212,11 +221,15 @@ class SplitMol(AbstractContextManager):
         mark = self._at_pairs
         bonds = self.bonds
 
-        for atom_dict, bond in zip(mark, bonds):
+        _iterator = enumerate(zip(mark, bonds), start=(1 - len(bonds)))
+        for i, (atom_dict, bond) in _iterator:
             # Extract atoms
             iterator = iter(atom_dict.items())
             atom1, atom1_cap = next(iterator)
             atom2, atom2_cap = next(iterator)
+
+            atom1_cap.bonds[0].resize(atom1_cap, atom1.radius + atom2.radius)
+            atom2_cap.bonds[0].resize(atom2_cap, atom1.radius + atom2.radius)
 
             # Allign the molecules by rotation
             vec1 = atom2.vector_to(atom2_cap)
@@ -231,6 +244,16 @@ class SplitMol(AbstractContextManager):
             # Replace the capping atom bonds with the previously broken bond
             atom1.bonds[-1] = bond
             atom2.bonds[-1] = bond
+
+            # Don't bother transfering ownsership for the last fragment
+            if i:
+                _tmp_mol = atom1.mol
+                _tmp_mol.atoms += atom2.mol.atoms
+                _tmp_mol.bonds += atom2.mol.bonds
+                for at in atom2.mol.atoms:
+                    at.mol = _tmp_mol
+                for bond in atom2.mol.bonds:
+                    bond.mol = _tmp_mol
 
         # Ensure all atoms and bonds belong to mol
         for at in mol.atoms:

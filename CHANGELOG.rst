@@ -11,6 +11,18 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.9.9
+*****
+* Improve the conformations of ringed systems;
+  ring-substituents are now treated as fragments.
+
+
+0.9.8
+*****
+* For some reason the matplotlib logger is going bananas;
+  its level has been changed from DEBUG (default) to INFO in order to silence it.
+
+
 0.9.7
 *****
 * Update the documentation for https://github.com/nlesc-nano/data-CAT/pull/38.
