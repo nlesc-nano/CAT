@@ -212,11 +212,15 @@ class SplitMol(AbstractContextManager):
         mark = self._at_pairs
         bonds = self.bonds
 
-        for atom_dict, bond in zip(mark, bonds):
+        iterator = enumerate(zip(mark, bonds), start=(1 - len(bonds)))
+        for i, (atom_dict, bond) in iterator:
             # Extract atoms
             iterator = iter(atom_dict.items())
             atom1, atom1_cap = next(iterator)
             atom2, atom2_cap = next(iterator)
+
+            atom1_cap.bonds[0].resize(atom1_cap, atom1.radius + atom2.radius)
+            atom2_cap.bonds[0].resize(atom2_cap, atom1.radius + atom2.radius)
 
             # Allign the molecules by rotation
             vec1 = atom2.vector_to(atom2_cap)
@@ -231,6 +235,16 @@ class SplitMol(AbstractContextManager):
             # Replace the capping atom bonds with the previously broken bond
             atom1.bonds[-1] = bond
             atom2.bonds[-1] = bond
+
+            # Don't bother transfering ownsership for the last fragment
+            if i:
+                _tmp_mol = atom1.mol
+                _tmp_mol.atoms += atom2.mol.atoms
+                _tmp_mol.bonds += atom2.mol.bonds
+                for at in atom2.mol.atoms:
+                    at.mol = _tmp_mol
+                for bond in atom2.mol.bonds:
+                    bond.mol = _tmp_mol
 
         # Ensure all atoms and bonds belong to mol
         for at in mol.atoms:
