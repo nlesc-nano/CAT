@@ -64,7 +64,7 @@ def init_ligand_opt(ligand_df: SettingsDataFrame) -> None:
     workflow = WorkFlow.from_template(ligand_df, name='ligand_opt')
 
     # Pull from the database; push unoptimized structures
-    idx = workflow.from_db(ligand_df)
+    idx = workflow.from_db(ligand_df, get_mol=True)
     workflow.to_db(ligand_df, index=idx)
     if not ligand_df.settings.optional.ligand.optimize:
         return None

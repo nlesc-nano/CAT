@@ -26,7 +26,7 @@ from scm.plams import Molecule, Atom, PT, Bond, MoleculeError, PTError, rotation
 from ..mol_utils import separate_mod  # noqa: F401
 
 if sys.version_info >= (3, 7):
-    from builtins import dict as OrderedDict
+    from builtins import dict as OrderedDict  # noqa: N812
 else:
     from collections import OrderedDict
 
