@@ -9,6 +9,7 @@ import numpy as np
 
 from .key_map import (
     OPT,
+    MOL,
     HDF5_INDEX,
     JOB_SETTINGS_QD_OPT,
     JOB_SETTINGS_CRS,
@@ -81,11 +82,12 @@ def finalize_templates():
         'asa': {'import_columns': {ASA_INT: np.nan, ASA_STRAIN: np.nan, ASA_E: np.nan},
                 'export_columns': (JOB_SETTINGS_ASA, SETTINGS_ASA, ASA_INT, ASA_STRAIN, ASA_E)},
         'ligand_opt': {'import_columns': {HDF5_INDEX: -1, OPT: False},
-                       'export_columns': (HDF5_INDEX, OPT, SETTINGS1, SETTINGS2)},
+                       'export_columns': (MOL, HDF5_INDEX, OPT, SETTINGS1, SETTINGS2)},
         'qd_attach': {'import_columns': {HDF5_INDEX: -1, OPT: False},
-                      'export_columns': (HDF5_INDEX,)},
+                      'export_columns': (MOL, HDF5_INDEX)},
         'qd_opt': {'import_columns': {HDF5_INDEX: -1, OPT: False},
-                   'export_columns': (HDF5_INDEX, OPT, JOB_SETTINGS_QD_OPT, SETTINGS1, SETTINGS2)},
+                   'export_columns': (MOL, HDF5_INDEX, OPT, JOB_SETTINGS_QD_OPT,
+                                      SETTINGS1, SETTINGS2)},
         'crs': {'import_columns': {},
                 'export_columns': (JOB_SETTINGS_CRS, SETTINGS_SOLV1, SETTINGS_SOLV2)},
         'bde': {'import_columns': {},

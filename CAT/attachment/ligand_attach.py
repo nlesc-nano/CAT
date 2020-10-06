@@ -88,7 +88,7 @@ def init_qd_construction(ligand_df: SettingsDataFrame, core_df: SettingsDataFram
     workflow.keep_files = False
 
     # Pull from the database; push unoptimized structures
-    idx = workflow.from_db(qd_df, inplace=False)
+    idx = workflow.from_db(qd_df, inplace=False, get_mol=True)
 
     # Start the ligand optimization
     workflow(construct_mol_series, qd_df, columns=MOL, index=idx,

@@ -415,7 +415,7 @@ class WorkFlow(AbstractDataClass):
                     raise ex
         logger.info(f"Finishing {self.description}\n")
 
-    def from_db(self, df: pd.DataFrame, inplace: bool = True, get_mol: bool = True,
+    def from_db(self, df: pd.DataFrame, inplace: bool = True, get_mol: bool = False,
                 columns: Optional[Mapping] = None) -> Union[slice, pd.Series]:
         """Ensure that all required keys are present in **df** and import from the database.
 
@@ -515,7 +515,7 @@ class WorkFlow(AbstractDataClass):
         if self.write:
             with self._SUPRESS_SETTINGWITHCOPYWARNING:
                 self.db.update_csv(
-                    df.loc[index],
+                    df, index,
                     database=self.mol_type,
                     columns=export_columns,
                     overwrite=self.overwrite,

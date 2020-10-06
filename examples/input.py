@@ -10,8 +10,8 @@ from CAT.logger import logger
 
 
 yaml_path = join(dirname(__file__), 'input_settings.yaml')
-with open(yaml_path, 'r') as file:
-    arg = Settings(yaml.load(file, Loader=yaml.FullLoader))
+with open(yaml_path, 'r') as f:
+    arg = Settings(yaml.load(f, Loader=yaml.FullLoader))
 
 try:
     qd_df, core_df, ligand_df = base.prep(arg)
