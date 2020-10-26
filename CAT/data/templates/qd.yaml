@@ -13,12 +13,32 @@ COSMO-RS activity coefficient:
     input:
         property:
             _h: Activitycoef
-        Compound:
-            _h: null
         compound:
-            _h: null
-            Frac1: 1.0
+            - _h: null
+            - _h: null
+              Frac1: 1.0
 
+COSMO-RS logp:
+    description: COSMO-RS LogP calculation; parameters not included!
+    input:
+        property:
+            _h: logp
+        compound:
+            - _h: "{}/ADFCRS/1-Octanol.coskf"
+              frac1: 0.725
+              pvap: 1.01325
+              tvap: 468.0
+              meltingpoint: 257.0
+              flashpoint: 354.0
+              density: 0.824
+            - _h: "{}/ADFCRS/Water.coskf"
+              frac1: 0.275
+              frac2: 1.0
+              pvap: 1.01325
+              tvap: 373.15
+              meltingpoint: 273.15
+              hfusion: 1.436
+              density: 0.997
 COSMO-ADF:
     description: The solvation block for COSMO(crs)-ADF calculations
     input:
