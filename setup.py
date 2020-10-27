@@ -64,6 +64,7 @@ setup(
         'CAT': [
             'data/templates/*yaml',
             'data/coskf/*coskf',
+            'data/coskf/misc/*coskf',
             'data/CORES/*xyz',
             'data/LIGANDS/*xyz',
             'workflows/workflow_yaml.yaml',
