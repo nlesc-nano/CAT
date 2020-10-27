@@ -83,7 +83,7 @@ def validate_input(s: Settings) -> None:
     # Set the various working directories
     dirnames = ('database', 'ligand', 'core', 'qd')
     for key in dirnames:
-        value = join(path, key)
+        value = join(s.path, key)
         s.optional[key].dirname = value
         if not isdir(value):
             mkdir(value)
@@ -130,10 +130,10 @@ def validate_input(s: Settings) -> None:
         update_ff_jobs(s)
 
     # Validate the input cores and ligands
-    validate_mol(s.input_cores, 'input_cores', join(path, 'core'))
-    validate_mol(s.input_ligands, 'input_ligands', join(path, 'ligand'))
+    validate_mol(s.input_cores, 'input_cores', join(s.path, 'core'))
+    validate_mol(s.input_ligands, 'input_ligands', join(s.path, 'ligand'))
     if 'input_qd' in s:
-        validate_mol(s.input_qd, 'input_qd', join(path, 'qd'))
+        validate_mol(s.input_qd, 'input_qd', join(s.path, 'qd'))
 
     # Create a dataCAT.Database instance
     if DATA_CAT:
