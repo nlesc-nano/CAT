@@ -78,7 +78,7 @@ def validate_input(s: Settings) -> None:
 
     """
     # Validate the path
-    s.path = path = validate_path(s.path)
+    s.path = validate_path(s.path)
 
     # Set the various working directories
     dirnames = ('database', 'ligand', 'core', 'qd')
