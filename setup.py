@@ -16,8 +16,8 @@ with open('README.rst', encoding='utf-8') as readme_file:
     readme = readme_file.read()
 
 docs_require = [
-    'sphinx>=2.4,<3.1',
-    'sphinx_rtd_theme',
+    'sphinx>=2.4,!=3.1',
+    'sphinx_rtd_theme~=0.5.0',
     'data-CAT@git+https://github.com/nlesc-nano/data-CAT@master'
 ]
 
