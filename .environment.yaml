@@ -5,6 +5,9 @@ channels:
 
 dependencies:
     - pip
-    - python
+    - python=3.8
     - h5py
     - rdkit
+
+    - pip:
+        - data-CAT@git+https://github.com/nlesc-nano/data-CAT@master
