@@ -21,10 +21,6 @@ docs_require = [
     'data-CAT@git+https://github.com/nlesc-nano/data-CAT@master'
 ]
 
-docs_require_rtd = [
-    'data-CAT@git+https://github.com/nlesc-nano/data-CAT@master'
-]
-
 tests_require = [
     'pytest>=5.4.0',
     'pytest-cov',
@@ -128,6 +124,5 @@ setup(
     extras_require={
         'test': tests_require,
         'doc': docs_require,
-        'doc_rtd': docs_require_rtd,
     }
 )
