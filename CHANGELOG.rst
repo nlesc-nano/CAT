@@ -18,7 +18,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.9.10
 ******
-* Added the new ``optional.core.anchor`` and ``optional.ligand.functional_groups`` options,
+* Added the new ``optional.core.anchor`` and ``optional.ligand.anchor`` options,
   which are respectively aliases for the old ``optional.core.dummy`` and
   ``optional.ligand.functional_groups`` options.
 * Added a new H3O+ .coskf file.
