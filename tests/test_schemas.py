@@ -165,7 +165,7 @@ def test_core_schema() -> None:
         'dirname': '.',
         'anchor': None,
         'dummy': None,
-        'allignment': 'sphere',
+        'allignment': 'surface',
         'subset': None
     }
 
