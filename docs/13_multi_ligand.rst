@@ -19,7 +19,7 @@ Multi-ligand attachment
                         - OCCC
                         - OCCCCCCC
                         - OCCCCCCCCCCCC
-                    dummy:
+                    anchor:
                         - F
                         - Br
                         - I
@@ -39,19 +39,21 @@ Multi-ligand attachment
             This argument has no value be default and must thus be provided by the user.
 
 
-    .. attribute:: optional.qd.multi_ligand.dummy
+    .. attribute:: optional.qd.multi_ligand.anchor
 
         :Parameter:     * **Type** - :class:`list` [:class:`str` or :class:`int`]
 
-        Atomic number of symbol of the core dummy atoms.
+        Atomic number of symbol of the core anchor atoms.
 
-        The first dummy atom will be assigned to the first ligand in
-        :attr:`multi_ligand.ligands<optional.qd.multi_ligand.ligands>`, the second dummy atom
+        The first anchor atom will be assigned to the first ligand in
+        :attr:`multi_ligand.ligands<optional.qd.multi_ligand.ligands>`, the second anchor atom
         to the second ligand, *etc.*.
         The list's length should consequently be of the same length as
         :attr:`multi_ligand.ligands<optional.qd.multi_ligand.ligands>`.
 
-        Works analogous to :attr:`optional.core.dummy`.
+        Works analogous to :attr:`optional.core.anchor`.
+
+        This optiona can alternatively be provided as ``optional.qd.multi_ligand.dummy``.
 
         .. note::
             This argument has no value be default and must thus be provided by the user.

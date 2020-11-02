@@ -34,7 +34,7 @@ def test_validate_input() -> None:
 
     ref = Settings()
     ref.core.dirname = join(PATH, 'core')
-    ref.core.dummy = 17
+    ref.core.anchor = 17
     ref.core.allignment = 'sphere'
     ref.core.subset = None
 
@@ -64,7 +64,7 @@ def test_validate_input() -> None:
 
     ref.forcefield = Settings()
 
-    func_groups = s.optional.ligand.pop('functional_groups')
+    func_groups = s.optional.ligand.pop('anchor')
 
     try:
         for mol in func_groups:

@@ -26,12 +26,12 @@ def init_multi_ligand(qd_df):
     """Initialize the multi-ligand attachment procedure."""
     workflow = WorkFlow.from_template(qd_df, name='multi_ligand')
 
-    if workflow.dummy is not None:
-        sequence = [to_symbol(i) for i in workflow.dummy]
+    if workflow.anchor is not None:
+        sequence = [to_symbol(i) for i in workflow.anchor]
     elif workflow.f is not None:
         sequence = [str(i) for i in workflow.f]
     else:
-        raise TypeError("'workflow.f' and 'workflow.dummy' cannot be both 'None'")
+        raise TypeError("'workflow.f' and 'workflow.anchor' cannot be both 'None'")
 
     columns_iter1 = ('/'.join(item for item in sequence[:i]) for i in range(1, 1+len(sequence)))
     columns_iter2 = (('multi ligand', i) for i in columns_iter1)
@@ -50,15 +50,15 @@ def init_multi_ligand(qd_df):
 
 @overload
 def multi_lig(qd_series: pd.Series, ligands: Iterable[str],
-              dummy: Sequence[Union[str, int]], f: None,
+              anchor: Sequence[Union[str, int]], f: None,
               **kwargs: Any) -> pd.DataFrame:
     ...
 @overload  # noqa: E302
 def multi_lig(qd_series: pd.Series, ligands: Iterable[str],
-              dummy: None, f: Sequence[float],
+              anchor: None, f: Sequence[float],
               **kwargs: Any) -> pd.DataFrame:
     ...
-def multi_lig(qd_series, ligands, dummy=None, f=None, **kwargs):  # noqa: E302
+def multi_lig(qd_series, ligands, anchor=None, f=None, **kwargs):  # noqa: E302
     """Attach multiple non-unique **ligands** to each qd in **qd_series**."""
     # Read and parse the SMILES strings
     ligands = smiles_to_lig(list(ligands),
@@ -75,21 +75,21 @@ def multi_lig(qd_series, ligands, dummy=None, f=None, **kwargs):  # noqa: E302
     if f is not None:
         raise NotImplementedError("'f != None' is not yet implemented")
 
-    if dummy is not None:
-        return _multi_lig_dummy(qd_series, ligands, kwargs['path'], dummy, kwargs['allignment'])
+    if anchor is not None:
+        return _multi_lig_anchor(qd_series, ligands, kwargs['path'], anchor, kwargs['allignment'])
     elif f is not None:
         return [[NotImplemented]]
     else:
-        raise TypeError("'f' and 'dummy' cannot be both 'None'")
+        raise TypeError("'f' and 'anchor' cannot be both 'None'")
 
 
-def _multi_lig_dummy(qd_series, ligands, path, dummy, allignment) -> np.ndarray:
+def _multi_lig_anchor(qd_series, ligands, path, anchor, allignment) -> np.ndarray:
     """Gogogo."""
     ret = np.empty((len(ligands), len(qd_series)), dtype=object)
     for i, qd in enumerate(qd_series):
         qd = qd.copy()
 
-        for j, (ligand, atnum) in enumerate(zip(ligands, dummy)):
+        for j, (ligand, atnum) in enumerate(zip(ligands, anchor)):
             try:
                 atoms = [at for at in qd if at.atnum == atnum]
                 assert atoms

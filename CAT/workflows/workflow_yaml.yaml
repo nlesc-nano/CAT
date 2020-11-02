@@ -149,10 +149,10 @@ multi_ligand:
         allignment: [optional, core, allignment]
         opt: [optional, ligand, optimize]
         split: [optional, ligand, split]
-        functional_groups: [optional, ligand, functional_groups]
+        functional_groups: [optional, ligand, anchor]
 
         ligands: [optional, qd, multi_ligand, ligands]
-        dummy: [optional, qd, multi_ligand, dummy]
+        anchor: [optional, qd, multi_ligand, anchor]
         f: [optional, qd, multi_ligand, f]
         mode: [optional, qd, multi_ligand, uniform]
         start: [optional, qd, multi_ligand, start]

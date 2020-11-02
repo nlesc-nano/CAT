@@ -18,7 +18,7 @@ optional:
 
     core:
         dirname: core
-        dummy: Cl
+        anchor: Cl
 
     ligand:
         dirname: ligand

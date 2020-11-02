@@ -29,14 +29,14 @@ optional:
 
     core:
         dirname: core
-        dummy: Cl
+        anchor: Cl
 
     ligand:
         dirname: ligand
         optimize: True
         split: False
         cosmo-rs: False
-        functional_groups: [N, P, O, S]
+        anchor: [N, P, O, S]
 
     qd:
         dirname: QD

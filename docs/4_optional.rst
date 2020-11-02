@@ -25,13 +25,13 @@ Option                                    Description
 :attr:`optional.database.mongodb`         Options related to the MongoDB format.
 
 :attr:`optional.core.dirname`             The name of the directory where all cores will be stored.
-:attr:`optional.core.dummy`               Atomic number of symbol of the core dummy atoms.
+:attr:`optional.core.anchor`              Atomic number of symbol of the core anchor atoms.
 :attr:`optional.core.allignment`          How the to-be attached ligands should be alligned with the core.
-:attr:`optional.core.subset`              Settings related to the partial replacement of core dummy atoms.
+:attr:`optional.core.subset`              Settings related to the partial replacement of core anchor atoms.
 
 :attr:`optional.ligand.dirname`           The name of the directory where all ligands will be stored.
 :attr:`optional.ligand.optimize`          Optimize the geometry of the to-be attached ligands.
-:attr:`optional.ligand.functional_groups` Manually specify SMILES strings representing functional groups.
+:attr:`optional.ligand.anchor`            Manually specify SMILES strings representing functional groups.
 :attr:`optional.ligand.split`             If the ligand should be attached in its entirety to the core or not.
 :attr:`optional.ligand.cosmo-rs`          Perform a property calculation with COSMO-RS on the ligand.
 :attr:`optional.ligand.cdft`              Perform a conceptual DFT calculation with ADF on the ligand.
@@ -62,14 +62,14 @@ Default Settings
 
         core:
             dirname: core
-            dummy: Cl
+            anchor: Cl
             allignment: sphere
             subset: null
 
         ligand:
             dirname: ligand
             optimize: True
-            functional_groups: null
+            anchor: null
             split: True
             cosmo-rs: False
             cdft: False
@@ -236,7 +236,7 @@ Core
         optional:
             core:
                 dirname: core
-                dummy: Cl
+                anchor: Cl
                 allignment: sphere
                 subset: null
 
@@ -253,16 +253,18 @@ Core
         at the path specified in :ref:`Path`.
 
 
-    .. attribute:: optional.core.dummy
+    .. attribute:: optional.core.anchor
 
         :Parameter:     * **Type** - :class:`str` or :class:`int`
                         * **Default value** – ``17``
 
-        Atomic number of symbol of the core dummy atoms.
+        Atomic number of symbol of the core anchor atoms.
 
         The atomic number or atomic symbol of the atoms in the core which are to be
-        replaced with ligands. Alternatively, dummy atoms can be manually specified
+        replaced with ligands. Alternatively, anchor atoms can be manually specified
         with the core_indices variable.
+
+        This optiona can alternatively be provided as ``optional.core.dummy``.
 
 
     .. attribute:: optional.core.allignment
@@ -296,7 +298,7 @@ Core
         :Parameter:     * **Type** - :class:`dict`, optional
                         * **Default value** – ``None``
 
-        Settings related to the partial replacement of core dummy atoms with ligands.
+        Settings related to the partial replacement of core anchor atoms with ligands.
 
         If not ``None``, has access to six further keywords,
         the first two being the most important:
@@ -313,7 +315,7 @@ Core
 
         :Parameter:     * **Type** - :class:`float`
 
-        The fraction of core dummy atoms that will actually be exchanged for ligands.
+        The fraction of core anchor atoms that will actually be exchanged for ligands.
 
         The provided value should satisfy the following condition: :math:`0 < f \le 1`.
 
@@ -326,24 +328,24 @@ Core
         :Parameter:     * **Type** - :class:`str`
                         * **Default value** – ``"uniform"``
 
-        Defines how the dummy atom subset, whose size is defined by the fraction :math:`f`, will be generated.
+        Defines how the anchor atom subset, whose size is defined by the fraction :math:`f`, will be generated.
 
         Accepts one of the following values:
 
         * ``"uniform"``: A uniform distribution; the nearest-neighbor distances between each
-          successive dummy atom and all previous dummy atoms is maximized.
+          successive anchor atom and all previous anchor atoms is maximized.
           can be combined with :attr:`subset.cluster_size<optional.core.subset.cluster_size>`
           to create a uniform distribution of clusters of a user-specified size.
         * ``"cluster"``: A clustered distribution; the nearest-neighbor distances between each
-          successive dummy atom and all previous dummy atoms is minimized.
+          successive anchor atom and all previous anchor atoms is minimized.
         * ``"random"``: A random distribution.
 
         It should be noted that all three methods converge towards the same set
         as :math:`f` approaches :math:`1.0`.
 
         If :math:`\boldsymbol{D} \in \mathbb{R}_{+}^{n,n}` is the (symmetric) distance matrix constructed
-        from the dummy atom superset and :math:`\boldsymbol{a} \in \mathbb{N}^{m}` is the vector
-        of indices which yields the dummy atom subset. The definition of element :math:`a_{i}`
+        from the anchor atom superset and :math:`\boldsymbol{a} \in \mathbb{N}^{m}` is the vector
+        of indices which yields the anchor atom subset. The definition of element :math:`a_{i}`
         is defined below for the ``"uniform"`` distribution.
         All elements of :math:`\boldsymbol{a}` are furthermore constrained to be unique.
 
@@ -396,7 +398,7 @@ Core
         :Parameter:     * **Type** - :class:`bool`
                         * **Default value** – ``False``
 
-        Construct the dummy atom distance matrix by following the shortest path along the
+        Construct the anchor atom distance matrix by following the shortest path along the
         edges of a (triangular-faced) polyhedral approximation of the core rather than the
         shortest path through space.
 
@@ -519,7 +521,7 @@ Core
         :Parameter:     * **Type** - :class:`float`, optional
                         * **Default value** – ``None``
 
-        The probability that each new core dummy atom will be picked at random.
+        The probability that each new core anchor atom will be picked at random.
 
         Can be used in combination with ``"uniform"`` and ``"cluster"`` to introduce
         a certain degree of randomness (*i.e.* entropy).
@@ -557,7 +559,7 @@ Ligand
             ligand:
                 dirname: ligand
                 optimize: True
-                functional_groups: null
+                anchor: null
                 split: True
                 cosmo-rs: False
                 cdft: False
@@ -603,14 +605,14 @@ Ligand
                             job2: ADFJob
 
 
-    .. attribute:: optional.ligand.functional_groups
+    .. attribute:: optional.ligand.anchor
 
         :Parameter:     * **Type** - :class:`str` or :class:`tuple` [:class:`str`]
                         * **Default value** – ``None``
 
         Manually specify SMILES strings representing functional groups.
 
-        For example, with :attr:`optional.ligand.functional_groups` = ``("O[H]", "[N+].[Cl-]")`` all
+        For example, with :attr:`optional.ligand.anchor` = ``("O[H]", "[N+].[Cl-]")`` all
         ligands will be searched for the presence of hydroxides and ammonium chlorides.
 
         The first atom in each SMILES string (*i.e.* the "anchor") will be used for attaching the ligand
@@ -618,6 +620,8 @@ Ligand
         dissociated from the ligand and discarded.
 
         If not specified, the default functional groups of **CAT** are used.
+
+        This optiona can alternatively be provided as ``optional.ligand.functional_groups``.
 
         .. note::
             This argument has no value be default and will thus default to SMILES strings of the default

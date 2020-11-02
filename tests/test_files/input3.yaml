@@ -14,7 +14,7 @@ optional:
         mol_format: [pdb]
 
     core:
-        dummy: Cl
+        anchor: Cl
 
     ligand:
         optimize: True
@@ -26,6 +26,6 @@ optional:
             ligands:
                 - OCCCCCCCCCCCCC
                 - OC
-            dummy:
+            anchor:
                 - Br
                 - I
