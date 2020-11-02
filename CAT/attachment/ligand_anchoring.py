@@ -59,7 +59,7 @@ def init_ligand_anchoring(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     # Unpack arguments
     settings = ligand_df.settings.optional
     split = settings.ligand.split
-    functional_groups = settings.ligand.functional_groups
+    functional_groups = settings.ligand.anchor
 
     # Find all functional groups; return a copy of each mol for each functional group
     mol_list = []

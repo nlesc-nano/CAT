@@ -64,7 +64,7 @@ def test_validate_input() -> None:
 
     ref.forcefield = Settings()
 
-    func_groups = s.optional.ligand.pop('functional_groups')
+    func_groups = s.optional.ligand.pop('anchor')
 
     try:
         for mol in func_groups:

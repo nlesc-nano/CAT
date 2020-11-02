@@ -114,7 +114,7 @@ def prep(arg: Settings, return_mol: bool = True
     ligand_df, core_df, qd_df = prep_input(arg)
 
     if qd_df is None:
-        # Adds the indices of the core dummy atoms to core.properties.core
+        # Adds the indices of the core anchor atoms to core.properties.core
         core_df = prep_core(core_df)
 
         # Optimize the ligands, find functional groups, calculate properties
@@ -194,7 +194,7 @@ def prep_input(arg: Settings) -> Tuple[SettingsDataFrame, SettingsDataFrame, Set
 
 # TODO: Move this function to its own module; this is a workflow and NOT a workflow manager
 def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
-    """Function that handles the identification and marking of all core dummy atoms.
+    """Function that handles the identification and marking of all core anchor atoms.
 
     Parameters
     ----------
@@ -204,21 +204,21 @@ def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
     Returns
     -------
     |CAT.SettingsDataFrame|_
-        A dataframe of cores with all dummy/anchor atoms removed.
+        A dataframe of cores with all anchor atoms removed.
 
     """
     # Unpack arguments
-    dummy = core_df.settings.optional.core.dummy
+    anchor = core_df.settings.optional.core.anchor
     subset = core_df.settings.optional.core.subset
 
     idx_tuples = []
     for core in core_df[MOL]:
-        # Checks the if the dummy is a string (atomic symbol) or integer (atomic number)
+        # Checks the if the anchor is a string (atomic symbol) or integer (atomic number)
         formula = core.get_formula()
 
-        # Returns the indices of all dummy atom ligand placeholders in the core
+        # Returns the indices of all anchor atom ligand placeholders in the core
         if not core.properties.dummies:
-            at_idx = np.array([i for i, atom in enumerate(core) if atom.atnum == dummy])
+            at_idx = np.array([i for i, atom in enumerate(core) if atom.atnum == anchor])
         else:
             dummies = core.properties.dummies
             at_idx = np.fromiter(dummies, count=len(dummies), dtype=int)
@@ -231,13 +231,13 @@ def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
         at_idx.sort()
         core.properties.dummies = dummies = [core[i] for i in at_idx]
 
-        # Returns an error if no dummy atoms were found
+        # Returns an error if no anchor atoms were found
         if not dummies:
-            raise MoleculeError(f"{repr(to_symbol(dummy))} was specified as core dummy atom, yet "
+            raise MoleculeError(f"{repr(to_symbol(anchor))} was specified as core anchor atom, yet "
                                 f"no matching atoms were found in {core.properties.name} "
                                 f"(formula: {formula})")
 
-        # Delete all core dummy atoms
+        # Delete all core anchor atoms
         for at in dummies:
             core.delete_atom(at)
         idx_tuples.append(

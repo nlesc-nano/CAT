@@ -122,6 +122,7 @@ def test_ligand_schema() -> None:
     ref = {
         'dirname': '.',
         'anchor': None,
+        'functional_groups': None,
         'optimize': {'job1': None},
         'split': True,
         'cosmo-rs': False,
@@ -162,7 +163,8 @@ def test_core_schema() -> None:
     core_dict = {'dirname': '.'}
     ref = {
         'dirname': '.',
-        'anchor': 17,
+        'anchor': None,
+        'dummy': None,
         'allignment': 'sphere',
         'subset': None
     }

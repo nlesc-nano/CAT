@@ -55,6 +55,7 @@ def _validate_multi_lig(s: Settings) -> None:
     anchor = s.optional.qd.multi_ligand.anchor
     if anchor is None:
         anchor = s.optional.qd.multi_ligand.dummy
+        s.optional.qd.multi_ligand.anchor = anchor
     del s.optional.qd.multi_ligand.dummy
 
     if f is anchor is None:
