@@ -285,11 +285,21 @@ core_schema: Schema = Schema({
     'dirname':
         And(str, error='optional.core.dirname expects a string'),
 
-    Optional_('dummy', default=17):  # Return a tuple of atomic numbers
+    # Alias for `optional.core.anchor`
+    Optional_('dummy', default=None):  # Return a tuple of atomic numbers
         Or(
+            None,
             And(val_int, Use(lambda n: to_atnum(int(n)))),
             And(str, Use(to_atnum)),
             error='optional.core.dummy expects a valid atomic number (int) or symbol (string)'
+        ),
+
+    Optional_('anchor', default=None):  # Return a tuple of atomic numbers
+        Or(
+            None,
+            And(val_int, Use(lambda n: to_atnum(int(n)))),
+            And(str, Use(to_atnum)),
+            error='optional.core.anchor expects a valid atomic number (int) or symbol (string)'
         ),
 
     Optional_('subset', default=None):
@@ -445,6 +455,22 @@ ligand_schema: Schema = Schema({
     'dirname':
         And(str, error='optional.ligand.dirname expects a string'),
 
+    Optional_('anchor', default=None):
+        Or(
+            None,
+            And(str, Use(lambda n: (n,))),
+            And(
+                abc.Collection,
+                lambda n: all(isinstance(i, str) for i in n),
+                lambda n: len(n) == len(set(n)),
+                Use(to_tuple),
+                error='optional.ligand.anchor expects a list of unique SMILES strings'
+            ),
+            error=('optional.ligand.anchor expects None (NoneType), a SMILES string, '
+                   'or a list of unique SMILES string')
+        ),
+
+    # Alias for `optional.ligand.anchor`
     Optional_('functional_groups', default=None):
         Or(
             None,
@@ -913,6 +939,16 @@ multi_ligand_schema: Schema = Schema({
             Use(tuple)
         ),
 
+    Optional_('anchor', default=None):
+        Or(
+            None,
+            And(abc.Collection,
+                lambda n: not isinstance(n, str),
+                lambda n: len(set(n)) == len(n),
+                Use(lambda n: to_tuple(n, func=to_atnum)))
+        ),
+
+    # Alias for `optional.qd.multi_ligand.anchor`
     Optional_('dummy', default=None):
         Or(
             None,

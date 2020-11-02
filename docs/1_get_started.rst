@@ -67,14 +67,14 @@ Verbose default Settings
 
         core:
             dirname: core
-            dummy: Cl
+            anchor: Cl
             subset: null
 
         ligand:
             dirname: ligand
             optimize: True
             split: True
-            functional_groups: null
+            anchor: null
             cosmo-rs: False
 
         qd:
@@ -112,13 +112,13 @@ Maximum verbose default Settings
 
         core:
             dirname: core
-            dummy: Cl
+            anchor: Cl
             subset: null
 
         ligand:
             dirname: ligand
             split: True
-            functional_groups: null
+            anchor: null
             cosmo-rs: False
             optimize:
                 use_ff: False

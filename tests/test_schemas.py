@@ -121,7 +121,7 @@ def test_ligand_schema() -> None:
     lig_dict = {'dirname': '.'}
     ref = {
         'dirname': '.',
-        'functional_groups': None,
+        'anchor': None,
         'optimize': {'job1': None},
         'split': True,
         'cosmo-rs': False,
@@ -147,13 +147,13 @@ def test_ligand_schema() -> None:
     lig_dict['cosmo-rs'] = True
     assertion.eq(ligand_schema.validate(lig_dict)['cosmo-rs'], {'job1': 'AMSJob'})
 
-    lig_dict['functional_groups'] = 1  # Exception: incorrect type
+    lig_dict['anchor'] = 1  # Exception: incorrect type
     assertion.assert_(ligand_schema.validate, lig_dict, exception=SchemaError)
-    lig_dict['functional_groups'] = 'CO'
-    assertion.eq(ligand_schema.validate(lig_dict)['functional_groups'], ('CO',))
-    lig_dict['functional_groups'] = ['CO']
-    assertion.eq(ligand_schema.validate(lig_dict)['functional_groups'], ('CO',))
-    lig_dict['functional_groups'] = ['CO', 'CO']  # Exception: duplicate elements
+    lig_dict['anchor'] = 'CO'
+    assertion.eq(ligand_schema.validate(lig_dict)['anchor'], ('CO',))
+    lig_dict['anchor'] = ['CO']
+    assertion.eq(ligand_schema.validate(lig_dict)['anchor'], ('CO',))
+    lig_dict['anchor'] = ['CO', 'CO']  # Exception: duplicate elements
     assertion.assert_(ligand_schema.validate, lig_dict, exception=SchemaError)
 
 
@@ -162,21 +162,21 @@ def test_core_schema() -> None:
     core_dict = {'dirname': '.'}
     ref = {
         'dirname': '.',
-        'dummy': 17,
+        'anchor': 17,
         'allignment': 'sphere',
         'subset': None
     }
 
     assertion.eq(core_schema.validate(core_dict), ref)
 
-    core_dict['dummy'] = 1.1  # Exception: incorrect value
+    core_dict['anchor'] = 1.1  # Exception: incorrect value
     assertion.assert_(core_schema.validate, core_dict, exception=SchemaError)
-    core_dict['dummy'] = 'H'
-    assertion.eq(core_schema.validate(core_dict)['dummy'], 1)
-    core_dict['dummy'] = 1
-    assertion.eq(core_schema.validate(core_dict)['dummy'], 1)
-    core_dict['dummy'] = 1.0
-    assertion.eq(core_schema.validate(core_dict)['dummy'], 1)
+    core_dict['anchor'] = 'H'
+    assertion.eq(core_schema.validate(core_dict)['anchor'], 1)
+    core_dict['anchor'] = 1
+    assertion.eq(core_schema.validate(core_dict)['anchor'], 1)
+    core_dict['anchor'] = 1.0
+    assertion.eq(core_schema.validate(core_dict)['anchor'], 1)
 
     core_dict['allignment'] = 1.1  # Exception: incorrect type
     assertion.assert_(core_schema.validate, core_dict, exception=SchemaError)

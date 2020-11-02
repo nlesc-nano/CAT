@@ -51,17 +51,21 @@ __all__ = ['validate_input']
 def _validate_multi_lig(s: Settings) -> None:
     """Check that one (and only one!) of ``'f'`` and ``'dummy'`` is specified."""
     f = s.optional.qd.multi_ligand.f
-    dummy = s.optional.qd.multi_ligand.dummy
 
-    if f is dummy is None:
-        raise ValueError("'.multi_ligand.f' and '.multi_ligand.dummy' cannot be "
+    anchor = s.optional.qd.multi_ligand.anchor
+    if anchor is None:
+        anchor = s.optional.qd.multi_ligand.dummy
+    del s.optional.qd.multi_ligand.dummy
+
+    if f is anchor is None:
+        raise ValueError("'.multi_ligand.f' and '.multi_ligand.anchor' cannot be "
                          "both unspecified or set to 'None'")
-    elif None not in (f, dummy):
-        raise ValueError("Only one of '.multi_ligand.f' and '.multi_ligand.dummy' "
+    elif None not in (f, anchor):
+        raise ValueError("Only one of '.multi_ligand.f' and '.multi_ligand.anchor' "
                          "should be specified")
 
-    if dummy is not None:
-        assert len(dummy) == len(s.optional.qd.multi_ligand.ligands)
+    if anchor is not None:
+        assert len(anchor) == len(s.optional.qd.multi_ligand.ligands)
     else:
         assert len(f) == len(s.optional.qd.multi_ligand.ligands) - 1
 
@@ -97,6 +101,7 @@ def validate_input(s: Settings) -> None:
     # Validate some of the more complex optionala rguments
     if s.optional.database.mongodb:
         s.optional.database.mongodb = mongodb_schema.validate(s.optional.database.mongodb)
+
     if s.optional.core.subset:
         s.optional.core.subset = subset_schema.validate(s.optional.core.subset)
         if 'p' in s.optional.core.subset:
@@ -105,6 +110,11 @@ def validate_input(s: Settings) -> None:
             logger.warn("The 'subset.p' parameter is deprecated; see 'subset.weight'")
             p = s.optional.core.subset.pop('p')
             s.optional.core.subset.weight = lambda x: -(x**p)
+    if s.optional.core.anchor is not None:
+        s.optional.core.anchor = 17
+    elif s.optional.core.dummy is not None:
+        s.optional.core.anchor = s.optional.core.dummy
+    del s.optional.core.dummy
 
     if s.optional.ligand.optimize:
         s.optional.ligand.optimize = ligand_opt_schema.validate(s.optional.ligand.optimize)
@@ -143,8 +153,14 @@ def validate_input(s: Settings) -> None:
         s.optional.database.db = False
 
     # Create RDKit molecules representing functional groups
-    func_groups, split = s.optional.ligand.functional_groups, s.optional.ligand.split
-    if not func_groups:
-        s.optional.ligand.functional_groups = get_functional_groups(None, split)
+    if s.optional.ligand.anchor is not None:
+        func_groups = s.optional.ligand.anchor
     else:
-        s.optional.ligand.functional_groups = get_functional_groups(func_groups)
+        func_groups = s.optional.ligand.functional_groups
+    del s.optional.ligand.functional_groups
+
+    split = s.optional.ligand.split
+    if func_groups is None:
+        s.optional.ligand.anchor = get_functional_groups(None, split)
+    else:
+        s.optional.ligand.anchor = get_functional_groups(func_groups)
