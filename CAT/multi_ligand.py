@@ -90,15 +90,13 @@ def _multi_lig_anchor(qd_series, ligands, path, anchor, allignment) -> np.ndarra
         qd = qd.copy()
 
         for j, (ligand, atnum) in enumerate(zip(ligands, anchor)):
+            qd.set_atoms_id()
             try:
                 atoms = [at for at in qd if at.atnum == atnum]
                 assert atoms
             except AssertionError as ex:
                 raise MoleculeError(f'Failed to identify {to_symbol(atnum)!r} in '
                                     f'{qd.get_formula()!r}') from ex
-            else:
-                for at in atoms:
-                    qd.delete_atom(at)
 
             coords = Molecule.as_array(None, atom_subset=atoms)
             qd.properties.dummies = np.array(coords, ndmin=2, dtype=float)
@@ -106,6 +104,9 @@ def _multi_lig_anchor(qd_series, ligands, path, anchor, allignment) -> np.ndarra
                               allignment=allignment,
                               idx_subset=qd.properties.indices)
             ret[j, i] = qd
+            for at in reversed(atoms):
+                qd.delete_atom(qd[at.id])
+            qd.unset_atoms_id()
     return ret
 
 

@@ -241,7 +241,7 @@ def ligand_to_qd(core: Molecule, ligand: Molecule, path: str,
         lig_name = ligand.properties.name
         return f'{core_name}__{anchor}_{lig_name}'
 
-    idx_subset = idx_subset if idx_subset is not None else ...
+    idx_subset_ = idx_subset if idx_subset is not None else ...
 
     # Define vectors and indices used for rotation and translation the ligands
     vec1 = np.array([-1, 0, 0], dtype=float)  # All ligands are already alligned along the X-axis
@@ -253,8 +253,11 @@ def ligand_to_qd(core: Molecule, ligand: Molecule, path: str,
         vec2 = np.array(core.get_center_of_mass()) - sanitize_dim_2(core.properties.dummies)
         vec2 /= np.linalg.norm(vec2, axis=1)[..., None]
     elif allignment == 'surface':
-        vec2 = -get_surface_vec(np.array(core)[idx_subset],
-                                core.as_array(core.properties.dummies))
+        if isinstance(core.properties.dummies, np.ndarray):
+            anchor = core.properties.dummies
+        else:
+            anchor = core.as_array(core.properties.dummies)
+        vec2 = -get_surface_vec(np.array(core)[idx_subset_], anchor)
     else:
         raise ValueError(repr(allignment))
 
