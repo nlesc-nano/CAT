@@ -63,7 +63,7 @@ Default Settings
         core:
             dirname: core
             anchor: Cl
-            allignment: sphere
+            allignment: surface
             subset: null
 
         ligand:
@@ -237,7 +237,7 @@ Core
             core:
                 dirname: core
                 anchor: Cl
-                allignment: sphere
+                allignment: surface
                 subset: null
 
 |
@@ -270,17 +270,17 @@ Core
     .. attribute:: optional.core.allignment
 
         :Parameter:     * **Type** - :class:`str`
-                        * **Default value** – ``"sphere"``
+                        * **Default value** – ``"surface"``
 
         How the to-be attached ligands should be alligned with the core.
 
         Has two allowed values:
 
-        * ``"sphere"``: Define the core vectors as those drawn from the core anchor
-          atoms to the cores center.
         * ``"surface"``: Define the core vectors as those orthogonal to the cores
           surface.
           The surface is herein defined by a convex hull constructed from the core.
+        * ``"sphere"``: Define the core vectors as those drawn from the core anchor
+          atoms to the cores center.
 
         Note that for a spherical core both approaches are equivalent.
 

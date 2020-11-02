@@ -305,7 +305,7 @@ core_schema: Schema = Schema({
     Optional_('subset', default=None):
         Or(None, dict, error="optional.core.subset epected 'None' or a dictionary"),
 
-    Optional_('allignment', default='sphere'):
+    Optional_('allignment', default='surface'):
         And(str, lambda n: n.lower() in {'sphere', 'surface'},
             Use(str.lower), error="optional.core.allignment expected 'sphere' or 'surface'")
 })

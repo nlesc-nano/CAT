@@ -11,6 +11,22 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 * WiP: Added an option the import pre-built quantum dots.
 
 
+0.9.11
+******
+* Changed the default ``optional.core.allignment`` option from ``"sphere"`` to ``"surface"``.
+
+
+0.9.10
+******
+* Added the new ``optional.core.anchor`` and ``optional.ligand.functional_groups`` options,
+  which are respectively aliases for the old ``optional.core.dummy`` and
+  ``optional.ligand.functional_groups`` options.
+* Added a new H3O+ .coskf file.
+* Added a new template for LogP calculations.
+* Enabled tests for Windows.
+* Fixed a recent readthedocs failure.
+
+
 0.9.9
 *****
 * Improve the conformations of ringed systems;
