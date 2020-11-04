@@ -34,7 +34,7 @@ def test_validate_input() -> None:
 
     ref = Settings()
     ref.core.dirname = join(PATH, 'core')
-    ref.core.anchor = 17
+    ref.core.anchor = 35
     ref.core.allignment = 'surface'
     ref.core.subset = None
 
