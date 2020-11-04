@@ -112,9 +112,11 @@ def validate_input(s: Settings) -> None:
             p = s.optional.core.subset.pop('p')
             s.optional.core.subset.weight = lambda x: -(x**p)
     if s.optional.core.anchor is not None:
-        s.optional.core.anchor = 17
+        pass
     elif s.optional.core.dummy is not None:
         s.optional.core.anchor = s.optional.core.dummy
+    else:
+        s.optional.core.anchor = 17
     del s.optional.core.dummy
 
     if s.optional.ligand.optimize:

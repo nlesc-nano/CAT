@@ -19,7 +19,7 @@ optional:
 
     core:
         dirname: core
-        dummy: Cl
+        dummy: Br
 
     ligand:
         dirname: ligand
