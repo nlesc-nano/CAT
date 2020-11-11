@@ -64,6 +64,7 @@ import numpy as np
 from schema import Or, And, Use, Schema
 from schema import Optional as Optional_
 
+from rdkit.Chem import Mol
 from scm.plams import CRSJob, Settings
 from scm.plams.core.basejob import Job
 
@@ -80,6 +81,11 @@ from scm.plams.interfaces.thirdparty.orca import ORCAJob
 from scm.plams.interfaces.thirdparty.dirac import DiracJob
 from scm.plams.interfaces.thirdparty.gamess import GamessJob
 from scm.plams.interfaces.thirdparty.dftbplus import DFTBPlusJob
+
+try:
+    from dataCAT import Database
+except ImportError:
+    Database = None
 
 from .str_to_func import str_to_func
 from ..utils import get_template, validate_path, validate_core_atom, check_sys_var
@@ -445,7 +451,12 @@ database_schema: Schema = Schema({
                 error=f'allowed values for optional.database.mol_format are: {repr(FORMAT_NAMES2)}'
             ),
             error='optional.database.mol_format expects a boolean, string or list of unique strings'
-        )
+        ),
+
+    Optional_('db'): Or(
+        Database, None,
+        error='optional.database.db expects None or a dataCAT.Database instance'
+    )
 })
 
 
@@ -459,6 +470,7 @@ ligand_schema: Schema = Schema({
         Or(
             None,
             And(str, Use(lambda n: (n,))),
+            And(tuple, lambda tup: all(isinstance(i, Mol) for i in tup)),
             And(
                 abc.Collection,
                 lambda n: all(isinstance(i, str) for i in n),
@@ -466,7 +478,7 @@ ligand_schema: Schema = Schema({
                 Use(to_tuple),
                 error='optional.ligand.anchor expects a list of unique SMILES strings'
             ),
-            error=('optional.ligand.anchor expects None (NoneType), a SMILES string, '
+            error=('optional.ligand.anchor expects None, a SMILES string, '
                    'or a list of unique SMILES string')
         ),
 
@@ -502,6 +514,13 @@ ligand_schema: Schema = Schema({
         And(bool, error='optional.ligand.split expects a boolean'),
 
     Optional_('cosmo-rs', default=False):  # Settings specific to ligand COSMO-RS calculations
+        Or(
+            dict,
+            And(bool, Use(lambda n: {'job1': 'AMSJob'} if n else False)),
+            error='optional.ligand.cosmo-rs expects a boolean or dictionary'
+        ),
+
+    Optional_('crs'):  # Settings specific to ligand COSMO-RS calculations
         Or(
             dict,
             And(bool, Use(lambda n: {'job1': 'AMSJob'} if n else False)),
@@ -596,7 +615,7 @@ ligand_opt_schema: Schema = Schema({
 
     # The Job type and settings for the conformation search
     Optional_('job1', default=None): None,
-    Optional_('s1', default=None): dict,
+    Optional_('s1', default=None): Or(None, dict),
 
     # The Job type for the final geometry optimization
     Optional_('job2', default=None):

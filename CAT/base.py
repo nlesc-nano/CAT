@@ -151,17 +151,17 @@ def prep_input(arg: Settings) -> Tuple[SettingsDataFrame, SettingsDataFrame, Set
     validate_input(arg)
 
     # Read the input ligands and cores
-    lig_list = read_mol(arg.input_ligands)
-    core_list = read_mol(arg.input_cores)
-    qd_list = read_mol(arg.input_qd)
-    del arg.input_ligands
-    del arg.input_cores
-    del arg.input_qd
+    lig_list = read_mol(arg.get('input_ligands'))
+    core_list = read_mol(arg.get('input_cores'))
+    qd_list = read_mol(arg.get('input_qd'))
 
-    is_qd = True if qd_list else False
+    is_qd = True if qd_list is not None else False
 
     # Raises an error if lig_list or core_list is empty
-    if not is_qd:
+    if is_qd:
+        if not qd_list:
+            raise MoleculeError('No valid input quantum dots were found, aborting run')
+    else:
         if not lig_list:
             raise MoleculeError('No valid input ligands were found, aborting run')
         elif not core_list:

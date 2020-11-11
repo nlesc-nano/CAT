@@ -15,6 +15,7 @@ API
 from os import mkdir
 from os.path import (join, isdir)
 
+from rdkit.Chem import Mol
 from scm.plams import Settings
 
 from .validation_schemas import (
@@ -123,7 +124,10 @@ def validate_input(s: Settings) -> None:
         s.optional.ligand.optimize = ligand_opt_schema.validate(s.optional.ligand.optimize)
     if s.optional.ligand.cdft:
         s.optional.ligand.cdft = cdft_schema.validate(s.optional.ligand.cdft)
-    if s.optional.ligand['cosmo-rs']:
+
+    if s.optional.get('crs') is not None:
+        s.optional.ligand.crs = crs_schema.validate(s.optional.crs)
+    elif s.optional.ligand['cosmo-rs']:
         crs = s.optional.ligand.pop('cosmo-rs')
         s.optional.ligand.crs = crs_schema.validate(crs)
 
@@ -149,11 +153,12 @@ def validate_input(s: Settings) -> None:
         validate_mol(s.input_qd, 'input_qd', join(s.path, 'qd'))
 
     # Create a dataCAT.Database instance
-    if DATA_CAT:
-        db_path = s.optional.database.dirname
-        s.optional.database.db = Database(path=db_path, **s.optional.database.mongodb)
-    else:
-        s.optional.database.db = False
+    if s.optional.database.get('db') is None:
+        if DATA_CAT:
+            db_path = s.optional.database.dirname
+            s.optional.database.db = Database(path=db_path, **s.optional.database.mongodb)
+        else:
+            s.optional.database.db = False
 
     # Create RDKit molecules representing functional groups
     if s.optional.ligand.anchor is not None:
@@ -165,5 +170,5 @@ def validate_input(s: Settings) -> None:
     split = s.optional.ligand.split
     if func_groups is None:
         s.optional.ligand.anchor = get_functional_groups(None, split)
-    else:
+    elif not isinstance(func_groups[0], Mol):
         s.optional.ligand.anchor = get_functional_groups(func_groups)
