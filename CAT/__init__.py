@@ -7,36 +7,28 @@ _mpl_logger = logging.getLogger('matplotlib')
 _mpl_logger.setLevel(logging.INFO)
 del _mpl_logger, logging
 
-from nanoutils import VersionInfo
-
-from .__version__ import __version__
-
-from .logger import logger
-
-from .jobs import (
-    job_single_point, job_geometry_opt, job_freq
-)
-
-from .thermo_chem import (
-    get_thermo, get_entropy
-)
-
-from .attachment import (
-    init_qd_opt, init_ligand_opt, init_qd_construction, init_ligand_anchoring
-)
-
-from .data_handling import (
-    read_mol, set_mol_prop
-)
-
-from .utils import get_template
-
-__version__ = __version__
+from .__version__ import __version__ as __version__
 __author__ = "Bas van Beek"
 __email__ = 'b.f.van.beek@vu.nl'
 
+from nanoutils import VersionInfo
 version_info = VersionInfo.from_str(__version__)
 del VersionInfo
+
+from .logger import logger
+from .jobs import (
+    job_single_point, job_geometry_opt, job_freq
+)
+from .thermo_chem import (
+    get_thermo, get_entropy
+)
+from .attachment import (
+    init_qd_opt, init_ligand_opt, init_qd_construction, init_ligand_anchoring
+)
+from .data_handling import (
+    read_mol, set_mol_prop
+)
+from .utils import get_template
 
 __all__ = [
     'logger',
