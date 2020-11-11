@@ -3,7 +3,7 @@
 import os
 from os.path import join
 from pathlib import Path
-from shutil import rmtree
+from itertools import chain
 
 import yaml
 from unittest import mock
@@ -31,6 +31,9 @@ def test_validate_input() -> None:
         s = Settings(yaml.load(f, Loader=yaml.FullLoader))
     s.path = PATH
     validate_input(s)
+
+    s2 = s.copy()
+    validate_input(s2)
 
     ref = Settings()
     ref.core.dirname = join(PATH, 'core')
@@ -64,13 +67,10 @@ def test_validate_input() -> None:
 
     ref.forcefield = Settings()
 
-    func_groups = s.optional.ligand.pop('anchor')
+    func_groups1 = s.optional.ligand.pop('anchor')
+    func_groups2 = s2.optional.ligand.pop('anchor')
 
-    try:
-        for mol in func_groups:
-            assertion.isinstance(mol, Chem.Mol)
-        assertion.eq(s.optional, ref)
-    finally:
-        rmtree(join(PATH, 'ligand'))
-        rmtree(join(PATH, 'qd'))
-        rmtree(join(PATH, 'database'))
+    for mol in chain(func_groups1, func_groups2):
+        assertion.isinstance(mol, Chem.Mol)
+    assertion.eq(s.optional, ref)
+    assertion.eq(s2.optional, ref)

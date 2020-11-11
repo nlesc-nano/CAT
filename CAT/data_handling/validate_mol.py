@@ -151,6 +151,8 @@ def validate_mol(args: Sequence[Union[Any, Settings]],
             mol = dict_
             mol_dict = Settings({'path': _path, 'is_core': is_core, 'is_qd': is_qd})
         else:  # Optional arguments have been provided: parse and validate them
+            if dict_.get('parsed'):
+                continue
             mol, mol_dict = next(iter(dict_.items()))
             mol_dict.setdefault('is_core', is_core)
             mol_dict.setdefault('is_qd', is_qd)
@@ -160,6 +162,7 @@ def validate_mol(args: Sequence[Union[Any, Settings]],
         if isinstance(mol, str) and not isfile(mol):
             mol = join(mol_dict.path, mol)
         mol_dict.mol = mol
+        mol_dict.parsed = True
 
         _parse_name_type(mol_dict)
         args[i] = mol_dict

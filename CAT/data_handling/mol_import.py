@@ -42,7 +42,7 @@ import os
 import itertools
 from types import MappingProxyType
 from string import ascii_letters
-from typing import Dict, Iterable, List, Sequence, Optional, Mapping, Callable
+from typing import Dict, Iterable, List, Sequence, Optional, Mapping, Callable, overload
 
 import numpy as np
 
@@ -61,7 +61,13 @@ _logger = RDLogger.logger()
 _logger.setLevel(RDLogger.CRITICAL)
 
 
+@overload
 def read_mol(input_mol: Iterable[Settings]) -> List[Molecule]:
+    ...
+@overload  # noqa: E302
+def read_mol(input_mol: None) -> None:
+    ...
+def read_mol(input_mol):  # noqa: E302
     """Checks the filetypes of the input molecules.
 
     Sets the molecules' properties and returns a list of plams molecules.
@@ -77,6 +83,9 @@ def read_mol(input_mol: Iterable[Settings]) -> List[Molecule]:
         A list of plams Molecules.
 
     """
+    if input_mol is None:
+        return None
+
     # Create a list of PLAMS molecules
     mol_list = []
     append = mol_list.append

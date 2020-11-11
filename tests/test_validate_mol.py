@@ -83,13 +83,15 @@ def test_validate_mol() -> None:
          'is_qd': False,
          'mol': join(PATH, 'Methanol.xyz'),
          'type': 'xyz',
-         'name': 'Methanol'},
+         'name': 'Methanol',
+         'parsed': True},
         {'path': PATH,
          'is_core': True,
          'is_qd': False,
          'mol': join(PATH, 'Ethylene.xyz'),
          'type': 'xyz',
-         'name': 'Ethylene'}
+         'name': 'Ethylene',
+         'parsed': True}
     ]
 
     ref2 = [
@@ -99,14 +101,16 @@ def test_validate_mol() -> None:
          'path': PATH,
          'mol': join(PATH, 'Acetate.xyz'),
          'type': 'xyz',
-         'name': 'Acetate'},
+         'name': 'Acetate',
+         'parsed': True},
         {'guess_bonds': False,
          'is_core': False,
          'is_qd': False,
          'path': PATH,
          'mol': join(PATH, 'Methanol_rotate.xyz'),
          'type': 'xyz',
-         'name': 'Methanol_rotate'}
+         'name': 'Methanol_rotate',
+         'parsed': True}
     ]
 
     validate_mol(args1, 'input_cores', PATH)
