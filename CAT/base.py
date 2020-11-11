@@ -148,7 +148,7 @@ def prep_input(arg: Settings) -> Tuple[SettingsDataFrame, SettingsDataFrame, Set
 
     """
     # Interpret arguments
-    validate_input(arg)
+    validate_input(arg, validate_only=False)
 
     # Read the input ligands and cores
     lig_list = read_mol(arg.get('input_ligands'))

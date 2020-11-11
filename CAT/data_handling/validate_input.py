@@ -12,6 +12,7 @@ API
 
 """
 
+import sys
 from os import mkdir
 from os.path import (join, isdir)
 
@@ -36,7 +37,7 @@ from .validation_schemas import (
 
 from .validate_ff import validate_ff, update_ff_jobs
 from .validate_mol import validate_mol
-from ..utils import validate_path
+from ..utils import validate_path, SetEnviron
 from ..logger import logger
 from ..attachment.ligand_anchoring import get_functional_groups
 
@@ -45,6 +46,11 @@ try:
     DATA_CAT = True
 except ImportError:
     DATA_CAT = False
+
+if sys.version_info >= (3, 7):
+    from contextlib import nullcontext
+else:
+    from contextlib2 import nullcontext
 
 __all__ = ['validate_input']
 
@@ -72,7 +78,7 @@ def _validate_multi_lig(s: Settings) -> None:
         assert len(f) == len(s.optional.qd.multi_ligand.ligands) - 1
 
 
-def validate_input(s: Settings) -> None:
+def validate_input(s: Settings, validate_only: bool = True) -> None:
     """Initialize the input-validation procedure.
 
     performs an inplace update of **s**.
@@ -81,24 +87,33 @@ def validate_input(s: Settings) -> None:
     ----------
     s : |plams.Settings|_
         A Settings instance with to-be validated CAT input settings.
+    validate_only : bool
+        Perform only validation.
 
     """
-    # Validate the path
-    s.path = validate_path(s.path)
+    if not validate_only:
+        # Validate the path
+        s.path = validate_path(s.path)
 
-    # Set the various working directories
-    dirnames = ('database', 'ligand', 'core', 'qd')
-    for key in dirnames:
-        value = join(s.path, key)
-        s.optional[key].dirname = value
-        if not isdir(value):
-            mkdir(value)
+        # Set the various working directories
+        dirnames = ('database', 'ligand', 'core', 'qd')
+        for key in dirnames:
+            value = join(s.path, key)
+            s.optional[key].dirname = value
+            if not isdir(value):
+                mkdir(value)
 
     # Validate optional argument
+    if not validate_only:
+        context = nullcontext()
+    else:
+        context = SetEnviron(ADFBIN='a', ADFHOME='2019', ADFRESOURCES='b', SCMLICENSE='c')
+
     s.optional.database = database_schema.validate(s.optional.database)
-    s.optional.ligand = ligand_schema.validate(s.optional.ligand)
-    s.optional.core = core_schema.validate(s.optional.core)
-    s.optional.qd = qd_schema.validate(s.optional.qd)
+    with context:
+        s.optional.ligand = ligand_schema.validate(s.optional.ligand)
+        s.optional.core = core_schema.validate(s.optional.core)
+        s.optional.qd = qd_schema.validate(s.optional.qd)
 
     # Validate some of the more complex optionala rguments
     if s.optional.database.mongodb:
@@ -153,7 +168,7 @@ def validate_input(s: Settings) -> None:
         validate_mol(s.input_qd, 'input_qd', join(s.path, 'qd'))
 
     # Create a dataCAT.Database instance
-    if s.optional.database.get('db') is None:
+    if s.optional.database.get('db') is None and not validate_only:
         if DATA_CAT:
             db_path = s.optional.database.dirname
             s.optional.database.db = Database(path=db_path, **s.optional.database.mongodb)

@@ -24,14 +24,14 @@ import os
 import yaml
 import threading
 import pkg_resources as pkg
-from types import MappingProxyType
+from types import MappingProxyType, TracebackType
 from shutil import rmtree
 from os.path import join, isdir, isfile, exists
 from itertools import cycle, chain, repeat
 from contextlib import redirect_stdout
 from collections import abc
 from typing import (
-    Iterable, Union, TypeVar, Mapping, Type, Generator, Iterator,
+    Iterable, Union, TypeVar, Mapping, Type, Generator, Iterator, Optional,
     Any, NoReturn, Dict, overload
 )
 
@@ -453,3 +453,43 @@ def _parse_value_error(ex: Exception, k: Any) -> NoReturn:
         raise ValueError("'k' must be larger than or equal to 1; "
                          f"observed value: {k!r}") from ex
     raise ex
+
+
+class SetEnviron:
+    """A reentrant, re-usable context manager for temporarily setting environment variables."""
+
+    __slots__ = ('__weakref__', '_kwargs', '_kwargs_old')
+    _kwargs: Mapping[str, str]
+    _kwargs_old: Mapping[str, Optional[str]]
+
+    def __init__(self, **kwargs: str) -> None:
+        r"""Initialize the context manager.
+
+        Parameters
+        ----------
+        \**kwargs : :class:`str`
+            The to-be updated parameters.
+
+        """
+        self._kwargs = MappingProxyType(kwargs)
+        self._kwargs_old = MappingProxyType({
+            k: os.environ.get(k) for k in self._kwargs
+        })
+
+    def __enter__(self) -> None:
+        """Enter the context manager."""
+        os.environ.update(self._kwargs)
+
+    def __exit__(
+        self,
+        __exc_type: Optional[Type[BaseException]],
+        __exc_value: Optional[BaseException],
+        __traceback: Optional[TracebackType],
+    ) -> None:
+        """Exit the context manager."""
+        for k, v in self._kwargs_old.items():
+            if v is None:
+                # Use `pop` instead of `del` to ensure thread-safety
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
