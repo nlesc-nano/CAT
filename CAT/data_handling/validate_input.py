@@ -120,75 +120,75 @@ def validate_input(s: Settings, validate_only: bool = True) -> None:
         s.optional.core = core_schema.validate(s.optional.core)
         s.optional.qd = qd_schema.validate(s.optional.qd)
 
-    # Validate some of the more complex optionala rguments
-    if s.optional.database.mongodb:
-        s.optional.database.mongodb = mongodb_schema.validate(s.optional.database.mongodb)
+        # Validate some of the more complex optionala rguments
+        if s.optional.database.mongodb:
+            s.optional.database.mongodb = mongodb_schema.validate(s.optional.database.mongodb)
 
-    if s.optional.core.subset:
-        s.optional.core.subset = subset_schema.validate(s.optional.core.subset)
-        if 'p' in s.optional.core.subset:
-            if 'weight' in s.optional.core.subset:
-                raise KeyError("'p' and 'weight' cannot be simultaneously specified")
-            logger.warn("The 'subset.p' parameter is deprecated; see 'subset.weight'")
-            p = s.optional.core.subset.pop('p')
-            s.optional.core.subset.weight = lambda x: -(x**p)
-    if s.optional.core.anchor is not None:
-        pass
-    elif s.optional.core.dummy is not None:
-        s.optional.core.anchor = s.optional.core.dummy
-    else:
-        s.optional.core.anchor = 17
-    del s.optional.core.dummy
-
-    if s.optional.ligand.optimize:
-        s.optional.ligand.optimize = ligand_opt_schema.validate(s.optional.ligand.optimize)
-    if s.optional.ligand.cdft:
-        s.optional.ligand.cdft = cdft_schema.validate(s.optional.ligand.cdft)
-
-    if s.optional.get('crs') is not None:
-        s.optional.ligand.crs = crs_schema.validate(s.optional.crs)
-    elif s.optional.ligand['cosmo-rs']:
-        crs = s.optional.ligand.pop('cosmo-rs')
-        s.optional.ligand.crs = crs_schema.validate(crs)
-
-    if s.optional.qd.optimize:
-        s.optional.qd.optimize = qd_opt_schema.validate(s.optional.qd.optimize)
-    if s.optional.qd.dissociate:
-        s.optional.qd.dissociate = bde_schema.validate(s.optional.qd.dissociate)
-    if s.optional.qd.activation_strain:
-        s.optional.qd.activation_strain = asa_schema.validate(s.optional.qd.activation_strain)
-    if s.optional.qd.multi_ligand:
-        s.optional.qd.multi_ligand = multi_ligand_schema.validate(s.optional.qd.multi_ligand)
-        _validate_multi_lig(s)
-
-    # Create forcefield Job Settings
-    if s.optional.forcefield:
-        s.optional.forcefield = validate_ff(s.optional.forcefield)
-        update_ff_jobs(s)
-
-    # Validate the input cores and ligands
-    validate_mol(s.input_cores, 'input_cores', join(s.path, 'core'))
-    validate_mol(s.input_ligands, 'input_ligands', join(s.path, 'ligand'))
-    if 'input_qd' in s:
-        validate_mol(s.input_qd, 'input_qd', join(s.path, 'qd'))
-
-    # Create a dataCAT.Database instance
-    if s.optional.database.get('db') is None and not validate_only:
-        if DATA_CAT:
-            db_path = s.optional.database.dirname
-            s.optional.database.db = Database(path=db_path, **s.optional.database.mongodb)
+        if s.optional.core.subset:
+            s.optional.core.subset = subset_schema.validate(s.optional.core.subset)
+            if 'p' in s.optional.core.subset:
+                if 'weight' in s.optional.core.subset:
+                    raise KeyError("'p' and 'weight' cannot be simultaneously specified")
+                logger.warn("The 'subset.p' parameter is deprecated; see 'subset.weight'")
+                p = s.optional.core.subset.pop('p')
+                s.optional.core.subset.weight = lambda x: -(x**p)
+        if s.optional.core.anchor is not None:
+            pass
+        elif s.optional.core.dummy is not None:
+            s.optional.core.anchor = s.optional.core.dummy
         else:
-            s.optional.database.db = False
+            s.optional.core.anchor = 17
+        del s.optional.core.dummy
 
-    # Create RDKit molecules representing functional groups
-    if s.optional.ligand.anchor is not None:
-        func_groups = s.optional.ligand.anchor
-    else:
-        func_groups = s.optional.ligand.functional_groups
-    del s.optional.ligand.functional_groups
+        if s.optional.ligand.optimize:
+            s.optional.ligand.optimize = ligand_opt_schema.validate(s.optional.ligand.optimize)
+        if s.optional.ligand.cdft:
+            s.optional.ligand.cdft = cdft_schema.validate(s.optional.ligand.cdft)
 
-    split = s.optional.ligand.split
-    if func_groups is None:
-        s.optional.ligand.anchor = get_functional_groups(None, split)
-    elif not isinstance(func_groups[0], Mol):
-        s.optional.ligand.anchor = get_functional_groups(func_groups)
+        if s.optional.get('crs') is not None:
+            s.optional.ligand.crs = crs_schema.validate(s.optional.crs)
+        elif s.optional.ligand['cosmo-rs']:
+            crs = s.optional.ligand.pop('cosmo-rs')
+            s.optional.ligand.crs = crs_schema.validate(crs)
+
+        if s.optional.qd.optimize:
+            s.optional.qd.optimize = qd_opt_schema.validate(s.optional.qd.optimize)
+        if s.optional.qd.dissociate:
+            s.optional.qd.dissociate = bde_schema.validate(s.optional.qd.dissociate)
+        if s.optional.qd.activation_strain:
+            s.optional.qd.activation_strain = asa_schema.validate(s.optional.qd.activation_strain)
+        if s.optional.qd.multi_ligand:
+            s.optional.qd.multi_ligand = multi_ligand_schema.validate(s.optional.qd.multi_ligand)
+            _validate_multi_lig(s)
+
+        # Create forcefield Job Settings
+        if s.optional.forcefield:
+            s.optional.forcefield = validate_ff(s.optional.forcefield)
+            update_ff_jobs(s)
+
+        # Validate the input cores and ligands
+        validate_mol(s.input_cores, 'input_cores', join(s.path, 'core'), not validate_only)
+        validate_mol(s.input_ligands, 'input_ligands', join(s.path, 'ligand'), not validate_only)
+        if 'input_qd' in s:
+            validate_mol(s.input_qd, 'input_qd', join(s.path, 'qd'), not validate_only)
+
+        # Create a dataCAT.Database instance
+        if s.optional.database.get('db') is None and not validate_only:
+            if DATA_CAT:
+                db_path = s.optional.database.dirname
+                s.optional.database.db = Database(path=db_path, **s.optional.database.mongodb)
+            else:
+                s.optional.database.db = False
+
+        # Create RDKit molecules representing functional groups
+        if s.optional.ligand.anchor is not None:
+            func_groups = s.optional.ligand.anchor
+        else:
+            func_groups = s.optional.ligand.functional_groups
+        del s.optional.ligand.functional_groups
+
+        split = s.optional.ligand.split
+        if func_groups is None:
+            s.optional.ligand.anchor = get_functional_groups(None, split)
+        elif not isinstance(func_groups[0], Mol):
+            s.optional.ligand.anchor = get_functional_groups(func_groups)

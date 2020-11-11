@@ -26,7 +26,7 @@ from scm.plams import Settings, Molecule
 import scm.plams.interfaces.molecule.rdkit as molkit
 
 from .validation_schemas import mol_schema
-from ..utils import validate_path
+from ..utils import validate_path as validate_path_func
 
 __all__ = ['validate_mol', 'santize_smiles']
 
@@ -49,7 +49,8 @@ def santize_smiles(smiles: str) -> str:
 
 def validate_mol(args: Sequence[Union[Any, Settings]],
                  mol_type: str,
-                 path: Optional[str] = None) -> None:
+                 path: Optional[str] = None,
+                 validate_path: bool = True) -> None:
     r"""Validate the ``"input_ligands"``, ``"input_cores"`` and ``"input_qd"`` blocks in the input.
 
     Performs an inpalce update of **args**.
@@ -144,7 +145,10 @@ def validate_mol(args: Sequence[Union[Any, Settings]],
     # Validate arguments
     is_core = _check_core(mol_type)
     is_qd = _check_qd(mol_type)
-    _path = validate_path(path)
+    if validate_path:
+        _path = validate_path_func(path)
+    else:
+        _path = path
 
     for i, dict_ in enumerate(args):
         if not isinstance(dict_, dict):  # No optional arguments provided
