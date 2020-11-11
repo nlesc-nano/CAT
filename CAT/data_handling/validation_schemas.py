@@ -187,7 +187,7 @@ def str_to_job_type(key: str) -> type:
     elif _key in JOB_MAP_SCM:
         check_sys_var()
         return JOB_MAP_SCM[_key]
-    raise KeyError(f'No Job type alias available for {repr(_key)}')
+    raise KeyError(f'No Job type alias available for {_key!r}')
 
 
 T = TypeVar('T')
@@ -375,14 +375,14 @@ database_schema: Schema = Schema({
                 str,
                 lambda n: n in DB_NAMES,
                 Use(lambda n: (n,)),
-                error=f'allowed values for optional.database.read are: {repr(DB_NAMES)}'
+                error=f'allowed values for optional.database.read are: {DB_NAMES!r}'
             ),
             And(
                 abc.Collection,
                 lambda n: all(i in DB_NAMES for i in n),
                 lambda n: len(n) == len(set(n)),
                 Use(to_tuple),
-                error=f'allowed values for optional.database.read are: {repr(DB_NAMES)}'
+                error=f'allowed values for optional.database.read are: {DB_NAMES!r}'
             ),
             error='optional.database.read expects a boolean, string or list of unique strings'
         ),
@@ -395,14 +395,14 @@ database_schema: Schema = Schema({
                 str,
                 lambda n: n in DB_NAMES,
                 Use(lambda n: (n,)),
-                error=f'allowed values for optional.database.write are: {repr(DB_NAMES)}'
+                error=f'allowed values for optional.database.write are: {DB_NAMES!r}'
             ),
             And(
                 abc.Collection,
                 lambda n: all(i in DB_NAMES for i in n),
                 lambda n: len(n) == len(set(n)),
                 Use(to_tuple),
-                error=f'allowed values for optional.database.write are: {repr(DB_NAMES)}'
+                error=f'allowed values for optional.database.write are: {DB_NAMES!r}'
             ),
             error='optional.database.write expects a boolean, string or list of unique strings'
         ),
@@ -415,14 +415,14 @@ database_schema: Schema = Schema({
                 str,
                 lambda n: n in DB_NAMES,
                 Use(lambda n: (n,)),
-                error=f'allowed values for optional.database.overwrite are: {repr(DB_NAMES)}'
+                error=f'allowed values for optional.database.overwrite are: {DB_NAMES!r}'
             ),
             And(
                 abc.Collection,
                 lambda n: all(i in DB_NAMES for i in n),
                 lambda n: len(n) == len(set(n)),
                 Use(to_tuple),
-                error=f'allowed values for optional.database.overwrite are: {repr(DB_NAMES)}'
+                error=f'allowed values for optional.database.overwrite are: {DB_NAMES!r}'
             ),
             error='optional.database.overwrite expects a boolean, string or list of unique strings'
         ),
@@ -441,14 +441,14 @@ database_schema: Schema = Schema({
             And(
                 str,
                 lambda n: n in FORMAT_NAMES,
-                error=f'allowed values for optional.database.mol_format are: {repr(FORMAT_NAMES2)}'
+                error=f'allowed values for optional.database.mol_format are: {FORMAT_NAMES2!r}'
             ),
             And(
                 abc.Collection,
                 lambda n: all(i in FORMAT_NAMES for i in n),
                 lambda n: len(n) == len(set(n)),
                 Use(to_tuple),
-                error=f'allowed values for optional.database.mol_format are: {repr(FORMAT_NAMES2)}'
+                error=f'allowed values for optional.database.mol_format are: {FORMAT_NAMES2!r}'
             ),
             error='optional.database.mol_format expects a boolean, string or list of unique strings'
         ),
