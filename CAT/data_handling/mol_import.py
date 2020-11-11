@@ -62,10 +62,12 @@ _logger.setLevel(RDLogger.CRITICAL)
 
 
 @overload
-def read_mol(input_mol: Iterable[Settings]) -> List[Molecule]: ...
-@overload
-def read_mol(input_mol: None) -> None: ...
-def read_mol(input_mol):
+def read_mol(input_mol: Iterable[Settings]) -> List[Molecule]:
+    ...
+@overload  # noqa: E302
+def read_mol(input_mol: None) -> None:
+    ...
+def read_mol(input_mol):  # noqa: E302
     """Checks the filetypes of the input molecules.
 
     Sets the molecules' properties and returns a list of plams molecules.

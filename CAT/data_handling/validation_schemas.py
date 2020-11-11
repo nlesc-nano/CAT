@@ -453,10 +453,11 @@ database_schema: Schema = Schema({
             error='optional.database.mol_format expects a boolean, string or list of unique strings'
         ),
 
-    Optional_('db'): Or(
-        Database, None,
-        error='optional.database.db expects None or a dataCAT.Database instance'
-    )
+    Optional_('db'):
+        Or(
+            Database, None,
+            error='optional.database.db expects None or a dataCAT.Database instance'
+        ),
 })
 
 
