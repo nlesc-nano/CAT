@@ -91,17 +91,22 @@ def validate_input(s: Settings, validate_only: bool = True) -> None:
         Perform only validation.
 
     """
+    dirnames = ('database', 'ligand', 'core', 'qd')
     if not validate_only:
         # Validate the path
         s.path = validate_path(s.path)
 
         # Set the various working directories
-        dirnames = ('database', 'ligand', 'core', 'qd')
         for key in dirnames:
             value = join(s.path, key)
             s.optional[key].dirname = value
             if not isdir(value):
                 mkdir(value)
+    else:
+        if s.path is None:
+            s.path = '.'
+        for key in dirnames:
+            s.optional[key].dirname = join(s.path, key)
 
     # Validate optional argument
     if not validate_only:
