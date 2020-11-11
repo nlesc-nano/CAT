@@ -30,10 +30,10 @@ def test_validate_input() -> None:
     with open(join(PATH, 'input1.yaml'), 'r') as f:
         s = Settings(yaml.load(f, Loader=yaml.FullLoader))
     s.path = PATH
-    validate_input(s)
+    validate_input(s, validate_only=False)
 
     s2 = s.copy()
-    validate_input(s2)
+    validate_input(s2, validate_only=False)
 
     ref = Settings()
     ref.core.dirname = join(PATH, 'core')
@@ -74,3 +74,13 @@ def test_validate_input() -> None:
         assertion.isinstance(mol, Chem.Mol)
     assertion.eq(s.optional, ref)
     assertion.eq(s2.optional, ref)
+
+
+def test_validate_input2() -> None:
+    """Test :func:`CAT.data_handling.validate_input.validate_input`."""
+    with open(join(PATH, 'input1.yaml'), 'r') as f:
+        s = Settings(yaml.load(f, Loader=yaml.FullLoader))
+    validate_input(s, validate_only=True)
+
+    s2 = s.copy()
+    validate_input(s2, validate_only=True)
