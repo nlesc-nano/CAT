@@ -33,8 +33,8 @@ tests_require = [
 ]
 
 if sys.version_info[1] > 6:
-    docs_require.append('nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@devel')
-    docs_require.append('auto-FOX@git+https://github.com/nlesc-nano/auto-FOX@devel')
+    docs_require.append('nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@master')
+    docs_require.append('auto-FOX@git+https://github.com/nlesc-nano/auto-FOX@master')
 tests_require += docs_require
 
 setup(
