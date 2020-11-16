@@ -11,3 +11,5 @@ dependencies:
 
     - pip:
         - data-CAT@git+https://github.com/nlesc-nano/data-CAT@master
+        - nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@master
+
