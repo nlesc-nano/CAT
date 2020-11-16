@@ -12,4 +12,6 @@ dependencies:
     - pip:
         - data-CAT@git+https://github.com/nlesc-nano/data-CAT@master
         - nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@master
+        - plams@git+https://github.com/SCM-NV/PLAMS@master
+        - qmflows@git+https://github.com/SCM-NV/qmflows@master
 
