@@ -8,7 +8,10 @@ dependencies:
     - python=3.8
     - h5py
     - rdkit
-
+    - pandas
+    - numpy
+    - scipy
+    
     - pip:
         - data-CAT@git+https://github.com/nlesc-nano/data-CAT@master
         - nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@master
