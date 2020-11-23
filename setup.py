@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+import importlib
 
 from setuptools import setup
 
@@ -36,6 +37,17 @@ if sys.version_info[1] > 6:
     docs_require.append('nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@master')
     docs_require.append('auto-FOX@git+https://github.com/nlesc-nano/auto-FOX@master')
 tests_require += docs_require
+
+# Check if rdkit is manually installed (as it is not available via pypi)
+try:
+    importlib.import_module("rdkit")
+except ModuleNotFoundError as ex:
+    import warnings
+    exc = ImportWarning(
+        "'CAT' requires the 'rdkit' package: https://anaconda.org/conda-forge/rdkit"
+    )
+    exc.__cause__ = ex
+    warnings.warn(exc)
 
 setup(
     name='CAT',
