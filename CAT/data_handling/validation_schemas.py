@@ -255,6 +255,8 @@ mol_schema: Schema = Schema({
         And(val_index, lambda n: n.__index__() >= 0, Use(int),
             error=".row expects an integer larger than or equal to 0"),
 
+    Optional_('parsed'): bool,
+
     Optional_('indices'):
         Or(
             And(
