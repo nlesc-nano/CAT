@@ -133,6 +133,8 @@ bulkiness:
         thread_safe: [optional, database, thread_safe]
 
         path: [optional, qd, dirname]
+        d: [optional, qd, bulkiness, d]
+        h_lim: [optional, qd, bulkiness, h_lim]
 
 multi_ligand:
     description: multi-ligand attachment
