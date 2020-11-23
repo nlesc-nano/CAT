@@ -127,7 +127,7 @@ setup(
         'schema',
         'contextlib2>=0.6.0; python_version<"3.7"',
         'AssertionLib>=2.2.3',
-        'plams@git+https://github.com/SCM-NV/PLAMS@a5696ce62c09153a9fa67b2b03a750913e1d0924',
+        'plams@git+https://github.com/SCM-NV/PLAMS@master',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master',
     ],
     setup_requires=[
