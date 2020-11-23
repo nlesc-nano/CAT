@@ -555,7 +555,7 @@ class WorkFlow(AbstractDataClass):
         kwargs: Dict[str, Any] = {'name': name}
 
         # Raise a KeyError if a key cannot be found
-        with Settings.supress_missing():
+        with Settings.suppress_missing():
             try:  # Extract the correct template
                 template = cls._WORKFLOW_TEMPLATES[name]['template']
             except KeyError as ex:
