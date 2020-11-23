@@ -808,16 +808,41 @@ QD
 
     .. attribute:: optional.qd.bulkiness
 
-        :Parameter:     * **Type** - :class:`bool`
+        :Parameter:     * **Type** - :class:`bool` or :class:`dict`
                         * **Default value** – ``False``
 
         Calculate the :math:`V_{bulk}`, a ligand- and core-specific descriptor of a ligands' bulkiness.
+
+        Supplying a dictionary grants access to the two additional :attr:`~optional.qd.bulkiness.h_lim`
+        and :attr:`~optional.qd.bulkiness.d` sub-keys.
 
         .. math::
             :label: 5
 
             V(r_{i}, h_{i}; d, h_{lim}) =
             \sum_{i=1}^{n} e^{r_{i}} (\frac{2 r_{i}}{d} - 1)^{+} (1 - \frac{h_{i}}{h_{lim}})^{+}
+
+
+    .. attribute:: optional.qd.bulkiness.h_lim
+
+        :Parameter:     * **Type** - :class:`float` or :data:`None`
+                        * **Default value** – ``10.0``
+
+        Default value of the :math:`h_{lim}` parameter in :attr:`~optional.qd.bulkiness`.
+
+        Set to :data:`None` to disable the :math:`h_{lim}`-based cutoff.
+
+
+    .. attribute:: optional.qd.bulkiness.d
+
+        :Parameter:     * **Type** - :class:`float`, :data:`None` or ``"auto"``
+                        * **Default value** – ``"auto"``
+
+        Default value of the :math:`d` parameter in :attr:`~optional.qd.bulkiness`.
+
+        Set to ``"auto"`` to automatically infer this parameters value based on the mean
+        nearest-neighbor distance among the core anchor atoms.
+        Set to :data:`None` to disable the :math:`d`-based cutoff.
 
 
     .. attribute:: optional.qd.activation_strain

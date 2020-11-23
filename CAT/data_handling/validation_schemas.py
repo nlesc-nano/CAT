@@ -93,7 +93,7 @@ from ..mol_utils import to_atnum
 
 __all__ = ['mol_schema', 'core_schema', 'ligand_schema', 'qd_schema', 'database_schema',
            'mongodb_schema', 'bde_schema', 'ligand_opt_schema', 'qd_opt_schema', 'crs_schema',
-           'asa_schema', 'subset_schema']
+           'asa_schema', 'subset_schema', 'bulkiness_schema']
 
 
 def val_float(value: Any) -> bool:
@@ -559,7 +559,11 @@ qd_schema: Schema = Schema({
         ),
 
     Optional_('bulkiness', default=False):  # Ligand bulkiness workflow
-        And(bool, error='optional.qd.bulkiness expects a boolean'),
+        Or(
+            And(bool, Use(lambda n: {'h_lim': 10.0, 'd': 'auto'} if n else False)),
+            dict,
+            error='optional.qd.bulkiness expects a boolean or dictionary'
+        ),
 
     Optional_('optimize', default=False):  # Settings for quantum dot geometry optimizations
         Or(
@@ -581,6 +585,22 @@ qd_schema: Schema = Schema({
             None, dict,
             error='optional.qd.multi_ligand expects None or dictionary'
         ),
+})
+
+#: Schema for validating the ``['optional']['qd']['bulkiness']`` block.
+bulkiness_schema = Schema({
+    Optional_('h_lim', default=10.0): Or(
+        And(val_float, lambda n: float(n) > 0, Use(float)),
+        None,
+        error='optional.qd.bulkiness.h_lim expects a positive float or None'
+    ),
+
+    Optional_('d', default='auto'): Or(
+        And(val_float, lambda n: float(n) > 0, Use(float)),
+        None,
+        And(str, lambda n: n.lower() == 'auto', Use(str.lower)),
+        error='optional.qd.bulkiness.d expects a positive float, None or "auto"'
+    ),
 })
 
 

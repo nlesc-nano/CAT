@@ -32,7 +32,8 @@ from .validation_schemas import (
     ligand_opt_schema,
     subset_schema,
     multi_ligand_schema,
-    cdft_schema
+    cdft_schema,
+    bulkiness_schema,
 )
 
 from .validate_ff import validate_ff, update_ff_jobs
@@ -160,6 +161,8 @@ def validate_input(s: Settings, validate_only: bool = True) -> None:
         if s.optional.qd.multi_ligand:
             s.optional.qd.multi_ligand = multi_ligand_schema.validate(s.optional.qd.multi_ligand)
             _validate_multi_lig(s)
+        if s.optional.qd.bulkiness:
+            s.optional.qd.bulkiness = bulkiness_schema.validate(s.optional.qd.bulkiness)
 
         # Create forcefield Job Settings
         if s.optional.forcefield:
