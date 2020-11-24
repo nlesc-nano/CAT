@@ -26,6 +26,7 @@ from scm.plams import Settings
 
 from CAT import base
 from CAT.logger import logger
+from CAT.utils import log_traceback_locals
 
 
 def extract_args(args: Optional[List[str]] = None) -> Settings:
@@ -59,6 +60,6 @@ def main(args: Optional[List[str]] = None) -> None:
     try:
         args = parser.parse_args(args)
         base.prep(extract_args(args), return_mol=False)
-    except Exception as ex:
-        logger.critical(f'{ex.__class__.__name__}: {ex}')
-        raise ex
+    except Exception:
+        log_traceback_locals(logger)
+        raise

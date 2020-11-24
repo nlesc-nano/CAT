@@ -22,17 +22,22 @@ API
 
 import os
 import yaml
+import inspect
+import textwrap
+import operator
 import threading
 import pkg_resources as pkg
 from types import MappingProxyType, TracebackType
 from shutil import rmtree
+from pprint import pformat
+from logging import Logger
 from os.path import join, isdir, isfile, exists
 from itertools import cycle, chain, repeat
 from contextlib import redirect_stdout
 from collections import abc
 from typing import (
     Iterable, Union, TypeVar, Mapping, Type, Generator, Iterator, Optional,
-    Any, NoReturn, Dict, overload
+    Any, NoReturn, Dict, overload, Callable
 )
 
 import numpy as np
@@ -52,7 +57,8 @@ from .gen_job_manager import GenJobManager
 
 __all__ = [
     'JOB_MAP', 'check_sys_var', 'dict_concatenate', 'get_template',
-    'cycle_accumulate', 'iter_repeat', 'get_nearest_neighbors'
+    'cycle_accumulate', 'iter_repeat', 'get_nearest_neighbors',
+    'log_traceback_locals',
 ]
 
 JOB_MAP: Mapping[Type[Job], str] = MappingProxyType({
@@ -493,3 +499,32 @@ class SetEnviron:
                 os.environ.pop(k, None)
             else:
                 os.environ[k] = v
+
+
+def log_traceback_locals(logger: Logger, level: int = -1,
+                         str_func: Callable[[object], str] = pformat) -> None:
+    """Log all local variables at the specified traceback level.
+
+    Parameters
+    ----------
+    logger : :class:`~logging.Logger`
+        A logger for writing the local variables.
+    level : :class:`int`
+        The traceback level.
+    str_func : :data:`Callable[[object], str]<typing.Callable>`
+        The callable for creating the variables string representation.
+
+    """
+    try:
+        local_dct = inspect.trace()[level].frame.f_locals
+    except IndexError:
+        i = operator.index(level)
+        raise RuntimeError(f"No traceback was found at level {i}") from None
+
+    for name, _value in local_dct.items():
+        prefix = f"    {name}: {_value.__class__.__name__} = "
+        n = len(prefix)
+        value_str = textwrap.indent(str_func(_value), n * ' ')[n:].split('\n')
+        value_str[0] = prefix + value_str[0]
+        for v in value_str:
+            logger.debug(v)
