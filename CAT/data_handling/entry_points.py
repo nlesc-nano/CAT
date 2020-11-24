@@ -60,6 +60,6 @@ def main(args: Optional[List[str]] = None) -> None:
     try:
         args = parser.parse_args(args)
         base.prep(extract_args(args), return_mol=False)
-    except Exception as ex:
+    except Exception:
         log_traceback_locals(logger)
         raise
