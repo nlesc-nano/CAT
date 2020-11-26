@@ -124,9 +124,7 @@ class GenJobManager(JobManager):
 
         """
         # Raise an error if **filename** cannot be found
-        if isfile(filename):
-            filename = abspath(filename)
-        else:
+        if not isfile(filename):
             raise FileError(f'File {filename} not present')
 
         # Read the has from filename
