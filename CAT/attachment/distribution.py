@@ -2,49 +2,84 @@
 
 Index
 -----
-.. currentmodule:: CAT.attachment.distribution
+.. currentmodule:: CAT.distribution
 .. autosummary::
-    distribute_idx
     uniform_idx
+    distribute_idx
 
 API
 ---
-.. autofunction:: distribute_idx
 .. autofunction:: uniform_idx
+.. autofunction:: distribute_idx
 
 """
 
+import sys
 import reprlib
 import functools
 from types import MappingProxyType
-from typing import Generator, Optional, Iterable, FrozenSet, Any, Union, Callable, Mapping
 from itertools import islice, takewhile
 from collections import abc
+from typing import (
+    cast,
+    Generator,
+    Optional,
+    Iterable,
+    FrozenSet,
+    Any,
+    Union,
+    Callable,
+    Mapping,
+    TYPE_CHECKING,
+)
 
 import numpy as np
 from scipy.spatial.distance import cdist
-
-from scm.plams import Molecule
 from nanoutils import as_nd_array
 
 from CAT.utils import cycle_accumulate
 from CAT.attachment.edge_distance import edge_dist
 
-__all__ = ['distribute_idx']
+__all__ = ['distribute_idx', 'uniform_idx']
+
+if TYPE_CHECKING:
+    from numpy.typing import ArrayLike
+
+    if sys.version_info >= (3, 8):
+        from typing import Literal
+    else:
+        from typing_extensions import Literal
+
+    _OpKind = Literal['min', 'max']
+    _ModeKind = Literal['uniform', 'random', 'cluster']
+else:
+    ArrayLike = "numpy.typing.ArrayLike"
+    _OpKind = "Literal['min', 'max']"
+    _ModeKind = "Literal['uniform', 'random', 'cluster']"
 
 #: A set of allowed values for the **mode** parameter in :func:`get_distribution`.
 MODE_SET: FrozenSet[str] = frozenset({'uniform', 'random', 'cluster'})
 
 #: Map the **operation** parameter in :func:`uniform_idx` to either
 #: :func:`numpy.nanargmin` or :func:`numpy.nanargmax`.
-OPERATION_MAPPING: Mapping[Union[str, Callable], Callable] = MappingProxyType({
-    'min': np.nanargmin, min: np.nanargmin, np.min: np.nanargmin,
-    'max': np.nanargmax, max: np.nanargmax, np.max: np.nanargmax
+_ArgFunc = Callable[[np.ndarray], np.intp]
+OPERATION_MAPPING: Mapping[Union[str, Callable], _ArgFunc] = MappingProxyType({
+    'min': np.nanargmin,
+    min: np.nanargmin,
+    np.min: np.nanargmin,
+    'max': np.nanargmax,
+    max: np.nanargmax,
+    np.max: np.nanargmax,
 })
 
 
-def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[int]], f: float,
-                   mode: str = 'uniform', **kwargs: Any) -> np.ndarray:
+def distribute_idx(
+    core: ArrayLike,
+    idx: Union[int, Iterable[int]],
+    f: float,
+    mode: _ModeKind = 'uniform',
+    **kwargs: Any,
+) -> np.ndarray:
     r"""Create a new distribution of atomic indices from **idx** of length :code:`f * len(idx)`.
 
     Parameters
@@ -91,42 +126,45 @@ def distribute_idx(core: Union[Molecule, np.ndarray], idx: Union[int, Iterable[i
 
     """  # noqa
     # Convert **idx** into an array
-    idx = as_nd_array(idx, dtype=int)
+    idx_ar = as_nd_array(idx, dtype=int)
 
     # Validate the input
     if mode not in MODE_SET:
-        raise ValueError(f"Invalid value for 'mode' ({reprlib.repr(mode)}); "
-                         f"accepted values: {reprlib.repr(tuple(MODE_SET))}")
+        raise ValueError(f"Invalid `mode`: {mode!r}")
     elif not (0.0 < f <= 1.0):
-        raise ValueError("'f' should be larger than 0.0 and smaller than or equal to 1.0; "
-                         f"observed value: {reprlib.repr(f)}")
+        raise ValueError("'f' should be larger than 0.0 and smaller than or equal to 1.0")
 
     # Create an array of indices
-    stop = max(1, int(round(f * len(idx))))
+    stop = max(1, int(round(f * len(idx_ar))))
     if mode in ('uniform', 'cluster'):
-        xyz = np.array(core, dtype=float, ndmin=2, copy=False)[idx]
+        xyz = np.array(core, dtype=np.float64, ndmin=2, copy=False)[idx_ar]
         dist = edge_dist(xyz) if kwargs.get('follow_edge', False) else cdist(xyz, xyz)
-        operation = 'min' if mode == 'uniform' else 'max'
-        generator1 = uniform_idx(dist, operation=operation,
-                                 start=kwargs.get('start', None),
-                                 cluster_size=kwargs.get('cluster_size', 1),
-                                 randomness=kwargs.get('randomness', None),
-                                 weight=kwargs.get('weight', lambda x: np.exp(-x)))
-        generator2 = islice(generator1, stop)
-        ret = idx[np.fromiter(generator2, count=stop, dtype=int)]
+        operation: _OpKind = 'min' if mode == 'uniform' else 'max'
 
+        generator1 = uniform_idx(
+            dist,
+            operation=operation,
+            start=kwargs.get('start', None),
+            cluster_size=kwargs.get('cluster_size', 1),
+            randomness=kwargs.get('randomness', None),
+            weight=kwargs.get('weight', lambda x: np.exp(-x))
+        )
+        generator2 = islice(generator1, stop)
+        ret = idx_ar[np.fromiter(generator2, count=stop, dtype=np.intp)]
     elif mode == 'random':
         ret = np.random.permutation(idx)
-
     # Return a list of `p * len(idx)` atomic indices
     return ret[:stop]
 
 
-def uniform_idx(dist: np.ndarray, operation: str = 'min',
-                cluster_size: Union[int, Iterable[int]] = 1,
-                start: Optional[int] = None, randomness: Optional[float] = None,
-                weight: Callable[[np.ndarray], np.ndarray] = lambda x: np.exp(-x)
-                ) -> Generator[int, None, None]:
+def uniform_idx(
+    dist: np.ndarray,
+    operation: _OpKind = 'min',
+    cluster_size: Union[int, Iterable[int]] = 1,
+    start: Optional[int] = None,
+    randomness: Optional[float] = None,
+    weight: Callable[[np.ndarray], np.ndarray] = lambda x: np.exp(-x)
+) -> Generator[int, None, None]:
     r"""Yield the column-indices of **dist** which yield a uniform or clustered distribution.
 
     Given the (symmetric) distance matrix :math:`\boldsymbol{D} \in \mathbb{R}^{n,n}` and
@@ -184,6 +222,25 @@ def uniform_idx(dist: np.ndarray, operation: str = 'min',
             \text{if} & j > 0
         \end{cases}
 
+    Examples
+    --------
+    .. code-block:: python
+
+        >>> import numpy as np
+        >>> from CAT.distribution import uniform_idx
+
+        >>> dist: np.ndarray = np.random.rand(10, 10)
+
+        >>> out1 = uniform_idx(dist)
+        >>> idx_ar1 = np.fromiter(out1, dtype=np.intp)
+
+        >>> out2 = uniform_idx(dist, operation="min")
+        >>> out3 = uniform_idx(dist, cluster_size=5)
+        >>> out4 = uniform_idx(dist, cluster_size=[1, 1, 1, 1, 2, 2, 4])
+        >>> out5 = uniform_idx(dist, start=5)
+        >>> out6 = uniform_idx(dist, randomness=0.75)
+        >>> out7 = uniform_idx(dist, weight=lambda x: x**-1)
+
     Parameters
     ----------
     dist : :class:`numpy.ndarray` [:class:`float`], shape :math:`(n, n)`
@@ -193,13 +250,6 @@ def uniform_idx(dist: np.ndarray, operation: str = 'min',
     operation : :class:`str`
         Whether to use :func:`~numpy.argmin` or :func:`~numpy.argmax`.
         Accepted values are ``"min"`` and ``"max"``.
-
-    start : :class:`int`, optional
-        The index of the starting row in **dist**.
-        If ``None``, start in whichever row contains the global minimum
-        (:math:`\DeclareMathOperator*{\argmin}{\arg\!\min} \argmin\limits_{k \in \mathbb{N}} ||\boldsymbol{D}_{k, :}||_{p}`) or maximum
-        (:math:`\DeclareMathOperator*{\argmax}{\arg\!\max} \argmax\limits_{k \in \mathbb{N}} ||\boldsymbol{D}_{k, :}||_{p}`).
-        See **operation**.
 
     cluster_size : :class:`int` or :class:`Iterable<collections.abc.Iterable>` [:class:`int`]
         An integer or iterable of integers representing the size of clusters.
@@ -212,6 +262,13 @@ def uniform_idx(dist: np.ndarray, operation: str = 'min',
         For example, :code:`cluster_size = range(1, 4)` will continuesly create clusters
         of sizes 1, 2 and 3.
         The iteration process is repeated until all atoms represented by **dist** are exhausted.
+
+    start : :class:`int`, optional
+        The index of the starting row in **dist**.
+        If ``None``, start in whichever row contains the global minimum
+        (:math:`\DeclareMathOperator*{\argmin}{\arg\!\min} \argmin\limits_{k \in \mathbb{N}} ||\boldsymbol{D}_{k, :}||_{p}`) or maximum
+        (:math:`\DeclareMathOperator*{\argmax}{\arg\!\max} \argmax\limits_{k \in \mathbb{N}} ||\boldsymbol{D}_{k, :}||_{p}`).
+        See **operation**.
 
     randomness : :class:`float`, optional
         If not ``None``, represents the probability that a random index
@@ -229,39 +286,40 @@ def uniform_idx(dist: np.ndarray, operation: str = 'min',
         Yield the column-indices specified in :math:`\boldsymbol{d}`.
 
     """  # noqa
-    # Truncate and square the distance matrix
-    dist_sqr = np.array(dist, dtype=float, copy=True)
-    np.fill_diagonal(dist_sqr, np.nan)
-    dist_sqr = weight(dist_sqr)
+    # Truncate and weight the distance matrix
+    dist_w = np.array(dist, dtype=float, copy=True)
+    if not np.diagonal(dist_w).any():
+        np.fill_diagonal(dist_w, np.nan)
+    dist_w = weight(dist_w)
 
     # Use either argmin or argmax
     try:
         arg_func = OPERATION_MAPPING[operation]
-    except KeyError as ex:
-        raise ValueError(f"Invalid value for 'operation' ({reprlib.repr(operation)}); "
-                         "accepted values: ('min', 'max')") from ex
-    start = arg_func(np.nansum(dist_sqr, axis=1)) if start is None else start
+    except KeyError:
+        raise ValueError(f"Invalid `operation`: {operation!r}") from None
 
+    if start is None:
+        start = cast(int, arg_func(np.nansum(dist_w, axis=1)))
     if randomness is not None:
         arg_func = _parse_randomness(randomness, arg_func, len(dist))
 
     # Yield the first index
     try:
-        dist_1d_sqr = dist_sqr[start].copy()
-    except IndexError as ex:
+        dist_w_1d: np.ndarray = dist_w[start].copy()
+    except IndexError:
         if not hasattr(start, '__index__'):
             raise TypeError("'start' expected an integer or 'None'; observed type: "
-                            f"'{start.__class__.__name__}'") from ex
-        raise ValueError("index 'start={start}' is out of bounds: 'len(dist)={len(dist)}'") from ex
+                            f"'{start.__class__.__name__}'") from None
+        raise ValueError("'start' is out of bounds") from None
 
-    dist_1d_sqr[start] = np.nan
+    dist_w_1d[start] = np.nan
     yield start
 
     # Return a generator for yielding the remaining indices
     if cluster_size == 1:
-        generator = _min_or_max(dist_sqr, dist_1d_sqr, arg_func)
+        generator = _min_or_max(dist_w, dist_w_1d, arg_func)
     else:
-        generator = _min_and_max(dist_sqr, dist_1d_sqr, arg_func, cluster_size)
+        generator = _min_and_max(dist_w, dist_w_1d, arg_func, cluster_size)
 
     for i in generator:
         yield i
