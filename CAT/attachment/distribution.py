@@ -191,7 +191,7 @@ def uniform_idx(dist: np.ndarray, operation: str = 'min',
         distance matrix :math:`D`.
 
     operation : :class:`str`
-        Whether to minimize or maximize the distance between points.
+        Whether to use :func:`~numpy.argmin` or :func:`~numpy.argmax`.
         Accepted values are ``"min"`` and ``"max"``.
 
     start : :class:`int`, optional
