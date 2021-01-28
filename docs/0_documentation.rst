@@ -22,12 +22,12 @@ look into the customization of the various jobs.
     11_md_asa
     12_recipes
     13_multi_ligand
+    18_distribution.rst
 
 .. toctree::
     :hidden:
 
     _1_identify_surface
     _2_distribution_brute
-    _3_distribution
     _4_guess_core_core_dist
     8_import_qd.rst
