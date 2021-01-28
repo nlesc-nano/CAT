@@ -288,7 +288,8 @@ def uniform_idx(
     """  # noqa
     # Truncate and weight the distance matrix
     dist_w = np.array(dist, dtype=float, copy=True)
-    np.fill_diagonal(dist_w, np.nan)
+    if not np.diagonal(dist_w).any():
+        np.fill_diagonal(dist_w, np.nan)
     dist_w = weight(dist_w)
 
     # Use either argmin or argmax
