@@ -2,7 +2,7 @@
 
 Index
 -----
-.. currentmodule:: CAT.attachment.distribution
+.. currentmodule:: CAT.distribution
 .. autosummary::
     uniform_idx
     distribute_idx
