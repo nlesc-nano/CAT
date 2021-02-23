@@ -1,1 +1,1 @@
-.. automodule:: nanoCAT.recipes.surface_dissociation
+.. automodule:: nanoCAT.recipes.dissociation
