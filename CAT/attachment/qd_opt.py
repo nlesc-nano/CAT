@@ -114,6 +114,7 @@ def qd_opt(mol: Molecule, jobs: Tuple[Optional[Type[Job]], ...],
     mol.round_coords()
 
     # Run the second job
-    mol.job_geometry_opt(job2, s2, name='QD_opt_part2')
-    mol.round_coords()
+    if job2 is not None:
+        mol.job_geometry_opt(job2, s2, name='QD_opt_part2')
+        mol.round_coords()
     return None
