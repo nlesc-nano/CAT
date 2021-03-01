@@ -833,6 +833,7 @@ qd_opt_schema: Schema = Schema({
     # The job type for the second half of the optimization
     Optional_('job2', default=_get_amsjob):
         Or(
+            None,
             And(
                 And(type, lambda n: issubclass(n, Job), Use(val_job_type)),
                 error=('optional.qd.opt.job2 expects a type object '
@@ -848,6 +849,7 @@ qd_opt_schema: Schema = Schema({
     # The job settings for the second half of the optimization
     Optional_('s2', default=_qd_opt_s2_default.copy()):
         Or(
+            None,
             dict,
             And(str, Use(lambda n: get_template(n, from_cat_data=False))),
             error='optional.qd.opt.s2 expects a string or a dictionary'
