@@ -399,9 +399,15 @@ class WorkFlow(AbstractDataClass):
             self_vars = {k.strip('_'): v for k, v in vars(self).items()}
             value = func(df.loc[slice1], columns=columns, **self_vars, **kwargs)
 
-            if not isinstance(value, abc.Iterator) and not np.any(value):
-                return
-            elif no_loc:
+            if not isinstance(value, abc.Iterator):
+                try:  # This can fail for `np.flexible`-based dtypes
+                    assert np.any(value)
+                except TypeError:
+                    pass
+                except AssertionError:
+                    return
+
+            if no_loc:
                 for k, v in zip(slice2[1], value):
                     df[k] = v
             else:
