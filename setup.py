@@ -19,7 +19,9 @@ with open('README.rst', encoding='utf-8') as readme_file:
 docs_require = [
     'sphinx>=2.4,!=3.1',
     'sphinx_rtd_theme',
-    'data-CAT@git+https://github.com/nlesc-nano/data-CAT@master'
+    'data-CAT@git+https://github.com/nlesc-nano/data-CAT@master',
+    'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@master',
+    'auto-FOX@git+https://github.com/nlesc-nano/auto-FOX@master',
 ]
 
 tests_require = [
@@ -33,10 +35,8 @@ tests_require = [
     'pytest-mock'
 ]
 
-if sys.version_info[1] > 6:
-    docs_require.append('nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@master')
-    docs_require.append('auto-FOX@git+https://github.com/nlesc-nano/auto-FOX@master')
-tests_require += docs_require
+if sys.version_info >= (3, 7):
+    tests_require += docs_require
 
 # Check if rdkit is manually installed (as it is not available via pypi)
 try:

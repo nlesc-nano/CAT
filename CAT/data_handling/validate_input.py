@@ -181,7 +181,7 @@ def validate_input(s: Settings, validate_only: bool = True) -> None:
                 db_path = s.optional.database.dirname
                 s.optional.database.db = Database(path=db_path, **s.optional.database.mongodb)
             else:
-                s.optional.database.db = False
+                s.optional.database.db = None
 
         # Create RDKit molecules representing functional groups
         if s.optional.ligand.anchor is not None:
