@@ -5,8 +5,7 @@ UFF:
             library: uff
         ams:
             system:
-                bondorders:
-                    _1: null
+                bondorders: {}
 
 COSMO-RS activity coefficient:
     description: COSMO-RS activity coefficient calculation; parameters not included!
