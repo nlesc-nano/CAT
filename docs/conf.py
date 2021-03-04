@@ -215,6 +215,7 @@ intersphinx_mapping = {
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
     'pymongo': ('https://pymongo.readthedocs.io/en/stable/', None),
     'nanoutils': ('https://nano-utils.readthedocs.io/en/latest/', None),
+    'rdkit': ('https://www.rdkit.org/docs/', None),
 }
 
 
