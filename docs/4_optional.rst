@@ -277,7 +277,7 @@ Core
         Has two allowed values:
 
         * ``"surface"``: Define the core vectors as those orthogonal to the cores
-          surface.
+          surface. Not this option requires at least four core anchor atoms.
           The surface is herein defined by a convex hull constructed from the core.
         * ``"sphere"``: Define the core vectors as those drawn from the core anchor
           atoms to the cores center.

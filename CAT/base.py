@@ -236,6 +236,12 @@ def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
             raise MoleculeError(f"{repr(to_symbol(anchor))} was specified as core anchor atom, yet "
                                 f"no matching atoms were found in {core.properties.name} "
                                 f"(formula: {formula})")
+        elif len(dummies) < 4 and core_df.settings.optional.core.allignment == "surface":
+            raise NotImplementedError(
+                '`optional.core.allignment = "surface"` is not supported for cores with less '
+                f'than 4 anchor atoms ({core.get_formula()}); consider using '
+                '`optional.core.allignment = "sphere"`'
+            )
 
         # Delete all core anchor atoms
         for at in dummies:

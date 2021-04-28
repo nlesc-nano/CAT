@@ -6,7 +6,7 @@ from typing import Optional
 import yaml
 import pytest
 from scm.plams import Settings
-from nanoutils import delete_finally, ignore_if
+from nanoutils import delete_finally
 
 from CAT.base import prep
 
@@ -22,9 +22,27 @@ QD_PATH = PATH / 'qd'
 DB_PATH = PATH / 'database'
 
 
-@pytest.mark.slow
-@ignore_if(NANOCAT_EX)
 @delete_finally(LIG_PATH, QD_PATH, DB_PATH)
+@pytest.mark.skipif(NANOCAT_EX is not None, reason=str(NANOCAT_EX))
+def test_cat_fail() -> None:
+    """Tests for the CAT package."""
+    yaml_path = PATH / 'CAT.yaml'
+    with open(yaml_path, 'r') as f:
+        arg = Settings(yaml.load(f, Loader=yaml.FullLoader))
+
+    arg.path = PATH
+    del arg.optional.core.anchor
+    arg.optional.ligand["cosmo-rs"] = False
+    arg.optional.qd.activation_strain = False
+    arg.optional.qd.optimize = False
+    arg.input_cores[0]["Cd68Se55.xyz"]["indices"] = [1, 2, 3]
+    with pytest.raises(NotImplementedError):
+        prep(arg)
+
+
+@pytest.mark.slow
+@delete_finally(LIG_PATH, QD_PATH, DB_PATH)
+@pytest.mark.skipif(NANOCAT_EX is not None, reason=str(NANOCAT_EX))
 def test_cat() -> None:
     """Tests for the CAT package."""
     yaml_path = PATH / 'CAT.yaml'
