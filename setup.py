@@ -120,6 +120,7 @@ setup(
     python_requires='>=3.6',
     install_requires=[
         'Nano-Utils>=0.4.3',
+        'h5py',
         'numpy',
         'scipy',
         'pandas',
