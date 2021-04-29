@@ -460,9 +460,13 @@ def rot_mol(xyz_array: np.ndarray,
     return rotation_check_kdtree(xyz, at_other, core, ret_min_dist=ret_min_dist)
 
 
-def rotation_check_kdtree(xyz: np.ndarray, core_anchor: np.ndarray, core: np.ndarray,
-                          k: int = 10,
-                          ret_min_dist: bool = False):
+def rotation_check_kdtree(
+    xyz: np.ndarray,
+    core_anchor: np.ndarray,
+    core: np.ndarray,
+    k: int = 10,
+    ret_min_dist: bool = False,
+):
     """Perform the rotation check using SciPy's :class:`cKDTree<scipy.spatial.cKDTree.
 
     Parameters
@@ -492,7 +496,9 @@ def rotation_check_kdtree(xyz: np.ndarray, core_anchor: np.ndarray, core: np.nda
     core = np.asarray(core)
     tree = cKDTree(core)
     _, idx = tree.query(core_anchor, k=range(2, 7), distance_upper_bound=10)
-    core_subset = core[np.unique(idx.ravel())]
+    idx_ravel = np.unique(idx.ravel())
+    idx_ravel = idx_ravel[idx_ravel != len(core)]
+    core_subset = core[idx_ravel]
 
     at_other = core_subset
     for i, ar in enumerate(xyz):
