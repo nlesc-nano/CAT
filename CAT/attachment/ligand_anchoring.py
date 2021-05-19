@@ -152,11 +152,10 @@ def get_functional_groups(functional_groups: Optional[Iterable[str]] = None,
 
 def _smiles_to_rdmol(smiles: str) -> Chem.Mol:
     """Convert a SMILES string into an rdkit Mol; supports explicit hydrogens."""
-    # RDKit tends to remove explicit hydrogens if SANITIZE_ADJUSTHS is enabled
-    sanitize = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_ADJUSTHS
+    # Perform the sanitization in 2 steps so that `MolFromSmiles` doesn't remove explicit hydrogens
     try:
         mol = Chem.MolFromSmiles(smiles, sanitize=False)
-        Chem.rdmolops.SanitizeMol(mol, sanitizeOps=sanitize)
+        Chem.rdmolops.SanitizeMol(mol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL)
     except Exception as ex:
         raise ex.__class__(f'Failed to parse the following SMILES string: {repr(smiles)}\n\n{ex}')
     return mol

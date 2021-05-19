@@ -180,9 +180,9 @@ def read_mol_smiles(mol_dict: Settings) -> Optional[Molecule]:
 
 
 def _from_smiles(smiles: str) -> Molecule:
-    sanitize = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_ADJUSTHS
+    # Perform the sanitization in 2 steps so that `MolFromSmiles` doesn't remove explicit hydrogens
     _rdmol = Chem.MolFromSmiles(smiles, sanitize=False)
-    Chem.rdmolops.SanitizeMol(_rdmol, sanitizeOps=sanitize)
+    Chem.rdmolops.SanitizeMol(_rdmol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL)
 
     rdmol = Chem.AddHs(_rdmol)
     rdmol.SetProp('smiles', smiles)
