@@ -112,9 +112,6 @@ def check_sys_var() -> None:
         raise EnvironmentError('One or more ADF environment variables have not been set, '
                                'aborting ADF job')
 
-    if '2019' not in os.environ['ADFHOME']:
-        raise EnvironmentError(f"ADF/2019 not detected in {os.environ['ADFHOME']}")
-
 
 def dict_concatenate(dict_list: Iterable[Mapping[KT, VT]]) -> Dict[KT, VT]:
     """Concatenates a list of dictionaries."""
