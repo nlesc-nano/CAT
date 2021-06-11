@@ -76,14 +76,8 @@ def test_check_sys_var() -> None:
     def test2() -> None:
         assertion.assert_(check_sys_var, exception=EnvironmentError)
 
-    @mock.patch.dict(os.environ,
-                     {'ADFBIN': 'a', 'ADFHOME': '2018', 'ADFRESOURCES': 'b', 'SCMLICENSE': 'c'})
-    def test3() -> None:
-        assertion.assert_(check_sys_var, exception=EnvironmentError)
-
     test1()
     test2()
-    test3()
 
 
 def test_restart_init() -> None:
