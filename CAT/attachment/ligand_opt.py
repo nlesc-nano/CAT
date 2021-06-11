@@ -255,8 +255,8 @@ def split_mol(plams_mol: Molecule, anchor: Atom) -> List[Bond]:
                 bond_list.remove(bond)
 
     atom_list = list(itertools.chain.from_iterable((bond.atom1, bond.atom2) for bond in bond_list))
-    atom_set = {atom for atom in atom_list if atom_list.count(atom) >= 3}
-    atom_dict = {atom: [bond for bond in atom.bonds if bond in bond_list] for atom in atom_set}
+    atom_ge3 = (atom for atom in atom_list if atom_list.count(atom) >= 3)
+    atom_dict = {atom: [bond for bond in atom.bonds if bond in bond_list] for atom in atom_ge3}
     for b in bond_list:
         if plams_mol.in_ring(b.atom1):
             key = b.atom1
