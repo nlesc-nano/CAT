@@ -17,7 +17,7 @@ jobs:
             fail-fast: false
             matrix:
                 os: [ubuntu-latest, macos-latest, windows-latest]
-                version: [3.7, 3.8]
+                version: [3.7, 3.8, 3.9]
 
         steps:
             - name: Cancel Previous Runs
@@ -35,8 +35,14 @@ jobs:
                 conda-channels: anaconda
 
             - name: Install conda-based dependencies
+              if: matrix.version != '3.9'
               shell: bash -l {0}
               run: conda install -c conda-forge rdkit=2019.09.2 "pip<=20.2"
+
+            - name: Install conda-based dependencies (3.9)
+              if: matrix.version == '3.9'
+              shell: bash -l {0}
+              run: conda install -c conda-forge rdkit "pip<=20.2"
 
             - name: Install dependencies
               run: pip install -e .[test]
