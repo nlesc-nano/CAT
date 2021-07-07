@@ -15,7 +15,6 @@ API
 
 """
 
-import sys
 import copy
 import reprlib
 from typing import Iterable, Union, Dict, Tuple, NoReturn, Any, Type
@@ -24,11 +23,6 @@ from contextlib import AbstractContextManager
 from scm.plams import Molecule, Atom, PT, Bond, MoleculeError, PTError, rotation_matrix
 
 from ..mol_utils import separate_mod  # noqa: F401
-
-if sys.version_info >= (3, 7):
-    from builtins import dict as OrderedDict  # noqa: N812
-else:
-    from collections import OrderedDict
 
 __all__ = ['SplitMol']
 
@@ -151,7 +145,7 @@ class SplitMol(AbstractContextManager):
         if isinstance(value, Bond):
             self._bonds = {value: None}
         else:
-            self._bonds = OrderedDict((i, None) for i in value)
+            self._bonds = {i: None for i in value}
 
     @property
     def cap_type(self) -> str:

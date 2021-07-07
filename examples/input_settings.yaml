@@ -1,13 +1,11 @@
-path: /path/to/my/stuff
+path: /Users/basvanbeek/Documents/CdSe/Week_5
 
 input_cores:
     - Cd68Se55.xyz:
         guess_bonds: False
 
 input_ligands:
-    - 'CCCOCCC(O)=O'
-    - 'CCCNCCC(O)=O'
-    - 'CCCCCCC(O)=O'
+    - 'COc1cc[C[=O]O[C@H][C[=O]O][C@H][OC[=O]c2ccc[OC[C]=O]c[OC]c2]C[=O]Nc2ccc[N=Nc3ccccc3]cc2]ccc1OC[C]=O'
 
 optional:
     database:

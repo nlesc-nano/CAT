@@ -1,7 +1,6 @@
 """Tests for :mod:`CAT.data_handling.validate_input`."""
 
 import os
-import sys
 from os.path import join
 from pathlib import Path
 from itertools import chain
@@ -15,10 +14,7 @@ from assertionlib import assertion
 from nanoutils import delete_finally
 
 from CAT.data_handling.validate_input import validate_input
-if sys.version_info >= (3, 7):
-    from dataCAT import Database
-else:
-    Database = None
+from dataCAT import Database
 
 PATH = Path('tests') / 'test_files'
 LIG_PATH = PATH / 'ligand'
@@ -52,10 +48,7 @@ def test_validate_input() -> None:
     ref.database.read = ('core', 'ligand', 'qd')
     ref.database.write = ('core', 'ligand', 'qd')
     ref.database.thread_safe = False
-    if Database is None:
-        ref.database.db = None
-    else:
-        ref.database.db = Database(ref.database.dirname, **ref.database.mongodb)
+    ref.database.db = Database(ref.database.dirname, **ref.database.mongodb)
 
     ref.ligand['cosmo-rs'] = False
     ref.ligand.dirname = join(PATH, 'ligand')

@@ -12,9 +12,9 @@ API
 
 """
 
-import sys
 from os import mkdir
 from os.path import (join, isdir)
+from contextlib import nullcontext
 
 from rdkit.Chem import Mol
 from scm.plams import Settings
@@ -47,11 +47,6 @@ try:
     DATA_CAT = True
 except ImportError:
     DATA_CAT = False
-
-if sys.version_info >= (3, 7):
-    from contextlib import nullcontext
-else:
-    from contextlib2 import nullcontext
 
 __all__ = ['validate_input']
 

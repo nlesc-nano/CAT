@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
-import sys
 import importlib
 
 from setuptools import setup
@@ -34,9 +33,7 @@ tests_require = [
     'pytest-pydocstyle>=2.1',
     'pytest-mock'
 ]
-
-if sys.version_info >= (3, 7):
-    tests_require += docs_require
+tests_require += docs_require
 
 # Check if rdkit is manually installed (as it is not available via pypi)
 try:
@@ -96,9 +93,9 @@ setup(
         'science',
         'chemistry',
         'python-3',
-        'python-3-6',
         'python-3-7',
         'python-3-8',
+        'python-3-9',
         'automation',
         'scientific-workflows'
     ],
@@ -110,14 +107,14 @@ setup(
         'Operating System :: Unix',
         'Operating System :: MacOS',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Scientific/Engineering :: Chemistry'
         'Typing :: Typed'
     ],
     test_suite='tests',
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     install_requires=[
         'Nano-Utils>=0.4.3',
         'h5py',
@@ -126,7 +123,6 @@ setup(
         'pandas',
         'pyyaml>=5.1',
         'schema',
-        'contextlib2>=0.6.0; python_version<"3.7"',
         'AssertionLib>=2.2.3',
         'plams@git+https://github.com/SCM-NV/PLAMS@master',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master',
