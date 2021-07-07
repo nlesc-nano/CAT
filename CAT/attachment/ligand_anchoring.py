@@ -215,13 +215,23 @@ def find_substructure(
                    f"ligand: {ligand.properties.name!r}")
             logger.error(err)
             return []
-    if ligand_indices:
-        return [substructure_split(ligand, tup, split) for tup in ligand_indices]
-    else:
+
+    ret = []
+    for i, tup in enumerate(ligand_indices):
+        try:
+            value = substructure_split(ligand, tup, split)
+        except Exception as ex:
+            logger.warning(
+                f"Failed to parse {ligand.properties.name!r} anchoring group {i}", exc_info=ex
+            )
+        else:
+            ret.append(value)
+
+    if not ret:
         err = (f"No functional groups were found (optional.ligand.split = {split!r}) for "
                f"ligand: {ligand.properties.name!r}")
         logger.error(err)
-        return []
+    return ret
 
 
 def substructure_split(
@@ -254,7 +264,7 @@ def substructure_split(
 
     if split:
         lig.delete_atom(at2)
-        mol_list = lig.separate_mod()
+        mol_list: Tuple[Molecule, ...] = lig.separate_mod()
         for mol in mol_list:
             if at1 not in mol:
                 continue
@@ -273,7 +283,7 @@ def substructure_split(
 
     # Update the ligand smiles string
     rdmol = molkit.to_rdmol(lig)
-    smiles = Chem.MolToSmiles(rdmol)
+    smiles = Chem.MolToSmiles(rdmol)  # NOTE: can return `None` under rare circumstances
     lig.properties.smiles = Chem.CanonSmiles(smiles)
     lig.properties.name = santize_smiles(lig.properties.smiles) + '@' + lig.properties.anchor
     lig.properties.path = ligand.properties.path
