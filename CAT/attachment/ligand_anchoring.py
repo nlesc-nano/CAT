@@ -22,8 +22,10 @@ API
 
 """
 
+from __future__ import annotations
+
 from itertools import chain
-from typing import Sequence, List, Tuple, Optional, Iterable, Callable
+from typing import Sequence, List, Tuple, Iterable, Callable
 
 import pandas as pd
 
@@ -84,15 +86,16 @@ def init_ligand_anchoring(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     return _get_df(mol_list, ligand_df.settings)
 
 
-def _get_df(mol_list: Sequence[Molecule],
-            settings: Settings) -> SettingsDataFrame:
+def _get_df(
+    mol_list: Sequence[Molecule],
+    settings: Settings,
+) -> SettingsDataFrame:
     """Create and return a new ligand dataframe.
 
     Parameters
     ----------
     mol_list : |list|_ [|plams.Molecule|_]
         A list of PLAMS molecules.
-
     settings : |Settings|_
         A Settings instance containing all CAT parameters.
 
@@ -116,8 +119,10 @@ def _get_df(mol_list: Sequence[Molecule],
     return df[~df.index.duplicated(keep='first')]  # Remove duplicate indices
 
 
-def get_functional_groups(functional_groups: Optional[Iterable[str]] = None,
-                          split: bool = True) -> Tuple[Chem.Mol, ...]:
+def get_functional_groups(
+    functional_groups: None | Iterable[str] = None,
+    split: bool = True,
+) -> Tuple[Chem.Mol, ...]:
     """Construct a list of RDKit molecules representing functional groups.
 
     Parameters
@@ -125,7 +130,6 @@ def get_functional_groups(functional_groups: Optional[Iterable[str]] = None,
     functional_groups : |list|_ [|str|_]
         Optional: A list of smiles strings representing functional groups.
         Will default to templates provided by CAT if ``None``.
-
     split : bool
         If templates should be pulled from the ``['split']`` or ``['no_split']`` block.
         Only relevant if **functional_groups** is ``None``.
@@ -162,20 +166,20 @@ def _smiles_to_rdmol(smiles: str) -> Chem.Mol:
     return mol
 
 
-def find_substructure(ligand: Molecule,
-                      func_groups: Iterable[Chem.Mol],
-                      split: bool = True,
-                      condition: Optional[Callable[[int], bool]] = None) -> List[Molecule]:
+def find_substructure(
+    ligand: Molecule,
+    func_groups: Iterable[Chem.Mol],
+    split: bool = True,
+    condition: None | Callable[[int], bool] = None,
+) -> List[Molecule]:
     """Identify interesting functional groups within the ligand.
 
     Parameters
     ----------
     ligand : |plams.Molecule|_
         The ligand molecule.
-
     func_groups : |tuple|_ [|Chem.Mol|_]
         A collection of RDKit molecules representing functional groups.
-
     split : bool
         If a functional group should be split from **ligand** (``True``) or not (``False``).
 
@@ -211,18 +215,30 @@ def find_substructure(ligand: Molecule,
                    f"ligand: {ligand.properties.name!r}")
             logger.error(err)
             return []
-    if ligand_indices:
-        return [substructure_split(ligand, tup, split) for tup in ligand_indices]
-    else:
+
+    ret = []
+    for i, tup in enumerate(ligand_indices):
+        try:
+            value = substructure_split(ligand, tup, split)
+        except Exception as ex:
+            logger.warning(
+                f"Failed to parse {ligand.properties.name!r} anchoring group {i}", exc_info=ex
+            )
+        else:
+            ret.append(value)
+
+    if not ret:
         err = (f"No functional groups were found (optional.ligand.split = {split!r}) for "
                f"ligand: {ligand.properties.name!r}")
         logger.error(err)
-        return []
+    return ret
 
 
-def substructure_split(ligand: Molecule,
-                       idx: Tuple[int, int],
-                       split: bool = True) -> Molecule:
+def substructure_split(
+    ligand: Molecule,
+    idx: Tuple[int, int],
+    split: bool = True,
+) -> Molecule:
     """Delete the hydrogen or mono-/polyatomic counterion attached to the functional group.
 
     Sets the charge of the remaining heteroatom to -1 if ``split=True``.
@@ -231,10 +247,8 @@ def substructure_split(ligand: Molecule,
     ----------
     ligand: |plams.Molecule|_
         The ligand molecule.
-
     idx : |tuple|_ [|int|_]
         A tuple with 2 atomic indices associated with a functional group.
-
     split : bool
         If a functional group should be split from **ligand** (``True``) or not (``False``).
 
@@ -250,7 +264,7 @@ def substructure_split(ligand: Molecule,
 
     if split:
         lig.delete_atom(at2)
-        mol_list = lig.separate_mod()
+        mol_list: Tuple[Molecule, ...] = lig.separate_mod()
         for mol in mol_list:
             if at1 not in mol:
                 continue
@@ -269,9 +283,8 @@ def substructure_split(ligand: Molecule,
 
     # Update the ligand smiles string
     rdmol = molkit.to_rdmol(lig)
-    smiles = Chem.MolToSmiles(rdmol)
+    smiles = Chem.MolToSmiles(rdmol)  # NOTE: can return `None` under rare circumstances
     lig.properties.smiles = Chem.CanonSmiles(smiles)
     lig.properties.name = santize_smiles(lig.properties.smiles) + '@' + lig.properties.anchor
     lig.properties.path = ligand.properties.path
-
     return lig

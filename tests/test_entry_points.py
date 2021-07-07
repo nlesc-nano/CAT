@@ -1,9 +1,11 @@
 """Tests for :mod:`CAT.data_handling.entry_points`."""
 
 import os
+import sys
 import warnings
 from pathlib import Path
 
+import pytest
 import numpy as np
 
 from scm.plams import Molecule
@@ -20,8 +22,11 @@ QD_PATH = PATH / 'qd'
 DB_PATH = PATH / 'database'
 PATH_REF = PATH / 'ligand_ref'
 
+GE_39 = sys.version_info >= (3, 9)
+
 
 @delete_finally(LIG_PATH, QD_PATH, DB_PATH)
+@pytest.mark.xfail(GE_39, reason="Geometries must be updated for RDKit >2019.09.2")
 def test_main() -> None:
     """Test :func:`CAT.data_handling.entry_points.main`."""
     filename = str(PATH / 'input2.yaml')
