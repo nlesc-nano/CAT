@@ -21,6 +21,8 @@ from os.path import join, isdir, isfile, exists
 
 from scm.plams import Molecule, writepdb
 
+from ..logger import logger
+
 __all__ = ['mol_to_file']
 
 MolExportFunc = Callable[[Molecule, Union[str, bytes, os.PathLike]], None]
@@ -85,5 +87,14 @@ def mol_to_file(
         if not condition:
             continue
 
-        for ext, func in export_dict.items():
-            func(mol, f'{mol_path}.{ext}')
+        try:
+            for ext, func in export_dict.items():
+                filename = f'{mol_path}.{ext}'
+                func(mol, filename)
+        except OSError as ex:
+            if ex.errno == 36:
+                if logger is None:
+                    continue
+                logger.error(f"Filename too long: failed to create {filename!r}", exc_info=True)
+            else:
+                raise
