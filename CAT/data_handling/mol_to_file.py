@@ -12,19 +12,23 @@ API
 
 """
 
+from __future__ import annotations
+
 import os
 from types import MappingProxyType
-from typing import Iterable, Optional, Container, Mapping, Union, Callable
+from typing import Iterable, Container, Union, Callable
 from os.path import join, isdir, isfile, exists
 
 from scm.plams import Molecule, writepdb
+
+from ..logger import logger
 
 __all__ = ['mol_to_file']
 
 MolExportFunc = Callable[[Molecule, Union[str, bytes, os.PathLike]], None]
 
 #: A mapping of file extensions to a Callable for Molecule exporting
-EXPORT_MAPPING: Mapping[str, MolExportFunc] = MappingProxyType({
+EXPORT_MAPPING: MappingProxyType[str, MolExportFunc] = MappingProxyType({
     'pdb': writepdb,
     'xyz': Molecule.write,
     'mol': Molecule.write,
@@ -32,10 +36,12 @@ EXPORT_MAPPING: Mapping[str, MolExportFunc] = MappingProxyType({
 })
 
 
-def mol_to_file(mol_list: Iterable[Molecule],
-                path: Optional[str] = None,
-                overwrite: bool = True,
-                mol_format: Container[str] = ('xyz', 'pdb')) -> None:
+def mol_to_file(
+    mol_list: Iterable[Molecule],
+    path: None | str = None,
+    overwrite: bool = True,
+    mol_format: Container[str] = ('xyz', 'pdb'),
+) -> None:
     """Export all molecules in **mol_list** to .pdb, .xyz, .mol or .mol2 files.
 
     Parameters
@@ -81,5 +87,14 @@ def mol_to_file(mol_list: Iterable[Molecule],
         if not condition:
             continue
 
-        for ext, func in export_dict.items():
-            func(mol, f'{mol_path}.{ext}')
+        try:
+            for ext, func in export_dict.items():
+                filename = f'{mol_path}.{ext}'
+                func(mol, filename)
+        except OSError as ex:
+            if ex.errno == 36:
+                if logger is None:
+                    continue
+                logger.error(f"Filename too long: failed to create {filename!r}", exc_info=True)
+            else:
+                raise
