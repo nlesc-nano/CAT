@@ -124,7 +124,7 @@ setup(
         'pyyaml>=5.1',
         'schema',
         'AssertionLib>=2.2.3',
-        'plams@git+https://github.com/SCM-NV/PLAMS@master',
+        'plams>=1.5.1',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master',
     ],
     setup_requires=[
