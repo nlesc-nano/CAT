@@ -16,6 +16,7 @@ API
 """
 
 import os
+import errno
 from typing import (Optional, Callable)
 from os.path import (join, isfile, abspath, isdir, exists, normpath)
 
@@ -23,6 +24,8 @@ import dill as pickle
 
 from scm.plams import (JobManager, FileError, Settings, PlamsError)
 from scm.plams.core.basejob import Job
+
+from .logger import logger
 
 __all__ = ['GenJobManager']
 
@@ -166,9 +169,13 @@ class GenJobManager(JobManager):
 
         if h in self.hashes:
             try:
-                return self.hashes[h]()
-            except AttributeError:  # In case the job unpickling fails
-                pass
+                ret = self.hashes[h]()
+                if not os.path.isdir(ret.path):
+                    raise FileNotFoundError(errno.ENOENT, "No such file or directory", ret.path)
+            except Exception as ex:  # In case the job unpickling fails
+                logger.warning(f"Failed to unpickle {job.name!r}", exc_info=ex)
+            else:
+                return ret
 
         filename = join(job.path, job.name)
         func = self._get_job(filename + '.dill')
