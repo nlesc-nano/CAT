@@ -126,8 +126,10 @@ def test_find_substructure() -> None:
         assertion.is_not(m, mol)
 
 
-@mock.patch.dict(os.environ,
-                 {'ADFBIN': 'a', 'ADFHOME': '2019', 'ADFRESOURCES': 'b', 'SCMLICENSE': 'c'})
+@mock.patch.dict(
+    os.environ,
+    {'AMSBIN': '', 'AMSHOME': '', 'AMSRESOURCES': '', 'SCMLICENSE': ''},
+)
 def test_init_ligand_anchoring() -> None:
     """Tests for :meth:`CAT.attachment.ligand_anchoring.init_ligand_anchoring`."""
     try:

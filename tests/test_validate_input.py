@@ -22,8 +22,10 @@ QD_PATH = PATH / 'qd'
 DB_PATH = PATH / 'database'
 
 
-@mock.patch.dict(os.environ,
-                 {'ADFBIN': 'a', 'ADFHOME': '2019', 'ADFRESOURCES': 'b', 'SCMLICENSE': 'c'})
+@mock.patch.dict(
+    os.environ,
+    {'AMSBIN': '', 'AMSHOME': '', 'AMSRESOURCES': '', 'SCMLICENSE': ''},
+)
 @delete_finally(LIG_PATH, QD_PATH, DB_PATH)
 def test_validate_input() -> None:
     """Test :func:`CAT.data_handling.validate_input.validate_input`."""
@@ -63,7 +65,26 @@ def test_validate_input() -> None:
     ref.qd.dirname = join(PATH, 'qd')
     ref.qd.dissociate = False
     ref.qd.multi_ligand = None
-    ref.qd.optimize = {'job1': AMSJob, 'keep_files': True, 'use_ff': False, 's2': {'description': 'UFF with the default forcefield', 'input': {'uff': {'library': 'uff'}, 'ams': {'system': {'bondorders': {}}}}}, 's1': {'description': 'UFF with the default forcefield', 'input': {'uff': {'library': 'uff'}, 'ams': {'system': {'bondorders': {}}}}}, 'job2': AMSJob}  # noqa
+    ref.qd.optimize = {
+        'job1': AMSJob,
+        'keep_files': True,
+        'use_ff': False,
+        's2': {
+            'description': 'UFF with the default forcefield',
+            'input': {
+                'forcefield': {'type': 'uff'},
+                'ams': {'system': {'bondorders': {}}}
+            },
+        },
+        's1': {
+            'description': 'UFF with the default forcefield',
+            'input': {
+                'forcefield': {'type': 'uff'},
+                'ams': {'system': {'bondorders': {}}}
+            },
+        },
+        'job2': AMSJob,
+    }
 
     ref.forcefield = Settings()
 

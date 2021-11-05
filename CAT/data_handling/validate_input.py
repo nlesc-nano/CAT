@@ -108,7 +108,7 @@ def validate_input(s: Settings, validate_only: bool = True) -> None:
     if not validate_only:
         context = nullcontext()
     else:
-        context = SetEnviron(ADFBIN='a', ADFHOME='2019', ADFRESOURCES='b', SCMLICENSE='c')
+        context = SetEnviron(AMSBIN='', AMSHOME='', AMSRESOURCES='', SCMLICENSE='')
 
     s.optional.database = database_schema.validate(s.optional.database)
     with context:

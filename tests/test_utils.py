@@ -64,20 +64,13 @@ def test_validate_path() -> None:
     assertion.assert_(validate_path, join(PATH, 'Methanol.xyz'), exception=NotADirectoryError)
 
 
+@mock.patch.dict(
+    os.environ,
+    {'AMSBIN': '', 'AMSHOME': '', 'AMSRESOURCES': '', 'SCMLICENSE': ''},
+)
 def test_check_sys_var() -> None:
     """Test :func:`CAT.utils.validate_path`."""
-    @mock.patch.dict(os.environ,
-                     {'ADFBIN': 'a', 'ADFHOME': '2019', 'ADFRESOURCES': 'b', 'SCMLICENSE': 'c'})
-    def test1() -> None:
-        assertion.is_(check_sys_var(), None)
-
-    @mock.patch.dict(os.environ,
-                     {'ADFBIN': '', 'ADFHOME': '2019', 'ADFRESOURCES': '', 'SCMLICENSE': ''})
-    def test2() -> None:
-        assertion.assert_(check_sys_var, exception=EnvironmentError)
-
-    test1()
-    test2()
+    assertion.is_(check_sys_var(), None)
 
 
 def test_restart_init() -> None:
