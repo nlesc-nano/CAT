@@ -1,8 +1,8 @@
 UFF:
     description: UFF with the default forcefield
     input:
-        uff:
-            library: uff
+        forcefield:
+            type: uff
         ams:
             system:
                 bondorders: {}
