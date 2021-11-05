@@ -25,7 +25,7 @@ API
 from __future__ import annotations
 
 from itertools import chain
-from typing import Sequence, List, Tuple, Iterable, Callable
+from typing import Sequence, List, Tuple, Iterable, Callable, Iterator, TYPE_CHECKING
 
 import pandas as pd
 
@@ -40,6 +40,9 @@ from ..mol_utils import separate_mod   # noqa: F401
 from ..workflows import MOL, FORMULA, HDF5_INDEX, OPT
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.validate_mol import santize_smiles
+
+if TYPE_CHECKING:
+    from ..data_handling.anchor_parsing import MolMatches
 
 __all__ = ['init_ligand_anchoring']
 
@@ -168,7 +171,7 @@ def _smiles_to_rdmol(smiles: str) -> Chem.Mol:
 
 def find_substructure(
     ligand: Molecule,
-    func_groups: Iterable[Chem.Mol],
+    func_groups: MolMatches,
     split: bool = True,
     condition: None | Callable[[int], bool] = None,
 ) -> List[Molecule]:
@@ -180,8 +183,6 @@ def find_substructure(
         The ligand molecule.
     func_groups : |tuple|_ [|Chem.Mol|_]
         A collection of RDKit molecules representing functional groups.
-    split : bool
-        If a functional group should be split from **ligand** (``True``) or not (``False``).
 
     Returns
     -------
@@ -196,18 +197,20 @@ def find_substructure(
 
     # Searches for functional groups (defined by functional_group_list) within the ligand
     get_match = rdmol.GetSubstructMatches
-    matches = chain.from_iterable(get_match(mol, useChirality=True) for mol in func_groups)
+    matches: Iterator[tuple[int, ...]] = chain.from_iterable(
+        get_match(mol, useChirality=True) for mol in func_groups.mol
+    )
 
     # Remove all duplicate matches, each heteroatom (match[0]) should have <= 1 entry
     ligand_indices = []
-    ref = []
+    ref = set()
     for idx_tup in matches:
         i, *_ = idx_tup
         if i in ref:
             continue  # Skip duplicates
 
         ligand_indices.append(idx_tup)
-        ref.append(i)
+        ref.add(i)
 
     if condition is not None:
         if not condition(len(ligand_indices)):
