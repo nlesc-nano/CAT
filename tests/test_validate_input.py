@@ -22,8 +22,10 @@ QD_PATH = PATH / 'qd'
 DB_PATH = PATH / 'database'
 
 
-@mock.patch.dict(os.environ,
-                 {'ADFBIN': 'a', 'ADFHOME': '2019', 'ADFRESOURCES': 'b', 'SCMLICENSE': 'c'})
+@mock.patch.dict(
+    os.environ,
+    {'AMSBIN': '', 'AMSHOME': '', 'AMSRESOURCES': '', 'SCMLICENSE': ''},
+)
 @delete_finally(LIG_PATH, QD_PATH, DB_PATH)
 def test_validate_input() -> None:
     """Test :func:`CAT.data_handling.validate_input.validate_input`."""

@@ -274,8 +274,10 @@ def test_mongodb_schema() -> None:
     assertion.eq(mongodb_schema.validate(mongodb_dict)['password'], 53)
 
 
-@mock.patch.dict(os.environ,
-                 {'ADFBIN': 'a', 'ADFHOME': '2019', 'ADFRESOURCES': 'b', 'SCMLICENSE': 'c'})
+@mock.patch.dict(
+    os.environ,
+    {'AMSBIN': '', 'AMSHOME': '', 'AMSRESOURCES': '', 'SCMLICENSE': ''},
+)
 def test_qd_opt_schema() -> None:
     """Test :data:`CAT.data_handling.validation_schemas.qd_opt_schema`."""
     _qd_opt_s1_default = get_template('qd.yaml')['UFF']
@@ -318,8 +320,10 @@ def test_qd_opt_schema() -> None:
         assertion.eq(qd_opt_schema.validate(qd_opt_dict)[s], ref)
 
 
-@mock.patch.dict(os.environ,
-                 {'ADFBIN': 'a', 'ADFHOME': '2019', 'ADFRESOURCES': 'b', 'SCMLICENSE': 'c'})
+@mock.patch.dict(
+    os.environ,
+    {'AMSBIN': '', 'AMSHOME': '', 'AMSRESOURCES': '', 'SCMLICENSE': ''},
+)
 def test_crs_schema() -> None:
     """Test :data:`CAT.data_handling.validation_schemas.crs_schema`."""
     _crs_s1_default = get_template('qd.yaml')['COSMO-MOPAC']
@@ -368,8 +372,10 @@ def test_crs_schema() -> None:
         assertion.eq(crs_schema.validate(crs_dict)[s], ref)
 
 
-@mock.patch.dict(os.environ,
-                 {'ADFBIN': 'a', 'ADFHOME': '2019', 'ADFRESOURCES': 'b', 'SCMLICENSE': 'c'})
+@mock.patch.dict(
+    os.environ,
+    {'AMSBIN': '', 'AMSHOME': '', 'AMSRESOURCES': '', 'SCMLICENSE': ''},
+)
 def test_bde_schema() -> None:
     """Test :data:`CAT.data_handling.validation_schemas.bde_schema`."""
     _bde_s1_default = get_template('qd.yaml')['MOPAC']

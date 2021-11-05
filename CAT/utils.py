@@ -94,23 +94,22 @@ def check_sys_var() -> None:
     Raises
     ------
     EnvironmentError
-        Raised if an ADF version prior to 2019 is found or if one or more of the
-        following environment variables are absent:
-        * ``'ADFBIN'``
-        * ``'ADFHOME'``
-        * ``'ADFRESOURCES'``
+        Raised if one or more of the following environment variables are absent:
+        * ``'AMSBIN'``
+        * ``'AMSHOME'``
+        * ``'AMSRESOURCES'``
         * ``'SCMLICENSE'``
 
     """
-    sys_var = ('ADFBIN', 'ADFHOME', 'ADFRESOURCES', 'SCMLICENSE')
-    sys_var_exists = [item in os.environ and os.environ[item] for item in sys_var]
+    sys_var = ['AMSBIN', 'AMSHOME', 'AMSRESOURCES', 'SCMLICENSE']
+    sys_var_exists = [item in os.environ for item in sys_var]
     for i, item in enumerate(sys_var_exists):
         if not item:
-            logger.error(f"The environment variable '{sys_var[i]}' has not been set")
+            logger.error(f"The environment variable {sys_var[i]!r} has not been set")
 
     if not all(sys_var_exists):
-        raise EnvironmentError('One or more ADF environment variables have not been set, '
-                               'aborting ADF job')
+        raise EnvironmentError('One or more AMS environment variables have not been set, '
+                               'aborting AMS job')
 
 
 def dict_concatenate(dict_list: Iterable[Mapping[KT, VT]]) -> Dict[KT, VT]:
