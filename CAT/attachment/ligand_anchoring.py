@@ -162,7 +162,7 @@ def _smiles_to_rdmol(smiles: str) -> Chem.Mol:
         mol = Chem.MolFromSmiles(smiles, sanitize=False)
         Chem.rdmolops.SanitizeMol(mol, sanitizeOps=sanitize)
     except Exception as ex:
-        raise ex.__class__(f'Failed to parse the following SMILES string: {repr(smiles)}\n\n{ex}')
+        raise ValueError(f'Failed to parse the following SMILES string: {smiles!r}') from ex
     return mol
 
 
