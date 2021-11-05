@@ -278,7 +278,8 @@ def restart_init(path: Union[str, 'os.PathLike[str]'],
     # Change the default job manager
     with open(os.devnull, 'w') as f_, redirect_stdout(f_):
         init()
-    rmtree(config.default_jobmanager.workdir)
+    if os.path.isdir(config.default_jobmanager.workdir):
+        rmtree(config.default_jobmanager.workdir)
     config.default_jobmanager = manager
     config.log.file = 3
     config.log.stdout = 0
