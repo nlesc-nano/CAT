@@ -26,12 +26,7 @@ docs_require = [
 tests_require = [
     'pytest>=5.4.0',
     'pytest-cov',
-    'flake8>=3.8.0',
-    'pyflakes>=2.1.1',
-    'pytest-flake8>=1.0.6',
-    'pydocstyle>=5.0.0',
-    'pytest-pydocstyle>=2.1',
-    'pytest-mock'
+    'pytest-mock',
 ]
 tests_require += docs_require
 

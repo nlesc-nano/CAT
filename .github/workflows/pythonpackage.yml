@@ -63,3 +63,32 @@ jobs:
                 with:
                     file: ./coverage.xml
                     name: codecov-umbrella
+
+    Linting:
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v2
+
+            -   name: Set up Python 3.9 on ubuntu-latest
+                uses: actions/setup-python@v2
+                with:
+                    python-version: 3.9
+
+            -   name: Install linters
+                run: pip install "flake8>=3.8.0" "pydocstyle>=5.0.0"
+
+            -   name: Python info
+                run: |
+                    which python
+                    python --version
+
+            -   name: Installed packages
+                run: pip list
+
+            -   name: Run flake8
+                run: flake8 CAT tests
+                continue-on-error: true
+
+            -   name: Run pydocstyle
+                run: pydocstyle CAT tests
+                continue-on-error: true
