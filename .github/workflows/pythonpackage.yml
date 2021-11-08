@@ -16,52 +16,76 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                os: [ubuntu-latest, macos-latest, windows-latest]
+                os: [ubuntu-latest, macos-latest]
                 version: [3.7, 3.8, 3.9]
-
         steps:
             -   name: Cancel Previous Runs
-                uses: styfle/cancel-workflow-action@0.9.0
+                uses: styfle/cancel-workflow-action@0.9.1
                 with:
                     access_token: ${{ github.token }}
 
             -   uses: actions/checkout@v2
 
-            -   name: Set up Conda with Python ${{ matrix.version }} on ${{ matrix.os }}
+            -   name: Setup Conda
                 uses: s-weigand/setup-conda@v1
                 with:
-                    update-conda: true
-                    python-version: ${{ matrix.version }}
-                    conda-channels: anaconda
-
-            -   name: Install conda-based dependencies
-                if: matrix.version != '3.9'
-                shell: bash -l {0}
-                run: conda install -c conda-forge rdkit=2019.09.2 "pip<=20.2"
-
-            -   name: Install conda-based dependencies (3.9)
-                if: matrix.version == '3.9'
-                shell: bash -l {0}
-                run: conda install -c conda-forge rdkit "pip<=20.2"
+                    update-conda: false
 
             -   name: Install dependencies
-                run: pip install -e .[test]
-                env:
-                    CONDA_PREFIX: /usr/share/miniconda
+                run: |
+                    case "${{ matrix.version }}" in
+                        "3.7"|"3.8")
+                            conda create -n test -c conda-forge python=${{ matrix.version }} rdkit=2019.09.2 "pip<=20.2" ;;
+                        *)
+                            conda create -n test -c conda-forge python=${{ matrix.version }} rdkit "pip<=20.2" ;;
+                    esac
+                    source $CONDA/bin/activate test
+                    pip install -e .[test]
 
             -   name: Conda info
-                run: conda info
+                run: |
+                    source $CONDA/bin/activate test
+                    conda info
 
             -   name: Installed packages
-                run: conda list
+                run: conda list -n test
 
             -   name: Run tests
-                run: pytest -m "not slow"
-                env:
-                    CONDA_PREFIX: /usr/share/miniconda
+                run: |
+                    source $CONDA/bin/activate test
+                    pytest -m "not slow"
 
             -   name: Run codecov
-                uses: codecov/codecov-action@v1
+                uses: codecov/codecov-action@v2
                 with:
                     file: ./coverage.xml
                     name: codecov-umbrella
+
+    Linting:
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v2
+
+            -   name: Set up Python 3.9 on ubuntu-latest
+                uses: actions/setup-python@v2
+                with:
+                    python-version: 3.9
+
+            -   name: Install linters
+                run: pip install "flake8>=3.8.0" "pydocstyle>=5.0.0"
+
+            -   name: Python info
+                run: |
+                    which python
+                    python --version
+
+            -   name: Installed packages
+                run: pip list
+
+            -   name: Run flake8
+                run: flake8 CAT tests
+                continue-on-error: true
+
+            -   name: Run pydocstyle
+                run: pydocstyle CAT tests
+                continue-on-error: true
