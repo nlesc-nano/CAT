@@ -18,7 +18,6 @@ jobs:
             matrix:
                 os: [ubuntu-latest, macos-latest, windows-latest]
                 version: [3.7, 3.8, 3.9]
-
         steps:
             -   name: Cancel Previous Runs
                 uses: styfle/cancel-workflow-action@0.9.1
@@ -30,33 +29,50 @@ jobs:
             -   name: Setup Conda
                 uses: s-weigand/setup-conda@v1
                 with:
-                    update-conda: true
-                    python-version: ${{ matrix.version }}
-                    conda-channels: anaconda, conda-forge
+                    update-conda: false
 
             -   name: Install dependencies
-                shell: bash -l {0}
-                env:
-                    CONDA_PREFIX: /usr/share/miniconda
+                if: matrix.os != 'windows-latest'
                 run: |
+                    echo "CONDA_ACTIVATE=source $CONDA/bin/activate" >> $GITHUB_ENV
+
                     case "${{ matrix.version }}" in
                         "3.7"|"3.8")
-                            conda install -c conda-forge rdkit=2019.09.2 "pip<=20.2" ;;
+                            conda create -n test -c conda-forge python=${{ matrix.version }} rdkit=2019.09.2 "pip<=20.2" ;;
                         *)
-                            conda install -c conda-forge rdkit "pip<=20.2" ;;
+                            conda create -n test -c conda-forge python=${{ matrix.version }} rdkit "pip<=20.2" ;;
                     esac
+
+                    source $CONDA/bin/activate test
+                    pip install -e .[test]
+
+            -   name: Install dependencies (Windows)
+                if: matrix.os == 'windows-latest'
+                run: |
+                    echo "CONDA_ACTIVATE=C:\Miniconda\condabin\conda.bat activate" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+                    switch ("${{ matrix.version }}")
+                    {
+                        "3.7" {conda create -n test -y -c conda-forge python=${{ matrix.version }} rdkit=2019.09.2 "pip<=20.2"}
+                        "3.8" {conda create -n test -y -c conda-forge python=${{ matrix.version }} rdkit=2019.09.2 "pip<=20.2"}
+                        default {conda create -n test -y -c conda-forge python=${{ matrix.version }} rdkit "pip<=20.2"}
+                    }
+
+                    C:\Miniconda\condabin\conda.bat activate test
                     pip install -e .[test]
 
             -   name: Conda info
-                run: conda info
+                run: |
+                    ${{ env.CONDA_ACTIVATE }} test
+                    conda info
 
             -   name: Installed packages
-                run: conda list
+                run: conda list -n test
 
             -   name: Run tests
-                run: pytest -m "not slow"
-                env:
-                    CONDA_PREFIX: /usr/share/miniconda
+                run: |
+                    ${{ env.CONDA_ACTIVATE }} test
+                    pytest -m "not slow"
 
             -   name: Run codecov
                 uses: codecov/codecov-action@v2
