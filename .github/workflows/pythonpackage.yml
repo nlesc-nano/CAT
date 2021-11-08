@@ -37,7 +37,14 @@ jobs:
                         "3.7"|"3.8")
                             conda create -n test -c conda-forge python=${{ matrix.version }} rdkit=2019.09.2 "pip<=20.2" ;;
                         *)
-                            conda create -n test -c conda-forge python=${{ matrix.version }} rdkit "pip<=20.2" ;;
+                            case "${{ matrix.os }}" in
+                               "macos-latest")
+                                    # TODO: Remove when/if scipy and h5py wheels are available again
+                                    conda create -n test -c conda-forge python=${{ matrix.version }} rdkit "pip<=20.2" scipy h5py ;;
+                                *)
+                                    conda create -n test -c conda-forge python=${{ matrix.version }} rdkit "pip<=20.2" ;;
+                            esac
+                            ;;
                     esac
                     source $CONDA/bin/activate test
                     pip install -e .[test]
