@@ -16,7 +16,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                os: [ubuntu-latest, macos-latest, windows-latest]
+                os: [ubuntu-latest, macos-latest]
                 version: [3.7, 3.8, 3.9]
         steps:
             -   name: Cancel Previous Runs
@@ -32,38 +32,19 @@ jobs:
                     update-conda: false
 
             -   name: Install dependencies
-                if: matrix.os != 'windows-latest'
                 run: |
-                    echo "CONDA_ACTIVATE=source $CONDA/bin/activate" >> $GITHUB_ENV
-
                     case "${{ matrix.version }}" in
                         "3.7"|"3.8")
                             conda create -n test -c conda-forge python=${{ matrix.version }} rdkit=2019.09.2 "pip<=20.2" ;;
                         *)
                             conda create -n test -c conda-forge python=${{ matrix.version }} rdkit "pip<=20.2" ;;
                     esac
-
                     source $CONDA/bin/activate test
-                    pip install -e .[test]
-
-            -   name: Install dependencies (Windows)
-                if: matrix.os == 'windows-latest'
-                run: |
-                    echo "CONDA_ACTIVATE=C:\Miniconda\condabin\conda.bat activate" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-                    switch ("${{ matrix.version }}")
-                    {
-                        "3.7" {conda create -n test -y -c conda-forge python=${{ matrix.version }} rdkit=2019.09.2 "pip<=20.2"}
-                        "3.8" {conda create -n test -y -c conda-forge python=${{ matrix.version }} rdkit=2019.09.2 "pip<=20.2"}
-                        default {conda create -n test -y -c conda-forge python=${{ matrix.version }} rdkit "pip<=20.2"}
-                    }
-
-                    C:\Miniconda\condabin\conda.bat activate test
                     pip install -e .[test]
 
             -   name: Conda info
                 run: |
-                    ${{ env.CONDA_ACTIVATE }} test
+                    source $CONDA/bin/activate test
                     conda info
 
             -   name: Installed packages
@@ -71,7 +52,7 @@ jobs:
 
             -   name: Run tests
                 run: |
-                    ${{ env.CONDA_ACTIVATE }} test
+                    source $CONDA/bin/activate test
                     pytest -m "not slow"
 
             -   name: Run codecov
