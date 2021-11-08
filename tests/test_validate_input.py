@@ -91,7 +91,7 @@ def test_validate_input() -> None:
     func_groups1 = s.optional.ligand.pop('anchor')
     func_groups2 = s2.optional.ligand.pop('anchor')
 
-    for mol in chain(func_groups1, func_groups2):
+    for mol in chain(func_groups1.mol, func_groups2.mol):
         assertion.isinstance(mol, Chem.Mol)
     assertion.eq(s.optional, ref)
     assertion.eq(s2.optional, ref)

@@ -16,7 +16,6 @@ from os import mkdir
 from os.path import (join, isdir)
 from contextlib import nullcontext
 
-from rdkit.Chem import Mol
 from scm.plams import Settings
 
 from .validation_schemas import (
@@ -38,9 +37,9 @@ from .validation_schemas import (
 
 from .validate_ff import validate_ff, update_ff_jobs
 from .validate_mol import validate_mol
+from .anchor_parsing import parse_anchors
 from ..utils import validate_path, SetEnviron
 from ..logger import logger
-from ..attachment.ligand_anchoring import get_functional_groups
 
 try:
     from dataCAT import Database
@@ -186,7 +185,4 @@ def validate_input(s: Settings, validate_only: bool = True) -> None:
         del s.optional.ligand.functional_groups
 
         split = s.optional.ligand.split
-        if func_groups is None:
-            s.optional.ligand.anchor = get_functional_groups(None, split)
-        elif not isinstance(func_groups[0], Mol):
-            s.optional.ligand.anchor = get_functional_groups(func_groups)
+        s.optional.ligand.anchor = parse_anchors(func_groups, split)

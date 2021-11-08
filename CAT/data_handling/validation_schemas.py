@@ -64,7 +64,6 @@ import numpy as np
 from schema import Or, And, Use, Schema
 from schema import Optional as Optional_
 
-from rdkit.Chem import Mol
 from scm.plams import CRSJob, Settings
 from scm.plams.core.basejob import Job
 
@@ -469,37 +468,10 @@ ligand_schema: Schema = Schema({
     'dirname':
         And(str, error='optional.ligand.dirname expects a string'),
 
-    Optional_('anchor', default=None):
-        Or(
-            None,
-            And(str, Use(lambda n: (n,))),
-            And(tuple, lambda tup: all(isinstance(i, Mol) for i in tup)),
-            And(
-                abc.Collection,
-                lambda n: all(isinstance(i, str) for i in n),
-                lambda n: len(n) == len(set(n)),
-                Use(to_tuple),
-                error='optional.ligand.anchor expects a list of unique SMILES strings'
-            ),
-            error=('optional.ligand.anchor expects None, a SMILES string, '
-                   'or a list of unique SMILES string')
-        ),
+    Optional_('anchor', default=None): object,
 
     # Alias for `optional.ligand.anchor`
-    Optional_('functional_groups', default=None):
-        Or(
-            None,
-            And(str, Use(lambda n: (n,))),
-            And(
-                abc.Collection,
-                lambda n: all(isinstance(i, str) for i in n),
-                lambda n: len(n) == len(set(n)),
-                Use(to_tuple),
-                error='optional.ligand.functional_groups expects a list of unique SMILES strings'
-            ),
-            error=('optional.ligand.functional_groups expects None (NoneType), a SMILES string, '
-                   'or a list of unique SMILES string')
-        ),
+    Optional_('functional_groups', default=None): object,
 
     Optional_('optimize', default={'job1': None}):  # Optimize the ligands
         Or(

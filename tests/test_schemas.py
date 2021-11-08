@@ -148,15 +148,6 @@ def test_ligand_schema() -> None:
     lig_dict['cosmo-rs'] = True
     assertion.eq(ligand_schema.validate(lig_dict)['cosmo-rs'], {'job1': 'AMSJob'})
 
-    lig_dict['anchor'] = 1  # Exception: incorrect type
-    assertion.assert_(ligand_schema.validate, lig_dict, exception=SchemaError)
-    lig_dict['anchor'] = 'CO'
-    assertion.eq(ligand_schema.validate(lig_dict)['anchor'], ('CO',))
-    lig_dict['anchor'] = ['CO']
-    assertion.eq(ligand_schema.validate(lig_dict)['anchor'], ('CO',))
-    lig_dict['anchor'] = ['CO', 'CO']  # Exception: duplicate elements
-    assertion.assert_(ligand_schema.validate, lig_dict, exception=SchemaError)
-
 
 def test_core_schema() -> None:
     """Test :data:`CAT.data_handling.validation_schemas.core_schema`."""

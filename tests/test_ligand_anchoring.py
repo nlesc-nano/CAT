@@ -16,6 +16,7 @@ from CAT.base import prep_input
 from CAT.attachment.ligand_anchoring import (
     get_functional_groups, _smiles_to_rdmol, find_substructure, init_ligand_anchoring
 )
+from CAT.data_handling.anchor_parsing import parse_anchors
 
 PATH = join('tests', 'test_files')
 
@@ -82,7 +83,7 @@ def test_smiles_to_rdmol() -> None:
 
 def test_find_substructure() -> None:
     """Tests for :meth:`CAT.attachment.ligand_anchoring.find_substructure`."""
-    func_groups = get_functional_groups(split=True)
+    func_groups = parse_anchors(split=True)
     mol = from_smiles('O=C(O)C(O)N')
     out = find_substructure(mol, func_groups)
 
@@ -119,7 +120,7 @@ def test_find_substructure() -> None:
     out_invalid = find_substructure(mol_invalid, func_groups)
     assertion.eq(out_invalid, [])
 
-    func_groups_nosplit = get_functional_groups(split=False)
+    func_groups_nosplit = parse_anchors(split=False)
     out_nosplit = find_substructure(mol, func_groups_nosplit, split=False)
     for m in out_nosplit:
         assertion.len_eq(m, len(mol))
