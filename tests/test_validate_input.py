@@ -14,7 +14,13 @@ from assertionlib import assertion
 from nanoutils import delete_finally
 
 from CAT.data_handling.validate_input import validate_input
-from dataCAT import Database
+
+try:
+    from dataCAT import Database
+except ImportError:
+    HAS_DATACAT = False
+else:
+    HAS_DATACAT = True
 
 PATH = Path('tests') / 'test_files'
 LIG_PATH = PATH / 'ligand'
@@ -50,7 +56,10 @@ def test_validate_input() -> None:
     ref.database.read = ('core', 'ligand', 'qd')
     ref.database.write = ('core', 'ligand', 'qd')
     ref.database.thread_safe = False
-    ref.database.db = Database(ref.database.dirname, **ref.database.mongodb)
+    if HAS_DATACAT:
+        ref.database.db = Database(ref.database.dirname, **ref.database.mongodb)
+    else:
+        ref.database.db = None
 
     ref.ligand['cosmo-rs'] = False
     ref.ligand.dirname = join(PATH, 'ligand')

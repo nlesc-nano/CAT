@@ -12,9 +12,14 @@ API
 
 """
 
+import sys
 from os import mkdir
 from os.path import (join, isdir)
-from contextlib import nullcontext
+
+if sys.version_info >= (3, 7):
+    from contextlib import nullcontext
+else:
+    from contextlib2 import nullcontext
 
 from scm.plams import Settings
 

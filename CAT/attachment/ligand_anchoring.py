@@ -22,8 +22,6 @@ API
 
 """
 
-from __future__ import annotations
-
 from itertools import chain
 from typing import Sequence, List, Tuple, Iterable, Callable, Iterator, TYPE_CHECKING
 
@@ -123,7 +121,7 @@ def _get_df(
 
 
 def get_functional_groups(
-    functional_groups: None | Iterable[str] = None,
+    functional_groups: "None | Iterable[str]" = None,
     split: bool = True,
 ) -> Tuple[Chem.Mol, ...]:
     """Construct a list of RDKit molecules representing functional groups.
@@ -171,9 +169,9 @@ def _smiles_to_rdmol(smiles: str) -> Chem.Mol:
 
 def find_substructure(
     ligand: Molecule,
-    func_groups: MolMatches,
+    func_groups: "MolMatches",
     split: bool = True,
-    condition: None | Callable[[int], bool] = None,
+    condition: "None | Callable[[int], bool]" = None,
 ) -> List[Molecule]:
     """Identify interesting functional groups within the ligand.
 
