@@ -89,7 +89,7 @@ def validate_input(s: Settings, validate_only: bool = True) -> None:
     dirnames = ('database', 'ligand', 'core', 'qd')
     if not validate_only:
         # Validate the path
-        s.path = validate_path(s.path)
+        s.path = validate_path(s.get("path"))
 
         # Set the various working directories
         for key in dirnames:
