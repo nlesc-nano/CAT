@@ -35,13 +35,11 @@ if sys.version_info >= (3, 7):
 # Check if rdkit is manually installed (as it is not available via pypi)
 try:
     importlib.import_module("rdkit")
-except ModuleNotFoundError as ex:
-    import warnings
-    exc = ImportWarning(
-        "'CAT' requires the 'rdkit' package: https://anaconda.org/conda-forge/rdkit"
+except ModuleNotFoundError:
+    print(
+        "`CAT` requires the `rdkit` package: https://anaconda.org/conda-forge/rdkit",
+        file=sys.stderr,
     )
-    exc.__cause__ = ex
-    warnings.warn(exc)
 
 setup(
     name='CAT',
