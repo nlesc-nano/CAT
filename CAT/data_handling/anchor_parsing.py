@@ -1,30 +1,18 @@
 """A module for parsing the ``ligand.anchor`` keyword."""
 
-from __future__ import annotations
-
 import re
 import enum
 import operator
 import pprint
 from itertools import chain
-from typing import Union, NamedTuple, TYPE_CHECKING
-from collections.abc import Collection, Iterable, Iterator
+from typing import Union, NamedTuple, Tuple, Collection, Iterable, Iterator
 
 from scm import plams
 from rdkit.Chem import Mol
 from schema import Schema, Use, Optional
+from typing_extensions import TypedDict, SupportsIndex
 
 from ..attachment.ligand_anchoring import _smiles_to_rdmol, get_functional_groups
-
-if TYPE_CHECKING:
-    from typing_extensions import TypedDict, SupportsIndex
-
-    class _UnparsedAnchorDictBase(TypedDict):
-        group: str
-        anchor_idx: SupportsIndex | Collection[SupportsIndex]
-
-    class _UnparsedAnchorDict(_UnparsedAnchorDictBase, total=False):
-        remove: None | SupportsIndex | Collection[SupportsIndex]
 
 __all__ = ["parse_anchors"]
 
@@ -35,6 +23,15 @@ _ATOMS = "|".join(sorted(
 PATTERN = re.compile(f"({_ATOMS})")
 
 
+class _UnparsedAnchorDictBase(TypedDict):
+    group: str
+    anchor_idx: "SupportsIndex | Collection[SupportsIndex]"
+
+
+class _UnparsedAnchorDict(_UnparsedAnchorDictBase, total=False):
+    remove: "None | SupportsIndex | Collection[SupportsIndex]"
+
+
 class KindEnum(enum.Enum):
     FIRST = 0
     MEAN = 1
@@ -42,14 +39,55 @@ class KindEnum(enum.Enum):
 
 class AnchorTup(NamedTuple):
     mol: Mol
-    anchor_idx: tuple[int, ...] = (0,)
-    atoms: None | tuple[str, ...] = None
-    group: None | str = None
-    remove: None | tuple[int, ...] = None
+    anchor_idx: Tuple[int, ...] = (0,)
+    atoms: "None | Tuple[str, ...]" = None
+    group: "None | str" = None
+    remove: "None | Tuple[int, ...]" = None
     kind: KindEnum = KindEnum.FIRST
 
 
-def _parse_anchor_idx(item: SupportsIndex | Iterable[SupportsIndex]) -> tuple[int, ...]:
+class MolMatches:
+    __slots__ = ("__weakref__", "anchor_tup")
+
+    @property
+    def mol(self) -> Iterator[Mol]:
+        return (i.mol for i in self.anchor_tup)
+
+    @property
+    def group(self) -> Iterator["None | str"]:
+        return (i.group for i in self.anchor_tup)
+
+    @property
+    def atoms(self) -> Iterator["None | Tuple[str, ...]"]:
+        return (i.atoms for i in self.anchor_tup)
+
+    @property
+    def anchor_idx(self) -> Iterator["Tuple[int, ...]"]:
+        return (i.anchor_idx for i in self.anchor_tup)
+
+    @property
+    def remove(self) -> Iterator["None | Tuple[int, ...]"]:
+        return (i.remove for i in self.anchor_tup)
+
+    @property
+    def kind(self) -> Iterator[KindEnum]:
+        return (i.kind for i in self.anchor_tup)
+
+    def __init__(self, anchor_tups: Iterable[AnchorTup]) -> None:
+        self.anchor_tup = tuple(anchor_tups)
+
+    def __repr__(self) -> str:
+        name = type(self).__name__
+        width = 80 - len(name)
+        indent = len(name) + 2
+        values = pprint.pformat(self.anchor_tup, width=width, indent=indent)[indent:]
+        return f"{name}(({values})"
+
+    def get_matches(mol: "plams.Molecule | Mol") -> None:
+        mol = plams.to_rdmol(mol)
+
+
+def _parse_anchor_idx(item: "SupportsIndex | Iterable[SupportsIndex]") -> Tuple[int, ...]:
     """Parse the ``anchor_idx`` option."""
     try:
         return (operator.index(item),)
@@ -63,7 +101,9 @@ def _parse_anchor_idx(item: SupportsIndex | Iterable[SupportsIndex]) -> tuple[in
     return ret
 
 
-def _parse_remove(item: None | SupportsIndex | Iterable[SupportsIndex]) -> None | set[int]:
+def _parse_remove(
+    item: "None | SupportsIndex | Iterable[SupportsIndex]"
+) -> "None | Tuple[int, ...]":
     """Parse the ``remove`` option."""
     if item is None:
         return None
@@ -71,7 +111,7 @@ def _parse_remove(item: None | SupportsIndex | Iterable[SupportsIndex]) -> None 
         return _parse_anchor_idx(item)
 
 
-def _parse_kind(typ: None | str) -> KindEnum:
+def _parse_kind(typ: "None | str") -> KindEnum:
     """Parse the ``kind`` option."""
     if typ is None:
         return KindEnum.FIRST
@@ -132,44 +172,3 @@ def parse_anchors(
         p["mol"] = _smiles_to_rdmol(group)
         ret.append(AnchorTup(**p))
     return MolMatches(ret)
-
-
-class MolMatches:
-    __slots__ = ("__weakref__", "anchor_tup")
-
-    @property
-    def mol(self) -> Iterator[Mol]:
-        return (i.mol for i in self.anchor_tup)
-
-    @property
-    def group(self) -> Iterator[None | str]:
-        return (i.group for i in self.anchor_tup)
-
-    @property
-    def atoms(self) -> Iterator[None | tuple[str, ...]]:
-        return (i.atoms for i in self.anchor_tup)
-
-    @property
-    def anchor_idx(self) -> Iterator[tuple[int, ...]]:
-        return (i.anchor_idx for i in self.anchor_tup)
-
-    @property
-    def remove(self) -> Iterator[None | tuple[int, ...]]:
-        return (i.remove for i in self.anchor_tup)
-
-    @property
-    def kind(self) -> Iterator[KindEnum]:
-        return (i.kind for i in self.anchor_tup)
-
-    def __init__(self, anchor_tups: Iterable[AnchorTup]) -> None:
-        self.anchor_tup = tuple(anchor_tups)
-
-    def __repr__(self) -> str:
-        name = type(self).__name__
-        width = 80 - len(name)
-        indent = len(name) + 2
-        values = pprint.pformat(self.anchor_tup, width=width, indent=indent)[indent:]
-        return f"{name}(({values})"
-
-    def get_matches(mol: plams.Molecule | Mol) -> None:
-        mol = plams.to_rdmol(mol)

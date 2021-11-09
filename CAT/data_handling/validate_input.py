@@ -12,9 +12,14 @@ API
 
 """
 
+import sys
 from os import mkdir
 from os.path import (join, isdir)
-from contextlib import nullcontext
+
+if sys.version_info >= (3, 7):
+    from contextlib import nullcontext
+else:
+    from contextlib2 import nullcontext
 
 from scm.plams import Settings
 
@@ -89,7 +94,7 @@ def validate_input(s: Settings, validate_only: bool = True) -> None:
     dirnames = ('database', 'ligand', 'core', 'qd')
     if not validate_only:
         # Validate the path
-        s.path = validate_path(s.path)
+        s.path = validate_path(s.get("path"))
 
         # Set the various working directories
         for key in dirnames:

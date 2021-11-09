@@ -12,8 +12,6 @@ API
 
 """
 
-from __future__ import annotations
-
 import os
 from types import MappingProxyType
 from typing import Iterable, Container, Union, Callable
@@ -28,7 +26,7 @@ __all__ = ['mol_to_file']
 MolExportFunc = Callable[[Molecule, Union[str, bytes, os.PathLike]], None]
 
 #: A mapping of file extensions to a Callable for Molecule exporting
-EXPORT_MAPPING: MappingProxyType[str, MolExportFunc] = MappingProxyType({
+EXPORT_MAPPING: "MappingProxyType[str, MolExportFunc]" = MappingProxyType({
     'pdb': writepdb,
     'xyz': Molecule.write,
     'mol': Molecule.write,
@@ -38,7 +36,7 @@ EXPORT_MAPPING: MappingProxyType[str, MolExportFunc] = MappingProxyType({
 
 def mol_to_file(
     mol_list: Iterable[Molecule],
-    path: None | str = None,
+    path: "None | str" = None,
     overwrite: bool = True,
     mol_format: Container[str] = ('xyz', 'pdb'),
 ) -> None:
