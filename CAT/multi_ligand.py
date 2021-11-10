@@ -1,15 +1,14 @@
 """A module for attaching multiple non-unique ligands to a single quantum dot."""
 
 import os
-from typing import (Iterable, Any, overload, Sequence, MutableSequence,
-                    Collection, List, Union)
+from typing import Iterable, Any, overload, Sequence, MutableSequence, List, Union
 
 import numpy as np
 import pandas as pd
 
-from rdkit import Chem
 from scm.plams import Molecule, MoleculeError
 
+from .utils import AnchorTup
 from .workflows import WorkFlow
 from .mol_utils import to_symbol
 from .data_handling import mol_to_file
@@ -115,7 +114,7 @@ def _multi_lig_f(qd_series, ligands, path, f, **kwargs):
 
 
 def smiles_to_lig(smiles: MutableSequence[str],
-                  functional_groups: Collection[Chem.Mol],
+                  functional_groups: Iterable[AnchorTup],
                   opt: bool = True, split: bool = True) -> List[Molecule]:
     """Parse and convert all **smiles** strings into Molecules."""
     # Convert the SMILES strings into ligands
@@ -123,7 +122,7 @@ def smiles_to_lig(smiles: MutableSequence[str],
     ligands = [find_substructure(lig, functional_groups, split)[0] for lig in read_mol(smiles)]
 
     # Optimize the ligands
-    process_mol = optimize_ligand if opt else lambda n: allign_axis(n, n.properties.dummies)
+    process_mol = optimize_ligand if opt else lambda n: allign_axis(n)
     for lig in ligands:
         process_mol(lig)
     return ligands

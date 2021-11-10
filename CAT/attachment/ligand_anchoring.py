@@ -22,25 +22,23 @@ API
 
 """
 
-from itertools import chain
-from typing import Sequence, List, Tuple, Iterable, Callable, Iterator, TYPE_CHECKING
+from itertools import chain, repeat
+from collections import defaultdict
+from typing import Sequence, List, Tuple, Iterable, Callable, Iterator
 
 import pandas as pd
 
-from scm.plams import Molecule, Settings
+from scm.plams import Molecule, Settings, MoleculeError
 import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit import Chem
 
 from ..logger import logger
-from ..utils import get_template
+from ..utils import get_template, AnchorTup
 from ..mol_utils import separate_mod   # noqa: F401
 from ..workflows import MOL, FORMULA, HDF5_INDEX, OPT
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.validate_mol import santize_smiles
-
-if TYPE_CHECKING:
-    from ..data_handling.anchor_parsing import MolMatches
 
 __all__ = ['init_ligand_anchoring']
 
@@ -61,7 +59,6 @@ def init_ligand_anchoring(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     """
     # Unpack arguments
     settings = ligand_df.settings.optional
-    split = settings.ligand.split
     functional_groups = settings.ligand.anchor
 
     # Find all functional groups; return a copy of each mol for each functional group
@@ -70,18 +67,20 @@ def init_ligand_anchoring(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
         # Functional group search
         dummies = lig.properties.dummies
         if not dummies:
-            mol_list += find_substructure(lig, functional_groups, split)
+            mol_list += find_substructure(lig, functional_groups)
             continue
+        else:
+            dummies = tuple(i - 1 for i in dummies)
 
         # Manual specification of a functional group
         if len(dummies) == 1:  # optional.ligand.split = False
-            lig.properties.dummies = (dummies[0] - 1,)
-            _split = False
+            remove = None
         elif len(dummies) == 2:  # optional.ligand.split = True
-            lig.properties.dummies = tuple(i - 1 for i in dummies)
-            _split = True
-
-        mol_list += [substructure_split(lig, lig.properties.dummies, split=_split)]
+            remove = (1,)
+        else:
+            raise NotImplementedError
+        anchor_tup = AnchorTup(None, group_idx=(0,), remove=remove)
+        mol_list += [substructure_split(lig, dummies, anchor_tup)]
 
     # Convert the results into a dataframe
     return _get_df(mol_list, ligand_df.settings)
@@ -169,7 +168,7 @@ def _smiles_to_rdmol(smiles: str) -> Chem.Mol:
 
 def find_substructure(
     ligand: Molecule,
-    func_groups: "MolMatches",
+    func_groups: Iterable[AnchorTup],
     split: bool = True,
     condition: "None | Callable[[int], bool]" = None,
 ) -> List[Molecule]:
@@ -194,33 +193,35 @@ def find_substructure(
     rdmol = molkit.to_rdmol(ligand)
 
     # Searches for functional groups (defined by functional_group_list) within the ligand
-    get_match = rdmol.GetSubstructMatches
-    matches: Iterator[tuple[int, ...]] = chain.from_iterable(
-        get_match(mol, useChirality=True) for mol in func_groups.mol
+    matches: Iterator[Tuple[AnchorTup, Tuple[int, ...]]] = chain.from_iterable(
+        zip(repeat(anchor_tup), rdmol.GetSubstructMatches(anchor_tup.mol, useChirality=True))
+        for anchor_tup in func_groups
     )
 
     # Remove all duplicate matches, each heteroatom (match[0]) should have <= 1 entry
-    ligand_indices = []
-    ref = set()
-    for idx_tup in matches:
-        i, *_ = idx_tup
-        if i in ref:
+    ligand_idx_dict = defaultdict(list)
+    ref_dict = defaultdict(set)
+    for anchor_tup, idx_tup in matches:
+        ref_set = ref_dict[anchor_tup]
+        anchor_idx_tup = tuple(idx_tup[i] for i in anchor_tup.group_idx)
+        if anchor_idx_tup in ref_set:
             continue  # Skip duplicates
 
-        ligand_indices.append(idx_tup)
-        ref.add(i)
+        ligand_idx_dict[anchor_tup].append(idx_tup)
+        ref_set.add(anchor_idx_tup)
 
     if condition is not None:
-        if not condition(len(ligand_indices)):
+        if not condition(sum((len(i) for i in ligand_idx_dict.values()), 0)):
             err = (f"Failed to satisfy the passed condition ({condition!r}) for "
                    f"ligand: {ligand.properties.name!r}")
             logger.error(err)
             return []
 
     ret = []
-    for i, tup in enumerate(ligand_indices):
+    idx_dict_items = chain.from_iterable(zip(repeat(k), v) for k, v in ligand_idx_dict.items())
+    for i, (anchor_tup, idx_tup) in enumerate(idx_dict_items):
         try:
-            value = substructure_split(ligand, tup, split)
+            value = substructure_split(ligand, idx_tup, anchor_tup)
         except Exception as ex:
             logger.warning(
                 f"Failed to parse {ligand.properties.name!r} anchoring group {i}", exc_info=ex
@@ -237,8 +238,8 @@ def find_substructure(
 
 def substructure_split(
     ligand: Molecule,
-    idx: Tuple[int, int],
-    split: bool = True,
+    idx_tup: Tuple[int, ...],
+    anchor_tup: AnchorTup,
 ) -> Molecule:
     """Delete the hydrogen or mono-/polyatomic counterion attached to the functional group.
 
@@ -246,40 +247,47 @@ def substructure_split(
 
     Parameters
     ----------
-    ligand: |plams.Molecule|_
+    ligand: plams.Molecule
         The ligand molecule.
-    idx : |tuple|_ [|int|_]
+    idx_tup : tuple[int, ...]
         A tuple with 2 atomic indices associated with a functional group.
-    split : bool
-        If a functional group should be split from **ligand** (``True``) or not (``False``).
+    anchor_tup : AnchorTup
+        Named tuple.
 
     Returns
     -------
-    |plams.Molecule|_
+    plams.Molecule
         A copy of **ligand**, with part of its functional group removed (see **split**).
 
     """
     lig = ligand.copy()
-    at1 = lig[idx[0] + 1]
-    at2 = lig[idx[-1] + 1]
+    anchors = [lig[1 + idx_tup[i]] for i in anchor_tup.group_idx]
+    anchor = anchors[0]
 
-    if split:
-        lig.delete_atom(at2)
+    if anchor_tup.remove is not None:
+        remove_iter = sorted([1 + idx_tup[i] for i in anchor_tup.remove], reverse=True)
+        for i in remove_iter:
+            lig.delete_atom(lig[i])
+
         mol_list: Tuple[Molecule, ...] = lig.separate_mod()
         for mol in mol_list:
-            if at1 not in mol:
+            if anchor not in mol:
                 continue
-
             lig = mol
             break
+        else:
+            raise MoleculeError("Failed to identify an anchor-containing fragment")
 
         # Check if the ligand heteroatom has a charge assigned, assigns a charge if not
-        if not at1.properties.charge:
-            at1.properties.charge = -1
+        if not anchor.properties.charge:
+            anchor.properties.charge = -1
+
+    anchor_tup = anchor_tup._replace(anchor_idx=tuple(lig.atoms.index(at) for at in anchors))
 
     # Update ligand properties
-    lig.properties.dummies = at1
-    lig.properties.anchor = at1.symbol + str(lig.atoms.index(at1) + 1)
+    lig.properties.dummies = anchor
+    lig.properties.anchor = "".join(f"{lig[1 + i].symbol}{1 + i}" for i in anchor_tup.anchor_idx)
+    lig.properties.anchor_tup = anchor_tup
     lig.properties.charge = sum(atom.properties.get('charge', 0) for atom in lig)
 
     # Update the ligand smiles string

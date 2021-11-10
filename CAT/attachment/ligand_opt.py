@@ -39,7 +39,7 @@ import numpy as np
 
 import rdkit
 import scm.plams.interfaces.molecule.rdkit as molkit
-from rdkit.Chem import AllChem
+from rdkit.Chem import AllChem, Mol
 from scm.plams.core.basejob import Job
 from scm.plams import (Molecule, Atom, Bond, MoleculeError, add_to_class, Units,
                        Settings, AMSJob, ADFJob, Cp2kJob)
@@ -53,6 +53,7 @@ from ..mol_utils import fix_carboxyl, to_atnum
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.mol_to_file import mol_to_file
 from ..jobs import job_geometry_opt  # noqa: F401
+from ..utils import KindEnum, AnchorTup
 
 __all__ = ['init_ligand_opt']
 
@@ -156,7 +157,7 @@ def _start_ligand_jobs_uff(ligand_list: Iterable[Molecule]) -> None:
         except Exception as ex:
             ligand.properties.is_opt = False
             logger.error(f'UFFGetMoleculeForceField: {ligand.properties.name} optimization '
-                         'has failed')
+                         f'has failed: {ex!r}', exc_info=True)
             logger.debug(f'{ex.__class__.__name__}: {ex}', exc_info=True)
         else:
             ligand.properties.is_opt = True
@@ -180,28 +181,47 @@ def optimize_ligand(ligand: Molecule) -> None:
 
     # Find the optimal dihedrals angle between the fragments
     for bond in bonds:
-        modified_minimum_scan_rdkit(ligand, ligand.get_index(bond), anchor)
+        modified_minimum_scan_rdkit(ligand, ligand.get_index(bond))
 
     # RDKit UFF can sometimes mess up the geometries of carboxylates: fix them
     fix_carboxyl(ligand)
 
     # Allign the ligand with the Cartesian X-axis.
-    allign_axis(ligand, anchor)
+    allign_axis(ligand)
 
 
-def allign_axis(mol: Molecule, anchor: Atom):
+def _get_allign_args(mol: "Molecule | Mol", anchor_tup: AnchorTup) -> Tuple[np.ndarray, int, int]:
+    if anchor_tup.kind == KindEnum.FIRST:
+        idx_rot = idx_trans = anchor_tup.anchor_idx[0]
+        xyz = mol.as_array() if isinstance(mol, Molecule) else rdmol_as_array(mol)
+        return xyz, idx_rot, idx_trans
+
+    # Reserve index `-1` for a dummy atom representing the mean position of all anchors
+    if isinstance(mol, Molecule):
+        xyz = np.empty((len(mol) + 1, 3), dtype=np.float64)
+        xyz[:-1] = mol
+    else:
+        xyz = np.empty((len(mol.GetAtoms()) + 1, 3), dtype=np.float64)
+        xyz[:-1] = rdmol_as_array(mol)
+    xyz[-1] = xyz[np.array(anchor_tup.anchor_idx)].mean(axis=0)
+
+    if anchor_tup.kind == KindEnum.MEAN:
+        idx_rot = idx_trans = -1
+    elif anchor_tup.kind == KindEnum.MEAN_TRANSLATE:
+        idx_rot = -1
+        idx_trans = anchor_tup.anchor_idx[0]
+    else:
+        raise ValueError(f"Unknown anchor kind: {anchor_tup.kind!r}")
+    return xyz, idx_rot, idx_trans
+
+
+def allign_axis(mol: Molecule) -> None:
     """Allign a molecule with the Cartesian X-axis; setting **anchor** as the origin."""
-    try:
-        idx = mol.atoms.index(anchor)
-    except ValueError as ex:
-        raise MoleculeError("The passed anchor is not in mol") from ex
-
-    xyz = mol.as_array()  # Allign the molecule with the X-axis
-    rotmat = optimize_rotmat(xyz, idx)
-    xyz[:] = xyz@rotmat.T
-    xyz -= xyz[idx]
-    xyz[:] = xyz.round(decimals=3)
-    mol.from_array(xyz)
+    xyz, idx_rot, idx_trans = _get_allign_args(mol, mol.properties.anchor_tup)
+    rotmat = optimize_rotmat(xyz, idx_rot)
+    xyz = np.matmul(xyz, rotmat.T, out=xyz)
+    xyz -= xyz[idx_trans]
+    mol.from_array(xyz.round(decimals=3))
 
 
 def split_mol(plams_mol: Molecule, anchor: Atom) -> List[Bond]:
@@ -515,8 +535,7 @@ def _find_idx(mol: Molecule, bond: Bond) -> List[int]:
     return ret
 
 
-def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int],
-                                anchor: Atom) -> None:
+def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int]) -> None:
     """A modified version of the :func:`.global_minimum_scan_rdkit` function.
 
     * Uses the ligand vector as criteria rather than the energy.
@@ -554,18 +573,11 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int],
 
     # Find the conformation with the optimal ligand vector
     cost_list = []
-    try:
-        i = ligand.atoms.index(anchor)
-    except ValueError:
-        i = -1  # Default to the origin as anchor
-
     for rdmol in rdmol_list:
-        xyz = rdmol_as_array(rdmol)
-        if i == -1:  # Default to the origin as anchor
-            xyz = np.vstack([xyz, [0, 0, 0]])
-        rotmat = optimize_rotmat(xyz, i)
-        xyz[:] = xyz@rotmat.T
-        xyz -= xyz[i]
+        xyz, idx_rot, idx_trans = _get_allign_args(rdmol, ligand.properties.anchor_tup)
+        rotmat = optimize_rotmat(xyz, idx_rot)
+        xyz = np.matmul(xyz, rotmat.T, out=xyz)
+        xyz -= xyz[idx_trans]
         cost = np.exp(xyz[:, 1:]).sum()
         cost_list.append(cost)
 
