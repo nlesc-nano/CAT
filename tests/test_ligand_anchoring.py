@@ -21,36 +21,40 @@ from CAT.data_handling.anchor_parsing import parse_anchors
 PATH = join('tests', 'test_files')
 
 
-def test_get_functional_groups() -> None:
-    """Tests for :meth:`CAT.attachment.ligand_anchoring.get_functional_groups`."""
-    _func_groups = ['[O-]C', '[O-]CC', '[O-]CCC']
-    at_count = (2, 3, 4)
-    func_groups1 = get_functional_groups(_func_groups)
-    for mol, v in zip(func_groups1, at_count):
-        atoms = list(mol.GetAtoms())
-        assertion.len_eq(atoms, v)
-        assertion.len_eq(atoms[0].GetBonds(), 1)
-        assertion.eq(atoms[0].GetSymbol(), 'O')
-        assertion.eq(atoms[0].GetFormalCharge(), -1)
+class TestGetFunctionalGroups:
+    """Tests for :func:`CAT.attachment.ligand_anchoring.get_functional_groups`."""
 
-        for at in atoms[1:]:
-            assertion.eq(at.GetSymbol(), 'C')
-            assertion.eq(at.GetFormalCharge(), 0)
+    def test_func_groups1(self) -> None:
+        _func_groups = ['[O-]C', '[O-]CC', '[O-]CCC']
+        at_count = (2, 3, 4)
+        func_groups1 = get_functional_groups(_func_groups)
+        for mol, v in zip(func_groups1, at_count):
+            atoms = list(mol.GetAtoms())
+            assertion.len_eq(atoms, v)
+            assertion.len_eq(atoms[0].GetBonds(), 1)
+            assertion.eq(atoms[0].GetSymbol(), 'O')
+            assertion.eq(atoms[0].GetFormalCharge(), -1)
 
-            if at is atoms[-1]:  # Terminal atom
-                assertion.len_eq(at.GetBonds(), 1)
-            else:
-                assertion.len_eq(at.GetBonds(), 2)
+            for at in atoms[1:]:
+                assertion.eq(at.GetSymbol(), 'C')
+                assertion.eq(at.GetFormalCharge(), 0)
 
-    func_groups2 = get_functional_groups(split=True)
-    assertion.len_eq(func_groups2, 10)
-    for m in func_groups2:
-        assertion.isinstance(m, Chem.Mol)
+                if at is atoms[-1]:  # Terminal atom
+                    assertion.len_eq(at.GetBonds(), 1)
+                else:
+                    assertion.len_eq(at.GetBonds(), 2)
 
-    func_groups3 = get_functional_groups(split=False)
-    assertion.len_eq(func_groups3, 13)
-    for m in func_groups3:
-        assertion.isinstance(m, Chem.Mol)
+    def test_func_groups2(self) -> None:
+        func_groups2 = get_functional_groups(split=True)
+        assertion.len_eq(func_groups2, 10)
+        for m in func_groups2:
+            assertion.isinstance(m, Chem.Mol)
+
+    def test_func_groups3(self) -> None:
+        func_groups3 = get_functional_groups(split=False)
+        assertion.len_eq(func_groups3, 13)
+        for m in func_groups3:
+            assertion.isinstance(m, Chem.Mol)
 
 
 def test_smiles_to_rdmol() -> None:
