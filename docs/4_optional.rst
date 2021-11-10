@@ -607,7 +607,7 @@ Ligand
 
     .. attribute:: optional.ligand.anchor
 
-        :Parameter:     * **Type** - :class:`str` or :class:`tuple` [:class:`str`]
+        :Parameter:     * **Type** - :class:`str`, :class:`Sequence[str] <collections.abc.Sequence>` or :class:`dict[str, Any] <dict>`
                         * **Default value** – ``None``
 
         Manually specify SMILES strings representing functional groups.
@@ -621,7 +621,29 @@ Ligand
 
         If not specified, the default functional groups of **CAT** are used.
 
-        This optiona can alternatively be provided as ``optional.ligand.functional_groups``.
+        This option can alternatively be provided as ``optional.ligand.functional_groups``.
+
+        Further customization can be achieved by passing dictionaries:
+
+        * :attr:`anchor.group`
+        * :attr:`anchor.group_idx`
+        * :attr:`anchor.remove`
+        * :attr:`anchor.kind`
+
+        .. note::
+
+            .. code:: yaml
+
+                optional:
+                    ligand:
+                        anchor:
+                            - group: "[H]OC(=O)C"  # Remove H and attach at the (formal) oxyanion
+                              group_idx: 1
+                              remove: 0
+                            - group: "[H]OC(=O)C"  # Remove H and attach at the mean position of both oxygens
+                              group_idx: [1, 3]
+                              remove: 0
+                              kind: mean
 
         .. note::
             This argument has no value be default and will thus default to SMILES strings of the default
@@ -629,6 +651,52 @@ Ligand
 
         .. note::
             The yaml format uses ``null`` rather than ``None`` as in Python.
+
+
+    .. attribute:: optional.ligand.anchor.group
+
+        :Parameter:     * **Type** - :class:`str`
+
+        A SMILES string representing the anchoring group.
+
+        .. note::
+            This argument has no value be default and must thus be provided by the user.
+
+
+    .. attribute:: optional.ligand.anchor.group_idx
+
+        :Parameter:     * **Type** - :class:`int` or :class:`Sequence[int] <collections.abc.Sequence>`
+
+        The indices of the anchoring atom(s) in :attr:`anchor.group <optional.ligand.anchor.group>`.
+
+        Indices should be 0-based.
+        These atoms will be attached to the core, the manner in which is determined by the :attr:`anchor.kind` option.
+
+        .. note::
+            This argument has no value be default and must thus be provided by the user.
+
+    .. attribute:: optional.ligand.anchor.remove
+
+        :Parameter:     * **Type** - :data:`None`, :class:`int` or :class:`Sequence[int] <collections.abc.Sequence>`
+
+        The indices of the to-be removed atoms in :attr:`anchor.group <optional.ligand.anchor.group>`.
+
+        No atoms are removed when set to :data:`None`.
+        Indices should be 0-based.
+        See also the :attr:`~optional.ligand.split` option.
+
+
+    .. attribute:: optional.ligand.anchor.kind
+
+        :Parameter:     * **Type** - :class:`str`
+
+        How atoms are to-be attached when multiple anchor atoms are specified in :attr:`anchor.group_idx <optional.ligand.anchor.group_idx>`.
+
+        Accepts one of the following options:
+
+        * ``"first"``: Attach the first atom to the core.
+        * ``"mean"``: Attach the mean position of all anchoring atoms to the core.
+        * ``"mean_translate"``: Attach the mean position of all anchoring atoms to the core and then translate back to the first atom.
 
 
     .. attribute:: optional.ligand.split
