@@ -9,6 +9,8 @@ Index
     check_sys_var
     dict_concatenate
     get_template
+    KindEnum
+    AnchorTup
 
 API
 ---
@@ -17,10 +19,13 @@ API
 .. autofunction:: check_sys_var
 .. autofunction:: dict_concatenate
 .. autofunction:: get_template
+.. autoclass:: KindEnum
+.. autoclass:: AnchorTup
 
 """
 
 import os
+import enum
 import yaml
 import inspect
 import textwrap
@@ -37,13 +42,14 @@ from contextlib import redirect_stdout
 from collections import abc
 from typing import (
     Iterable, Union, TypeVar, Mapping, Type, Generator, Iterator, Optional,
-    Any, NoReturn, Dict, overload, Callable
+    Any, NoReturn, Dict, overload, Callable, NamedTuple, Tuple,
 )
 
 import numpy as np
 from scipy.spatial import cKDTree
 
 from nanoutils import as_nd_array
+from rdkit.Chem import Mol
 from scm.plams.core.basejob import Job
 from scm.plams.interfaces.thirdparty.orca import ORCAJob
 from scm.plams import (
@@ -58,7 +64,7 @@ from .gen_job_manager import GenJobManager
 __all__ = [
     'JOB_MAP', 'check_sys_var', 'dict_concatenate', 'get_template',
     'cycle_accumulate', 'iter_repeat', 'get_nearest_neighbors',
-    'log_traceback_locals',
+    'log_traceback_locals', 'KindEnum', 'AnchorTup',
 ]
 
 JOB_MAP: Mapping[Type[Job], str] = MappingProxyType({
@@ -525,3 +531,22 @@ def log_traceback_locals(logger: Logger, level: int = -1,
         value_str[0] = prefix + value_str[0]
         for v in value_str:
             logger.debug(v)
+
+
+class KindEnum(enum.Enum):
+    """An enum with different anchoring operation kinds (see :class:`AnchorTup`)."""
+
+    FIRST = 0
+    MEAN = 1
+    MEAN_TRANSLATE = 2
+
+
+class AnchorTup(NamedTuple):
+    """A named tuple with anchoring operation instructions."""
+
+    mol: "None | Mol"
+    group: "None | str" = None
+    group_idx: Tuple[int, ...] = (0,)
+    anchor_idx: Tuple[int, ...] = ()
+    remove: "None | Tuple[int, ...]" = None
+    kind: KindEnum = KindEnum.FIRST

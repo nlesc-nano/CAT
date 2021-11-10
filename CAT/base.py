@@ -307,7 +307,7 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
         ligand_df = ligand_df.loc[is_opt]
     else:
         for lig in ligand_df[MOL]:
-            allign_axis(lig, lig.properties.dummies)
+            allign_axis(lig)
 
     # Perform a COSMO-RS calculation on the ligands
     if crs:
