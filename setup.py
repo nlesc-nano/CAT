@@ -124,7 +124,7 @@ setup(
         'plams>=1.5.1',
         'contextlib2>=0.6.0; python_version=="3.6"',
         'typing-extensions>=3.7.4.2',
-        'qmflows@git+https://github.com/SCM-NV/qmflows@master',
+        'qmflows>=0.11.0',
     ],
     setup_requires=[
         'pytest-runner',
