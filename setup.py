@@ -19,9 +19,9 @@ with open('README.rst', encoding='utf-8') as readme_file:
 docs_require = [
     'sphinx>=2.4,!=3.1,<4.0',
     'sphinx_rtd_theme',
-    'data-CAT@git+https://github.com/nlesc-nano/data-CAT@master',
-    'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@master',
-    'auto-FOX@git+https://github.com/nlesc-nano/auto-FOX@master',
+    'data-CAT>=0.7.0',
+    'nano-CAT>=0.7.0',
+    'auto-FOX>=0.10.0',
 ]
 
 tests_require = [
