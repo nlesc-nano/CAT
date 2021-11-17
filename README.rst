@@ -17,7 +17,7 @@
    :target: https://docs.python.org/3.9/
 
 ###############################
-Compound Attachment Tool 0.9.11
+Compound Attachment Tool 0.10.0
 ###############################
 
 **CAT** is a collection of tools designed for the construction of various chemical compounds.
@@ -56,7 +56,7 @@ Package installation
 --------------------
 Finally, install **CAT** using pip:
 
-- **CAT**: ``pip install git+https://github.com/nlesc-nano/CAT@master --upgrade``
+- **CAT**: ``pip install nlesc-CAT --upgrade``
 
 Now you are ready to use **CAT**.
 

@@ -42,7 +42,7 @@ except ModuleNotFoundError:
     )
 
 setup(
-    name='CAT',
+    name='nlesc-CAT',
     version=version['__version__'],
     description=('A collection of tools designed for the automatic '
                  'construction of chemical compounds.'),
@@ -107,8 +107,8 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
-        'Topic :: Scientific/Engineering :: Chemistry'
-        'Typing :: Typed'
+        'Topic :: Scientific/Engineering :: Chemistry',
+        'Typing :: Typed',
     ],
     test_suite='tests',
     python_requires='>=3.6',
@@ -124,7 +124,7 @@ setup(
         'plams>=1.5.1',
         'contextlib2>=0.6.0; python_version=="3.6"',
         'typing-extensions>=3.7.4.2',
-        'qmflows@git+https://github.com/SCM-NV/qmflows@master',
+        'qmflows>=0.11.0',
     ],
     setup_requires=[
         'pytest-runner',
