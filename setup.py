@@ -107,8 +107,8 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
-        'Topic :: Scientific/Engineering :: Chemistry'
-        'Typing :: Typed'
+        'Topic :: Scientific/Engineering :: Chemistry',
+        'Typing :: Typed',
     ],
     test_suite='tests',
     python_requires='>=3.6',
