@@ -6,9 +6,11 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 
-0.x.0
-*****
-* WiP: Added an option the import pre-built quantum dots.
+0.10.0
+******
+* Add more advanced anchor-parsing options.
+* Update for AMS 2021.
+* Fixed various issues.
 
 
 0.9.11
