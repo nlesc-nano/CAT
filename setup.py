@@ -42,7 +42,7 @@ except ModuleNotFoundError:
     )
 
 setup(
-    name='CAT',
+    name='nlesc-CAT',
     version=version['__version__'],
     description=('A collection of tools designed for the automatic '
                  'construction of chemical compounds.'),

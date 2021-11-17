@@ -56,7 +56,7 @@ Package installation
 --------------------
 Finally, install **CAT** using pip:
 
-- **CAT**: ``pip install CAT --upgrade``
+- **CAT**: ``pip install nlesc-CAT --upgrade``
 
 Now you are ready to use **CAT**.
 
