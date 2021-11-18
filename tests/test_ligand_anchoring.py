@@ -146,6 +146,7 @@ class TestFindSubstructure:
         "kind_first": dict(group="OC(=O)C", group_idx=0, kind="FIRST"),
         "kind_mean": dict(group="OC(=O)C", group_idx=[0, 2], kind="MEAN"),
         "kind_mean_translate": dict(group="OC(=O)C", group_idx=[0, 2], kind="MEAN_TRANSLATE"),
+        "angle": dict(group="OC(=O)C", group_idx=[0, 1, 2], angle_offset=45),
     })
 
     @pytest.mark.parametrize("kwargs_id,kwargs", OPTIONS_DICT.items(), ids=OPTIONS_DICT.keys())
