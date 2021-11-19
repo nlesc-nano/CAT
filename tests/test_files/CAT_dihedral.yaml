@@ -1,0 +1,24 @@
+path: .
+
+input_cores:
+    - Cd68Se55.xyz
+
+input_ligands:
+    - 'CC(O)=O'
+
+optional:
+    core:
+        dirname: core
+        anchor: Cl
+
+    ligand:
+        dirname: ligand
+        optimize: True
+        anchor:
+            group: "[H]OC=O"
+            group_idx: [1, 2, 3]
+            remove: 0
+            dihedral: 45
+
+    qd:
+        dirname: QD
