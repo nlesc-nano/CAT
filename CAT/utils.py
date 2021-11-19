@@ -550,3 +550,4 @@ class AnchorTup(NamedTuple):
     anchor_idx: Tuple[int, ...] = ()
     remove: "None | Tuple[int, ...]" = None
     kind: KindEnum = KindEnum.FIRST
+    angle_offset: "None | float" = None

@@ -34,7 +34,7 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 from rdkit import Chem
 
 from ..logger import logger
-from ..utils import get_template, AnchorTup
+from ..utils import get_template, AnchorTup, KindEnum
 from ..mol_utils import separate_mod   # noqa: F401
 from ..workflows import MOL, FORMULA, HDF5_INDEX, OPT
 from ..settings_dataframe import SettingsDataFrame
@@ -286,7 +286,13 @@ def substructure_split(
 
     # Update ligand properties
     lig.properties.dummies = anchor
-    lig.properties.anchor = "".join(f"{lig[1 + i].symbol}{1 + i}" for i in anchor_tup.anchor_idx)
+    if anchor_tup.kind == KindEnum.FIRST:
+        i = 1 + anchor_tup.anchor_idx[0]
+        lig.properties.anchor = f"{lig[i].symbol}{i}"
+    else:
+        lig.properties.anchor = "".join(
+            f"{lig[1 + i].symbol}{1 + i}" for i in anchor_tup.anchor_idx
+        )
     lig.properties.anchor_tup = anchor_tup
     lig.properties.charge = sum(atom.properties.get('charge', 0) for atom in lig)
 

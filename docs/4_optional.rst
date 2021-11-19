@@ -629,6 +629,7 @@ Ligand
         * :attr:`anchor.group_idx`
         * :attr:`anchor.remove`
         * :attr:`anchor.kind`
+        * :attr:`anchor.angle_offset`
 
         .. note::
 
@@ -675,9 +676,11 @@ Ligand
         .. note::
             This argument has no value be default and must thus be provided by the user.
 
+
     .. attribute:: optional.ligand.anchor.remove
 
         :Parameter:     * **Type** - :data:`None`, :class:`int` or :class:`Sequence[int] <collections.abc.Sequence>`
+                        * **Default value** – :data:`None`
 
         The indices of the to-be removed atoms in :attr:`anchor.group <optional.ligand.anchor.group>`.
 
@@ -689,6 +692,7 @@ Ligand
     .. attribute:: optional.ligand.anchor.kind
 
         :Parameter:     * **Type** - :class:`str`
+                        * **Default value** – ``"first"``
 
         How atoms are to-be attached when multiple anchor atoms are specified in :attr:`anchor.group_idx <optional.ligand.anchor.group_idx>`.
 
@@ -697,6 +701,19 @@ Ligand
         * ``"first"``: Attach the first atom to the core.
         * ``"mean"``: Attach the mean position of all anchoring atoms to the core.
         * ``"mean_translate"``: Attach the mean position of all anchoring atoms to the core and then translate back to the first atom.
+
+
+    .. attribute:: optional.ligand.anchor.angle_offset
+
+        :Parameter:     * **Type** - :data:`None`, :class:`float` or :class:`str`
+                        * **Default value** – :data:`None`
+
+        Manually offset the angle of the ligand vector by a given number.
+
+        The plane of rotation is defined by the first three indices in :attr:`anchor.group_idx <optional.ligand.anchor.group_idx>`.
+
+        By default the angle unit is assumed to be in degrees,
+        but if so desired one can explicitly pass the unit: ``angle_offset: "0.25 rad"``.
 
 
     .. attribute:: optional.ligand.split

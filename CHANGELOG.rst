@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 
+0.10.1
+******
+* Added the option to manually specify angle offsets for the ligand vector.
+
+
 0.10.0
 ******
 * Add more advanced anchor-parsing options.

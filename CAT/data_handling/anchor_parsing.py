@@ -1,9 +1,11 @@
 """A module for parsing the ``ligand.anchor`` keyword."""
 
+import re
 import operator
-from typing import Union, Tuple, Collection, Iterable
+from typing import Union, Tuple, Collection, Iterable, SupportsFloat
 
 from rdkit.Chem import Mol
+from scm.plams import Units, PT
 from schema import Schema, Use, Optional
 from typing_extensions import TypedDict, SupportsIndex
 
@@ -20,6 +22,24 @@ class _UnparsedAnchorDictBase(TypedDict):
 
 class _UnparsedAnchorDict(_UnparsedAnchorDictBase, total=False):
     remove: "None | SupportsIndex | Collection[SupportsIndex]"
+    angle_offset: "None | SupportsFloat | SupportsIndex | bytes | str"
+
+
+class _AnchorDict(TypedDict):
+    group: str
+    group_idx: Tuple[int, ...]
+    remove: "None | Tuple[int, ...]"
+    kind: KindEnum
+    angle_offset: "None | float"
+
+
+def _pt_sort_func(symbol: str) -> Tuple[int, str]:
+    return len(symbol), symbol
+
+
+_SYMBOL = "|".join(sorted(PT.symtonum, key=_pt_sort_func))
+_SYMBOL_PATTERN = re.compile(f"({_SYMBOL})")
+_UNIT_PATTERN = re.compile(r"([\.\_0-9]+)(\s+)?(\w+)?")
 
 
 def _parse_group_idx(item: "SupportsIndex | Iterable[SupportsIndex]") -> Tuple[int, ...]:
@@ -57,11 +77,32 @@ def _parse_kind(typ: "None | str | KindEnum") -> KindEnum:
         return KindEnum[typ.upper()]
 
 
+def _parse_angle_offset(
+    offset: "None | SupportsFloat | SupportsIndex | bytes | str"
+) -> "None | float":
+    """Parse the ``angle_offset`` option; convert the offset to radians."""
+    if offset is None:
+        return None
+    elif not isinstance(offset, str):
+        return Units.convert(float(offset), "deg", "rad")
+
+    # match offsets such as `"5.5 degree"`
+    match = _UNIT_PATTERN.match(offset)
+    if match is None:
+        raise ValueError(f"Invalid offset string: {offset!r}")
+
+    offset, _, unit = match.groups()
+    if unit is None:
+        unit = "deg"
+    return Units.convert(float(offset), unit, "rad")
+
+
 anchor_schema = Schema({
     "group": str,
-    "group_idx": Use(lambda i: tuple(_parse_group_idx(i))),
+    "group_idx": Use(_parse_group_idx),
     Optional("remove", default=None): Use(_parse_remove),
     Optional("kind", default=KindEnum.FIRST): Use(_parse_kind),
+    Optional("angle_offset", default=None): Use(_parse_angle_offset),
 })
 
 
@@ -83,7 +124,7 @@ def parse_anchors(
         patterns = [patterns]
 
     ret = []
-    for p in patterns:  # type: _UnparsedAnchorDict | str | Mol
+    for p in patterns:  # type: _UnparsedAnchorDict | str | Mol | AnchorTup
         if isinstance(p, AnchorTup):
             ret.append(p)
         elif isinstance(p, Mol):
@@ -96,12 +137,31 @@ def parse_anchors(
             remove = None if not split else (list(mol.GetAtoms())[-1].GetIdx(),)
             ret.append(AnchorTup(mol=mol, group=group, remove=remove))
         else:
-            kwargs = anchor_schema.validate(p)
+            kwargs: _AnchorDict = anchor_schema.validate(p)
+
+            # Check that `group_idx` and `remove` are disjoint
             group_idx = kwargs["group_idx"]
             remove = kwargs["remove"]
             if remove is not None and not set(group_idx).isdisjoint(remove):
                 raise ValueError("`group_idx` and `remove` must be disjoint")
 
-            mol = _smiles_to_rdmol(kwargs["group"])
+            # Check that the indices in `group_idx` and `remove` are not out of bounds
+            group = kwargs["group"]
+            symbols_list = _SYMBOL_PATTERN.findall(group)
+            if len(symbols_list) <= max(group_idx):
+                raise IndexError(f"`group_idx` index {max(group_idx)} is out of bounds "
+                                 f"for a `group` with {len(symbols_list)} atoms")
+            elif remove is not None and len(symbols_list) <= max(remove):
+                raise IndexError(f"`remove` index {max(remove)} is out of bounds "
+                                 f"for a `group` with {len(symbols_list)} atoms")
+
+            # Check that at least 3 atoms are available for `angle_offset`
+            # (so a plane can be defined)
+            angle_offset = kwargs["angle_offset"]
+            if angle_offset is not None and len(group_idx) < 3:
+                raise ValueError("`group_idx` must contain at least 3 atoms when "
+                                 "`angle_offset` is specified")
+
+            mol = _smiles_to_rdmol(group)
             ret.append(AnchorTup(**kwargs, mol=mol))
     return tuple(ret)
