@@ -49,6 +49,7 @@ from assertionlib.ndrepr import aNDRepr
 
 from .perp_surface import get_surface_vec
 from ..mol_utils import get_index, round_coords  # noqa: F401
+from ..utils import AnchorTup
 from ..workflows import WorkFlow, HDF5_INDEX, MOL, OPT
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling import mol_to_file, WARN_MAP
@@ -261,7 +262,19 @@ def ligand_to_qd(core: Molecule, ligand: Molecule, path: str,
     else:
         raise ValueError(repr(allignment))
 
-    lig_array = rot_mol(ligand, vec1, vec2, atoms_other=core.properties.dummies, core=core, idx=idx)
+    # Rotate the ligands
+    anchor_tup = ligand.properties.anchor_tup
+    if anchor_tup.dihedral is None:
+        lig_array = rot_mol(
+            ligand, vec1, vec2, atoms_other=core.properties.dummies, core=core, idx=idx
+        )
+    else:
+        lig_array = rot_mol(
+            ligand, vec1, vec2, atoms_other=core.properties.dummies, core=core,
+            idx=idx, anchor_tup=anchor_tup,
+        )
+
+    # Combine the ligands and core
     qd = core.copy()
     array_to_qd(ligand, lig_array, mol_out=qd)
     qd.round_coords()
@@ -279,6 +292,18 @@ def ligand_to_qd(core: Molecule, ligand: Molecule, path: str,
     # Print and return
     _evaluate_distance(qd, qd.properties.name)
     return qd
+
+
+def _get_dihedrals(mat1: np.ndarray, mat2: np.ndarray, vec3: np.ndarray) -> np.ndarray:
+    """Get the dihedral angle between three vectors in radian."""
+    v1v2 = np.cross(-mat1, mat2)
+    v2v3 = np.cross(vec3, mat2)
+    v1v2_v2v3 = np.cross(v1v2, v2v3)
+    v2_norm_v2 = mat2 / np.linalg.norm(mat2, axis=1)[..., None]
+    return np.arctan2(
+        np.einsum("ij,ij->i", v1v2_v2v3, v2_norm_v2),
+        np.einsum("ij,ij->i", v1v2, v2v3),
+    )
 
 
 def _get_rotmat1(vec1: np.ndarray, vec2: np.ndarray) -> np.ndarray:
@@ -345,7 +370,11 @@ def _get_rotmat1(vec1: np.ndarray, vec2: np.ndarray) -> np.ndarray:
         return ret
 
 
-def _get_rotmat2(vec: np.ndarray, step: float = (1/16)) -> np.ndarray:
+def _get_rotmat2(
+    vec: np.ndarray,
+    step: float = 1/16,
+    angle_vec: "None | np.ndarray" = None,
+) -> np.ndarray:
     r"""Calculate the rotation matrix for rotating m vectors along their axes, each vector yielding :math:`k = (2 / step)` possible rotations.
 
     Paramaters
@@ -367,10 +396,13 @@ def _get_rotmat2(vec: np.ndarray, step: float = (1/16)) -> np.ndarray:
                   [v3, zero, -v1],
                   [-v2, v1, zero]]).T
 
-    step_range = np.pi * np.arange(0.0, 2.0, step)
-    a1 = np.sin(step_range)[:, None, None, None]
-    a2 = (1 - np.cos(step_range))[:, None, None, None]
-
+    if angle_vec is None:
+        step_range = np.pi * np.arange(0.0, 2.0, step)
+        a1 = np.sin(step_range)[:, None, None, None]
+        a2 = 1 - np.cos(step_range)[:, None, None, None]
+    else:
+        a1 = np.sin(angle_vec)[:, None, None]
+        a2 = 1 - np.cos(angle_vec)[:, None, None]
     return np.identity(3) + a1 * w + a2 * w@w
 
 
@@ -383,7 +415,8 @@ def rot_mol(xyz_array: np.ndarray,
             bond_length: Optional[int] = None,
             step: float = 1/16,
             dist_to_self: bool = True,
-            ret_min_dist: bool = False) -> np.ndarray:
+            ret_min_dist: bool = False,
+            anchor_tup: "None | AnchorTup" = None) -> np.ndarray:
     r"""Rotate **xyz_array**.
 
     Paramaters
@@ -440,6 +473,19 @@ def rot_mol(xyz_array: np.ndarray,
     xyz -= xyz[idx1][..., None, :]
     rotmat1 = _get_rotmat1(vec1, vec2)
     xyz = xyz@rotmat1
+
+    # Code-path for fixed-angle dihedrals
+    if anchor_tup is not None:
+        i, j, *_ = anchor_tup.anchor_idx
+        vec3 = xyz[:, i] - xyz[:, j]
+        dihedral_vec = _get_dihedrals(vec3, vec2, vec1)
+        dihedral_vec -= anchor_tup.dihedral
+        rotmat2 = _get_rotmat2(vec2, angle_vec=dihedral_vec)
+        xyz = np.matmul(xyz, rotmat2, out=xyz)
+
+        at_other = sanitize_dim_2(atoms_other)
+        xyz += (at_other - xyz[:, idx])[:, None]
+        return xyz
 
     # Create all k possible rotations of all m ligands
     rotmat2 = _get_rotmat2(vec2, step=step)
