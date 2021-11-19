@@ -5,7 +5,7 @@ import operator
 from typing import Union, Tuple, Collection, Iterable, SupportsFloat
 
 from rdkit.Chem import Mol
-from scm.plams import Units, PT
+from scm.plams import Units
 from schema import Schema, Use, Optional
 from typing_extensions import TypedDict, SupportsIndex
 
@@ -31,15 +31,6 @@ class _AnchorDict(TypedDict):
     remove: "None | Tuple[int, ...]"
     kind: KindEnum
     angle_offset: "None | float"
-
-
-def _pt_sort_func(symbol: str) -> Tuple[int, str]:
-    return len(symbol), symbol
-
-
-_SYMBOL = "|".join(sorted(PT.symtonum, key=_pt_sort_func))
-_SYMBOL_PATTERN = re.compile(f"({_SYMBOL})")
-_UNIT_PATTERN = re.compile(r"([\.\_0-9]+)(\s+)?(\w+)?")
 
 
 def _parse_group_idx(item: "SupportsIndex | Iterable[SupportsIndex]") -> Tuple[int, ...]:
@@ -75,6 +66,9 @@ def _parse_kind(typ: "None | str | KindEnum") -> KindEnum:
         return typ
     else:
         return KindEnum[typ.upper()]
+
+
+_UNIT_PATTERN = re.compile(r"([\.\_0-9]+)(\s+)?(\w+)?")
 
 
 def _parse_angle_offset(
@@ -146,16 +140,6 @@ def parse_anchors(
             if remove is not None and not set(group_idx).isdisjoint(remove):
                 raise ValueError("`group_idx` and `remove` must be disjoint")
 
-            # Check that the indices in `group_idx` and `remove` are not out of bounds
-            group = kwargs["group"]
-            symbols_list = _SYMBOL_PATTERN.findall(group)
-            if len(symbols_list) <= max(group_idx):
-                raise IndexError(f"`group_idx` index {max(group_idx)} is out of bounds "
-                                 f"for a `group` with {len(symbols_list)} atoms")
-            elif remove is not None and len(symbols_list) <= max(remove):
-                raise IndexError(f"`remove` index {max(remove)} is out of bounds "
-                                 f"for a `group` with {len(symbols_list)} atoms")
-
             # Check that at least 3 atoms are available for `angle_offset`
             # (so a plane can be defined)
             angle_offset = kwargs["angle_offset"]
@@ -170,6 +154,14 @@ def parse_anchors(
                 raise ValueError("`group_idx` must contain at least 3 atoms when "
                                  "`dihedral` is specified")
 
-            mol = _smiles_to_rdmol(group)
+            # Check that the indices in `group_idx` and `remove` are not out of bounds
+            mol = _smiles_to_rdmol(kwargs["group"])
+            atom_count = len(mol.GetAtoms())
+            if atom_count <= max(group_idx):
+                raise IndexError(f"`group_idx` index {max(group_idx)} is out of bounds "
+                                 f"for a `group` with {atom_count} atoms")
+            elif remove is not None and atom_count <= max(remove):
+                raise IndexError(f"`remove` index {max(remove)} is out of bounds "
+                                 f"for a `group` with {atom_count} atoms")
             ret.append(AnchorTup(**kwargs, mol=mol))
     return tuple(ret)
