@@ -630,6 +630,7 @@ Ligand
         * :attr:`anchor.remove`
         * :attr:`anchor.kind`
         * :attr:`anchor.angle_offset`
+        * :attr:`anchor.dihedral`
 
         .. note::
 
@@ -714,6 +715,23 @@ Ligand
 
         By default the angle unit is assumed to be in degrees,
         but if so desired one can explicitly pass the unit: ``angle_offset: "0.25 rad"``.
+
+
+    .. attribute:: optional.ligand.anchor.dihedral
+
+        :Parameter:     * **Type** - :data:`None`, :class:`float` or :class:`str`
+                        * **Default value** – :data:`None`
+
+        Manually specify the ligands vector dihedral angle, rather than optimizing it w.r.t. the inter-ligand distance.
+
+        The dihedral angle is defined by three vectors:
+
+        * The first two in dices in :attr:`anchor.group_idx <optional.ligand.anchor.group_idx>`.
+        * The core vector(s).
+        * The Cartesian X-axis as defined by the core.
+
+        By default the angle unit is assumed to be in degrees,
+        but if so desired one can explicitly pass the unit: ``dihedral: "0.5 rad"``.
 
 
     .. attribute:: optional.ligand.split
