@@ -80,7 +80,7 @@ def _parse_kind(typ: "None | str | KindEnum") -> KindEnum:
 def _parse_angle_offset(
     offset: "None | SupportsFloat | SupportsIndex | bytes | str"
 ) -> "None | float":
-    """Parse the ``angle_offset`` option; convert the offset to radians."""
+    """Parse the ``angle_offset`` and ``dihedral`` options; convert the offset to radians."""
     if offset is None:
         return None
     elif not isinstance(offset, str):
@@ -103,6 +103,7 @@ anchor_schema = Schema({
     Optional("remove", default=None): Use(_parse_remove),
     Optional("kind", default=KindEnum.FIRST): Use(_parse_kind),
     Optional("angle_offset", default=None): Use(_parse_angle_offset),
+    Optional("dihedral", default=None): Use(_parse_angle_offset)
 })
 
 
@@ -161,6 +162,13 @@ def parse_anchors(
             if angle_offset is not None and len(group_idx) < 3:
                 raise ValueError("`group_idx` must contain at least 3 atoms when "
                                  "`angle_offset` is specified")
+
+            # Check that at least 2 atoms are available for `dihedral`
+            # (so the third dihedral-defining vector can be defined)
+            dihedral = kwargs["dihedral"]
+            if dihedral is not None and len(group_idx) < 2:
+                raise ValueError("`group_idx` must contain at least 3 atoms when "
+                                 "`dihedral` is specified")
 
             mol = _smiles_to_rdmol(group)
             ret.append(AnchorTup(**kwargs, mol=mol))
