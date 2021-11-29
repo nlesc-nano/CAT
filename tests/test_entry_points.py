@@ -56,12 +56,19 @@ class TestMain:
 
     @pytest.mark.parametrize("filename", PATH_DICT.values(), ids=PATH_DICT.keys())
     def test_mol(self, filename: str) -> None:
-        # Coordinates
         mol = Molecule(LIG_PATH / filename)
         mol_ref = Molecule(PATH_REF / filename)
-        np.testing.assert_allclose(mol, mol_ref, rtol=0, atol=10**-2)
 
         # Atomic symbols
         symbols = [at.symbol for at in mol]
         symbol_ref = [at.symbol for at in mol_ref]
         np.testing.assert_array_equal(symbols, symbol_ref)
+
+        if (
+            sys.platform != "darwin" and
+            os.path.splitext(filename)[0] == "O=C[COc1ccc[Cl]cc1Cl]Nc1cc[C[=O][O-]]ccc1F@O21"
+        ):
+            pytest.xfail("Platform dependant geometry; mismatch on non-MacOS platforms")
+
+        # Coordinates
+        np.testing.assert_allclose(mol, mol_ref, rtol=0, atol=10**-2)
