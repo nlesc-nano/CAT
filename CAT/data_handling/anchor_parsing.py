@@ -2,7 +2,7 @@
 
 import re
 import operator
-from typing import Union, Tuple, Collection, Iterable, SupportsFloat
+from typing import Union, Tuple, Iterable, SupportsFloat
 
 from rdkit.Chem import Mol
 from scm.plams import Units
@@ -17,11 +17,11 @@ __all__ = ["parse_anchors"]
 
 class _UnparsedAnchorDictBase(TypedDict):
     group: str
-    anchor_idx: "SupportsIndex | Collection[SupportsIndex]"
+    anchor_idx: "SupportsIndex | Iterable[SupportsIndex]"
 
 
 class _UnparsedAnchorDict(_UnparsedAnchorDictBase, total=False):
-    remove: "None | SupportsIndex | Collection[SupportsIndex]"
+    remove: "None | SupportsIndex | Iterable[SupportsIndex]"
     angle_offset: "None | SupportsFloat | SupportsIndex | bytes | str"
 
 
@@ -108,14 +108,14 @@ def parse_anchors(
         Mol,
         AnchorTup,
         _UnparsedAnchorDict,
-        "Collection[str | Mol | AnchorTup | _UnparsedAnchorDict]",
+        "Iterable[str | Mol | AnchorTup | _UnparsedAnchorDict]",
     ] = None,
     split: bool = True,
 ) -> Tuple[AnchorTup, ...]:
     """Parse the user-specified anchors."""
     if patterns is None:
         patterns = get_functional_groups(None, split)
-    elif isinstance(patterns, (Mol, str, dict)):
+    elif isinstance(patterns, (Mol, str, dict, AnchorTup)):
         patterns = [patterns]
 
     ret = []
@@ -151,7 +151,7 @@ def parse_anchors(
             # (so the third dihedral-defining vector can be defined)
             dihedral = kwargs["dihedral"]
             if dihedral is not None and len(group_idx) < 2:
-                raise ValueError("`group_idx` must contain at least 3 atoms when "
+                raise ValueError("`group_idx` must contain at least 2 atoms when "
                                  "`dihedral` is specified")
 
             # Check that the indices in `group_idx` and `remove` are not out of bounds
