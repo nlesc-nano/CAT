@@ -20,11 +20,16 @@ from scm.plams.core.basejob import Job
 
 __all__ = ['logger']
 
-#: A logger for CAT
+#: The CAT logger
 logger = logging.getLogger('CAT')
-logging.basicConfig(level=logging.DEBUG,
-                    format='[%(asctime)s] %(levelname)s: %(message)s',
-                    datefmt='%H:%M:%S')
+_handler = logging.StreamHandler()
+_handler.setLevel(logging.DEBUG)
+_handler.setFormatter(logging.Formatter(
+    fmt='[%(asctime)s] %(levelname)s: %(message)s',
+    datefmt='%H:%M:%S',
+))
+logger.addHandler(_handler)
+del _handler
 
 
 def log_start(job: Job, mol: Molecule, job_preset: str, job_name: str) -> None:
