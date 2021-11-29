@@ -2,7 +2,7 @@
 
 import re
 import operator
-from typing import Union, Tuple, Collection, Iterable, SupportsFloat
+from typing import Union, Tuple, Iterable, SupportsFloat
 
 from rdkit.Chem import Mol
 from scm.plams import Units
@@ -17,11 +17,11 @@ __all__ = ["parse_anchors"]
 
 class _UnparsedAnchorDictBase(TypedDict):
     group: str
-    anchor_idx: "SupportsIndex | Collection[SupportsIndex]"
+    anchor_idx: "SupportsIndex | Iterable[SupportsIndex]"
 
 
 class _UnparsedAnchorDict(_UnparsedAnchorDictBase, total=False):
-    remove: "None | SupportsIndex | Collection[SupportsIndex]"
+    remove: "None | SupportsIndex | Iterable[SupportsIndex]"
     angle_offset: "None | SupportsFloat | SupportsIndex | bytes | str"
 
 
@@ -108,7 +108,7 @@ def parse_anchors(
         Mol,
         AnchorTup,
         _UnparsedAnchorDict,
-        "Collection[str | Mol | AnchorTup | _UnparsedAnchorDict]",
+        "Iterable[str | Mol | AnchorTup | _UnparsedAnchorDict]",
     ] = None,
     split: bool = True,
 ) -> Tuple[AnchorTup, ...]:
