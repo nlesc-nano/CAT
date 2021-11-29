@@ -33,13 +33,7 @@ jobs:
 
             -   name: Install dependencies
                 run: |
-                    case "${{ matrix.os }}" in
-                        "macos-latest")
-                            # TODO: Remove when/if scipy and h5py wheels are available again
-                            conda create -n test -c conda-forge python=${{ matrix.version }} "rdkit>=2021.03.4" scipy h5py ;;
-                        *)
-                            conda create -n test -c conda-forge python=${{ matrix.version }} "rdkit>=2021.03.4" ;;
-                    esac
+                    conda create -n test -c conda-forge python=${{ matrix.version }} "rdkit>=2021.03.4"
                     source $CONDA/bin/activate test
                     pip install -e .[test]
 
