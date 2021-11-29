@@ -1,17 +1,9 @@
 """A pytest ``conftest.py`` file."""
 
-import logging
-from typing import Any
-
 import pytest
 import rdkit
 
 from nanoutils import VersionInfo
-
-
-def pytest_configure(config: Any) -> None:
-    logging.getLogger("filelock").setLevel(logging.WARNING)
-    logging.getLogger("CAT").setLevel(logging.WARNING)
 
 
 @pytest.fixture(scope="session", autouse=True)

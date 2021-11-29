@@ -2,11 +2,6 @@
 
 # flake8: noqa: E402
 
-import logging
-_mpl_logger = logging.getLogger('matplotlib')
-_mpl_logger.setLevel(logging.INFO)
-del _mpl_logger, logging
-
 from .__version__ import __version__ as __version__
 __author__ = "Bas van Beek"
 __email__ = 'b.f.van.beek@vu.nl'
