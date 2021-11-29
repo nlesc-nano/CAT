@@ -151,7 +151,7 @@ def parse_anchors(
             # (so the third dihedral-defining vector can be defined)
             dihedral = kwargs["dihedral"]
             if dihedral is not None and len(group_idx) < 2:
-                raise ValueError("`group_idx` must contain at least 3 atoms when "
+                raise ValueError("`group_idx` must contain at least 2 atoms when "
                                  "`dihedral` is specified")
 
             # Check that the indices in `group_idx` and `remove` are not out of bounds
