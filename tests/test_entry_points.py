@@ -55,10 +55,6 @@ class TestMain:
             main([f'{filename}bob'])
 
     @pytest.mark.parametrize("filename", PATH_DICT.values(), ids=PATH_DICT.keys())
-    @pytest.mark.xfail(
-        sys.version_info >= (3, 9),
-        reason="Geometries must be updated for RDKit >2019.09.2",
-    )
     def test_mol(self, filename: str) -> None:
         # Coordinates
         mol = Molecule(LIG_PATH / filename)

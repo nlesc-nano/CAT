@@ -139,7 +139,7 @@ class TestFindSubstructure:
         return atoms_ar, bonds_ar
 
     @pytest.fixture(scope="class", autouse=True, name="group")
-    def get_h5py_file(self) -> Generator[h5py.Group, None, None]:
+    def get_h5py_group(self) -> Generator[h5py.Group, None, None]:
         with h5py.File(PATH / "test_ligand_anchoring.hdf5", "r") as f:
             yield f["TestFindSubstructure"]
 
@@ -172,12 +172,7 @@ class TestFindSubstructure:
 
         np.testing.assert_array_equal(atoms, atoms_ref)
         np.testing.assert_array_equal(bonds, bonds_ref)
-        try:
-            np.testing.assert_allclose(coords, coords_ref, atol=10e-3)
-        except AssertionError:
-            if sys.version_info >= (3, 9):
-                pytest.xfail("Geometries must be updated for RDKit >2019.09.2")
-            raise
+        np.testing.assert_allclose(coords, coords_ref, atol=10e-3)
 
     def test_split(self) -> None:
         func_groups = parse_anchors(split=True)
