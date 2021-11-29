@@ -115,7 +115,7 @@ def parse_anchors(
     """Parse the user-specified anchors."""
     if patterns is None:
         patterns = get_functional_groups(None, split)
-    elif isinstance(patterns, (Mol, str, dict)):
+    elif isinstance(patterns, (Mol, str, dict, AnchorTup)):
         patterns = [patterns]
 
     ret = []
