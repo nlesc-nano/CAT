@@ -115,7 +115,4 @@ class TestDihedral:
 
         assertion.eq(atoms.dtype, output.ref.dtype)
         np.testing.assert_array_equal(atoms.symbols, output.ref.symbols)
-
-        if sys.version_info >= (3, 9):
-            pytest.xfail("Geometries must be updated for RDKit >2019.09.2")
         np.testing.assert_allclose(atoms.coords, output.ref.coords)
