@@ -1,7 +1,7 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: Build with Conda
+name: Tests
 
 on:
     push:
@@ -11,13 +11,18 @@ on:
 
 jobs:
     build:
-        name: Python ${{ matrix.version }} on ${{ matrix.os }}
+        name: ${{ matrix.os }} (py ${{ matrix.version }}${{ matrix.special }})
         runs-on: ${{ matrix.os }}
         strategy:
             fail-fast: false
             matrix:
                 os: [ubuntu-latest, macos-latest]
                 version: ["3.6", "3.7", "3.8", "3.9"]
+                special: [""]
+                include:
+                    -   os: ubuntu-latest
+                        special: "; pre-release"
+                        version: "3.9"
         steps:
             -   name: Cancel Previous Runs
                 uses: styfle/cancel-workflow-action@0.9.1
@@ -35,7 +40,14 @@ jobs:
                 run: |
                     conda create -n test -c conda-forge python=${{ matrix.version }} "rdkit>=2021.03.4"
                     source $CONDA/bin/activate test
-                    pip install -e .[test]
+                    case "${{ matrix.special }}" in
+                        "; pre-release")
+                            pip install -e .[test] --pre --upgrade --force-reinstall
+                            pip install git+https://github.com/SCM-NV/PLAMS@master --upgrade
+                            ;;
+                        *)
+                            pip install -e .[test] ;;
+                    esac
 
             -   name: Conda info
                 run: |
