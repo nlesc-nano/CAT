@@ -35,6 +35,7 @@ from .__version__ import __version__
 from .logger import logger
 from .mol_utils import to_symbol
 from .settings_dataframe import SettingsDataFrame
+from .utils import AllignmentEnum
 
 from .data_handling.mol_import import read_mol
 from .data_handling.update_qd_df import update_qd_df
@@ -236,7 +237,10 @@ def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
             raise MoleculeError(f"{repr(to_symbol(anchor))} was specified as core anchor atom, yet "
                                 f"no matching atoms were found in {core.properties.name} "
                                 f"(formula: {formula})")
-        elif len(dummies) < 4 and core_df.settings.optional.core.allignment == "surface":
+        elif (
+            len(dummies) < 4 and
+            core_df.settings.optional.core.allignment.kind == AllignmentEnum.SURFACE
+        ):
             raise NotImplementedError(
                 '`optional.core.allignment = "surface"` is not supported for cores with less '
                 f'than 4 anchor atoms ({core.get_formula()}); consider using '

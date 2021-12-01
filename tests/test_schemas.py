@@ -9,7 +9,7 @@ from unittest import mock
 from scm.plams import AMSJob, ADFJob, Settings, CRSJob
 from assertionlib import assertion
 
-from CAT.utils import get_template
+from CAT.utils import get_template, AllignmentTup, AllignmentEnum
 from CAT.data_handling.str_to_func import str_to_func
 from CAT.data_handling.validation_schemas import (
     mol_schema, core_schema, ligand_schema, qd_schema, database_schema,
@@ -156,7 +156,7 @@ def test_core_schema() -> None:
         'dirname': '.',
         'anchor': None,
         'dummy': None,
-        'allignment': 'surface',
+        'allignment': AllignmentTup(AllignmentEnum.SURFACE, False),
         'subset': None
     }
 
@@ -175,10 +175,24 @@ def test_core_schema() -> None:
     assertion.assert_(core_schema.validate, core_dict, exception=SchemaError)
     core_dict['allignment'] = 'bob'  # Exception: incorrect value
     assertion.assert_(core_schema.validate, core_dict, exception=SchemaError)
+
     core_dict['allignment'] = 'SPHERE'
-    assertion.eq(core_schema.validate(core_dict)['allignment'], 'sphere')
+    assertion.eq(
+        core_schema.validate(core_dict)['allignment'],
+        AllignmentTup(AllignmentEnum.SPHERE, False),
+    )
+
     core_dict['allignment'] = 'surface'
-    assertion.eq(core_schema.validate(core_dict)['allignment'], 'surface')
+    assertion.eq(
+        core_schema.validate(core_dict)['allignment'],
+        AllignmentTup(AllignmentEnum.SURFACE, False),
+    )
+
+    core_dict['allignment'] = 'surface invert'
+    assertion.eq(
+        core_schema.validate(core_dict)['allignment'],
+        AllignmentTup(AllignmentEnum.SURFACE, True),
+    )
 
 
 def test_qd_schema() -> None:

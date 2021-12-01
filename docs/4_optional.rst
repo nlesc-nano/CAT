@@ -274,13 +274,17 @@ Core
 
         How the to-be attached ligands should be alligned with the core.
 
-        Has two allowed values:
+        Has four allowed values:
 
         * ``"surface"``: Define the core vectors as those orthogonal to the cores
           surface. Not this option requires at least four core anchor atoms.
           The surface is herein defined by a convex hull constructed from the core.
         * ``"sphere"``: Define the core vectors as those drawn from the core anchor
           atoms to the cores center.
+        * ``"surface invert"``/``"surface_invert"``: The same as ``"surface"``,
+          except the core vectors are inverted.
+        * ``"sphere invert"``/``"sphere_invert"``: The same as ``"sphere"``,
+          except the core vectors are inverted.
 
         Note that for a spherical core both approaches are equivalent.
 

@@ -1,0 +1,20 @@
+path: .
+
+input_cores:
+    - hollow.xyz
+
+input_ligands:
+    - 'OCC'
+
+optional:
+    core:
+        dirname: core
+        anchor: Cl
+
+    ligand:
+        dirname: ligand
+        optimize: True
+        anchor: O[H]
+
+    qd:
+        dirname: QD

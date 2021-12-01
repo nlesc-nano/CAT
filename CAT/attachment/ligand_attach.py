@@ -53,6 +53,7 @@ from ..utils import AnchorTup
 from ..workflows import WorkFlow, HDF5_INDEX, MOL, OPT
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling import mol_to_file, WARN_MAP
+from ..utils import AllignmentTup, AllignmentEnum
 
 __all__ = ['init_qd_construction']
 
@@ -202,9 +203,13 @@ def _get_df(core_index: pd.MultiIndex,
     return SettingsDataFrame(data, index=index, columns=columns, settings=settings)
 
 
-def ligand_to_qd(core: Molecule, ligand: Molecule, path: str,
-                 allignment: str = 'sphere',
-                 idx_subset: Optional[Iterable[int]] = None) -> Molecule:
+def ligand_to_qd(
+    core: Molecule,
+    ligand: Molecule,
+    path: str,
+    allignment: AllignmentTup,
+    idx_subset: "None | Iterable[int]" = None,
+) -> Molecule:
     """Function that handles quantum dot (qd, *i.e.* core + all ligands) operations.
 
     Combine the core and ligands and assign properties to the quantom dot.
@@ -250,17 +255,16 @@ def ligand_to_qd(core: Molecule, ligand: Molecule, path: str,
     ligand.properties.dummies.properties.anchor = True
 
     # Attach the rotated ligands to the core, returning the resulting strucutre (PLAMS Molecule).
-    if allignment == 'sphere':
-        vec2 = np.array(core.get_center_of_mass()) - sanitize_dim_2(core.properties.dummies)
+    anchor = sanitize_dim_2(core.properties.dummies)
+    if allignment.kind == AllignmentEnum.SPHERE:
+        vec2 = np.array(core.get_center_of_mass()) - anchor
         vec2 /= np.linalg.norm(vec2, axis=1)[..., None]
-    elif allignment == 'surface':
-        if isinstance(core.properties.dummies, np.ndarray):
-            anchor = core.properties.dummies
-        else:
-            anchor = core.as_array(core.properties.dummies)
+    elif allignment.kind == AllignmentEnum.SURFACE:
         vec2 = -get_surface_vec(np.array(core)[idx_subset_], anchor)
     else:
-        raise ValueError(repr(allignment))
+        raise ValueError(f"Unknown allignment kind: {allignment.kind}")
+    if allignment.invert:
+        vec2 *= -1
 
     # Rotate the ligands
     anchor_tup = ligand.properties.anchor_tup
