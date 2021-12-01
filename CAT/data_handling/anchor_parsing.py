@@ -23,6 +23,7 @@ class _UnparsedAnchorDictBase(TypedDict):
 class _UnparsedAnchorDict(_UnparsedAnchorDictBase, total=False):
     remove: "None | SupportsIndex | Iterable[SupportsIndex]"
     angle_offset: "None | SupportsFloat | SupportsIndex | bytes | str"
+    dihedral: "None | SupportsFloat | SupportsIndex | bytes | str"
 
 
 class _AnchorDict(TypedDict):
@@ -31,6 +32,7 @@ class _AnchorDict(TypedDict):
     remove: "None | Tuple[int, ...]"
     kind: KindEnum
     angle_offset: "None | float"
+    dihedral: "None | float"
 
 
 def _parse_group_idx(item: "SupportsIndex | Iterable[SupportsIndex]") -> Tuple[int, ...]:
@@ -40,7 +42,7 @@ def _parse_group_idx(item: "SupportsIndex | Iterable[SupportsIndex]") -> Tuple[i
     except TypeError:
         pass
 
-    ret = tuple(operator.index(i) for i in item)
+    ret = tuple(operator.index(i) for i in item)  # type: ignore[union-attr]
     n = len(ret) - len(set(ret))
     if n:
         raise ValueError(f"Found {n} duplicate elements")
@@ -124,7 +126,9 @@ def parse_anchors(
             ret.append(p)
         elif isinstance(p, Mol):
             mol = p
-            remove = None if not split else (list(mol.GetAtoms())[-1].GetIdx(),)
+            remove: "None | Tuple[int, ...]" = (
+                None if not split else (list(mol.GetAtoms())[-1].GetIdx(),)
+            )
             ret.append(AnchorTup(mol=mol, remove=remove))
         elif isinstance(p, str):
             group = p
