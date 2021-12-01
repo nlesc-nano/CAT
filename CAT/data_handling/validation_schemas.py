@@ -89,6 +89,7 @@ except ImportError:
 from .str_to_func import str_to_func
 from ..utils import get_template, validate_path, validate_core_atom, check_sys_var
 from ..mol_utils import to_atnum
+from ..utils import AllignmentEnum, AllignmentTup
 
 __all__ = ['mol_schema', 'core_schema', 'ligand_schema', 'qd_schema', 'database_schema',
            'mongodb_schema', 'bde_schema', 'ligand_opt_schema', 'qd_opt_schema', 'crs_schema',
@@ -287,6 +288,15 @@ mol_schema: Schema = Schema({
         ),
 })
 
+allignment_mapping = {
+    'sphere': AllignmentTup(AllignmentEnum.SPHERE, False),
+    'surface': AllignmentTup(AllignmentEnum.SURFACE, False),
+    'sphere_invert': AllignmentTup(AllignmentEnum.SPHERE, True),
+    'sphere invert': AllignmentTup(AllignmentEnum.SPHERE, True),
+    'surface_invert': AllignmentTup(AllignmentEnum.SURFACE, True),
+    'surface invert': AllignmentTup(AllignmentEnum.SURFACE, True),
+}
+
 #: Schema for validating the ``['optional']['core']`` block.
 core_schema: Schema = Schema({
     'dirname':
@@ -312,9 +322,13 @@ core_schema: Schema = Schema({
     Optional_('subset', default=None):
         Or(None, dict, error="optional.core.subset epected 'None' or a dictionary"),
 
-    Optional_('allignment', default='surface'):
-        And(str, lambda n: n.lower() in {'sphere', 'surface'},
-            Use(str.lower), error="optional.core.allignment expected 'sphere' or 'surface'")
+    Optional_('allignment', default=AllignmentTup(AllignmentEnum.SURFACE, False)):
+        Or(
+            AllignmentTup,
+            And(str, Use(lambda n: allignment_mapping[n.lower()]),
+                error="optional.core.allignment expected "
+                      f"one of {list(allignment_mapping.keys())}"),
+        ),
 })
 
 #: Schema for validating the ``['optional']['core']['subset']`` block.

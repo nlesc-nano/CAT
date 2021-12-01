@@ -64,7 +64,8 @@ from .gen_job_manager import GenJobManager
 __all__ = [
     'JOB_MAP', 'check_sys_var', 'dict_concatenate', 'get_template',
     'cycle_accumulate', 'iter_repeat', 'get_nearest_neighbors',
-    'log_traceback_locals', 'KindEnum', 'AnchorTup',
+    'log_traceback_locals', 'KindEnum', 'AnchorTup', 'AllignmentEnum',
+    'AllignmentTup'
 ]
 
 JOB_MAP: Mapping[Type[Job], str] = MappingProxyType({
@@ -541,6 +542,13 @@ class KindEnum(enum.Enum):
     MEAN_TRANSLATE = 2
 
 
+class AllignmentEnum(enum.Enum):
+    """An enum with different core vector orientations (see :class:`AllignmentTup`)."""
+
+    SPHERE = 0
+    SURFACE = 1
+
+
 class AnchorTup(NamedTuple):
     """A named tuple with anchoring operation instructions."""
 
@@ -552,3 +560,10 @@ class AnchorTup(NamedTuple):
     kind: KindEnum = KindEnum.FIRST
     angle_offset: "None | float" = None
     dihedral: "None | float" = None
+
+
+class AllignmentTup(NamedTuple):
+    """A named tuple with core vector orientation options."""
+
+    kind: AllignmentEnum
+    invert: bool

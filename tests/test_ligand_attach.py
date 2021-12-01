@@ -1,12 +1,12 @@
 """Tests for :mod:`CAT.attachment.ligand_attach`."""
 
-import sys
 import shutil
 from pathlib import Path
 from typing import Generator, NamedTuple, TYPE_CHECKING
 
 import yaml
 import pytest
+import h5py
 import numpy as np
 from assertionlib import assertion
 from scm.plams import Settings, Molecule
@@ -77,6 +77,14 @@ def test_get_rotmat2() -> None:
 class DihedTup(NamedTuple):
     mol: Molecule
     ref: np.recarray
+    name: str
+
+
+class AllignmentTup(NamedTuple):
+    mol: Molecule
+    atoms_ref: np.recarray
+    bonds_ref: np.recarray
+    name: str
 
 
 class TestDihedral:
@@ -100,12 +108,12 @@ class TestDihedral:
         qd = qd_df[MOL].iloc[0]
 
         ref = np.load(PATH / f"test_dihedral_{name}.npy").view(np.recarray)
-        yield DihedTup(qd, ref)
+        yield DihedTup(qd, ref, name)
 
         # Teardown
         files = [LIG_PATH, QD_PATH, DB_PATH]
-        for f in files:
-            shutil.rmtree(f, ignore_errors=True)
+        for file in files:
+            shutil.rmtree(file, ignore_errors=True)
 
     def test_atoms(self, output: DihedTup) -> None:
         dtype = [("symbols", "U2"), ("coords", "f8", 3)]
@@ -116,3 +124,55 @@ class TestDihedral:
         assertion.eq(atoms.dtype, output.ref.dtype)
         np.testing.assert_array_equal(atoms.symbols, output.ref.symbols)
         np.testing.assert_allclose(atoms.coords, output.ref.coords)
+
+
+class TestAllignment:
+    PARAMS = ("sphere", "surface", "sphere_invert", "surface_invert")
+
+    @pytest.fixture(scope="class", name="output", params=PARAMS)
+    def run_cat(
+        self, request: "_pytest.fixtures.SubRequest"
+    ) -> Generator[AllignmentTup, None, None]:
+        # Setup
+        allignment: str = request.param
+        yaml_path = PATH / 'CAT_allignment.yaml'
+        with open(yaml_path, 'r') as f1:
+            arg = Settings(yaml.load(f1, Loader=yaml.FullLoader))
+
+        arg.path = PATH
+        arg.optional.core.allignment = allignment
+        qd_df, _, _ = prep(arg)
+        qd = qd_df[MOL].iloc[0]
+
+        with h5py.File(PATH / "test_allignment.hdf5", "r") as f2:
+            atoms_ref = f2[f"TestAllignment/{allignment}/atoms"][...].view(np.recarray)
+            bonds_ref = f2[f"TestAllignment/{allignment}/bonds"][...].view(np.recarray)
+        yield AllignmentTup(qd, atoms_ref, bonds_ref, allignment)
+
+        # Teardown
+        files = [LIG_PATH, QD_PATH, DB_PATH]
+        for file in files:
+            shutil.rmtree(file, ignore_errors=True)
+
+    def test_atoms(self, output: AllignmentTup) -> None:
+        dtype = [("symbols", "S2"), ("coords", "f8", 3)]
+        iterator = ((at.symbol, at.coords) for at in output.mol)
+        atoms = np.fromiter(iterator, dtype=dtype).view(np.recarray)
+
+        assertion.eq(atoms.dtype, output.atoms_ref.dtype)
+        np.testing.assert_array_equal(atoms.symbols, output.atoms_ref.symbols)
+        np.testing.assert_allclose(atoms.coords, output.atoms_ref.coords)
+
+    def test_bonds(self, output: AllignmentTup) -> None:
+        dtype = [("atom1", "i8"), ("atom2", "i8"), ("order", "f8")]
+        try:
+            output.mol.set_atoms_id()
+            iterator = ((b.atom1.id, b.atom2.id, b.order) for b in output.mol.bonds)
+            bonds = np.fromiter(iterator, dtype=dtype).view(np.recarray)
+        finally:
+            output.mol.unset_atoms_id()
+
+        assertion.eq(bonds.dtype, output.bonds_ref.dtype)
+        np.testing.assert_array_equal(bonds.atom1, output.bonds_ref.atom1)
+        np.testing.assert_array_equal(bonds.atom2, output.bonds_ref.atom2)
+        np.testing.assert_allclose(bonds.order, output.bonds_ref.order)

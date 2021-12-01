@@ -14,6 +14,7 @@ from assertionlib import assertion
 from nanoutils import delete_finally
 
 from CAT.data_handling.validate_input import validate_input
+from CAT.utils import AllignmentTup, AllignmentEnum
 
 try:
     from dataCAT import Database
@@ -46,7 +47,7 @@ def test_validate_input() -> None:
     ref = Settings()
     ref.core.dirname = join(PATH, 'core')
     ref.core.anchor = 35
-    ref.core.allignment = 'surface'
+    ref.core.allignment = AllignmentTup(AllignmentEnum.SURFACE, False)
     ref.core.subset = None
 
     ref.database.dirname = join(PATH, 'database')
