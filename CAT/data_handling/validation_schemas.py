@@ -303,21 +303,9 @@ core_schema: Schema = Schema({
         And(str, error='optional.core.dirname expects a string'),
 
     # Alias for `optional.core.anchor`
-    Optional_('dummy', default=None):  # Return a tuple of atomic numbers
-        Or(
-            None,
-            And(val_int, Use(lambda n: to_atnum(int(n)))),
-            And(str, Use(to_atnum)),
-            error='optional.core.dummy expects a valid atomic number (int) or symbol (string)'
-        ),
+    Optional_('dummy', default=None): object,
 
-    Optional_('anchor', default=None):  # Return a tuple of atomic numbers
-        Or(
-            None,
-            And(val_int, Use(lambda n: to_atnum(int(n)))),
-            And(str, Use(to_atnum)),
-            error='optional.core.anchor expects a valid atomic number (int) or symbol (string)'
-        ),
+    Optional_('anchor', default=None): object,
 
     Optional_('subset', default=None):
         Or(None, dict, error="optional.core.subset epected 'None' or a dictionary"),

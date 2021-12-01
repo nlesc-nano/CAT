@@ -190,4 +190,5 @@ def validate_input(s: Settings, validate_only: bool = True) -> None:
         del s.optional.ligand.functional_groups
 
         split = s.optional.ligand.split
-        s.optional.ligand.anchor = parse_anchors(func_groups, split)
+        s.optional.ligand.anchor = parse_anchors(func_groups, split=split)
+        s.optional.core.anchor = parse_anchors(s.optional.core.anchor, split=True, is_core=True)

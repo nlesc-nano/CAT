@@ -275,11 +275,30 @@ class TestInputParsing:
         with pytest.raises(exc_type):
             parse_anchors(inp)
 
+    PARAM_RAISE_CORE: "OrderedDict[str, tuple[Any, type[Exception]]]" = OrderedDict(
+        none=(None, TypeError),
+        angle_offset=({"group": "Cl", "group_idx": 0, "angle_offset": 90}, TypeError),
+        dihedral=({"group": "Cl", "group_idx": 0, "dihedral": 90}, TypeError),
+        multiple=(["OC", "OCC"], NotImplementedError),
+        kind=({"group": "Cl", "group_idx": 0, "kind": "mean"}, NotImplementedError),
+    )
+
+    @pytest.mark.parametrize("inp,exc_type", PARAM_RAISE_CORE.values(), ids=PARAM_RAISE_CORE)
+    def test_raise_core(self, inp: Any, exc_type: "type[Exception]") -> None:
+        with pytest.raises(exc_type):
+            parse_anchors(inp, is_core=True)
+
     _PARAM_PASS1 = OrderedDict(
         idx_scalar={"group": "OCC", "group_idx": 0},
         idx_list={"group": "OCC", "group_idx": [0]},
         list=[{"group": "OCC", "group_idx": 0}],
-        str=["O(C)[H]"],
+        str_COH=["O(C)[H]"],
+        str_Cd=["Cd"],
+        str_Cl=["Cl"],
+        int_Cd=[48],
+        int_Cl=[17],
+        group_cd={"group": "Cd", "group_idx": 0},
+        group_cl={"group": "Cl", "group_idx": 0},
         angle_unit={"group": "OCC", "group_idx": range(3), "angle_offset": "1 rad"},
         angle_no_unit={"group": "OCC", "group_idx": range(3), "angle_offset": "180"},
         angle_none={"group": "OCC", "group_idx": range(3), "angle_offset": None},
@@ -293,7 +312,13 @@ class TestInputParsing:
         idx_scalar=AnchorTup(None, group="OCC", group_idx=(0,)),
         idx_list=AnchorTup(None, group="OCC", group_idx=(0,)),
         list=AnchorTup(None, group="OCC", group_idx=(0,)),
-        str=AnchorTup(None, group="O(C)[H]", group_idx=(0,), remove=(2,)),
+        str_COH=AnchorTup(None, group="O(C)[H]", group_idx=(0,), remove=(2,)),
+        str_Cd=AnchorTup(None, group="[Cd]", group_idx=(0,), remove=(0,)),
+        str_Cl=AnchorTup(None, group="Cl", group_idx=(0,), remove=(0,)),
+        int_Cd=AnchorTup(None, group="[Cd]", group_idx=(0,), remove=(0,)),
+        int_Cl=AnchorTup(None, group="Cl", group_idx=(0,), remove=(0,)),
+        group_cd=AnchorTup(None, group="[Cd]", group_idx=(0,)),
+        group_cl=AnchorTup(None, group="Cl", group_idx=(0,)),
         angle_unit=AnchorTup(None, group="OCC", group_idx=(0, 1, 2), angle_offset=1.0),
         angle_no_unit=AnchorTup(None, group="OCC", group_idx=(0, 1, 2), angle_offset=math.pi),
         angle_none=AnchorTup(None, group="OCC", group_idx=(0, 1, 2), angle_offset=None),

@@ -46,7 +46,6 @@ def test_validate_input() -> None:
 
     ref = Settings()
     ref.core.dirname = join(PATH, 'core')
-    ref.core.anchor = 35
     ref.core.allignment = AllignmentTup(AllignmentEnum.SURFACE, False)
     ref.core.subset = None
 
@@ -98,11 +97,16 @@ def test_validate_input() -> None:
 
     ref.forcefield = Settings()
 
-    func_groups1 = s.optional.ligand.pop('anchor')
-    func_groups2 = s2.optional.ligand.pop('anchor')
-
-    for tup in chain(func_groups1, func_groups2):
+    lig_func_groups1 = s.optional.ligand.pop('anchor')
+    lig_func_groups2 = s2.optional.ligand.pop('anchor')
+    for tup in chain(lig_func_groups1, lig_func_groups2):
         assertion.isinstance(tup.mol, Chem.Mol)
+
+    core_func_groups1 = s.optional.core.pop('anchor')
+    core_func_groups2 = s2.optional.core.pop('anchor')
+    for tup in chain(core_func_groups1, core_func_groups2):
+        assertion.isinstance(tup.mol, Chem.Mol)
+
     assertion.eq(s.optional, ref)
     assertion.eq(s2.optional, ref)
 
