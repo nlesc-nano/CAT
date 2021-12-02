@@ -4,6 +4,8 @@
    :target: https://cat.readthedocs.io/en/latest/
 .. image:: https://zenodo.org/badge/169708827.svg
    :target: https://zenodo.org/badge/latestdoi/169708827
+.. image:: https://badge.fury.io/py/nlesc-CAT.svg
+   :target: https://badge.fury.io/py/nlesc-CAT
 
 |
 
