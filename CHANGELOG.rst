@@ -8,7 +8,12 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.10.1
 ******
-* Added the option to manually specify angle offsets for the ligand vector.
+* Added the option to manually specify angle offsets the ligand vectors.
+* Added the option to manually specify dihedral angle the ligand vectors.
+* Added the option to invert the core vectors.
+* Added the various ligand anchor parsing options to its core-based counterpart.
+* Deprecated usage of ``Molecule.get_formula`` in favor of a PLAMS <=1.5.1-based backport.
+* Fixed CAT modifiying global ``logging`` settings.
 
 
 0.10.0
