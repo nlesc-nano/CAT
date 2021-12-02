@@ -119,7 +119,7 @@ setup(
         'scipy',
         'pandas',
         'pyyaml>=5.1',
-        'schema',
+        'schema!=0.7.5',
         'AssertionLib>=2.2.3',
         'plams>=1.5.1',
         'contextlib2>=0.6.0; python_version=="3.6"',
