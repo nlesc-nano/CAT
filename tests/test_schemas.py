@@ -162,15 +162,6 @@ def test_core_schema() -> None:
 
     assertion.eq(core_schema.validate(core_dict), ref)
 
-    core_dict['anchor'] = 1.1  # Exception: incorrect value
-    assertion.assert_(core_schema.validate, core_dict, exception=SchemaError)
-    core_dict['anchor'] = 'H'
-    assertion.eq(core_schema.validate(core_dict)['anchor'], 1)
-    core_dict['anchor'] = 1
-    assertion.eq(core_schema.validate(core_dict)['anchor'], 1)
-    core_dict['anchor'] = 1.0
-    assertion.eq(core_schema.validate(core_dict)['anchor'], 1)
-
     core_dict['allignment'] = 1.1  # Exception: incorrect type
     assertion.assert_(core_schema.validate, core_dict, exception=SchemaError)
     core_dict['allignment'] = 'bob'  # Exception: incorrect value

@@ -176,3 +176,58 @@ class TestAllignment:
         np.testing.assert_array_equal(bonds.atom1, output.bonds_ref.atom1)
         np.testing.assert_array_equal(bonds.atom2, output.bonds_ref.atom2)
         np.testing.assert_allclose(bonds.order, output.bonds_ref.order)
+
+
+class TestCoreAnchor:
+    PARAMS = {
+        "HCl": {"group": "[H]Cl", "group_idx": 0, "remove": 0}
+    }
+
+    @pytest.fixture(scope="class", name="output", params=PARAMS.items(), ids=PARAMS)
+    def run_cat(
+        self, request: "_pytest.fixtures.SubRequest"
+    ) -> Generator[AllignmentTup, None, None]:
+        # Setup
+        name, kwargs = request.param  # type: str, dict[str, Any]
+        yaml_path = PATH / 'CAT_allignment.yaml'
+        with open(yaml_path, 'r') as f1:
+            arg = Settings(yaml.load(f1, Loader=yaml.FullLoader))
+
+        arg.path = PATH
+        arg.input_cores = ["Cd68Se55_HCl.pdb"]
+        arg.optional.core.anchor = kwargs
+        qd_df, _, _ = prep(arg)
+        qd = qd_df[MOL].iloc[0]
+
+        with h5py.File(PATH / "test_allignment.hdf5", "r") as f2:
+            atoms_ref = f2[f"TestCoreAnchor/{name}/atoms"][...].view(np.recarray)
+            bonds_ref = f2[f"TestCoreAnchor/{name}/bonds"][...].view(np.recarray)
+        yield AllignmentTup(qd, atoms_ref, bonds_ref, name)
+
+        # Teardown
+        files = [LIG_PATH, QD_PATH, DB_PATH]
+        for file in files:
+            shutil.rmtree(file, ignore_errors=True)
+
+    def test_atoms(self, output: AllignmentTup) -> None:
+        dtype = [("symbols", "S2"), ("coords", "f8", 3)]
+        iterator = ((at.symbol, at.coords) for at in output.mol)
+        atoms = np.fromiter(iterator, dtype=dtype).view(np.recarray)
+
+        assertion.eq(atoms.dtype, output.atoms_ref.dtype)
+        np.testing.assert_array_equal(atoms.symbols, output.atoms_ref.symbols)
+        np.testing.assert_allclose(atoms.coords, output.atoms_ref.coords)
+
+    def test_bonds(self, output: AllignmentTup) -> None:
+        dtype = [("atom1", "i8"), ("atom2", "i8"), ("order", "f8")]
+        try:
+            output.mol.set_atoms_id()
+            iterator = ((b.atom1.id, b.atom2.id, b.order) for b in output.mol.bonds)
+            bonds = np.fromiter(iterator, dtype=dtype).view(np.recarray)
+        finally:
+            output.mol.unset_atoms_id()
+
+        assertion.eq(bonds.dtype, output.bonds_ref.dtype)
+        np.testing.assert_array_equal(bonds.atom1, output.bonds_ref.atom1)
+        np.testing.assert_array_equal(bonds.atom2, output.bonds_ref.atom2)
+        np.testing.assert_allclose(bonds.order, output.bonds_ref.order)

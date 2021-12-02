@@ -264,7 +264,23 @@ Core
         replaced with ligands. Alternatively, anchor atoms can be manually specified
         with the core_indices variable.
 
-        This optiona can alternatively be provided as ``optional.core.dummy``.
+        Further customization can be achieved by passing a dictionary:
+
+        * :attr:`anchor.group <optional.ligand.anchor.group>`
+        * :attr:`anchor.group_idx <optional.ligand.anchor.group_idx>`
+        * :attr:`anchor.remove <optional.ligand.anchor.remove>`
+
+        .. note::
+
+            .. code:: yaml
+
+                optional:
+                    core:
+                        anchor:
+                            group: "[H]Cl"  # Remove HCl and attach at previous Cl position
+                            group_idx: 1
+                            remove: [0, 1]
+
 
 
     .. attribute:: optional.core.allignment

@@ -33,9 +33,7 @@ from scm.plams import Settings, MoleculeError
 from .__version__ import __version__
 
 from .logger import logger
-from .mol_utils import to_symbol
 from .settings_dataframe import SettingsDataFrame
-from .utils import AllignmentEnum
 
 from .data_handling.mol_import import read_mol
 from .data_handling.update_qd_df import update_qd_df
@@ -44,9 +42,9 @@ from .data_handling.validate_input import validate_input
 from .multi_ligand import init_multi_ligand
 from .attachment.qd_opt import init_qd_opt
 from .attachment.ligand_opt import init_ligand_opt, allign_axis
-from .attachment.distribution import distribute_idx
 from .attachment.ligand_attach import init_qd_construction
 from .attachment.ligand_anchoring import init_ligand_anchoring
+from .attachment.core_anchoring import set_core_anchors
 
 from .workflows import MOL
 
@@ -209,50 +207,13 @@ def prep_core(core_df: SettingsDataFrame) -> SettingsDataFrame:
 
     """
     # Unpack arguments
-    anchor = core_df.settings.optional.core.anchor
-    subset = core_df.settings.optional.core.subset
+    core_options = core_df.settings.optional.core
+    anchor_tup = core_options.anchor[0]
+    allignment_tup = core_options.allignment
+    subset = core_options.subset
 
-    idx_tuples = []
-    for core in core_df[MOL]:
-        # Checks the if the anchor is a string (atomic symbol) or integer (atomic number)
-        formula = core.get_formula()
-
-        # Returns the indices of all anchor atom ligand placeholders in the core
-        if not core.properties.dummies:
-            at_idx = np.array([i for i, atom in enumerate(core) if atom.atnum == anchor])
-        else:
-            dummies = core.properties.dummies
-            at_idx = np.fromiter(dummies, count=len(dummies), dtype=int)
-            at_idx -= 1
-        if subset:
-            at_idx = distribute_idx(core, at_idx, **subset)
-
-        # Convert atomic indices into Atoms
-        at_idx += 1
-        at_idx.sort()
-        core.properties.dummies = dummies = [core[i] for i in at_idx]
-
-        # Returns an error if no anchor atoms were found
-        if not dummies:
-            raise MoleculeError(f"{repr(to_symbol(anchor))} was specified as core anchor atom, yet "
-                                f"no matching atoms were found in {core.properties.name} "
-                                f"(formula: {formula})")
-        elif (
-            len(dummies) < 4 and
-            core_df.settings.optional.core.allignment.kind == AllignmentEnum.SURFACE
-        ):
-            raise NotImplementedError(
-                '`optional.core.allignment = "surface"` is not supported for cores with less '
-                f'than 4 anchor atoms ({core.get_formula()}); consider using '
-                '`optional.core.allignment = "sphere"`'
-            )
-
-        # Delete all core anchor atoms
-        for at in dummies:
-            core.delete_atom(at)
-        idx_tuples.append(
-            (formula, ' '.join(at_idx.astype(str)))
-        )
+    # Set the core anchors
+    idx_tuples = [set_core_anchors(i, anchor_tup, allignment_tup, subset) for i in core_df[MOL]]
 
     # Create and return a new dataframe
     idx = pd.MultiIndex.from_tuples(idx_tuples, names=['formula', 'anchor'])
