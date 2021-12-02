@@ -29,11 +29,6 @@ sys.path.insert(0, os.path.abspath('..'))
 needs_sphinx = '2.4'
 
 
-# Output is processed with HTML4 writer.
-# Default is False.
-html4_writer = True
-
-
 # Add any Sphinx extension module names here, as strings.
 # They can be extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
@@ -258,6 +253,11 @@ napoleon_use_admonition_for_notes = True
 # Defaults to False.
 napoleon_use_admonition_for_references = True
 
+# This value contains a list of modules to be mocked up.
+# This is useful when some external dependencies are not met at build time and break the building
+# process. You may only specify the root package of the dependencies themselves and
+# omit the sub-modules:
+autodoc_mock_imports = ["rdkit"]
 
 # A string of reStructuredText that will be included at the end of every source file that is read.
 # This is a possible place to add substitutions that should be available in every file (another being rst_prolog).
