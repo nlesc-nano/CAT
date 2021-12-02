@@ -17,7 +17,7 @@ with open('README.rst', encoding='utf-8') as readme_file:
     readme = readme_file.read()
 
 docs_require = [
-    'sphinx>=2.4,!=3.1,<4.0',
+    'sphinx>=2.4',
     'sphinx_rtd_theme',
     'data-CAT>=0.7.0',
     'nano-CAT>=0.7.0',
