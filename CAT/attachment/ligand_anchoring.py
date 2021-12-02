@@ -34,7 +34,7 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 from rdkit import Chem
 
 from ..logger import logger
-from ..utils import get_template, AnchorTup, KindEnum
+from ..utils import get_template, AnchorTup, KindEnum, get_formula
 from ..mol_utils import separate_mod   # noqa: F401
 from ..workflows import MOL, FORMULA, HDF5_INDEX, OPT
 from ..settings_dataframe import SettingsDataFrame
@@ -114,7 +114,7 @@ def _get_df(
     # Create, fill and return the dataframe
     df = SettingsDataFrame(-1, index=idx, columns=columns, settings=settings)
     df[MOL] = mol_list
-    df[FORMULA] = [lig.get_formula() for lig in df[MOL]]
+    df[FORMULA] = [get_formula(lig) for lig in df[MOL]]
     df[OPT] = False
     return df[~df.index.duplicated(keep='first')]  # Remove duplicate indices
 

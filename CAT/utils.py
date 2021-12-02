@@ -39,7 +39,7 @@ from logging import Logger
 from os.path import join, isdir, isfile, exists
 from itertools import cycle, chain, repeat
 from contextlib import redirect_stdout
-from collections import abc
+from collections import abc, Counter
 from typing import (
     Iterable, Union, TypeVar, Mapping, Type, Generator, Iterator, Optional,
     Any, NoReturn, Dict, overload, Callable, NamedTuple, Tuple,
@@ -567,3 +567,13 @@ class AllignmentTup(NamedTuple):
 
     kind: AllignmentEnum
     invert: bool
+
+
+def get_formula(mol: Molecule) -> str:
+    """Backport of the PLAMS <= 1.5.1 ``Molecule.get_formula`` method.
+
+    The resulting atoms are reported in alphabetical order,
+    contrary to the Hill system (that prioritizes ``CH`` pairs) utilized after 1.5.1.
+    """
+    dct = Counter(at.symbol for at in mol)
+    return "".join(f"{at}{i}" for at, i in sorted(dct.items()))
