@@ -1,11 +1,12 @@
 """Tests for :mod:`CAT.utils`."""
 
 import os
-from os.path import join
+import re
+from pathlib import Path
 
 from unittest import mock
 
-from scm.plams import config
+from scm.plams import config, Molecule
 from scm.plams.interfaces.adfsuite.ams import AMSJob
 from scm.plams.interfaces.adfsuite.adf import ADFJob
 from scm.plams.interfaces.thirdparty.orca import ORCAJob
@@ -15,10 +16,16 @@ from scm.plams.interfaces.thirdparty.gamess import GamessJob
 from assertionlib import assertion
 
 from CAT.utils import (
-    type_to_string, dict_concatenate, get_template, validate_path, check_sys_var, restart_init
+    type_to_string,
+    dict_concatenate,
+    get_template,
+    validate_path,
+    check_sys_var,
+    restart_init,
+    get_formula,
 )
 
-PATH = join('tests', 'test_files')
+PATH = Path('tests') / 'test_files'
 FOLDER = 'test_plams_workdir'
 
 
@@ -60,8 +67,8 @@ def test_validate_path() -> None:
     assertion.eq(validate_path(''), os.getcwd())
     assertion.eq(validate_path('.'), os.getcwd())
     assertion.eq(validate_path(PATH), PATH)
-    assertion.assert_(validate_path, join(PATH, 'bob'), exception=FileNotFoundError)
-    assertion.assert_(validate_path, join(PATH, 'Methanol.xyz'), exception=NotADirectoryError)
+    assertion.assert_(validate_path, PATH / 'bob', exception=FileNotFoundError)
+    assertion.assert_(validate_path, PATH / 'Methanol.xyz', exception=NotADirectoryError)
 
 
 @mock.patch.dict(
@@ -80,3 +87,9 @@ def test_restart_init() -> None:
 
     _hash = '0da9b13507022986d26bbc57b4c366cf1ead1fe70ff750e071e79e393b14dfb5'
     assertion.contains(manager.hashes, _hash)
+
+
+def test_get_formula() -> None:
+    formula = get_formula(Molecule(PATH / "multi_ligand.pdb"))
+    matches = re.findall(f"([a-zA-Z]+)[0-9+]", formula)
+    assertion.eq(matches, ["C", "Cd", "F", "H", "O", "Se"])

@@ -9,6 +9,7 @@ from scm.plams import (Settings, Molecule)
 import scm.plams.interfaces.molecule.rdkit as molkit
 from assertionlib import assertion
 
+from CAT.utils import get_formula
 from CAT.data_handling.mol_import import (
     read_mol_xyz, read_mol_pdb, read_mol_mol, read_mol_smiles, read_mol_plams, read_mol_rdkit,
     read_mol_folder, read_mol_txt, get_charge_dict, set_mol_prop, canonicalize_mol
@@ -92,7 +93,7 @@ def test_read_mol_folder() -> None:
     """Test :func:`CAT.data_handling.validate_input.read_mol_folder`."""
     mol_dict = Settings({'mol': PATH, 'path': PATH, 'guess_bonds': True, 'is_core': False})
     _mol_list = read_mol_folder(mol_dict)
-    mol_list = [mol for mol in _mol_list if mol.get_formula() == 'C1H4O1']
+    mol_list = [mol for mol in _mol_list if get_formula(mol) == 'C1H4O1']
 
     for mol in mol_list:
         assertion.isinstance(mol, Molecule)

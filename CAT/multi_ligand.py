@@ -8,7 +8,7 @@ import pandas as pd
 
 from scm.plams import Molecule, MoleculeError
 
-from .utils import AnchorTup
+from .utils import AnchorTup, get_formula
 from .workflows import WorkFlow
 from .mol_utils import to_symbol
 from .data_handling import mol_to_file
@@ -95,7 +95,7 @@ def _multi_lig_anchor(qd_series, ligands, path, anchor, allignment) -> np.ndarra
                 assert atoms
             except AssertionError as ex:
                 raise MoleculeError(f'Failed to identify {to_symbol(atnum)!r} in '
-                                    f'{qd.get_formula()!r}') from ex
+                                    f'{get_formula(q)!r}') from ex
 
             coords = Molecule.as_array(None, atom_subset=atoms)
             qd.properties.dummies = np.array(coords, ndmin=2, dtype=float)

@@ -7,6 +7,7 @@ from scm.plams import Settings, JobManager, AMSJob, AMSResults
 from assertionlib import assertion
 
 from CAT.gen_job_manager import GenJobManager
+from CAT.utils import get_formula
 
 SETTINGS = Settings({'counter_len': 3, 'hashing': 'input', 'remove_empty_directories': True})
 PATH = join('tests', 'test_files')
@@ -50,7 +51,7 @@ def test_load_job() -> None:
     assertion.isinstance(job.settings, Settings)
     assertion.eq(job.depend, [])
     assertion.eq(job._dont_pickle, [])
-    assertion.eq(job.molecule.get_formula(), 'C78Cd68H182O26Se55')
+    assertion.eq(get_formula(job.molecule), 'C78Cd68H182O26Se55')
 
 
 def _test_check_hash() -> None:

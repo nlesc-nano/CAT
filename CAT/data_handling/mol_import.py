@@ -51,6 +51,7 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 
 from rdkit import Chem, RDLogger
 
+from ..utils import get_formula
 from ..logger import logger
 from ..data_handling.validate_mol import validate_mol
 
@@ -353,7 +354,7 @@ def set_mol_prop(mol: Molecule, mol_dict: Settings) -> None:
     """Set molecular and atomic properties."""
     if mol_dict.is_core:
         residue_name = 'COR'
-        mol.properties.name = mol.get_formula()
+        mol.properties.name = get_formula(mol)
     else:
         residue_name = 'LIG'
         mol.properties.name = mol_dict.name
