@@ -4,6 +4,8 @@
    :target: https://cat.readthedocs.io/en/latest/
 .. image:: https://zenodo.org/badge/169708827.svg
    :target: https://zenodo.org/badge/latestdoi/169708827
+.. image:: https://badge.fury.io/py/nlesc-CAT.svg
+   :target: https://badge.fury.io/py/nlesc-CAT
 
 |
 
@@ -17,7 +19,7 @@
    :target: https://docs.python.org/3.9/
 
 ###############################
-Compound Attachment Tool 0.10.1
+Compound Attachment Tool 0.10.2
 ###############################
 
 **CAT** is a collection of tools designed for the construction of various chemical compounds.

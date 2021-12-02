@@ -18,7 +18,6 @@ DOCTREEDIR = join('tests', 'test_files', 'build', 'doctrees')
 
 
 @delete_finally(OUTDIR)
-@pytest.mark.xfail  # TODO: Sort out the recent sphinx failure
 @pytest.mark.skipif(not HAS_SPHINX, reason="Requires Sphinx")
 def test_sphinx_build() -> None:
     """Test :meth:`sphinx.application.Sphinx.build`."""

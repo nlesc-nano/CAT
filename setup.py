@@ -20,7 +20,7 @@ docs_require = [
     'sphinx>=2.4',
     'sphinx_rtd_theme',
     'data-CAT>=0.7.0',
-    'nano-CAT>=0.7.0',
+    'nano-CAT>=0.7.1',
     'auto-FOX>=0.10.0',
 ]
 
