@@ -9,10 +9,43 @@ on:
             - master
     pull_request:
 
+env:
+    AMS_URL: https://downloads.scm.com/Downloads/download2021/bin/ams2021.105.pc64_linux.intelmpi.bin.tgz
+    AMS: ams2021.105
+
 jobs:
+    AMS:
+        name: Cache AMS
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v2
+
+            -   name: Enable cache
+                id: enable-cache
+                uses: actions/cache@v2
+                with:
+                    path: ams
+                    key: ${{ env.AMS }}
+
+            -   name: Download AMS
+                if: steps.enable-cache.outputs.cache-hit != 'true'
+                env:
+                    WGET_FILE: "${{ secrets.WGET_FILE }}"
+                run: |
+                    echo "$WGET_FILE" > .wgetrc
+                    wget -q $AMS_URL -O ams.bin.tgz
+
+            -   name: Unpack archive
+                if: steps.enable-cache.outputs.cache-hit != 'true'
+                run: |
+                    tar -xvzf ams.bin.tgz
+                    mv $AMS_DIR ams
+                    chmod -R U+rx ams
+
     build:
         name: ${{ matrix.os }} (py ${{ matrix.version }}${{ matrix.special }})
         runs-on: ${{ matrix.os }}
+        needs: [AMS]
         strategy:
             fail-fast: false
             matrix:
@@ -30,6 +63,14 @@ jobs:
                     access_token: ${{ github.token }}
 
             -   uses: actions/checkout@v2
+
+            -   name: Load AMS
+                id: load-ams
+                uses: actions/cache@v2
+                if: matrix.os == 'ubuntu-latest'
+                with:
+                    path: ams
+                    key: ${{ env.AMS }}
 
             -   name: Setup Conda
                 uses: s-weigand/setup-conda@v1
@@ -58,7 +99,24 @@ jobs:
                 run: conda list -n test
 
             -   name: Run tests
+                env:
+                    AMS_LICENSE: "${{ secrets.AMS_LICENSE }}"
                 run: |
+                    case "${{ steps.load-ams.outputs.cache-hit }}" in
+                        "true")
+                            echo "$AMS_LICENSE" > license.txt
+                            export HAS_AMS=1
+                            export $SCMLICENSE="$PWD/license.txt"
+                            export $AMSHOME="$PWD/ams/"
+                            export $AMSBIN="$AMSHOME/bin/"
+                            export $AMSRESOURCES="$AMSHOME/atomicdata/"
+                            ;;
+                        *)
+                            export HAS_AMS=0
+                            ;;
+                    esac
+                    echo "$AMS status: $HAS_AMS"
+
                     source $CONDA/bin/activate test
                     pytest -m "not slow"
 
