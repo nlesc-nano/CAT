@@ -91,5 +91,5 @@ def test_restart_init() -> None:
 
 def test_get_formula() -> None:
     formula = get_formula(Molecule(PATH / "multi_ligand.pdb"))
-    matches = re.findall(f"([a-zA-Z]+)[0-9+]", formula)
+    matches = re.findall("([a-zA-Z]+)[0-9+]", formula)
     assertion.eq(matches, ["C", "Cd", "F", "H", "O", "Se"])

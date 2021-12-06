@@ -2,7 +2,7 @@
 
 import shutil
 from pathlib import Path
-from typing import Generator, NamedTuple, TYPE_CHECKING
+from typing import Generator, NamedTuple, TYPE_CHECKING, Any
 
 import yaml
 import pytest
