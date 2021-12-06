@@ -268,6 +268,7 @@ Core
 
         * :attr:`anchor.group <optional.ligand.anchor.group>`
         * :attr:`anchor.group_idx <optional.ligand.anchor.group_idx>`
+        * :attr:`anchor.group_format <optional.ligand.anchor.group_format>`
         * :attr:`anchor.remove <optional.ligand.anchor.remove>`
 
         .. note::
@@ -279,6 +280,7 @@ Core
                         anchor:
                             group: "[H]Cl"  # Remove HCl and attach at previous Cl position
                             group_idx: 1
+                            group_format: "SMILES"
                             remove: [0, 1]
 
 
@@ -647,6 +649,7 @@ Ligand
 
         * :attr:`anchor.group`
         * :attr:`anchor.group_idx`
+        * :attr:`anchor.group_format`
         * :attr:`anchor.remove`
         * :attr:`anchor.kind`
         * :attr:`anchor.angle_offset`
@@ -696,6 +699,39 @@ Ligand
 
         .. note::
             This argument has no value be default and must thus be provided by the user.
+
+
+    .. attribute:: optional.ligand.anchor.group_format
+
+        :Parameter:     * **Type** - :class:`str`
+                        * **Default value** – :data:`"SMILES"`
+
+        The format used for representing :attr:`anchor.group <optional.ligand.anchor.group>`.
+
+        Defaults to the SMILES format.
+        The supported formats (and matching RDKit parsers) are as following:
+
+        .. code-block:: python
+
+            >>> import rdkit.Chem
+
+            >>> FASTA      = rdkit.Chem.MolFromFASTA
+            >>> HELM       = rdkit.Chem.MolFromHELM
+            >>> INCHI      = rdkit.Chem.MolFromInchi
+            >>> MOL2       = rdkit.Chem.MolFromMol2Block
+            >>> MOL2_FILE  = rdkit.Chem.MolFromMol2File
+            >>> MOL        = rdkit.Chem.MolFromMolBlock
+            >>> MOL_FILE   = rdkit.Chem.MolFromMolFile
+            >>> PDB        = rdkit.Chem.MolFromPDBBlock
+            >>> PDB_FILE   = rdkit.Chem.MolFromPDBFile
+            >>> PNG        = rdkit.Chem.MolFromPNGString
+            >>> PNG_FILE   = rdkit.Chem.MolFromPNGFile
+            >>> SVG        = rdkit.Chem.MolFromRDKitSVG
+            >>> SEQUENCE   = rdkit.Chem.MolFromSequence
+            >>> SMARTS     = rdkit.Chem.MolFromSmarts
+            >>> SMILES     = rdkit.Chem.MolFromSmiles
+            >>> TPL        = rdkit.Chem.MolFromTPLBlock
+            >>> TPL_FILE   = rdkit.Chem.MolFromTPLFile
 
 
     .. attribute:: optional.ligand.anchor.remove
