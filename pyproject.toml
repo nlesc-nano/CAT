@@ -1,0 +1,17 @@
+[tool.mypy]
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "numpy.*",
+    "scipy.*",
+    "pandas.*",
+    "ase.*",
+    "rdkit.*",
+    "matplotlib.*",
+    "mpl_toolkits.*",
+    "scm.*",
+    "dill.*",
+    "schema.*",
+]
+ignore_missing_imports = true
