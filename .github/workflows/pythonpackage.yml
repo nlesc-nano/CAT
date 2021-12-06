@@ -79,7 +79,10 @@ jobs:
                     python-version: 3.9
 
             -   name: Install linters
-                run: pip install "flake8>=3.8.0" "pydocstyle>=5.0.0"
+                run: |
+                    pip install "flake8>=3.8.0" "pydocstyle>=5.0.0"
+                    pip install -e .
+                    pip install mypy nano-CAT data-CAT types-PyYAML types-setuptools
 
             -   name: Python info
                 run: |
@@ -94,3 +97,7 @@ jobs:
 
             -   name: Run pydocstyle
                 run: pydocstyle CAT tests
+
+            -   name: Run mypy
+                run: mypy CAT
+                continue-on-error: true
