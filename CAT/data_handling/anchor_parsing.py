@@ -16,7 +16,7 @@ __all__ = ["parse_anchors"]
 
 
 class _UnparsedAnchorDictBase(TypedDict):
-    group: str
+    group: "str | SupportsIndex"
     anchor_idx: "SupportsIndex | Iterable[SupportsIndex]"
 
 
@@ -93,8 +93,28 @@ def _parse_angle_offset(
     return Units.convert(float(offset), unit, "rad")
 
 
+def _parse_group(group: "str | SupportsIndex") -> str:
+    """Parse the ``group`` option."""
+    # Pre-process in case the group is passed as an atomic number
+    try:
+        atnum = operator.index(group)
+    except TypeError:
+        if not isinstance(group, str):
+            raise TypeError("`group` expected a string or integer") from None
+    else:
+        group = PT.get_symbol(atnum)
+
+    # String parsing
+    if group in SQUARE_BRACKET_ATOMS:
+        return f"[{group}]"
+    elif group in DUMMY_SYMBOLS:
+        return "*"
+    else:
+        return group
+
+
 anchor_schema = Schema({
-    "group": str,
+    "group": Use(_parse_group),
     "group_idx": Use(_parse_group_idx),
     Optional("remove", default=None): Use(_parse_remove),
     Optional("kind", default=KindEnum.FIRST): Use(_parse_kind),
@@ -149,29 +169,14 @@ def parse_anchors(
                 None if not split else (list(mol.GetAtoms())[-1].GetIdx(),)
             )
             ret.append(AnchorTup(mol=mol, remove=remove))
-        elif isinstance(p, str):
-            group = p
-            if group in SQUARE_BRACKET_ATOMS:
-                group = f"[{group}]"
-            elif group in DUMMY_SYMBOLS:
-                group = "*"
-            mol = _smiles_to_rdmol(group)
-            remove = None if not split else (list(mol.GetAtoms())[-1].GetIdx(),)
-            ret.append(AnchorTup(mol=mol, group=group, remove=remove))
-        else:
+        elif isinstance(p, dict):
             kwargs: _AnchorDict = anchor_schema.validate(p)
 
             group_idx = kwargs["group_idx"]
             remove = kwargs["remove"]
             angle_offset = kwargs["angle_offset"]
             dihedral = kwargs["dihedral"]
-
-            group = kwargs.pop("group")
-            if group in SQUARE_BRACKET_ATOMS:
-                group = f"[{group}]"
-            elif group in DUMMY_SYMBOLS:
-                group = "*"
-            mol = _smiles_to_rdmol(group)
+            mol = _smiles_to_rdmol(kwargs["group"])
 
             # Dihedral and angle-offset options are not supported for core anchors
             if is_core:
@@ -207,7 +212,13 @@ def parse_anchors(
             elif remove is not None and atom_count <= max(remove):
                 raise IndexError(f"`remove` index {max(remove)} is out of bounds "
                                  f"for a `group` with {atom_count} atoms")
-            ret.append(AnchorTup(**kwargs, group=group, mol=mol))
+            ret.append(AnchorTup(**kwargs, mol=mol))
+        else:
+            group = _parse_group(p)
+            mol = _smiles_to_rdmol(group)
+            remove = None if not split else (list(mol.GetAtoms())[-1].GetIdx(),)
+            ret.append(AnchorTup(mol=mol, group=group, remove=remove))
+
     if is_core and len(ret) > 1:
         raise NotImplementedError("Cores with multiple anchor types aren't supported yet")
     return tuple(ret)
