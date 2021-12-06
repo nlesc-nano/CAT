@@ -9,7 +9,7 @@ from scm.plams import Units, PT
 from schema import Schema, Use, Optional
 from typing_extensions import TypedDict, SupportsIndex
 
-from ..utils import AnchorTup, KindEnum
+from ..utils import AnchorTup, KindEnum, FormatEnum
 from ..attachment.ligand_anchoring import _smiles_to_rdmol, get_functional_groups
 
 __all__ = ["parse_anchors"]
@@ -24,6 +24,8 @@ class _UnparsedAnchorDict(_UnparsedAnchorDictBase, total=False):
     remove: "None | SupportsIndex | Iterable[SupportsIndex]"
     angle_offset: "None | SupportsFloat | SupportsIndex | bytes | str"
     dihedral: "None | SupportsFloat | SupportsIndex | bytes | str"
+    kind: "None | str | KindEnum"
+    group_format: "None | str | FormatEnum"
 
 
 class _AnchorDict(TypedDict):
@@ -33,6 +35,7 @@ class _AnchorDict(TypedDict):
     kind: KindEnum
     angle_offset: "None | float"
     dihedral: "None | float"
+    group_format: "FormatEnum"
 
 
 def _parse_group_idx(item: "SupportsIndex | Iterable[SupportsIndex]") -> Tuple[int, ...]:
@@ -66,8 +69,20 @@ def _parse_kind(typ: "None | str | KindEnum") -> KindEnum:
         return KindEnum.FIRST
     elif isinstance(typ, KindEnum):
         return typ
-    else:
+    elif isinstance(typ, str):
         return KindEnum[typ.upper()]
+    raise TypeError("`kind` expected None or a string")
+
+
+def _parse_group_format(typ: "None | str | FormatEnum") -> FormatEnum:
+    """Parse the ``group_format`` option."""
+    if typ is None:
+        return FormatEnum.SMILES
+    elif isinstance(typ, FormatEnum):
+        return typ
+    elif isinstance(typ, str):
+        return FormatEnum[typ.upper()]
+    raise TypeError("`group_format` expected None or a string")
 
 
 _UNIT_PATTERN = re.compile(r"([\.\_0-9]+)(\s+)?(\w+)?")
@@ -119,7 +134,8 @@ anchor_schema = Schema({
     Optional("remove", default=None): Use(_parse_remove),
     Optional("kind", default=KindEnum.FIRST): Use(_parse_kind),
     Optional("angle_offset", default=None): Use(_parse_angle_offset),
-    Optional("dihedral", default=None): Use(_parse_angle_offset)
+    Optional("dihedral", default=None): Use(_parse_angle_offset),
+    Optional("group_format", default=FormatEnum.SMILES): Use(_parse_group_format),
 })
 
 #: A collection of symbols used for different kinds of dummy atoms
@@ -176,7 +192,8 @@ def parse_anchors(
             remove = kwargs["remove"]
             angle_offset = kwargs["angle_offset"]
             dihedral = kwargs["dihedral"]
-            mol = _smiles_to_rdmol(kwargs["group"])
+            group_parser = kwargs["group_format"].value
+            mol = group_parser(kwargs["group"])
 
             # Dihedral and angle-offset options are not supported for core anchors
             if is_core:

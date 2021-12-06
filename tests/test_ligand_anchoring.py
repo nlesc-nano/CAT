@@ -1,5 +1,7 @@
 """Tests for :mod:`CAT.attachment.ligand_anchoring`."""
 
+# flake8: noqa: E501
+
 import os
 import sys
 import math
@@ -17,7 +19,7 @@ from scm.plams import from_smiles, Molecule
 from assertionlib import assertion
 from schema import SchemaError
 
-from CAT.utils import get_template, KindEnum, AnchorTup
+from CAT.utils import get_template, KindEnum, AnchorTup, FormatEnum
 from CAT.base import prep_input
 from CAT.attachment.ligand_anchoring import (
     get_functional_groups, _smiles_to_rdmol, find_substructure, init_ligand_anchoring
@@ -268,6 +270,9 @@ class TestInputParsing:
         out_of_bounds_remove=({"group": "OC", "group_idx": 0, "remove": 99}, IndexError),
         angle_unit=({"group": "OC", "group_idx": 0, "angle_offset": "0.5 bob"}, SchemaError),
         angle_invalid=({"group": "OC", "group_idx": 0, "angle_offset": "bob"}, SchemaError),
+        invalid_group=({"group": "OC", "group_idx": 0, "group": 1.0}, SchemaError),
+        invalid_group_format=({"group": "OC", "group_idx": 0, "group_format": 1}, SchemaError),
+        invalid_kind=({"group": "OC", "group_idx": 0, "kind": 1}, SchemaError),
     )
 
     @pytest.mark.parametrize("inp,exc_type", PARAM_RAISE.values(), ids=PARAM_RAISE.keys())
@@ -309,6 +314,9 @@ class TestInputParsing:
         kind_none={"group": "OCC", "group_idx": 0, "kind": None},
         kind_str={"group": "OCC", "group_idx": 0, "kind": "mean"},
         kind_enum={"group": "OCC", "group_idx": 0, "kind": KindEnum.MEAN_TRANSLATE},
+        group_format_none={"group": "OCC", "group_idx": 0, "group_format": None},
+        group_format_str={"group": "OCC", "group_idx": 0, "group_format": "SMARTS"},
+        group_format_enum={"group": "OCC", "group_idx": 0, "group_format": FormatEnum.SMARTS},
     )
     _PARAM_PASS2 = OrderedDict(
         idx_scalar=AnchorTup(None, group="OCC", group_idx=(0,)),
@@ -331,6 +339,9 @@ class TestInputParsing:
         kind_none=AnchorTup(None, group="OCC", group_idx=(0,), kind=KindEnum.FIRST),
         kind_str=AnchorTup(None, group="OCC", group_idx=(0,), kind=KindEnum.MEAN),
         kind_enum=AnchorTup(None, group="OCC", group_idx=(0,), kind=KindEnum.MEAN_TRANSLATE),
+        group_format_none=AnchorTup(None, group="OCC", group_idx=(0,), group_format=FormatEnum.SMILES),
+        group_format_str=AnchorTup(None, group="OCC", group_idx=(0,), group_format=FormatEnum.SMARTS),
+        group_format_enum=AnchorTup(None, group="OCC", group_idx=(0,), group_format=FormatEnum.SMARTS),
     )
     PARAM_PASS = OrderedDict({
         k: (v1, v2) for (k, v1), v2 in zip(_PARAM_PASS1.items(), _PARAM_PASS2.values())
