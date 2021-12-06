@@ -102,10 +102,12 @@ anchor_schema = Schema({
     Optional("dihedral", default=None): Use(_parse_angle_offset)
 })
 
+#: A collection of symbols used for different kinds of dummy atoms
+DUMMY_SYMBOLS = frozenset(PT.dummysymbols)
 
 #: All atom types that have to be encapsulated in square brackets when parsing SMILES strings
 SQUARE_BRACKET_ATOMS = frozenset(
-    PT.symtonum.keys() - {'B', 'Br', 'C', 'Cl', 'F', 'I', 'N', 'O', 'P', 'S'}
+    PT.symtonum.keys() - DUMMY_SYMBOLS - {'B', 'Br', 'C', 'Cl', 'F', 'I', 'N', 'O', 'P', 'S'}
 )
 
 
@@ -151,6 +153,8 @@ def parse_anchors(
             group = p
             if group in SQUARE_BRACKET_ATOMS:
                 group = f"[{group}]"
+            elif group in DUMMY_SYMBOLS:
+                group = "*"
             mol = _smiles_to_rdmol(group)
             remove = None if not split else (list(mol.GetAtoms())[-1].GetIdx(),)
             ret.append(AnchorTup(mol=mol, group=group, remove=remove))
@@ -165,6 +169,8 @@ def parse_anchors(
             group = kwargs.pop("group")
             if group in SQUARE_BRACKET_ATOMS:
                 group = f"[{group}]"
+            elif group in DUMMY_SYMBOLS:
+                group = "*"
             mol = _smiles_to_rdmol(group)
 
             # Dihedral and angle-offset options are not supported for core anchors
