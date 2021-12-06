@@ -34,7 +34,7 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 from rdkit import Chem
 
 from ..logger import logger
-from ..utils import get_template, AnchorTup, KindEnum, get_formula
+from ..utils import get_template, AnchorTup, KindEnum, get_formula, FormatEnum
 from ..mol_utils import separate_mod   # noqa: F401
 from ..workflows import MOL, FORMULA, HDF5_INDEX, OPT
 from ..settings_dataframe import SettingsDataFrame
@@ -154,16 +154,7 @@ def get_functional_groups(
     return tuple(_smiles_to_rdmol(smiles) for smiles in func_groups)
 
 
-def _smiles_to_rdmol(smiles: str) -> Chem.Mol:
-    """Convert a SMILES string into an rdkit Mol; supports explicit hydrogens."""
-    # RDKit tends to remove explicit hydrogens if SANITIZE_ADJUSTHS is enabled
-    sanitize = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_ADJUSTHS
-    try:
-        mol = Chem.MolFromSmiles(smiles, sanitize=False)
-        Chem.rdmolops.SanitizeMol(mol, sanitizeOps=sanitize)
-    except Exception as ex:
-        raise ValueError(f'Failed to parse the following SMILES string: {smiles!r}') from ex
-    return mol
+_smiles_to_rdmol = FormatEnum.SMILES.value
 
 
 def find_substructure(

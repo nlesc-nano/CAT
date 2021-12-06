@@ -95,7 +95,7 @@ def _multi_lig_anchor(qd_series, ligands, path, anchor, allignment) -> np.ndarra
                 assert atoms
             except AssertionError as ex:
                 raise MoleculeError(f'Failed to identify {to_symbol(atnum)!r} in '
-                                    f'{get_formula(q)!r}') from ex
+                                    f'{get_formula(qd)!r}') from ex
 
             coords = Molecule.as_array(None, atom_subset=atoms)
             qd.properties.dummies = np.array(coords, ndmin=2, dtype=float)

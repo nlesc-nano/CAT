@@ -60,12 +60,13 @@ from scm.plams import (
 from .logger import logger
 from .mol_utils import to_atnum
 from .gen_job_manager import GenJobManager
+from ._mol_str_parser import FormatEnum
 
 __all__ = [
     'JOB_MAP', 'check_sys_var', 'dict_concatenate', 'get_template',
     'cycle_accumulate', 'iter_repeat', 'get_nearest_neighbors',
     'log_traceback_locals', 'KindEnum', 'AnchorTup', 'AllignmentEnum',
-    'AllignmentTup'
+    'AllignmentTup', 'FormatEnum',
 ]
 
 JOB_MAP: Mapping[Type[Job], str] = MappingProxyType({
@@ -560,6 +561,7 @@ class AnchorTup(NamedTuple):
     kind: KindEnum = KindEnum.FIRST
     angle_offset: "None | float" = None
     dihedral: "None | float" = None
+    group_format: FormatEnum = FormatEnum.SMILES
 
 
 class AllignmentTup(NamedTuple):
