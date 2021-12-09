@@ -3,6 +3,7 @@
 import pytest
 import rdkit
 
+import warnings
 from nanoutils import VersionInfo
 
 
@@ -10,8 +11,7 @@ from nanoutils import VersionInfo
 def rdkit_version() -> None:
     rdkit_version = VersionInfo.from_str(rdkit.__version__)
     if rdkit_version < (2021, 3, 4):
-        pytest.fail(
-            "The CAT test suite requires RDKit >= 2021.03.4; "
-            f"observed version: {rdkit.__version__}",
-            pytrace=True,
+        warnings.warn(
+            "The CAT test suite requires RDKit >= 2021.03.4 to properly run; "
+            f"observed version: {rdkit.__version__}"
         )
