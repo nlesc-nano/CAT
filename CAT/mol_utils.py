@@ -39,12 +39,9 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 from rdkit import Chem
 from rdkit.Chem import rdMolTransforms
 
-__all__ = ['adf_connectivity', 'fix_h', 'fix_carboxyl']
+from ._mol_str_parser import FormatEnum
 
-try:
-    SANITIZE: int = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_ADJUSTHS
-except TypeError:  # This prevents Sphinx from raising a TypeError when rdkit is mocked
-    SANITIZE = 0
+__all__ = ['adf_connectivity', 'fix_h', 'fix_carboxyl']
 
 
 @add_to_class(Molecule)
@@ -311,16 +308,7 @@ def adf_connectivity(mol: Molecule) -> List[str]:
     return bonds
 
 
-def _smiles_to_rdmol(smiles: str) -> Chem.Mol:
-    """Convert a SMILES string into an rdkit Mol; supports explicit hydrogens."""
-    # RDKit tends to remove explicit hydrogens if SANITIZE_ADJUSTHS is enabled
-    try:
-        mol = Chem.MolFromSmiles(smiles, sanitize=False)
-        Chem.rdmolops.SanitizeMol(mol, sanitizeOps=SANITIZE)
-    except Exception as ex:
-        raise ex.__class__(f'Failed to parse the following SMILES string: {repr(smiles)}\n\n{ex}')
-    return mol
-
+_smiles_to_rdmol = FormatEnum.SMILES.value
 
 #: A carboxylate
 _CARBOXYLATE: Chem.Mol = _smiles_to_rdmol('[O-]C(C)=O')

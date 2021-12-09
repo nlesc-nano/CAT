@@ -4,7 +4,7 @@ import re
 import operator
 from typing import Union, Tuple, Iterable, SupportsFloat
 
-from rdkit.Chem import Mol
+from rdkit import Chem
 from scm.plams import Units, PT
 from schema import Schema, Use, Optional
 from typing_extensions import TypedDict, SupportsIndex
@@ -114,18 +114,25 @@ def _parse_group(group: "str | SupportsIndex") -> str:
     try:
         atnum = operator.index(group)
     except TypeError:
-        if not isinstance(group, str):
-            raise TypeError("`group` expected a string or integer") from None
+        pass
     else:
         group = PT.get_symbol(atnum)
 
     # String parsing
-    if group in SQUARE_BRACKET_ATOMS:
-        return f"[{group}]"
+    if not isinstance(group, str):
+        raise TypeError("`group` expected a string or integer")
     elif group in DUMMY_SYMBOLS:
         return "*"
     else:
         return group
+
+
+def _symbol_to_rdmol(symbol: str) -> Chem.Mol:
+    """Helper function for converting atomic symbols to rdkit molecules."""
+    atom = Chem.Atom(PT.get_atomic_number(symbol))
+    mol = Chem.EditableMol(Chem.Mol())
+    mol.AddAtom(atom)
+    return mol.GetMol()
 
 
 anchor_schema = Schema({
@@ -138,11 +145,11 @@ anchor_schema = Schema({
     Optional("group_format", default=FormatEnum.SMILES): Use(_parse_group_format),
 })
 
-#: A collection of symbols used for different kinds of dummy atoms
+#: A collection of symbols used for different kinds of dummy atoms.
 DUMMY_SYMBOLS = frozenset(PT.dummysymbols)
 
-#: All atom types that have to be encapsulated in square brackets when parsing SMILES strings
-SQUARE_BRACKET_ATOMS = frozenset(
+#: All atom types that are not directly supported by the rdkit SMILES parser.
+INVALID_SMILES_ATOMS = frozenset(
     PT.symtonum.keys() - DUMMY_SYMBOLS - {'B', 'Br', 'C', 'Cl', 'F', 'I', 'N', 'O', 'P', 'S'}
 )
 
@@ -152,10 +159,10 @@ def parse_anchors(
         None,
         SupportsIndex,
         str,
-        Mol,
+        Chem.Mol,
         AnchorTup,
         _UnparsedAnchorDict,
-        "Iterable[str | SupportsIndex | Mol | AnchorTup | _UnparsedAnchorDict]",
+        "Iterable[str | SupportsIndex | Chem.Mol | AnchorTup | _UnparsedAnchorDict]",
     ] = None,
     split: bool = True,
     is_core: bool = False,
@@ -165,21 +172,14 @@ def parse_anchors(
         if is_core:
             raise TypeError("`anchor=None` is not supported for core anchors")
         patterns = get_functional_groups(None, split)
-    elif isinstance(patterns, (Mol, str, dict, AnchorTup, SupportsIndex)):
+    elif isinstance(patterns, (Chem.Mol, str, dict, AnchorTup, SupportsIndex)):
         patterns = [patterns]
 
     ret = []
-    for p in patterns:  # type: _UnparsedAnchorDict | str | Mol | SupportsIndex | AnchorTup
-        try:
-            atnum = operator.index(p)  # Check for atomic symbols
-        except TypeError:
-            pass
-        else:
-            p = PT.get_symbol(atnum)
-
+    for p in patterns:  # type: _UnparsedAnchorDict | str | Chem.Mol | SupportsIndex | AnchorTup
         if isinstance(p, AnchorTup):
             ret.append(p)
-        elif isinstance(p, Mol):
+        elif isinstance(p, Chem.Mol):
             mol = p
             remove: "None | Tuple[int, ...]" = (
                 None if not split else (list(mol.GetAtoms())[-1].GetIdx(),)
@@ -193,7 +193,11 @@ def parse_anchors(
             angle_offset = kwargs["angle_offset"]
             dihedral = kwargs["dihedral"]
             group_parser = kwargs["group_format"].value
-            mol = group_parser(kwargs["group"])
+            group = kwargs["group"]
+            if group in INVALID_SMILES_ATOMS:
+                mol = _symbol_to_rdmol(group)
+            else:
+                mol = group_parser(group)
 
             # Dihedral and angle-offset options are not supported for core anchors
             if is_core:
@@ -232,7 +236,10 @@ def parse_anchors(
             ret.append(AnchorTup(**kwargs, mol=mol))
         else:
             group = _parse_group(p)
-            mol = _smiles_to_rdmol(group)
+            if group in INVALID_SMILES_ATOMS:
+                mol = _symbol_to_rdmol(group)
+            else:
+                mol = _smiles_to_rdmol(group)
             remove = None if not split else (list(mol.GetAtoms())[-1].GetIdx(),)
             ret.append(AnchorTup(mol=mol, group=group, remove=remove))
 

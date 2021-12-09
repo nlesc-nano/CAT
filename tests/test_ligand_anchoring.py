@@ -15,7 +15,7 @@ import pytest
 import numpy as np
 from unittest import mock
 from rdkit import Chem
-from scm.plams import from_smiles, Molecule
+from scm.plams import from_smiles, Molecule, to_rdmol, PT
 from assertionlib import assertion
 from schema import SchemaError
 
@@ -25,7 +25,7 @@ from CAT.attachment.ligand_anchoring import (
     get_functional_groups, _smiles_to_rdmol, find_substructure, init_ligand_anchoring
 )
 from CAT.attachment.ligand_opt import optimize_ligand
-from CAT.data_handling.anchor_parsing import parse_anchors
+from CAT.data_handling.anchor_parsing import parse_anchors, INVALID_SMILES_ATOMS
 
 if sys.version_info >= (3, 7):
     from builtins import dict as OrderedDict
@@ -323,13 +323,13 @@ class TestInputParsing:
         idx_list=AnchorTup(None, group="OCC", group_idx=(0,)),
         list=AnchorTup(None, group="OCC", group_idx=(0,)),
         str_COH=AnchorTup(None, group="O(C)[H]", group_idx=(0,), remove=(2,)),
-        str_Cd=AnchorTup(None, group="[Cd]", group_idx=(0,), remove=(0,)),
+        str_Cd=AnchorTup(None, group="Cd", group_idx=(0,), remove=(0,)),
         str_Cl=AnchorTup(None, group="Cl", group_idx=(0,), remove=(0,)),
         str_dummy=AnchorTup(None, group="*", group_idx=(0,), remove=(0,)),
-        int_Cd=AnchorTup(None, group="[Cd]", group_idx=(0,), remove=(0,)),
+        int_Cd=AnchorTup(None, group="Cd", group_idx=(0,), remove=(0,)),
         int_Cl=AnchorTup(None, group="Cl", group_idx=(0,), remove=(0,)),
         int_dummy=AnchorTup(None, group="*", group_idx=(0,), remove=(0,)),
-        group_cd=AnchorTup(None, group="[Cd]", group_idx=(0,)),
+        group_cd=AnchorTup(None, group="Cd", group_idx=(0,)),
         group_cl=AnchorTup(None, group="Cl", group_idx=(0,)),
         angle_unit=AnchorTup(None, group="OCC", group_idx=(0, 1, 2), angle_offset=1.0),
         angle_no_unit=AnchorTup(None, group="OCC", group_idx=(0, 1, 2), angle_offset=math.pi),
@@ -410,3 +410,32 @@ class TestInputParsing:
         out = parse_anchors(split=split)
         smiles = [Chem.MolToSmiles(tup.mol) for tup in out]
         assertion.eq(smiles, ref)
+
+    def test_atomic_symbol(self) -> None:
+        """Test that groups consisting of a single atomic symbol are properly processed."""
+        out_tup = parse_anchors({"group": "Cd", "group_idx": 0})
+        assertion.len_eq(out_tup, 1)
+        out = out_tup[0]
+
+        mol = Molecule(PATH / "core" / "Cd68Se55.xyz")
+        rdmol = to_rdmol(mol)
+        match = np.ravel(rdmol.GetSubstructMatches(out.mol))
+        match.sort()
+
+        ref = np.fromiter((i for i, at in enumerate(mol) if at.symbol == "Cd"), dtype=np.int64)
+        np.testing.assert_array_equal(match, ref)
+
+    def test_invalid_smiles_atoms(self) -> None:
+        """Check that only atom types that lack RDKit SMILES support are \
+        included in ``INVALID_SMILES_ATOMS``."""
+        smiles_parser = FormatEnum.SMILES.value
+        symbol_set = set()
+        for at in PT.symtonum:
+            try:
+                mol = smiles_parser(at)
+            except ValueError:
+                symbol_set.add(at)
+
+        diff = symbol_set ^ INVALID_SMILES_ATOMS
+        diff -= {"Xx"}
+        assertion.not_(diff)
