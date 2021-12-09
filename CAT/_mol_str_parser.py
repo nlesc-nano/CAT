@@ -20,15 +20,18 @@ import enum
 import textwrap
 from typing import Any, Callable
 
-from nanoutils import PartialPrepend
+from nanoutils import PartialPrepend, VersionInfo
 
 try:
+    import rdkit
     from rdkit import Chem
 except ModuleNotFoundError:
     # Precaution against sphinx mocking raising a TypeError
     FLAGS = 0
+    RDKIT_VERSION = VersionInfo(0, 0, 0)
 else:
     FLAGS = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_ADJUSTHS
+    RDKIT_VERSION = VersionInfo.from_str(rdkit.__version__)
 
 __all__ = ["FormatEnum", "str_to_rdmol"]
 
@@ -36,7 +39,7 @@ __all__ = ["FormatEnum", "str_to_rdmol"]
 def str_to_rdmol(
     string: str,
     parser: Callable[[str], Chem.Mol],
-    kind: str = "",
+    kind: str = "string",
     **kwargs: Any,
 ) -> Chem.Mol:
     """Convert a SMILES string into an rdkit Mol; supports explicit hydrogens."""
@@ -64,11 +67,12 @@ class FormatEnum(enum.Enum):
     MOL_FILE = PartialPrepend(str_to_rdmol, Chem.MolFromMolFile, "Mol file", sanitize=False, removeHs=False)
     PDB = PartialPrepend(str_to_rdmol, Chem.MolFromPDBBlock, "PDB block", sanitize=False, removeHs=False)
     PDB_FILE = PartialPrepend(str_to_rdmol, Chem.MolFromPDBFile, "PDB file", sanitize=False, removeHs=False)
-    PNG = PartialPrepend(str_to_rdmol, Chem.MolFromPNGString, "PNG string")
-    PNG_FILE = PartialPrepend(str_to_rdmol, Chem.MolFromPNGFile, "PNG file")
     SVG = PartialPrepend(str_to_rdmol, Chem.MolFromRDKitSVG, "SVG string", sanitize=False, removeHs=False)
     SEQUENCE = PartialPrepend(str_to_rdmol, Chem.MolFromSequence, "sequence string", sanitize=False)
     SMARTS = PartialPrepend(str_to_rdmol, Chem.MolFromSmarts, "SMARTS string")
     SMILES = PartialPrepend(str_to_rdmol, Chem.MolFromSmiles, "SMILES string", sanitize=False)
     TPL = PartialPrepend(str_to_rdmol, Chem.MolFromTPLBlock, "TPL block", sanitize=False)
     TPL_FILE = PartialPrepend(str_to_rdmol, Chem.MolFromTPLFile, "TPL file", sanitize=False)
+    if RDKIT_VERSION >= (2020, 9, 1):
+        PNG = PartialPrepend(str_to_rdmol, Chem.MolFromPNGString, "PNG string")
+        PNG_FILE = PartialPrepend(str_to_rdmol, Chem.MolFromPNGFile, "PNG file")
