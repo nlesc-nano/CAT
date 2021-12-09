@@ -4,11 +4,13 @@ import shutil
 from pathlib import Path
 from typing import Generator, NamedTuple, TYPE_CHECKING, Any
 
+import rdkit
 import yaml
 import pytest
 import h5py
 import numpy as np
 from assertionlib import assertion
+from nanoutils import VersionInfo
 from scm.plams import Settings, Molecule
 
 from CAT.base import prep
@@ -23,6 +25,8 @@ PATH = Path('tests') / 'test_files'
 LIG_PATH = PATH / 'ligand'
 QD_PATH = PATH / 'qd'
 DB_PATH = PATH / 'database'
+
+RDKIT_VERSION = VersionInfo.from_str(rdkit.__version__)
 
 
 def test_get_rotmat1() -> None:
@@ -115,6 +119,7 @@ class TestDihedral:
         for file in files:
             shutil.rmtree(file, ignore_errors=True)
 
+    @pytest.mark.xfail(RDKIT_VERSION < (2021, 3, 4), reason="requires rdkit >= 2021.03.4")
     def test_atoms(self, output: DihedTup) -> None:
         dtype = [("symbols", "U2"), ("coords", "f8", 3)]
         atoms = np.fromiter(
@@ -154,6 +159,7 @@ class TestAllignment:
         for file in files:
             shutil.rmtree(file, ignore_errors=True)
 
+    @pytest.mark.xfail(RDKIT_VERSION < (2021, 3, 4), reason="requires rdkit >= 2021.03.4")
     def test_atoms(self, output: AllignmentTup) -> None:
         dtype = [("symbols", "S2"), ("coords", "f8", 3)]
         iterator = ((at.symbol, at.coords) for at in output.mol)
@@ -209,6 +215,7 @@ class TestCoreAnchor:
         for file in files:
             shutil.rmtree(file, ignore_errors=True)
 
+    @pytest.mark.xfail(RDKIT_VERSION < (2021, 3, 4), reason="requires rdkit >= 2021.03.4")
     def test_atoms(self, output: AllignmentTup) -> None:
         dtype = [("symbols", "S2"), ("coords", "f8", 3)]
         iterator = ((at.symbol, at.coords) for at in output.mol)

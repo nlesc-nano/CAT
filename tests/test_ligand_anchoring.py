@@ -11,6 +11,7 @@ from os.path import join
 from typing import Tuple, Generator, Dict, Any
 from pathlib import Path
 
+import rdkit
 import pytest
 import numpy as np
 from unittest import mock
@@ -18,6 +19,7 @@ from rdkit import Chem
 from scm.plams import from_smiles, Molecule, to_rdmol, PT
 from assertionlib import assertion
 from schema import SchemaError
+from nanoutils import VersionInfo
 
 from CAT.utils import get_template, KindEnum, AnchorTup, FormatEnum
 from CAT.base import prep_input
@@ -33,6 +35,8 @@ else:
     from collections import OrderedDict
 
 PATH = Path('tests') / 'test_files'
+
+RDKIT_VERSION = VersionInfo.from_str(rdkit.__version__)
 
 
 class TestGetFunctionalGroups:
@@ -154,6 +158,7 @@ class TestFindSubstructure:
     })
 
     @pytest.mark.parametrize("kwargs_id,kwargs", OPTIONS_DICT.items(), ids=OPTIONS_DICT.keys())
+    @pytest.mark.xfail(RDKIT_VERSION < (2021, 3, 4), reason="requires rdkit >= 2021.03.4")
     def test_options(self, kwargs_id: str, kwargs: Dict[str, Any], group: h5py.Group) -> None:
         # Parse the anchoring options
         mol = from_smiles("OC(=O)CCCCC")

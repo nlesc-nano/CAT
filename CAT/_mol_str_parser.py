@@ -67,12 +67,13 @@ class FormatEnum(enum.Enum):
     MOL_FILE = PartialPrepend(str_to_rdmol, Chem.MolFromMolFile, "Mol file", sanitize=False, removeHs=False)
     PDB = PartialPrepend(str_to_rdmol, Chem.MolFromPDBBlock, "PDB block", sanitize=False, removeHs=False)
     PDB_FILE = PartialPrepend(str_to_rdmol, Chem.MolFromPDBFile, "PDB file", sanitize=False, removeHs=False)
-    SVG = PartialPrepend(str_to_rdmol, Chem.MolFromRDKitSVG, "SVG string", sanitize=False, removeHs=False)
     SEQUENCE = PartialPrepend(str_to_rdmol, Chem.MolFromSequence, "sequence string", sanitize=False)
     SMARTS = PartialPrepend(str_to_rdmol, Chem.MolFromSmarts, "SMARTS string")
     SMILES = PartialPrepend(str_to_rdmol, Chem.MolFromSmiles, "SMILES string", sanitize=False)
     TPL = PartialPrepend(str_to_rdmol, Chem.MolFromTPLBlock, "TPL block", sanitize=False)
     TPL_FILE = PartialPrepend(str_to_rdmol, Chem.MolFromTPLFile, "TPL file", sanitize=False)
+    if RDKIT_VERSION >= (2020, 3, 3):
+        SVG = PartialPrepend(str_to_rdmol, Chem.MolFromRDKitSVG, "SVG string", sanitize=False, removeHs=False)
     if RDKIT_VERSION >= (2020, 9, 1):
         PNG = PartialPrepend(str_to_rdmol, Chem.MolFromPNGString, "PNG string")
         PNG_FILE = PartialPrepend(str_to_rdmol, Chem.MolFromPNGFile, "PNG file")
