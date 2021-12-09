@@ -170,13 +170,6 @@ def parse_anchors(
 
     ret = []
     for p in patterns:  # type: _UnparsedAnchorDict | str | Mol | SupportsIndex | AnchorTup
-        try:
-            atnum = operator.index(p)  # Check for atomic symbols
-        except TypeError:
-            pass
-        else:
-            p = PT.get_symbol(atnum)
-
         if isinstance(p, AnchorTup):
             ret.append(p)
         elif isinstance(p, Mol):
