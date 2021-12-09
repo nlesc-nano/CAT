@@ -28,6 +28,7 @@ tests_require = [
     'pytest>=5.4.0',
     'pytest-cov',
     'pytest-mock',
+    'h5py>=2.7.0',
 ]
 if sys.version_info >= (3, 7):
     tests_require += docs_require
@@ -114,16 +115,15 @@ setup(
     python_requires='>=3.6',
     install_requires=[
         'Nano-Utils>=0.4.3',
-        'h5py',
-        'numpy',
-        'scipy',
-        'pandas',
+        'numpy>=1.15.0',
+        'scipy>=0.19.1',
+        'pandas>=0.23.0',
         'pyyaml>=5.1',
-        'schema!=0.7.5',
+        'schema>=0.7.2,!=0.7.5',
         'AssertionLib>=2.2.3',
         'plams>=1.5.1',
         'contextlib2>=0.6.0; python_version=="3.6"',
-        'typing-extensions>=3.7.4.2',
+        'typing-extensions>=3.7.4.3',
         'qmflows>=0.11.0',
     ],
     setup_requires=[

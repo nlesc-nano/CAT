@@ -23,6 +23,9 @@ jobs:
                     -   os: ubuntu-latest
                         special: "; pre-release"
                         version: "3.9"
+                    -   os: ubuntu-latest
+                        special: "; minimum version"
+                        version: "3.6"
         steps:
             -   name: Cancel Previous Runs
                 uses: styfle/cancel-workflow-action@0.9.1
@@ -38,11 +41,22 @@ jobs:
 
             -   name: Install dependencies
                 run: |
-                    conda create -n test -c conda-forge python=${{ matrix.version }} "rdkit>=2021.03.4"
-                    source $CONDA/bin/activate test
+                    case "${{ matrix.special }}" in
+                        "; minimum version")
+                            conda create -n test -c conda-forge python=${{ matrix.version }} rdkit==2018.03.1 numpy=1.15.0 pandas=0.23.0 h5py=2.7.0 scipy=0.19.1 contextlib2==0.6.0 typing-extensions==3.7.4.2 pytest==5.4.0 pyyaml=5.1.0 pytest-cov pytest-mock
+                            source $CONDA/bin/activate test
+                            pip install schema==0.7.2 Nano-Utils==0.4.3 AssertionLib==2.2.3 plams==1.5.1 qmflows==0.11.0
+                            ;;
+                        *)
+                            conda create -n test -c conda-forge python=${{ matrix.version }} "rdkit>=2021.03.4"
+                            source $CONDA/bin/activate test
+                            ;;
+                    esac
+
                     case "${{ matrix.special }}" in
                         "; pre-release")
                             pip install -e .[test] --pre --upgrade --force-reinstall
+                            pip install git+https://github.com/SCM-NV/qmflows@master --upgrade
                             pip install git+https://github.com/SCM-NV/PLAMS@master --upgrade
                             ;;
                         *)
