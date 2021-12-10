@@ -13,7 +13,6 @@ import numpy as np
 from scm.plams import Molecule
 from nanoutils import VersionInfo
 
-from CAT.data_handling.warn_map import MoleculeWarning
 from CAT.data_handling.entry_points import main
 
 if sys.version_info >= (3, 7):
@@ -36,9 +35,7 @@ class TestMain:
     def run_cat(self) -> Generator[None, None, None]:
         # Setup
         filename = str(PATH / 'input2.yaml')
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', MoleculeWarning)
-            main([filename])
+        main([filename])
 
         yield None
 
@@ -54,7 +51,12 @@ class TestMain:
 
     def test_raise(self) -> None:
         filename = str(PATH / 'input2.yaml')
-        with pytest.raises(FileNotFoundError):
+        with pytest.raises(FileNotFoundError), warnings.catch_warnings():
+            warnings.filterwarnings(
+                action="ignore",
+                message="divide by zero encountered in double_scalars",
+                category=RuntimeWarning,
+            )
             main([f'{filename}bob'])
 
     @pytest.mark.parametrize("filename", PATH_DICT.values(), ids=PATH_DICT.keys())

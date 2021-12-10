@@ -6,11 +6,10 @@ from typing import Mapping, Callable, NoReturn, Union, Type
 
 from scm.plams import MoleculeError
 
+from ..utils import MoleculeWarning as MoleculeWarning
+
+
 __all__ = ['WARN_MAP']
-
-
-class MoleculeWarning(Warning, MoleculeError):
-    """A :exc:`Warning` subclass for :class:`Molecule<scm.plams.mol.molecule.Molecule>` related errors."""  # noqa
 
 
 class ValueWarning(Warning, ValueError):
