@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
-import re
-import sys
 
 from setuptools import setup
 
@@ -15,47 +13,6 @@ with open(os.path.join(here, 'CAT', '__version__.py')) as f:
 
 with open('README.rst', encoding='utf-8') as readme_file:
     readme = readme_file.read()
-
-docs_require = [
-    'sphinx>=2.4',
-    'sphinx_rtd_theme',
-    'data-CAT>=0.7.0',
-    'nano-CAT>=0.7.1',
-    'auto-FOX>=0.10.0',
-]
-
-tests_require = [
-    'pytest>=5.4.0',
-    'pytest-cov',
-    'pytest-mock',
-    'h5py>=2.7.0',
-]
-if sys.version_info >= (3, 7):
-    tests_require += docs_require
-
-
-def _validate_rdkit():
-    # Check if rdkit is manually installed (as it is not available via pypi)
-    try:
-        import rdkit
-    except ModuleNotFoundError:
-        print("`CAT` requires the `rdkit` package: https://anaconda.org/conda-forge/rdkit",
-              file=sys.stderr)
-        return
-
-    version = getattr(rdkit, "__version__", "unknown")
-    match = re.match(r"([0-9]+)\.([0-9]+)\.([0-9]+)", version)
-    if match is None:
-        print("failed to parse the `rdkit` version: {}".format(version), file=sys.stderr)
-        return
-
-    version_tup = tuple(int(i) for i in match.groups())
-    if version_tup < (2018, 3, 1):
-        print("`CAT` requires `rdkit` >= 2018.03.1, observed version: {}".format(version), file=sys.stderr)
-        sys.exit(1)
-
-
-_validate_rdkit()
 
 setup(
     name='nlesc-CAT',
@@ -140,13 +97,29 @@ setup(
         'contextlib2>=0.6.0; python_version=="3.6"',
         'typing-extensions>=3.7.4.3',
         'qmflows>=0.11.0',
+        'rdkit-pypi>=2018.03.1',
     ],
     setup_requires=[
         'pytest-runner',
     ],
-    tests_require=tests_require,
     extras_require={
-        'test': tests_require,
-        'doc': docs_require,
+        'test': [
+            'pytest>=5.4.0',
+            'pytest-cov',
+            'pytest-mock',
+            'h5py>=2.7.0',
+            'sphinx>=2.4; python_version>="3.7"',
+            'sphinx_rtd_theme; python_version>="3.7"',
+            'data-CAT>=0.7.0; python_version>="3.7"',
+            'nano-CAT>=0.7.1; python_version>="3.7"',
+            'auto-FOX>=0.10.0; python_version>="3.7"',
+        ],
+        'doc': [
+            'sphinx>=2.4',
+            'sphinx_rtd_theme',
+            'data-CAT>=0.7.0',
+            'nano-CAT>=0.7.1',
+            'auto-FOX>=0.10.0',
+        ],
     }
 )
