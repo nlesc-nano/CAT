@@ -19,13 +19,16 @@ jobs:
                 os: [ubuntu-latest, macos-latest]
                 version: ["3.6", "3.7", "3.8", "3.9"]
                 special: [""]
+                conda: [false]
                 include:
                     -   os: ubuntu-latest
                         special: "; pre-release"
-                        version: "3.9"
+                        version: "3.10"
+                        conda: false
                     -   os: ubuntu-latest
                         special: "; minimum version"
                         version: "3.6"
+                        conda: true
         steps:
             -   name: Cancel Previous Runs
                 uses: styfle/cancel-workflow-action@0.9.1
@@ -35,45 +38,66 @@ jobs:
             -   uses: actions/checkout@v2
 
             -   name: Setup Conda
+                if: matrix.conda == true
                 uses: s-weigand/setup-conda@v1
                 with:
                     update-conda: false
+
+            -   name: Set up Python
+                if: matrix.conda == false
+                uses: actions/setup-python@v2
+                with:
+                    python-version: ${{ matrix.version }}
 
             -   name: Install dependencies
                 run: |
                     case "${{ matrix.special }}" in
                         "; minimum version")
-                            conda create -n test -c conda-forge python=${{ matrix.version }} rdkit==2018.03.1 numpy=1.15.0 pandas=0.23.0 h5py=2.7.0 scipy=0.19.1 contextlib2==0.6.0 typing-extensions==3.7.4.2 pytest==5.4.0 pyyaml=5.1.0 pytest-cov pytest-mock
+                            conda create -n test -c conda-forge python=${{ matrix.version }} rdkit==2018.03.1 numpy=1.15.0 pandas=0.23.0 h5py=2.7.0 scipy=0.19.1 contextlib2==0.6.0 typing-extensions==3.7.4.3 pytest==5.4.0 pyyaml=5.1.0 pytest-cov pytest-mock
                             source $CONDA/bin/activate test
                             pip install schema==0.7.2 Nano-Utils==0.4.3 AssertionLib==2.2.3 plams==1.5.1 qmflows==0.11.0
+                            pip install -e . --no-dependencies
                             ;;
-                        *)
-                            conda create -n test -c conda-forge python=${{ matrix.version }} "rdkit>=2021.03.4"
-                            source $CONDA/bin/activate test
-                            ;;
-                    esac
-
-                    case "${{ matrix.special }}" in
                         "; pre-release")
                             pip install -e .[test] --pre --upgrade --force-reinstall
                             pip install git+https://github.com/SCM-NV/qmflows@master --upgrade
                             pip install git+https://github.com/SCM-NV/PLAMS@master --upgrade
                             ;;
                         *)
-                            pip install -e .[test] ;;
+                            pip install -e .[test]
+                            ;;
                     esac
 
-            -   name: Conda info
+            -   name: Info Conda
+                if: matrix.conda == true
                 run: |
                     source $CONDA/bin/activate test
                     conda info
 
-            -   name: Installed packages
-                run: conda list -n test
+            -   name: Info Python
+                run: |
+                    case "${{ matrix.conda }}" in
+                        true)
+                            source $CONDA/bin/activate test ;;
+                    esac
+                    which python
+                    python --version
+
+            -   name: Info installed packages
+                run: |
+                    case "${{ matrix.conda }}" in
+                        true)
+                            conda list -n test ;;
+                        *)
+                            pip list ;;
+                    esac
 
             -   name: Run tests
                 run: |
-                    source $CONDA/bin/activate test
+                    case "${{ matrix.conda }}" in
+                        true)
+                            source $CONDA/bin/activate test ;;
+                    esac
                     pytest -m "not slow"
 
             -   name: Run codecov
