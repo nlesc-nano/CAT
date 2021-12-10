@@ -571,6 +571,10 @@ class AllignmentTup(NamedTuple):
     invert: bool
 
 
+class MoleculeWarning(Warning, MoleculeError):
+    """A :exc:`Warning` subclass for :class:`~scm.plams.mol.molecule.Molecule` related errors."""
+
+
 def get_formula(mol: Molecule) -> str:
     """Backport of the PLAMS <= 1.5.1 ``Molecule.get_formula`` method.
 

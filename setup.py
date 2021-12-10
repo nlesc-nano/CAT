@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
+import re
 import sys
-import importlib
 
 from setuptools import setup
 
@@ -28,18 +28,34 @@ tests_require = [
     'pytest>=5.4.0',
     'pytest-cov',
     'pytest-mock',
+    'h5py>=2.7.0',
 ]
 if sys.version_info >= (3, 7):
     tests_require += docs_require
 
-# Check if rdkit is manually installed (as it is not available via pypi)
-try:
-    importlib.import_module("rdkit")
-except ModuleNotFoundError:
-    print(
-        "`CAT` requires the `rdkit` package: https://anaconda.org/conda-forge/rdkit",
-        file=sys.stderr,
-    )
+
+def _validate_rdkit():
+    # Check if rdkit is manually installed (as it is not available via pypi)
+    try:
+        import rdkit
+    except ModuleNotFoundError:
+        print("`CAT` requires the `rdkit` package: https://anaconda.org/conda-forge/rdkit",
+              file=sys.stderr)
+        return
+
+    version = getattr(rdkit, "__version__", "unknown")
+    match = re.match(r"([0-9]+)\.([0-9]+)\.([0-9]+)", version)
+    if match is None:
+        print("failed to parse the `rdkit` version: {}".format(version), file=sys.stderr)
+        return
+
+    version_tup = tuple(int(i) for i in match.groups())
+    if version_tup < (2018, 3, 1):
+        print("`CAT` requires `rdkit` >= 2018.03.1, observed version: {}".format(version), file=sys.stderr)
+        sys.exit(1)
+
+
+_validate_rdkit()
 
 setup(
     name='nlesc-CAT',
@@ -114,16 +130,15 @@ setup(
     python_requires='>=3.6',
     install_requires=[
         'Nano-Utils>=0.4.3',
-        'h5py',
-        'numpy',
-        'scipy',
-        'pandas',
+        'numpy>=1.15.0',
+        'scipy>=0.19.1',
+        'pandas>=0.23.0',
         'pyyaml>=5.1',
-        'schema!=0.7.5',
+        'schema>=0.7.2,!=0.7.5',
         'AssertionLib>=2.2.3',
         'plams>=1.5.1',
         'contextlib2>=0.6.0; python_version=="3.6"',
-        'typing-extensions>=3.7.4.2',
+        'typing-extensions>=3.7.4.3',
         'qmflows>=0.11.0',
     ],
     setup_requires=[

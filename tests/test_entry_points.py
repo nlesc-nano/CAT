@@ -7,12 +7,12 @@ import warnings
 from pathlib import Path
 from typing import Generator
 
+import rdkit
 import pytest
 import numpy as np
-
 from scm.plams import Molecule
+from nanoutils import VersionInfo
 
-from CAT.data_handling.warn_map import MoleculeWarning
 from CAT.data_handling.entry_points import main
 
 if sys.version_info >= (3, 7):
@@ -27,15 +27,15 @@ QD_PATH = PATH / 'qd'
 DB_PATH = PATH / 'database'
 PATH_REF = PATH / 'ligand_ref'
 
+RDKIT_VERSION = VersionInfo.from_str(rdkit.__version__)
+
 
 class TestMain:
     @pytest.fixture(scope="class", autouse=True)
     def run_cat(self) -> Generator[None, None, None]:
         # Setup
         filename = str(PATH / 'input2.yaml')
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', MoleculeWarning)
-            main([filename])
+        main([filename])
 
         yield None
 
@@ -51,10 +51,16 @@ class TestMain:
 
     def test_raise(self) -> None:
         filename = str(PATH / 'input2.yaml')
-        with pytest.raises(FileNotFoundError):
+        with pytest.raises(FileNotFoundError), warnings.catch_warnings():
+            warnings.filterwarnings(
+                action="ignore",
+                message="divide by zero encountered in double_scalars",
+                category=RuntimeWarning,
+            )
             main([f'{filename}bob'])
 
     @pytest.mark.parametrize("filename", PATH_DICT.values(), ids=PATH_DICT.keys())
+    @pytest.mark.xfail(RDKIT_VERSION < (2021, 3, 4), reason="requires rdkit >= 2021.03.4")
     def test_mol(self, filename: str) -> None:
         mol = Molecule(LIG_PATH / filename)
         mol_ref = Molecule(PATH_REF / filename)
