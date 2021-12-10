@@ -17,6 +17,8 @@
    :target: https://docs.python.org/3.8/
 .. image:: https://img.shields.io/badge/python-3.9-blue.svg
    :target: https://docs.python.org/3.9/
+.. image:: https://img.shields.io/badge/python-3.10-blue.svg
+   :target: https://docs.python.org/3.10/
 
 ###############################
 Compound Attachment Tool 0.10.2
@@ -25,42 +27,19 @@ Compound Attachment Tool 0.10.2
 **CAT** is a collection of tools designed for the construction of various chemical compounds.
 Further information is provided in the documentation_.
 
-Installation
-============
-
-- Download miniconda for python3: miniconda_ (also you can install the complete anaconda_ version).
-
-- Install according to: installConda_.
-
-- Create a new virtual environment, for python 3.7, using the following commands:
-
-  - ``conda create --name CAT python``
-
-- The virtual environment can be enabled and disabled by, respectively, typing:
-
-  - Enable: ``conda activate CAT``
-
-  - Disable: ``conda deactivate``
-
-
-.. _dependecies:
-
-Dependencies installation
--------------------------
-
-Using the conda environment the following packages should be installed:
-
-- rdkit_ : ``conda install -y --name CAT --channel conda-forge rdkit``
-
-.. _installation:
-
 Package installation
 --------------------
-Finally, install **CAT** using pip:
+**CAT** can be installed via pip as following:
 
 - **CAT**: ``pip install nlesc-CAT --upgrade``
 
-Now you are ready to use **CAT**.
+Note that, while not strictly necessary, it is recommended to first create a conda environment:
+
+- Download and install miniconda for python3: miniconda_ (also you can install the complete anaconda_ version).
+
+- Create a new virtual environment:  ``conda create --name CAT python``
+
+- Activate the environment:: ``conda activate CAT``
 
 Input files
 ============
