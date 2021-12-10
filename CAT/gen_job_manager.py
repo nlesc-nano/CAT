@@ -95,17 +95,17 @@ class GenJobManager(JobManager):
             os.mkdir(self.workdir)
 
     @staticmethod
-    def _unpickle(filename: str) -> Optional[Job]:
+    def _unpickle(filename: str) -> Job:
         """Attempt to unpickle and return a :class:`Job` containing file."""
         with open(filename, 'rb') as f:
             try:
                 return pickle.load(f)
-            except Exception:
-                return None
+            except Exception as ex:
+                raise FileError(f'Failed to unpickle {filename!r}') from ex
 
-    def _get_job(self, filename: str) -> Callable:
+    def _get_job(self, filename: str) -> Callable[[], Job]:
         """Return a callable which converts **filename** into a :class:`Job` instance."""
-        def unpickle_job() -> Optional[Job]:
+        def unpickle_job() -> Job:
             _filename = filename.replace('.hash', '.dill')
             ret = GenJobManager._unpickle(_filename)
             ret.jobmanager = self
