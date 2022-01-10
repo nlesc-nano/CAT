@@ -8,7 +8,11 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.10.2
 ******
-* *placeholder*.
+* Added the option to specify dummy atoms as anchor group.
+* Added the option to specify the format type of anchor groups (SMILES, SMARTS, *etc.*).
+* Fixed an issue wherein anchor-group-parsing could fail for mono-atomic anchors.
+* Added ``packaging`` and ``rdkit-pypi`` as dependencies;
+  manually installing ``rdkit`` via conda is no longer necessary.
 
 
 0.10.1
