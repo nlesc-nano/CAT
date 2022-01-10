@@ -19,7 +19,7 @@ setup(
     version=version['__version__'],
     description=('A collection of tools designed for the automatic '
                  'construction of chemical compounds.'),
-    long_description=f'{readme}\n\n',
+    long_description=readme + "\n\n",
     long_description_content_type='text/x-rst',
     author=['Bas van Beek', 'Jelena Belic'],
     author_email='b.f.van.beek@vu.nl',
@@ -100,6 +100,7 @@ setup(
         'typing-extensions>=3.7.4.3',
         'qmflows>=0.11.0',
         'rdkit-pypi>=2018.03.1',
+        'packaging>=1.16.8',
     ],
     setup_requires=[
         'pytest-runner',

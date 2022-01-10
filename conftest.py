@@ -6,7 +6,7 @@ import warnings
 
 import pytest
 import rdkit
-from nanoutils import VersionInfo
+from packaging.version import Version
 
 from CAT import logger
 
@@ -14,8 +14,7 @@ from CAT import logger
 @pytest.fixture(scope="session", autouse=True)
 def rdkit_version() -> None:
     """Validate the rdkit version."""
-    rdkit_version = VersionInfo.from_str(rdkit.__version__)
-    if rdkit_version < (2021, 3, 4):
+    if Version(rdkit.__version__) < Version("2021.03.4"):
         warnings.warn(
             "The CAT test suite requires RDKit >= 2021.03.4 to properly run; "
             f"observed version: {rdkit.__version__}"
