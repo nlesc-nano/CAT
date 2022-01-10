@@ -21,6 +21,8 @@ import os
 import sys
 import datetime
 
+import CAT
+
 sys.path.insert(0, os.path.abspath('..'))
 
 # -- General configuration ------------------------------------------------
@@ -72,7 +74,7 @@ copyright = f'{_year}, {author}'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the built documents.
-release = '0.10.2'  # The full version, including alpha/beta/rc tags.
+release = CAT.__version__  # The full version, including alpha/beta/rc tags.
 version = release.rsplit('.', maxsplit=1)[0]
 
 
