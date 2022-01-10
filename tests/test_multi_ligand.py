@@ -8,8 +8,9 @@ from assertionlib import assertion
 
 import pytest
 import rdkit
-from nanoutils import delete_finally, VersionInfo
+from nanoutils import delete_finally
 from scm.plams import Settings
+from packaging.version import Version
 from CAT import base
 
 PATH = Path('tests') / 'test_files'
@@ -17,8 +18,6 @@ PDB_REF = PATH / 'multi_ligand.pdb'
 LIG_PATH = PATH / 'ligand'
 QD_PATH = PATH / 'qd'
 DB_PATH = PATH / 'database'
-
-RDKIT_VERSION = VersionInfo.from_str(rdkit.__version__)
 
 with open(PATH / 'input3.yaml', 'r') as f:
     SETTINGS = Settings(yaml.load(f, Loader=yaml.FullLoader))
@@ -33,7 +32,10 @@ def _iterfiles(file1, file2):
 
 
 @delete_finally(LIG_PATH, QD_PATH, DB_PATH)
-@pytest.mark.xfail(RDKIT_VERSION < (2021, 3, 4), reason="requires rdkit >= 2021.03.4")
+@pytest.mark.xfail(
+    Version(rdkit.__version__) < Version("2021.03.4"),
+    reason="requires rdkit >= 2021.03.4",
+)
 def test_multi_ligand() -> None:
     """Test :mod:`CAT.multi_ligand`."""
     base.prep(SETTINGS.copy())

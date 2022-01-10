@@ -1,6 +1,5 @@
 """Tests for the :mod:`CAT.gen_job_manager.GenJobManager` class in :mod:`CAT.gen_job_manager`."""
 
-import re
 from os.path import (join, abspath)
 from collections import abc
 
@@ -8,7 +7,7 @@ import pytest
 import numpy as np
 from scm.plams import Settings, JobManager, AMSJob, AMSResults
 from assertionlib import assertion
-from nanoutils import VersionInfo
+from packaging.version import Version
 
 from CAT.gen_job_manager import GenJobManager
 from CAT.utils import get_formula
@@ -17,11 +16,6 @@ SETTINGS = Settings({'counter_len': 3, 'hashing': 'input', 'remove_empty_directo
 PATH = join('tests', 'test_files')
 ABSPATH = abspath(PATH)
 FOLDER = 'test_plams_workdir'
-
-
-NUMPY_VERSION = VersionInfo._make(
-    int(i) for i in re.match(r'(\d+).(\d+).(\d+)', np.__version__).groups()
-)
 
 
 def test_init() -> None:
@@ -40,7 +34,10 @@ def test_init() -> None:
     assertion.eq(manager.input, join(ABSPATH, FOLDER, SETTINGS.hashing))
 
 
-@pytest.mark.skipif(NUMPY_VERSION < (1, 16, 0), reason="Unpickling requires numpy >= 1.16.0")
+@pytest.mark.skipif(
+    Version(np.__version__) < Version("1.16.0"),
+    reason="Unpickling requires numpy >= 1.16.0",
+)
 def test_load_job() -> None:
     """Test :meth:`CAT.gen_job_manager.GenJobManager.load_job`."""
     filename = join(PATH, FOLDER, 'QD_opt_part1', 'QD_opt_part1.hash')

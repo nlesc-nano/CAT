@@ -11,7 +11,7 @@ import rdkit
 import pytest
 import numpy as np
 from scm.plams import Molecule
-from nanoutils import VersionInfo
+from packaging.version import Version
 
 from CAT.data_handling.entry_points import main
 
@@ -26,8 +26,6 @@ LIG_PATH = PATH / 'ligand'
 QD_PATH = PATH / 'qd'
 DB_PATH = PATH / 'database'
 PATH_REF = PATH / 'ligand_ref'
-
-RDKIT_VERSION = VersionInfo.from_str(rdkit.__version__)
 
 
 class TestMain:
@@ -60,7 +58,10 @@ class TestMain:
             main([f'{filename}bob'])
 
     @pytest.mark.parametrize("filename", PATH_DICT.values(), ids=PATH_DICT.keys())
-    @pytest.mark.xfail(RDKIT_VERSION < (2021, 3, 4), reason="requires rdkit >= 2021.03.4")
+    @pytest.mark.xfail(
+        Version(rdkit.__version__) < Version("2021.03.4"),
+        reason="requires rdkit >= 2021.03.4",
+    )
     def test_mol(self, filename: str) -> None:
         mol = Molecule(LIG_PATH / filename)
         mol_ref = Molecule(PATH_REF / filename)

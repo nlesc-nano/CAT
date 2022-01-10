@@ -20,7 +20,8 @@ import enum
 import textwrap
 from typing import Any, Callable
 
-from nanoutils import PartialPrepend, VersionInfo
+from nanoutils import PartialPrepend
+from packaging.version import Version
 
 try:
     import rdkit
@@ -28,10 +29,10 @@ try:
 except ModuleNotFoundError:
     # Precaution against sphinx mocking raising a TypeError
     FLAGS = 0
-    RDKIT_VERSION = VersionInfo(0, 0, 0)
+    RDKIT_VERSION = Version("0.0.0")
 else:
     FLAGS = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_ADJUSTHS
-    RDKIT_VERSION = VersionInfo.from_str(rdkit.__version__)
+    RDKIT_VERSION = Version(rdkit.__version__)
 
 __all__ = ["FormatEnum", "str_to_rdmol"]
 
@@ -72,8 +73,8 @@ class FormatEnum(enum.Enum):
     SMILES = PartialPrepend(str_to_rdmol, Chem.MolFromSmiles, "SMILES string", sanitize=False)
     TPL = PartialPrepend(str_to_rdmol, Chem.MolFromTPLBlock, "TPL block", sanitize=False)
     TPL_FILE = PartialPrepend(str_to_rdmol, Chem.MolFromTPLFile, "TPL file", sanitize=False)
-    if RDKIT_VERSION >= (2020, 3, 3):
+    if RDKIT_VERSION >= Version("2020.03.3"):
         SVG = PartialPrepend(str_to_rdmol, Chem.MolFromRDKitSVG, "SVG string", sanitize=False, removeHs=False)
-    if RDKIT_VERSION >= (2020, 9, 1):
+    if RDKIT_VERSION >= Version("2020.09.1"):
         PNG = PartialPrepend(str_to_rdmol, Chem.MolFromPNGString, "PNG string")
         PNG_FILE = PartialPrepend(str_to_rdmol, Chem.MolFromPNGFile, "PNG file")
