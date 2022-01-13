@@ -15,13 +15,15 @@ API
 import sys
 from os import mkdir
 from os.path import (join, isdir)
+from typing import Dict, Any
 
 if sys.version_info >= (3, 7):
     from contextlib import nullcontext
 else:
     from contextlib2 import nullcontext
 
-from scm.plams import Settings
+import qmflows
+from scm.plams import Settings, Cp2kJob
 
 from .validation_schemas import (
     core_schema,
@@ -76,6 +78,25 @@ def _validate_multi_lig(s: Settings) -> None:
         assert len(anchor) == len(s.optional.qd.multi_ligand.ligands)
     else:
         assert len(f) == len(s.optional.qd.multi_ligand.ligands) - 1
+
+
+def parse_qmflows_keywords(bde_dict: Dict[str, Any]) -> Dict[str, Any]:
+    """Parse qmflows generic keywords for the BDE workflow."""
+    # TODO: Support QM packages other than qmflows
+    if bde_dict["job1"] is Cp2kJob:
+        s1 = qmflows.Settings(bde_dict["s1"])
+        s1 = qmflows.cp2k.generic2specific(s1)
+        if "specific" in s1:
+            s1.input.update(s1.pop("specific").pop(qmflows.cp2k.pkg_name))
+        bde_dict["s1"] = s1
+
+    if bde_dict["job2"] is Cp2kJob:
+        s2 = qmflows.Settings(bde_dict["s2"])
+        s2 = qmflows.cp2k.generic2specific(s2)
+        if "specific" in s1:
+            s2.input.update(s2.pop("specific").pop(qmflows.cp2k.pkg_name))
+        bde_dict["s2"] = s2
+    return bde_dict
 
 
 def validate_input(s: Settings, validate_only: bool = True) -> None:
@@ -154,7 +175,8 @@ def validate_input(s: Settings, validate_only: bool = True) -> None:
         if s.optional.qd.optimize:
             s.optional.qd.optimize = qd_opt_schema.validate(s.optional.qd.optimize)
         if s.optional.qd.dissociate:
-            s.optional.qd.dissociate = bde_schema.validate(s.optional.qd.dissociate)
+            bde_dict = bde_schema.validate(s.optional.qd.dissociate)
+            s.optional.qd.dissociate = parse_qmflows_keywords(bde_dict)
         if s.optional.qd.activation_strain:
             s.optional.qd.activation_strain = asa_schema.validate(s.optional.qd.activation_strain)
         if s.optional.qd.multi_ligand:
