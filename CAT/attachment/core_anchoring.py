@@ -62,10 +62,10 @@ def set_core_anchors(
     mol.properties.dummies = [mol[i] for i in anchor_idx]
 
     # Returns an error if no anchor atoms were found
-    if len(anchor_idx) < 4 and allignment_tup.kind == AllignmentEnum.SURFACE:
+    if (len(mol) - len(anchor_idx)) < 4 and allignment_tup.kind == AllignmentEnum.SURFACE:
         raise NotImplementedError(
             '`optional.core.allignment = "surface"` is not supported for cores with less '
-            f'than 4 anchor atoms ({mol.get_formula()}); consider using '
+            f'than 4 (non-anchor) atoms ({mol.get_formula()}); consider using '
             '`optional.core.allignment = "sphere"`'
         )
 

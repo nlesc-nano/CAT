@@ -35,7 +35,8 @@ def test_cat_fail() -> None:
     arg.optional.ligand["cosmo-rs"] = False
     arg.optional.qd.activation_strain = False
     arg.optional.qd.optimize = False
-    arg.input_cores[0]["Cd68Se55.xyz"]["indices"] = [1, 2, 3]
+    del arg.input_cores[0]["Cd68Se55.xyz"]
+    arg.input_cores[0]["CdCl.xyz"] = {"indices": [2]}
     with pytest.raises(NotImplementedError):
         prep(arg)
 
