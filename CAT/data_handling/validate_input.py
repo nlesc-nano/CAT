@@ -176,6 +176,11 @@ def validate_input(s: Settings, validate_only: bool = True) -> None:
             s.optional.qd.optimize = qd_opt_schema.validate(s.optional.qd.optimize)
         if s.optional.qd.dissociate:
             bde_dict = bde_schema.validate(s.optional.qd.dissociate)
+            if (
+                (bde_dict["core_atom"] is bde_dict["lig_count"] is None) or
+                (bde_dict["core_atom"] is not None and bde_dict["lig_count"] is not None)
+            ):
+                raise ValueError("One of `core_atom` and `lig_count` must be specified")
             s.optional.qd.dissociate = parse_qmflows_keywords(bde_dict)
         if s.optional.qd.activation_strain:
             s.optional.qd.activation_strain = asa_schema.validate(s.optional.qd.activation_strain)

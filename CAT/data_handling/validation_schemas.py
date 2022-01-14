@@ -648,17 +648,19 @@ bde_schema: Schema = Schema({
         bool,
 
     # Atom type of the to-be dissociated core atom
-    'core_atom':
-        And(
-            Or(And(val_int, Use(int)), str), Use(validate_core_atom),
+    Optional_('core_atom', default=None):
+        Or(
+            None,
+            And(Or(And(val_int, Use(int)), str), Use(validate_core_atom)),
             error=('optional.qd.dissociate.core_atom expects a SMILES string, '
                    'atomic number (int) or atomic symbol (str)')
         ),
 
-    'lig_count':  # The number of ligands per core_atom
-        And(
-            val_int, lambda n: int(n) >= 0, Use(int),
-            error='optional.qd.dissociate.lig_count expects an integer larger than or equal to 0'
+    Optional_('lig_count', default=None):  # The number of ligands per core_atom
+        Or(
+            None,
+            And(val_int, lambda n: int(n) >= 0, Use(int)),
+            error='optional.qd.dissociate.lig_count expects an integer larger than or equal to 0',
         ),
 
     Optional_('keep_files', default=True):  # Delete files after the calculations are finished
