@@ -8,7 +8,10 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.10.3
 ******
-* *placeholder*.
+* Allow ``core.allignment: "surface"`` for cores with <4 anchor atoms.
+* Allow QMFlows-style keywords to be parsed by the BDE workflow.
+* Fix the ``qd.dissociate.core_atom`` and `lig_count` keys not being optional.
+* Added the ``qd.dissociate.xyn_pre_opt`` keyword.
 
 
 0.10.2
