@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 
+0.10.4
+******
+* *placeholder*.
+
+
 0.10.3
 ******
 * Allow ``core.allignment: "surface"`` for cores with <4 anchor atoms.

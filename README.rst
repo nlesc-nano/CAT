@@ -21,7 +21,7 @@
    :target: https://docs.python.org/3.10/
 
 ###############################
-Compound Attachment Tool 0.10.3
+Compound Attachment Tool 0.10.4
 ###############################
 
 **CAT** is a collection of tools designed for the construction of various chemical compounds.
