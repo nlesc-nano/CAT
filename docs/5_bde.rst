@@ -242,6 +242,15 @@ Arguments - Job Customization
 
         Whether to keep or delete all BDE files after all calculations are finished.
 
+    .. attribute:: optional.qd.dissociate.xyn_pre_opt
+
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``True``
+
+        Pre-optimize the |XYn| fragment with UFF.
+
+        .. note::
+            Requires AMS.
 
     .. attribute:: optional.qd.dissociate.job1
 

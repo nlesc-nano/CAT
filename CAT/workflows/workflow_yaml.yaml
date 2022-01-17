@@ -107,6 +107,7 @@ bde:
         s1: [optional, qd, dissociate, s1]
         job2: [optional, qd, dissociate, job2]
         s2: [optional, qd, dissociate, s2]
+        xyn_pre_opt: [optional, qd, dissociate, xyn_pre_opt]
 
         core_atom: [optional, qd, dissociate, core_atom]
         lig_count: [optional, qd, dissociate, lig_count]

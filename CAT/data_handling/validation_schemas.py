@@ -772,7 +772,9 @@ bde_schema: Schema = Schema({
             dict,
             And(str, Use(lambda n: get_template(n, from_cat_data=False))),
             error='optional.qd.dissociate.s2 expects a string or a dictionary'
-        )
+        ),
+
+    Optional_("xyn_pre_opt", default=True): bool,
 })
 
 #: Schema for validating the ``['optional']['qd']['optimize']`` block.

@@ -389,6 +389,7 @@ def test_bde_schema() -> None:
         'topology': None,
 
         'keep_files': True,
+        'xyn_pre_opt': True,
         'job1': AMSJob,
         's1': _bde_s1_default,
         'job2': None,
