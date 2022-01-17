@@ -402,7 +402,7 @@ class WorkFlow(AbstractDataClass):
             if not isinstance(value, abc.Iterator):
                 try:  # This can fail for `np.flexible`-based dtypes
                     assert np.any(value)
-                except TypeError:
+                except (ValueError, TypeError):
                     pass
                 except AssertionError:
                     return
