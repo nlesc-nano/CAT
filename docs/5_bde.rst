@@ -214,6 +214,15 @@ Arguments
             are marked as ``"vertice"``, the ones with ``8`` neighbours are marked as ``"edge"``
             and the ones with ``10`` neighbours as ``"face"``.
 
+
+    .. attribute:: optional.qd.dissociate.qd_opt
+
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``False``
+
+        Whether to optimize the quantum dot and |XYn| -dissociated quantum dot.
+
+
 |
 
 Arguments - Job Customization

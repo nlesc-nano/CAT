@@ -775,6 +775,9 @@ bde_schema: Schema = Schema({
         ),
 
     Optional_("xyn_pre_opt", default=True): bool,
+
+    Optional_("qd_opt", default=False): bool,
+
 })
 
 #: Schema for validating the ``['optional']['qd']['optimize']`` block.
