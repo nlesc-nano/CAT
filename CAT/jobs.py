@@ -36,7 +36,7 @@ import numpy as np
 
 from scm.plams.core.basejob import Job
 from scm.plams import (Molecule, Settings, Results, config, add_to_class, ResultsError,
-                       ADFJob, AMSJob, Units, Cp2kResults)
+                       ADFJob, AMSJob, Units, Cp2kResults, Cp2kJob)
 
 import qmflows
 
@@ -61,6 +61,12 @@ def get_main_molecule(self) -> Optional[Molecule]:
     raise ResultsError(f'Failed to retrieve main molecule from {self.job.name}')
 
 
+@add_to_class(Cp2kResults)
+def get_frequencies(self, unit: str = "cm-1") -> np.ndarray:
+    file = self['cp2k-VIBRATIONS-1.mol']
+    return qmflows.parsers.cp2KParser.get_cp2k_freq(file, unit=unit)
+
+
 def _xyz_to_mol(filename: str) -> Molecule:
     """Grab the last geometry from an .xyz file and return it as a :class:`Molecule` instance."""
     with open(filename, 'r') as f:
@@ -73,11 +79,23 @@ def _xyz_to_mol(filename: str) -> Molecule:
 
 
 @add_to_class(Cp2kResults)
-def get_energy(self, index: int = -1, unit: str = 'Hartree') -> float:
+def get_energy(
+    self,
+    index: int = -1,
+    unit: str = 'Hartree',
+    job_preset: Optional[str] = None,
+) -> float:
     """Return the energy of the last occurence of ``'ENERGY| Total FORCE_EVAL'`` in the output."""
-    energy_str = self.grep_output('ENERGY| Total FORCE_EVAL')[index]
+    if job_preset == 'frequency analysis':
+        pattern = 'VIB|              Electronic energy (U)'
+        initial_unit = "kj/mol"
+    else:
+        pattern = 'ENERGY| Total FORCE_EVAL'
+        initial_unit = "Hartree"
+
+    energy_str = self.grep_output(pattern)[index]
     energy = float(energy_str.rsplit(maxsplit=1)[1])
-    return Units.convert(energy, 'Hartree', unit)
+    return Units.convert(energy, initial_unit, unit)
 
 
 def _get_name(name: str) -> str:
@@ -158,10 +176,18 @@ def retrieve_results(mol: Molecule, results: Results, job_preset: str) -> None:
             raise _get_results_error(results)
 
         # Read all relevant results
-        energy = mol.properties.energy.E = results.get_energy(unit='kcal/mol')
+        if isinstance(job, Cp2kJob):
+            energy = mol.properties.energy.E = results.get_energy(
+                unit='kcal/mol', job_preset=job_preset
+            )
+        else:
+            energy = mol.properties.energy.E = results.get_energy(unit='kcal/mol')
         if job_preset in ('geometry optimization', 'frequency analysis'):
-            mol_new = results.get_main_molecule() or Molecule()
-            mol.from_array(mol_new)
+            if job_preset == 'frequency analysis' and isinstance(job, Cp2kJob):
+                pass
+            else:
+                mol_new = results.get_main_molecule() or Molecule()
+                mol.from_array(mol_new)
 
         if job_preset == 'frequency analysis':
             freq = mol.properties.frequencies = results.get_frequencies()
