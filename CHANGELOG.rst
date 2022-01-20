@@ -8,7 +8,8 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.10.4
 ******
-* *placeholder*.
+* Added the ``qd.dissociate.qd_opt`` keyword.
+* Fix thermochemical properties not properly being set to ``nan`` for crashed jobs.
 
 
 0.10.3

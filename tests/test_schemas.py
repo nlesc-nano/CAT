@@ -390,6 +390,7 @@ def test_bde_schema() -> None:
 
         'keep_files': True,
         'xyn_pre_opt': True,
+        'qd_opt': False,
         'job1': AMSJob,
         's1': _bde_s1_default,
         'job2': None,
