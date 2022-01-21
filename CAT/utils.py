@@ -550,6 +550,14 @@ class AllignmentEnum(enum.Enum):
     SURFACE = 1
 
 
+class MultiAnchorEnum(enum.Enum):
+    """An enum with different actions for when ligands with multiple anchors are found."""
+
+    ALL = 0
+    FIRST = 1
+    RAISE = 2
+
+
 class AnchorTup(NamedTuple):
     """A named tuple with anchoring operation instructions."""
 
@@ -562,6 +570,7 @@ class AnchorTup(NamedTuple):
     angle_offset: "None | float" = None
     dihedral: "None | float" = None
     group_format: FormatEnum = FormatEnum.SMILES
+    multi_anchor_filter: MultiAnchorEnum = MultiAnchorEnum.ALL
 
 
 class AllignmentTup(NamedTuple):

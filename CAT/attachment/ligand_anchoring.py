@@ -34,7 +34,7 @@ import scm.plams.interfaces.molecule.rdkit as molkit
 from rdkit import Chem
 
 from ..logger import logger
-from ..utils import get_template, AnchorTup, KindEnum, get_formula, FormatEnum
+from ..utils import get_template, AnchorTup, KindEnum, get_formula, FormatEnum, MultiAnchorEnum
 from ..mol_utils import separate_mod   # noqa: F401
 from ..workflows import MOL, FORMULA, HDF5_INDEX, OPT
 from ..settings_dataframe import SettingsDataFrame
@@ -201,12 +201,24 @@ def find_substructure(
         ligand_idx_dict[anchor_tup].append(idx_tup)
         ref_set.add(anchor_idx_tup)
 
+    # Apply some further filtering to the ligands
     if condition is not None:
-        if not condition(sum((len(i) for i in ligand_idx_dict.values()), 0)):
+        if not condition(sum((len(j) for j in ligand_idx_dict.values()), 0)):
             err = (f"Failed to satisfy the passed condition ({condition!r}) for "
                    f"ligand: {ligand.properties.name!r}")
             logger.error(err)
             return []
+    else:
+        for anchor_tup, j in ligand_idx_dict.items():
+            if anchor_tup.multi_anchor_filter == MultiAnchorEnum.ALL:
+                pass
+            elif anchor_tup.multi_anchor_filter == MultiAnchorEnum.FIRST and len(j) > 1:
+                ligand_idx_dict[anchor_tup] = j[:1]
+            elif anchor_tup.multi_anchor_filter == MultiAnchorEnum.RAISE and len(j) > 1:
+                logger.error(
+                    f"Found multiple valid functional groups for {ligand.properties.name!r}"
+                )
+                return []
 
     ret = []
     idx_dict_items = chain.from_iterable(zip(repeat(k), v) for k, v in ligand_idx_dict.items())
