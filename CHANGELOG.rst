@@ -8,7 +8,8 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.10.5
 ******
-* *placeholder*.
+* Fix an issue where certain properties could not be extracted from CP2K frequency jobs.
+* Add the ``anchor.multi_anchor_filter`` option.
 
 
 0.10.4
