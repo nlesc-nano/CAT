@@ -21,7 +21,7 @@ from assertionlib import assertion
 from schema import SchemaError
 from packaging.version import Version
 
-from CAT.utils import get_template, KindEnum, AnchorTup, FormatEnum
+from CAT.utils import get_template, KindEnum, AnchorTup, FormatEnum, MultiAnchorEnum
 from CAT.base import prep_input
 from CAT.attachment.ligand_anchoring import (
     get_functional_groups, _smiles_to_rdmol, find_substructure, init_ligand_anchoring
@@ -279,6 +279,7 @@ class TestInputParsing:
         invalid_group=({"group": "OC", "group_idx": 0, "group": 1.0}, SchemaError),
         invalid_group_format=({"group": "OC", "group_idx": 0, "group_format": 1}, SchemaError),
         invalid_kind=({"group": "OC", "group_idx": 0, "kind": 1}, SchemaError),
+        invalid_multi_anchor_filter=({"group": "OC", "group_idx": 0, "multi_anchor_filter": 1}, SchemaError),
     )
 
     @pytest.mark.parametrize("inp,exc_type", PARAM_RAISE.values(), ids=PARAM_RAISE.keys())
@@ -323,6 +324,9 @@ class TestInputParsing:
         group_format_none={"group": "OCC", "group_idx": 0, "group_format": None},
         group_format_str={"group": "OCC", "group_idx": 0, "group_format": "SMARTS"},
         group_format_enum={"group": "OCC", "group_idx": 0, "group_format": FormatEnum.SMARTS},
+        multi_anchor_filter_none={"group": "OCC", "group_idx": 0, "multi_anchor_filter": None},
+        multi_anchor_filter_str={"group": "OCC", "group_idx": 0, "multi_anchor_filter": "ALL"},
+        multi_anchor_filter_enum={"group": "OCC", "group_idx": 0, "multi_anchor_filter": MultiAnchorEnum.ALL},
     )
     _PARAM_PASS2 = OrderedDict(
         idx_scalar=AnchorTup(None, group="OCC", group_idx=(0,)),
@@ -348,6 +352,9 @@ class TestInputParsing:
         group_format_none=AnchorTup(None, group="OCC", group_idx=(0,), group_format=FormatEnum.SMILES),
         group_format_str=AnchorTup(None, group="OCC", group_idx=(0,), group_format=FormatEnum.SMARTS),
         group_format_enum=AnchorTup(None, group="OCC", group_idx=(0,), group_format=FormatEnum.SMARTS),
+        multi_anchor_filter_none=AnchorTup(None, group="OCC", group_idx=(0,), multi_anchor_filter=MultiAnchorEnum.ALL),
+        multi_anchor_filter_str=AnchorTup(None, group="OCC", group_idx=(0,), multi_anchor_filter=MultiAnchorEnum.ALL),
+        multi_anchor_filter_enum=AnchorTup(None, group="OCC", group_idx=(0,), multi_anchor_filter=MultiAnchorEnum.ALL),
     )
     PARAM_PASS = OrderedDict({
         k: (v1, v2) for (k, v1), v2 in zip(_PARAM_PASS1.items(), _PARAM_PASS2.values())

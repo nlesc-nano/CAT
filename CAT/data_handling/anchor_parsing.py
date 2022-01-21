@@ -9,7 +9,7 @@ from scm.plams import Units, PT
 from schema import Schema, Use, Optional
 from typing_extensions import TypedDict, SupportsIndex
 
-from ..utils import AnchorTup, KindEnum, FormatEnum
+from ..utils import AnchorTup, KindEnum, FormatEnum, MultiAnchorEnum
 from ..attachment.ligand_anchoring import _smiles_to_rdmol, get_functional_groups
 
 __all__ = ["parse_anchors"]
@@ -26,6 +26,7 @@ class _UnparsedAnchorDict(_UnparsedAnchorDictBase, total=False):
     dihedral: "None | SupportsFloat | SupportsIndex | bytes | str"
     kind: "None | str | KindEnum"
     group_format: "None | str | FormatEnum"
+    multi_anchor_filter: "None | str | MultiAnchorEnum"
 
 
 class _AnchorDict(TypedDict):
@@ -35,7 +36,8 @@ class _AnchorDict(TypedDict):
     kind: KindEnum
     angle_offset: "None | float"
     dihedral: "None | float"
-    group_format: "FormatEnum"
+    group_format: FormatEnum
+    multi_anchor_filter: MultiAnchorEnum
 
 
 def _parse_group_idx(item: "SupportsIndex | Iterable[SupportsIndex]") -> Tuple[int, ...]:
@@ -83,6 +85,17 @@ def _parse_group_format(typ: "None | str | FormatEnum") -> FormatEnum:
     elif isinstance(typ, str):
         return FormatEnum[typ.upper()]
     raise TypeError("`group_format` expected None or a string")
+
+
+def _parse_multi_anchor_filter(typ: "None | str | MultiAnchorEnum") -> MultiAnchorEnum:
+    """Parse the ``multi_anchor_filter`` option."""
+    if typ is None:
+        return MultiAnchorEnum.ALL
+    elif isinstance(typ, MultiAnchorEnum):
+        return typ
+    elif isinstance(typ, str):
+        return MultiAnchorEnum[typ.upper()]
+    raise TypeError("`multi_anchor_filter` expected None or a string")
 
 
 _UNIT_PATTERN = re.compile(r"([\.\_0-9]+)(\s+)?(\w+)?")
@@ -143,6 +156,7 @@ anchor_schema = Schema({
     Optional("angle_offset", default=None): Use(_parse_angle_offset),
     Optional("dihedral", default=None): Use(_parse_angle_offset),
     Optional("group_format", default=FormatEnum.SMILES): Use(_parse_group_format),
+    Optional("multi_anchor_filter", default=MultiAnchorEnum.ALL): Use(_parse_multi_anchor_filter),
 })
 
 #: A collection of symbols used for different kinds of dummy atoms.

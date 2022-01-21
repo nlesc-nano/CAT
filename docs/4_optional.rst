@@ -654,6 +654,7 @@ Ligand
         * :attr:`anchor.kind`
         * :attr:`anchor.angle_offset`
         * :attr:`anchor.dihedral`
+        * :attr:`anchor.multi_anchor_filter`
 
         .. note::
 
@@ -788,6 +789,20 @@ Ligand
 
         By default the angle unit is assumed to be in degrees,
         but if so desired one can explicitly pass the unit: ``dihedral: "0.5 rad"``.
+
+
+    .. attribute:: optional.ligand.anchor.multi_anchor_filter
+
+        :Parameter:     * **Type** - :class:`str`
+                        * **Default value** – :data:`"ALL"`
+
+        How ligands with multiple valid anchor sites are to-be treated.
+
+        Accepts one of the following options:
+
+        * ``"all"``: Construct a new ligand for each valid anchor/ligand combination.
+        * ``"first"``: Pick only the first valid functional group, all others are ignored.
+        * ``"raise"``: Treat a ligand as invalid if it has multiple valid anchoring sites.
 
 
     .. attribute:: optional.ligand.split
