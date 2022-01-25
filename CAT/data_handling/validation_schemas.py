@@ -561,6 +561,14 @@ qd_schema: Schema = Schema({
         ),
 })
 
+
+def _to_float_array(obj: Any) -> np.ndarray:
+    ar = np.asarray(obj)
+    ret = ar.astype(np.float64, casting="same_kind")
+    assert ret.ndim <= 1
+    return ret
+
+
 #: Schema for validating the ``['optional']['qd']['bulkiness']`` block.
 bulkiness_schema = Schema({
     Optional_('h_lim', default=10.0): Or(
@@ -570,7 +578,7 @@ bulkiness_schema = Schema({
     ),
 
     Optional_('d', default='auto'): Or(
-        And(val_float, lambda n: float(n) > 0, Use(float)),
+        Use(_to_float_array),
         None,
         And(str, lambda n: n.lower() == 'auto', Use(str.lower)),
         error='optional.qd.bulkiness.d expects a positive float, None or "auto"'
