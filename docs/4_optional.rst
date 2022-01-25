@@ -1009,7 +1009,7 @@ QD
 
     .. attribute:: optional.qd.bulkiness.d
 
-        :Parameter:     * **Type** - :class:`float`, :data:`None` or ``"auto"``
+        :Parameter:     * **Type** - :class:`float`/:class:`list[float] <list>`, :data:`None` or ``"auto"``
                         * **Default value** – ``"auto"``
 
         Default value of the :math:`d` parameter in :attr:`~optional.qd.bulkiness`.
@@ -1017,6 +1017,7 @@ QD
         Set to ``"auto"`` to automatically infer this parameters value based on the mean
         nearest-neighbor distance among the core anchor atoms.
         Set to :data:`None` to disable the :math:`d`-based cutoff.
+        Supplying multiple floats will compute the bulkiness for all specified values.
 
 
     .. attribute:: optional.qd.activation_strain
