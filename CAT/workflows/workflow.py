@@ -517,12 +517,16 @@ class WorkFlow(AbstractDataClass):
         if status == 'optimized':
             df.loc[index, OPT] = False
 
+        dset_name = self.mol_type
+        if status == 'no_opt':
+            dset_name += "_no_opt"
+
         # Write results to the database
         if self.write:
             with self._SUPRESS_SETTINGWITHCOPYWARNING:
                 self.db.update_csv(
                     df, index,
-                    database=self.mol_type,
+                    database=dset_name,
                     columns=export_columns,
                     overwrite=self.overwrite,
                     job_recipe=job_recipe,
