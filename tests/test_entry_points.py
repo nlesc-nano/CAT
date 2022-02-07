@@ -71,11 +71,8 @@ class TestMain:
         symbol_ref = [at.symbol for at in mol_ref]
         np.testing.assert_array_equal(symbols, symbol_ref)
 
-        if (
-            sys.platform != "darwin" and
-            os.path.splitext(filename)[0] == "O=C[COc1ccc[Cl]cc1Cl]Nc1cc[C[=O][O-]]ccc1F@O21"
-        ):
-            pytest.xfail("Platform dependant geometry; mismatch on non-MacOS platforms")
+        if os.path.splitext(filename)[0] == "O=C[COc1ccc[Cl]cc1Cl]Nc1cc[C[=O][O-]]ccc1F@O21":
+            pytest.xfail("Platform dependant geometry")
 
         # Coordinates
         np.testing.assert_allclose(mol, mol_ref, rtol=0, atol=10**-2)
