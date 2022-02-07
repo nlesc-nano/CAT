@@ -577,17 +577,23 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int]) -
     # Optimize the (constrained) geometry for all dihedral angles in angle_list
     # The geometry that yields the minimum energy is returned
     fixed = _find_idx(mol, bond)
-    for rdmol in rdmol_list:
+    for angle, rdmol in zip(angles, rdmol_list):
+        # Partially relax the geometry to avoid major conformational changes
         ff = UFF(rdmol)
         for f in fixed:
             ff.AddFixedPoint(f)
         ff.Minimize()
+
+        # Fully relax the geometry
+        UFF(rdmol).Minimize()
 
     # Find the conformation with the optimal ligand vector
     cost_list = []
     for rdmol in rdmol_list:
         xyz, idx_rot, idx_trans, idx_angle, angle = _get_allign_args(rdmol,
                                                                      ligand.properties.anchor_tup)
+
+        # Allign with the Cartesian X-axis
         rotmat = optimize_rotmat(xyz, idx_rot)
         xyz = np.matmul(xyz, rotmat.T, out=xyz)
         if angle is not None:
@@ -596,11 +602,12 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int]) -
             rotmat2 = axis_rotation_matrix(vec_perp, angle)
             xyz = np.matmul(xyz, rotmat2.T, out=xyz)
         xyz -= xyz[idx_trans]
+
+        # Compute the cost function
         cost = np.exp(xyz[:, 1:]).sum()
         cost_list.append(cost)
 
-    # Perform an unconstrained optimization on the best geometry and update the geometry of ligand
+    # Find and return the ligand with the best geometry
     j = np.argmin(cost_list)
     rdmol_best = rdmol_list[j]
-    UFF(rdmol).Minimize()
     ligand.from_rdmol(rdmol_best)
