@@ -73,6 +73,11 @@ class TestMain:
 
         if os.path.splitext(filename)[0] == "O=C[COc1ccc[Cl]cc1Cl]Nc1cc[C[=O][O-]]ccc1F@O21":
             pytest.xfail("Platform dependant geometry")
+        elif (
+            sys.platform != "darwin" and
+            os.path.splitext(filename)[0] == "CCCCCCCCOCCCCCCCC@O17"
+        ):
+            pytest.xfail("Platform dependant geometry")
 
         # Coordinates
         np.testing.assert_allclose(mol, mol_ref, rtol=0, atol=10**-2)

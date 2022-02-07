@@ -181,8 +181,13 @@ def optimize_ligand(ligand: Molecule) -> None:
             mol.set_dihed(180.0, anchor, cap_list)
 
     # Find the optimal dihedrals angle between the fragments
-    for bond in bonds:
-        modified_minimum_scan_rdkit(ligand, ligand.get_index(bond))
+    if len(bonds):
+        for bond in bonds:
+            modified_minimum_scan_rdkit(ligand, ligand.get_index(bond))
+    else:
+        rdmol = molkit.to_rdmol(ligand)
+        UFF(rdmol).Minimize()
+        ligand.from_rdmol(rdmol)
 
     # RDKit UFF can sometimes mess up the geometries of carboxylates: fix them
     fix_carboxyl(ligand)
