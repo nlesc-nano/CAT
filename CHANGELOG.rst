@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 
+0.10.7
+******
+* *placeholder*.
+
+
 0.10.6
 ******
 * Added a Nano-CAT workflow for computing ligand cone angles.
