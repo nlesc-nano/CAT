@@ -35,6 +35,7 @@ Option                                    Description
 :attr:`optional.ligand.split`             If the ligand should be attached in its entirety to the core or not.
 :attr:`optional.ligand.cosmo-rs`          Perform a property calculation with COSMO-RS on the ligand.
 :attr:`optional.ligand.cdft`              Perform a conceptual DFT calculation with ADF on the ligand.
+:attr:`optional.ligand.cone_angle`        Compute the smallest enclosing cone angle within a ligand.
 
 :attr:`optional.qd.dirname`               The name of the directory where all quantum dots will be stored.
 :attr:`optional.qd.construct_qd`          Whether or not the quantum dot should actually be constructed or not.
@@ -73,6 +74,7 @@ Default Settings
             split: True
             cosmo-rs: False
             cdft: False
+            cone_angle: False
 
         qd:
             dirname: qd
@@ -585,6 +587,7 @@ Ligand
                 split: True
                 cosmo-rs: False
                 cdft: False
+                cone_angle: False
 
 |
 
@@ -901,6 +904,44 @@ Ligand
                         cdft:
                             job1: ADFJob
                             s1: ...  # Insert custom settings here
+
+
+    .. attribute:: optional.ligand.cone_angle
+
+        :Parameter:     * **Type** - :class:`bool` or :class:`dict`
+                        * **Default value** – ``False``
+
+        Compute the smallest enclosing cone angle within a ligand.
+
+        The smallest enclosing cone angle is herein defined as two times the largest angle
+        (:math:`2 * \phi_{max}`) w.r.t. a central ligand vector, the ligand vector in turn being
+        defined as the vector that minimizes :math:`\phi_{max}`.
+
+        .. admonition:: Examples
+
+            .. code:: yaml
+
+                optional:
+                    ligand:
+                        cone_angle: True
+
+            .. code:: yaml
+
+                optional:
+                    ligand:
+                        cone_angle:
+                            distance: [0, 0.5, 1, 1.5, 2]
+
+
+    .. attribute:: optional.ligand.cone_angle.distance
+
+        :Parameter:     * **Type** - :class:`float` or :class:`list[float] <list>`
+                        * **Default value** – ``0.0``
+
+        The distance in :attr:`~optional.ligand.cone_angle` of each ligands' anchor atom w.r.t.
+        the nanocrystal surface.
+
+        Accepts one or more distances.
 
 |
 

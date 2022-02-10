@@ -40,6 +40,7 @@ from .validation_schemas import (
     multi_ligand_schema,
     cdft_schema,
     bulkiness_schema,
+    cone_angle_schema,
 )
 
 from .validate_ff import validate_ff, update_ff_jobs
@@ -171,6 +172,8 @@ def validate_input(s: Settings, validate_only: bool = True) -> None:
         elif s.optional.ligand['cosmo-rs']:
             crs = s.optional.ligand.pop('cosmo-rs')
             s.optional.ligand.crs = crs_schema.validate(crs)
+        if s.optional.ligand.cone_angle:
+            s.optional.ligand.cone_angle = cone_angle_schema.validate(s.optional.ligand.cone_angle)
 
         if s.optional.qd.optimize:
             s.optional.qd.optimize = qd_opt_schema.validate(s.optional.qd.optimize)

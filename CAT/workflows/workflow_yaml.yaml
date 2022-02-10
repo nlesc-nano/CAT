@@ -138,6 +138,19 @@ bulkiness:
         d: [optional, qd, bulkiness, d]
         h_lim: [optional, qd, bulkiness, h_lim]
 
+cone_angle:
+    description: ligand cone angle calculation
+    mol_type: ligand
+    template:
+        db: [optional, database, db]
+        read: [optional, database, read]
+        write: [optional, database, write]
+        overwrite: [optional, database, overwrite]
+        thread_safe: [optional, database, thread_safe]
+
+        path: [optional, ligand, dirname]
+        distance: [optional, ligand, cone_angle, distance]
+
 multi_ligand:
     description: multi-ligand attachment
     mol_type: qd

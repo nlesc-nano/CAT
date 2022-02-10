@@ -67,6 +67,7 @@ def test_validate_input() -> None:
                            'use_ff': False, 'keep_files': True}
     ref.ligand.split = True
     ref.ligand.cdft = False
+    ref.ligand.cone_angle = False
 
     ref.qd.bulkiness = False
     ref.qd.construct_qd = True

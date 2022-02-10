@@ -27,6 +27,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 import pandas as pd
+from packaging.version import Version
 
 from scm.plams import Settings, MoleculeError
 
@@ -56,6 +57,8 @@ try:
     from nanoCAT.ligand_solvation import init_solv
     from nanoCAT.ff.ff_assignment import init_ff_assignment
     from nanoCAT.cdft import init_cdft
+    if Version(nanoCAT.__version__) >= Version("0.7.2"):
+        from nanoCAT.cone_angle import init_cone_angle
 
     NANO_CAT: Optional[ImportError] = None
 except ImportError as ex:
@@ -254,6 +257,7 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     optimize = ligand_df.settings.optional.ligand.optimize
     crs = ligand_df.settings.optional.ligand.crs
     cdft = ligand_df.settings.optional.ligand.cdft
+    cone_angle = ligand_df.settings.optional.ligand.cone_angle
 
     # Identify functional groups within the ligand.
     ligand_df = init_ligand_anchoring(ligand_df)
@@ -289,6 +293,13 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     if cdft:
         val_nano_cat("Ligand conceptual DFT calculations require the nano-CAT package")
         init_cdft(ligand_df)
+
+    # Compute ligand cone angles
+    if cone_angle:
+        val_nano_cat("Ligand cone angle calculations require the nano-CAT package")
+        if Version(nanoCAT.__version__) < Version("0.7.2"):
+            raise ImportError("The `cone_angle` workflow require Nano-CAT 0.7.2")
+        init_cone_angle(ligand_df)
 
     return ligand_df
 
