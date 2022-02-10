@@ -8,7 +8,11 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.10.6
 ******
-* *placeholder*.
+* Added a Nano-CAT workflow for computing ligand cone angles.
+* Allow multiple values for the bulkiness latice spacing.
+* Improve the conformation ligands.
+* Fix optimized geometries not being correctly written to .hdf5.
+* Ensure that ligands are properly aligned after PLAMS optimizations.
 
 
 0.10.5

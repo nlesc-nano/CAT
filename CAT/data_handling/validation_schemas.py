@@ -93,7 +93,7 @@ from ..utils import AllignmentEnum, AllignmentTup
 
 __all__ = ['mol_schema', 'core_schema', 'ligand_schema', 'qd_schema', 'database_schema',
            'mongodb_schema', 'bde_schema', 'ligand_opt_schema', 'qd_opt_schema', 'crs_schema',
-           'asa_schema', 'subset_schema', 'bulkiness_schema']
+           'asa_schema', 'subset_schema', 'bulkiness_schema', 'cone_angle_schema']
 
 
 def val_float(value: Any) -> bool:
@@ -504,6 +504,13 @@ ligand_schema: Schema = Schema({
             error='optional.ligand.cosmo-rs expects a boolean or dictionary'
         ),
 
+    Optional_('cone_angle', default=False):  # Ligand cone angle workflow
+        Or(
+            And(bool, Use(lambda n: {'distance': 0.0} if n else False)),
+            dict,
+            error='optional.ligand.cone_angle expects a boolean or dictionary'
+        ),
+
     Optional_('cdft', default=False):  # Settings specific to ligand conceptual dft calculations
         Or(
             dict,
@@ -585,6 +592,13 @@ bulkiness_schema = Schema({
     ),
 })
 
+#: Schema for validating the ``['optional']['ligand']['cone_angle']`` block.
+cone_angle_schema = Schema({
+    Optional_('distance', default=np.float64(0.0)): Or(
+        Use(_to_float_array),
+        error='optional.ligand.bulkiness.d expects one or more positive float'
+    ),
+})
 
 #: Schema for validating the ``['optional']['database']['mongodb']`` block.
 mongodb_schema: Schema = Schema({

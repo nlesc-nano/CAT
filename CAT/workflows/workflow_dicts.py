@@ -42,7 +42,8 @@ from .key_map import (
     CDFT_DELTAF_MINUS,
     CDFT_DELTAF_PLUS,
     CDFT_MU_MINUS,
-    CDFT_MU_PLUS
+    CDFT_MU_PLUS,
+    CONE_ANGLE,
 )
 
 if TYPE_CHECKING:
@@ -110,6 +111,8 @@ def finalize_templates():
                                     CDFT_ELECTROFUGE, CDFT_W_MINUS, CDFT_W_PLUS,
                                     CDFT_ELECTROPHILICITY, CDFT_DELTAF_MINUS, CDFT_DELTAF_PLUS,
                                     CDFT_MU_MINUS, CDFT_MU_PLUS)},
+        'cone_angle': {'import_columns': {CONE_ANGLE: np.nan},
+                       'export_columns': (CONE_ANGLE,)},
     }
 
     templates = _load_templates()

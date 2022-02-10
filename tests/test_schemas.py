@@ -6,6 +6,7 @@ from os.path import join
 from schema import SchemaError
 from unittest import mock
 
+import numpy as np
 from scm.plams import AMSJob, ADFJob, Settings, CRSJob
 from assertionlib import assertion
 
@@ -126,7 +127,8 @@ def test_ligand_schema() -> None:
         'optimize': {'job1': None},
         'split': True,
         'cosmo-rs': False,
-        'cdft': False
+        'cdft': False,
+        'cone_angle': False,
     }
 
     assertion.eq(ligand_schema.validate(lig_dict), ref)
@@ -141,12 +143,21 @@ def test_ligand_schema() -> None:
 
     lig_dict['cosmo-rs'] = 1  # Exception: incorrect type
     assertion.assert_(ligand_schema.validate, lig_dict, exception=SchemaError)
+
+    lig_dict["cone_angle"] = {"distance": 1j}  # Exception: incorrect type
+    assertion.assert_(ligand_schema.validate, lig_dict, exception=SchemaError)
+    lig_dict["cone_angle"] = {"distance": [[1.0]]}  # Exception: incorrect type
+    assertion.assert_(ligand_schema.validate, lig_dict, exception=SchemaError)
+    lig_dict["cone_angle"] = False
+
     lig_dict['cosmo-rs'] = {}
     assertion.eq(ligand_schema.validate(lig_dict)['cosmo-rs'], {})
     lig_dict['cosmo-rs'] = False
     assertion.is_(ligand_schema.validate(lig_dict)['cosmo-rs'], False)
     lig_dict['cosmo-rs'] = True
     assertion.eq(ligand_schema.validate(lig_dict)['cosmo-rs'], {'job1': 'AMSJob'})
+    lig_dict['cone_angle'] = {"distance": [1, 2]}
+    np.testing.assert_allclose(ligand_schema.validate(lig_dict)['cone_angle']['distance'], [1, 2])
 
 
 def test_core_schema() -> None:
