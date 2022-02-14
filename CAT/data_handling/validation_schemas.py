@@ -596,7 +596,12 @@ bulkiness_schema = Schema({
 cone_angle_schema = Schema({
     Optional_('distance', default=np.float64(0.0)): Or(
         Use(_to_float_array),
-        error='optional.ligand.bulkiness.d expects one or more positive float'
+        error='optional.ligand.cone_angle.distance expects one or more float(s)'
+    ),
+
+    Optional_('remove_anchor_hydrogens', default=False): Or(
+        bool,
+        error='optional.ligand.cone_angle.remove_anchor_hydrogens expects a boolean'
     ),
 })
 
