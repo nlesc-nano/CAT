@@ -17,14 +17,18 @@ API
 """
 
 import reprlib
-from typing import Optional, Any
+from typing import Optional, Any, TYPE_CHECKING
 
 import numpy as np
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import dijkstra
 from scipy.spatial import ConvexHull
-
+from scm.plams import Molecule
 from nanoutils import array_combinations
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+    from numpy import float64 as f8
 
 try:
     import matplotlib.pyplot as plt
@@ -39,11 +43,11 @@ except ImportError as ex:
 __all__ = ['edge_dist', 'plot_polyhedron']
 
 
-def to_convex(xyz: np.ndarray, n: float = 1.0) -> np.ndarray:
+def to_convex(xyz: "NDArray[f8]", n: float = 1.0) -> "NDArray[f8]":
     r"""Round all edges in **xyz** by a factor **n**: (:math:`0 < n \le 1`)."""
     if not (0.0 < n <= 1.0):
         raise ValueError(f"Expected '0 < n <= 1'; observed: {reprlib.repr(n)}")
-    xyz = np.asarray(xyz, dtype=float)
+    xyz = np.asarray(xyz, dtype=np.float64)
     xyz = xyz - xyz.mean(axis=0)
 
     r = np.linalg.norm(xyz, axis=-1)
@@ -54,8 +58,11 @@ def to_convex(xyz: np.ndarray, n: float = 1.0) -> np.ndarray:
     return xyz
 
 
-def edge_dist(xyz: np.ndarray, n: float = 1.0,
-              edges: Optional[np.ndarray] = None) -> np.ndarray:
+def edge_dist(
+    xyz: "NDArray[f8] | Molecule",
+    n: float = 1.0,
+    edges: "None | NDArray[np.integer]" = None,
+) -> "NDArray[f8]":
     r"""Calculate all shortest paths between all points in the polyhedron **xyz** by traversing its edges.
 
     After converting **xyz** into a polyhedron with triangular faces,
@@ -127,7 +134,7 @@ def edge_dist(xyz: np.ndarray, n: float = 1.0,
         Compute distance between each pair of the two collections of inputs.
 
     """  # noqa
-    xyz = np.array(xyz, dtype=float, ndmin=2, copy=False)
+    xyz = np.array(xyz, dtype=np.float64, ndmin=2, copy=False)
     xyz_len = len(xyz)
 
     # Create an array with all index-pairs forming the polyhedron edges
@@ -137,7 +144,7 @@ def edge_dist(xyz: np.ndarray, n: float = 1.0,
         idx = array_combinations(hull.simplices, r=2)
         idx.shape = -1, 2
     else:
-        idx = np.asarray(edges, dtype=int)
+        idx = np.asarray(edges, dtype=np.int64)
     i, j = idx.T
 
     # Create a distancea matrix containing all edge distances
@@ -152,8 +159,11 @@ def edge_dist(xyz: np.ndarray, n: float = 1.0,
                     return_predecessors=False)
 
 
-def plot_polyhedron(xyz: np.ndarray, triangles: Optional[np.ndarray] = None,
-                    show: bool = True, **kwargs: Any) -> Figure:
+def plot_polyhedron(
+    xyz: "NDArray[f8] | Molecule",
+    triangles: "None | NDArray[np.integer]" = None,
+    show: bool = True, **kwargs: Any,
+) -> Figure:
     r"""Plot a polyhedron, represented by an array of Cartesian coordinates, with matplotlib.
 
     Parameters
@@ -184,7 +194,7 @@ def plot_polyhedron(xyz: np.ndarray, triangles: Optional[np.ndarray] = None,
     if 'cmap' not in kwargs:
         kwargs['cmap'] = plt.cm.Spectral
 
-    xyz = np.asarray(xyz, dtype=float)
+    xyz = np.asarray(xyz, dtype=np.float64)
     triangles = ConvexHull(xyz).simplices if triangles is None else np.asarray(triangles, dtype=int)
 
     fig = plt.figure()

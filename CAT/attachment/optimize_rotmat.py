@@ -11,14 +11,16 @@ API
 
 """
 
-from typing import Callable
+from __future__ import annotations
+
+from typing import Callable, TYPE_CHECKING
 
 import numpy as np
 import scipy
 from scipy.optimize import minimize
 from packaging.version import Version
 
-from scm.plams import rotation_matrix, Atom
+from scm.plams import rotation_matrix, Atom, Molecule
 
 if Version(scipy.__version__) >= Version("1.1.0"):
     from scipy.optimize import Bounds
@@ -26,7 +28,41 @@ if Version(scipy.__version__) >= Version("1.1.0"):
 else:
     BOUNDS = None
 
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+    from numpy import float64 as f8
+
 __all__ = ['optimize_rotmat']
+
+
+@np.errstate(invalid="ignore")
+def _get_angle(
+    xyz: "NDArray[f8]",
+    anchor_idx: int,
+    ignore_idx: "None | NDArray[np.integer]",
+) -> "NDArray[f8] | f8":
+    """Return the maximum angle in ``xyz`` w.r.t. to the X-axis."""
+    vecs = xyz / np.linalg.norm(xyz, axis=-1)[..., None]
+    if ignore_idx is not None:
+        vecs[ignore_idx] = [1, 0, 0]
+    vecs[anchor_idx] = [1, 0, 0]
+    angles = np.arccos(vecs @ [1, 0, 0])
+    return np.nanmax(angles, axis=-1)
+
+
+def _minimize_func2(
+    vec1: "NDArray[f8]",
+    vec2: "NDArray[f8]",
+    xyz: "NDArray[f8]",
+    anchor: int,
+    ignore_idx: "None | NDArray[np.integer]",
+) -> f8:
+    """Rotate the X-axis in ``xyz`` to ``vec`` and \
+    compute the maximum angle w.r.t. to the X-axis."""
+    rotmat = rotation_matrix(vec1, vec2)
+    xyz_rot = xyz @ rotmat.T
+    xyz_rot -= xyz_rot[anchor]
+    return _get_angle(xyz_rot, anchor, ignore_idx)
 
 
 def _minimize_func(vec1: np.ndarray, vec2: np.ndarray, xyz: np.ndarray, anchor: int) -> float:
@@ -42,8 +78,12 @@ def _minimize_func(vec1: np.ndarray, vec2: np.ndarray, xyz: np.ndarray, anchor: 
     return np.exp(distance).sum()
 
 
-def optimize_rotmat(mol: np.ndarray, anchor: int = 0,
-                    func: Callable = _minimize_func) -> np.ndarray:
+def optimize_rotmat(
+    mol: "NDArray[np.float64] | Molecule",
+    anchor: int = 0,
+    ignore_idx: "None | NDArray[np.integer]" = None,
+    func: Callable = _minimize_func,
+) -> np.ndarray:
     r"""Find the rotation matrix for **xyz** that minimizes its deviation from the Cartesian X-axis.
 
     A set of vectors, :math:`v`, is constructed for all atoms in **xyz**,
@@ -97,9 +137,9 @@ def optimize_rotmat(mol: np.ndarray, anchor: int = 0,
     # Optimize the trial vector; return the matching rotation matrix
     trial_vec = xyz_new.mean(axis=0) - xyz_new[i]
     output = minimize(
-        _minimize_func,
+        _minimize_func2,
         trial_vec,
-        args=(vec2, xyz_new, i),
+        args=(vec2, xyz_new, i, ignore_idx),
         bounds=BOUNDS,
     )
     rotmat2 = rotation_matrix(output.x, vec2)

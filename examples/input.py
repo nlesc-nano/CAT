@@ -17,4 +17,9 @@ try:
     qd_df, core_df, ligand_df = base.prep(arg)
 except Exception as ex:
     logger.critical(f'{ex.__class__.__name__}: {ex}', exc_info=True)
-    raise ex
+    raise
+
+if len(ligand_df):
+    mol = ligand_df.iloc[0, 0]
+else:
+    mol = None

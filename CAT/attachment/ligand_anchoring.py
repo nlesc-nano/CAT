@@ -253,7 +253,7 @@ def substructure_split(
     ligand: plams.Molecule
         The ligand molecule.
     idx_tup : tuple[int, ...]
-        A tuple with 2 atomic indices associated with a functional group.
+        A tuple with atomic indices associated with a functional group.
     anchor_tup : AnchorTup
         Named tuple.
 
@@ -269,6 +269,7 @@ def substructure_split(
 
     if anchor_tup.remove is not None:
         remove_iter = sorted([1 + idx_tup[i] for i in anchor_tup.remove], reverse=True)
+        anchors_group = [lig[1 + i] for i in idx_tup if (1 + i) not in remove_iter]
         for i in remove_iter:
             lig.delete_atom(lig[i])
 
@@ -284,8 +285,14 @@ def substructure_split(
         # Check if the ligand heteroatom has a charge assigned, assigns a charge if not
         if not anchor.properties.charge:
             anchor.properties.charge = -1
+        anchor_groups_idx = tuple(lig.atoms.index(at) for at in anchors_group)
+    else:
+        anchor_groups_idx = idx_tup
 
-    anchor_tup = anchor_tup._replace(anchor_idx=tuple(lig.atoms.index(at) for at in anchors))
+    anchor_tup = anchor_tup._replace(
+        anchor_idx=tuple(lig.atoms.index(at) for at in anchors),
+        anchor_group_idx=anchor_groups_idx,
+    )
 
     # Update ligand properties
     lig.properties.dummies = anchor
