@@ -72,5 +72,17 @@ class TestMain:
         symbol_ref = [at.symbol for at in mol_ref]
         np.testing.assert_array_equal(symbols, symbol_ref)
 
+        xfail_linux = {
+            "CCCCCCCCP[CCCCCCCC]CCCCCCCC@P25.xyz",
+            "CCCCCCCCP[=O][CCCCCCCC]CCCCCCCC@O26.xyz",
+        }
+        xfail_windows = xfail_linux | {
+            "O=C[COc1ccc[Cl]cc1Cl]Nc1cc[C[=O][O-]]ccc1F@O21.xyz",
+        }
+        if filename in xfail_linux and sys.platform.startswith("linux"):
+            pytest.xfail("platform dependant geometry")
+        elif filename in xfail_windows and sys.platform == "win32":
+            pytest.xfail("platform dependant geometry")
+
         # Coordinates
         assert_mol_allclose(mol, mol_ref, rtol=0, atol=10**-2)
