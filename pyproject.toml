@@ -1,9 +1,9 @@
 [tool.mypy]
+plugins = "numpy.typing.mypy_plugin"
 show_error_codes = true
 
 [[tool.mypy.overrides]]
 module = [
-    "numpy.*",
     "scipy.*",
     "pandas.*",
     "ase.*",
