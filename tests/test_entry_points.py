@@ -71,7 +71,12 @@ class TestMain:
         symbol_ref = [at.symbol for at in mol_ref]
         np.testing.assert_array_equal(symbols, symbol_ref)
 
-        if os.path.splitext(filename)[0] == "O=C[COc1ccc[Cl]cc1Cl]Nc1cc[C[=O][O-]]ccc1F@O21":
+        if os.path.splitext(filename)[0] in (
+            "O=C[COc1ccc[Cl]cc1Cl]Nc1cc[C[=O][O-]]ccc1F@O21",
+            "O=C[[O-]]c1ccc[S[=O][=O]CCCC[F][F]F]o1@O15",
+            "CCCCCCC[CCCCC]CCCC[=O]O@O17",
+            "CCCCCCCCC[CCCCCC]C[=O]O@O17",
+        ):
             pytest.xfail("Platform dependant geometry")
         elif (
             sys.platform != "darwin" and

@@ -14,9 +14,17 @@ API
 from typing import Callable
 
 import numpy as np
+import scipy
 from scipy.optimize import minimize
+from packaging.version import Version
 
 from scm.plams import rotation_matrix, Atom
+
+if Version(scipy.__version__) >= Version("1.1.0"):
+    from scipy.optimize import Bounds
+    BOUNDS = Bounds(-1, 1, keep_feasible=True)
+else:
+    BOUNDS = None
 
 __all__ = ['optimize_rotmat']
 
@@ -88,6 +96,11 @@ def optimize_rotmat(mol: np.ndarray, anchor: int = 0,
 
     # Optimize the trial vector; return the matching rotation matrix
     trial_vec = xyz_new.mean(axis=0) - xyz_new[i]
-    output = minimize(_minimize_func, trial_vec, args=(vec2, xyz_new, i))
+    output = minimize(
+        _minimize_func,
+        trial_vec,
+        args=(vec2, xyz_new, i),
+        bounds=BOUNDS,
+    )
     rotmat2 = rotation_matrix(output.x, vec2)
     return (rotmat1.T@rotmat2.T).T
