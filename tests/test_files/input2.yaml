@@ -19,6 +19,7 @@ input_ligands:
     - O=C(Nc1c(F)ccc(C([O-])=O)c1)COc2c(Cl)cc(Cl)cc2
     - CCCCCCCCC(CCCCCC)C(=O)O
     - CCCCCCCCCC[N+](C)(C)CCCCCCCCCC
+    - CCCCCCC(CCCCC)CCCC(=O)O
 
 optional:
     database:

@@ -571,18 +571,18 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int]) -
 
     """
     # Define a number of variables and create 3 copies of the ligand
-    angles = (-120, 0, 120)
-    mol_list = [ligand.copy() for _ in range(3)]
-    for angle, mol in zip(angles, mol_list):
+    angles = (-120, -60, 0, 60, 120, 180)
+    mol_list = [ligand.copy() for _ in angles]
+    for a, mol in zip(angles, mol_list):
         bond = mol[bond_tuple]
         atom = mol[bond_tuple[0]]
-        mol.rotate_bond(bond, atom, angle, unit='degree')
+        mol.rotate_bond(bond, atom, a, unit='degree')
     rdmol_list = [molkit.to_rdmol(mol, properties=False) for mol in mol_list]
 
     # Optimize the (constrained) geometry for all dihedral angles in angle_list
     # The geometry that yields the minimum energy is returned
     fixed = _find_idx(mol, bond)
-    for angle, rdmol in zip(angles, rdmol_list):
+    for rdmol in rdmol_list:
         # Partially relax the geometry to avoid major conformational changes
         ff = UFF(rdmol)
         for f in fixed:
@@ -609,7 +609,7 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int]) -
         xyz -= xyz[idx_trans]
 
         # Compute the cost function
-        cost = np.exp(xyz[:, 1:]).sum()
+        cost = np.exp(np.linalg.norm(xyz[:, 1:], axis=-1)).sum()
         cost_list.append(cost)
 
     # Find and return the ligand with the best geometry
