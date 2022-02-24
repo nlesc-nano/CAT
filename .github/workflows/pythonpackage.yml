@@ -117,16 +117,16 @@ jobs:
         steps:
             -   uses: actions/checkout@v2
 
-            -   name: Set up Python 3.9 on ubuntu-latest
+            -   name: Set up Python 3.10 on ubuntu-latest
                 uses: actions/setup-python@v2
                 with:
-                    python-version: 3.9
+                    python-version: "3.10"
 
             -   name: Install linters
                 run: |
                     pip install "flake8>=3.8.0" "pydocstyle>=5.0.0"
                     pip install -e .
-                    pip install mypy nano-CAT data-CAT types-PyYAML types-setuptools
+                    pip install mypy nano-CAT data-CAT types-PyYAML types-setuptools "numpy>=1.21"
 
             -   name: Python info
                 run: |
