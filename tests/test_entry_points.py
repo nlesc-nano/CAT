@@ -14,6 +14,7 @@ from scm.plams import Molecule
 from packaging.version import Version
 
 from CAT.data_handling.entry_points import main
+from CAT.test_utils import assert_mol_allclose
 
 if sys.version_info >= (3, 7):
     from builtins import dict as OrderedDict
@@ -71,18 +72,5 @@ class TestMain:
         symbol_ref = [at.symbol for at in mol_ref]
         np.testing.assert_array_equal(symbols, symbol_ref)
 
-        if os.path.splitext(filename)[0] in (
-            "O=C[COc1ccc[Cl]cc1Cl]Nc1cc[C[=O][O-]]ccc1F@O21",
-            "O=C[[O-]]c1ccc[S[=O][=O]CCCC[F][F]F]o1@O15",
-            "CCCCCCC[CCCCC]CCCC[=O]O@O17",
-            "CCCCCCCCC[CCCCCC]C[=O]O@O17",
-        ):
-            pytest.xfail("Platform dependant geometry")
-        elif (
-            sys.platform != "darwin" and
-            os.path.splitext(filename)[0] == "CCCCCCCCOCCCCCCCC@O17"
-        ):
-            pytest.xfail("Platform dependant geometry")
-
         # Coordinates
-        np.testing.assert_allclose(mol, mol_ref, rtol=0, atol=10**-2)
+        assert_mol_allclose(mol, mol_ref, rtol=0, atol=10**-2)
