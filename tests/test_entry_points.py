@@ -9,7 +9,6 @@ from typing import Generator
 
 import rdkit
 import pytest
-import numpy as np
 from scm.plams import Molecule
 from packaging.version import Version
 
@@ -66,11 +65,6 @@ class TestMain:
     def test_mol(self, filename: str) -> None:
         mol = Molecule(LIG_PATH / filename)
         mol_ref = Molecule(PATH_REF / filename)
-
-        # Atomic symbols
-        symbols = [at.symbol for at in mol]
-        symbol_ref = [at.symbol for at in mol_ref]
-        np.testing.assert_array_equal(symbols, symbol_ref)
 
         xfail_linux = {
             "CCCCCCCCP[CCCCCCCC]CCCCCCCC@P25.xyz",

@@ -104,6 +104,17 @@ def _compare_bonds(
     return np.isclose(a_bonds, b_bonds, equal_nan=True)[idx_tup]
 
 
+def _compare_atnums(
+    actual: Molecule,
+    desired: Molecule,
+    argsort_idx: "NDArray[np.integer]",
+) -> "NDArray[np.bool_]":
+    """Compare the atomic numbers of two Molecules."""
+    a = np.fromiter([at.atnum for at in actual], dtype=np.int64, count=len(actual))[argsort_idx]
+    b = np.fromiter([at.atnum for at in desired], dtype=np.int64, count=len(actual))
+    return a == b
+
+
 def _compare_lattice(actual: Molecule, desired: Molecule, rtol: float, atol: float) -> np.bool_:
     """Compare the lattice vectors of two Molecules."""
     a_lat: "None | ArrayLike" = actual.lattice
@@ -169,6 +180,7 @@ def assert_mol_allclose(
 
     # Compare atomic coordinates, bonds and lattice vectors
     atoms_match = _compare_atoms(a, b, rtol=rtol, atol=atol)
+    atnum_match = _compare_atnums(actual, desired, argsort_idx=atoms_match.idx)
     bonds_match = _compare_bonds(actual, desired, argsort_idx=atoms_match.idx)
     lattice_match = _compare_lattice(actual, desired, rtol=rtol, atol=atol)
 
@@ -177,13 +189,16 @@ def assert_mol_allclose(
 
     at_mismatch = (~atoms_match.isclose).sum()
     at_percentage = round(100 * at_mismatch / len(a))
+    atnum_mismatch = (~atnum_match).sum()
+    atnum_percentage = round(100 * atnum_mismatch / len(a))
     bond_mismatch = (~bonds_match).sum()
     bond_percentage = round(100 * bond_mismatch / len(a))
 
     header = f"Not equal to tolerance rtol={rtol:g}, atol={atol:g}"
-    err_msg += f"\nMismatched lattice: {~lattice_match}"
-    err_msg += f"\nMismatched bonds:   {bond_mismatch} / {len(a)} ({bond_percentage:.3g}%)"
-    err_msg += f"\nMismatched atoms:   {at_mismatch} / {len(a)} ({at_percentage:.3g}%)"
+    err_msg += f"\nMismatched lattice:            {~lattice_match}"
+    err_msg += f"\nMismatched bonds:              {bond_mismatch} / {len(a)} ({bond_percentage:.3g}%)"
+    err_msg += f"\nMismatched atoms:              {at_mismatch} / {len(a)} ({at_percentage:.3g}%)"
+    err_msg += f"\nMismatched atomic symbols:     {atnum_mismatch} / {len(a)} ({atnum_percentage:.3g}%)"
     err_msg += f"\nAtoms max absolute difference: {atoms_match.max_err.max()}"
     err_msg += f"\nAtoms max relative difference: {atoms_match.rel_err.max()}"
     raise AssertionError(np.testing.build_err_msg(
