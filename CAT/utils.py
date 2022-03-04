@@ -25,16 +25,19 @@ API
 """
 
 import os
+import io
+import sys
 import enum
 import yaml
 import inspect
 import textwrap
 import operator
 import threading
+import functools
+import pprint
 import pkg_resources as pkg
 from types import MappingProxyType, TracebackType
 from shutil import rmtree
-from pprint import pformat
 from logging import Logger
 from os.path import join, isdir, isfile, exists
 from itertools import cycle, chain, repeat
@@ -61,6 +64,11 @@ from .logger import logger
 from .mol_utils import to_atnum
 from .gen_job_manager import GenJobManager
 from ._mol_str_parser import FormatEnum
+
+if sys.version_info >= (3, 8):
+    pformat = functools.partial(pprint.pformat, sort_dicts=False, compact=True)
+else:
+    pformat = functools.partial(pprint.pformat, compact=True)
 
 __all__ = [
     'JOB_MAP', 'check_sys_var', 'dict_concatenate', 'get_template',
@@ -535,6 +543,19 @@ def log_traceback_locals(logger: Logger, level: int = -1,
             logger.debug(v)
 
 
+def _namedtuple_repr(self: NamedTuple) -> str:
+    """Fancy multi-line ``repr`` for named tuples."""
+    stream = io.StringIO()
+    stream.write(type(self).__name__ + "(\n")
+    indent = 8 + max(len(f) for f in self._fields)
+    width = 80 - indent
+    for name, _item in zip(self._fields, self):
+        item = textwrap.indent(pformat(_item, width=width), indent * " ")[indent:]
+        stream.write(f"    {name:<{indent - 8}} = {item},\n")
+    stream.write(")")
+    return stream.getvalue()
+
+
 class KindEnum(enum.Enum):
     """An enum with different anchoring operation kinds (see :class:`AnchorTup`)."""
 
@@ -565,12 +586,17 @@ class AnchorTup(NamedTuple):
     group: "None | str" = None
     group_idx: Tuple[int, ...] = (0,)
     anchor_idx: Tuple[int, ...] = ()
+    anchor_group_idx: Tuple[int, ...] = ()
     remove: "None | Tuple[int, ...]" = None
     kind: KindEnum = KindEnum.FIRST
     angle_offset: "None | float" = None
     dihedral: "None | float" = None
     group_format: FormatEnum = FormatEnum.SMILES
     multi_anchor_filter: MultiAnchorEnum = MultiAnchorEnum.ALL
+
+    def __repr__(self) -> str:
+        """Implement ``repr(self)``."""
+        return _namedtuple_repr(self)
 
 
 class AllignmentTup(NamedTuple):

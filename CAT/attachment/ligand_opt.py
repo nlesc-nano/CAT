@@ -32,7 +32,10 @@ API
 
 import itertools
 from types import MappingProxyType
-from typing import List, Iterable, Union, Set, Optional, Type, Tuple, Mapping, Callable, Sequence
+from typing import (
+    List, Iterable, Union, Set, Optional, Type, Tuple,
+    Mapping, Callable, Sequence, TYPE_CHECKING,
+)
 from collections import ChainMap
 
 import numpy as np
@@ -47,6 +50,7 @@ from scm.plams import (Molecule, Atom, Bond, MoleculeError, add_to_class, Units,
 from .mol_split_cm import SplitMol
 from .remove_atoms_cm import RemoveAtoms
 from .optimize_rotmat import optimize_rotmat
+from .edge_distance import edge_dist
 from ..logger import logger
 from ..workflows import WorkFlow, MOL
 from ..mol_utils import fix_carboxyl, to_atnum
@@ -54,6 +58,9 @@ from ..settings_dataframe import SettingsDataFrame
 from ..data_handling.mol_to_file import mol_to_file
 from ..jobs import job_geometry_opt  # noqa: F401
 from ..utils import KindEnum, AnchorTup
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 __all__ = ['init_ligand_opt']
 
@@ -167,6 +174,19 @@ def _start_ligand_jobs_uff(ligand_list: Iterable[Molecule]) -> None:
     return None
 
 
+def _get_edges(mol: Molecule) -> "NDArray[np.int64]":
+    """Return a 2D array with all bond-pairs in the passed molecule."""
+    try:
+        mol.set_atoms_id(start=0)
+        iterator = itertools.chain.from_iterable(
+            (b.atom1.id, b.atom2.id, b.atom2.id, b.atom1.id) for b in mol.bonds
+        )
+        ret = np.fromiter(iterator, dtype=np.int64, count=4 * len(mol.bonds))
+    finally:
+        mol.unset_atoms_id()
+    return ret.reshape(-1, 2)
+
+
 def optimize_ligand(ligand: Molecule) -> None:
     """Optimize a ligand molecule."""
     anchor = ligand.properties.dummies
@@ -182,8 +202,12 @@ def optimize_ligand(ligand: Molecule) -> None:
 
     # Find the optimal dihedrals angle between the fragments
     if len(bonds):
+        dist_mat = edge_dist(ligand, edges=_get_edges(ligand))
+        i = ligand.atoms.index(anchor)
         for bond in bonds:
-            modified_minimum_scan_rdkit(ligand, ligand.get_index(bond))
+            j, k = ligand.index(bond)
+            bond_tup = (j, k) if dist_mat[i, j - 1] < dist_mat[i, k - 1] else (k, j)
+            modified_minimum_scan_rdkit(ligand, bond_tup)
     else:
         rdmol = molkit.to_rdmol(ligand)
         UFF(rdmol).Minimize()
@@ -530,7 +554,7 @@ def rdmol_as_array(rdmol: rdkit.Chem.Mol) -> np.ndarray:
     return ret
 
 
-def _find_idx(mol: Molecule, bond: Bond) -> List[int]:
+def _find_idx(mol: Molecule, bond: Bond, atom: Atom) -> List[int]:
     """Return the atomic indices of all atoms on the side of **bond.atom2**."""
     ret = []
     mol.set_atoms_id(start=0)
@@ -540,13 +564,14 @@ def _find_idx(mol: Molecule, bond: Bond) -> List[int]:
     def dfs(at1, mol):
         at1._visited = True
         ret.append(at1.id)
-        for bond in at1.bonds:
-            at2 = bond.other_end(at1)
+        for b in at1.bonds:
+            at2 = b.other_end(at1)
             if not at2._visited:
                 dfs(at2, mol)
 
     bond.atom1._visited = bond.atom2._visited = True
-    dfs(bond.atom2, mol)
+    assert atom in bond
+    dfs(atom, mol)
 
     mol.unset_atoms_id()
     return ret
@@ -570,18 +595,24 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int]) -
         :return |Molecule|: A copy of *mol* with a newly optimized geometry
 
     """
-    # Define a number of variables and create 3 copies of the ligand
-    angles = (-120, -60, 0, 60, 120, 180)
+    # Define a number of variables and create n copies of the ligand
+    angles = list(itertools.product((-120, 0, 120, 180), repeat=2))
     mol_list = [ligand.copy() for _ in angles]
-    for a, mol in zip(angles, mol_list):
-        bond = mol[bond_tuple]
-        atom = mol[bond_tuple[0]]
-        mol.rotate_bond(bond, atom, a, unit='degree')
+    for (a1, a2), mol in zip(angles, mol_list):
+        atom1 = mol[bond_tuple[1]]
+        bond1 = mol[bond_tuple]
+        mol.rotate_bond(bond1, atom1, a1, unit='degree')
+
+        bond2_list = [b for b in atom1.bonds if b is not bond1]
+        if len(bond2_list):
+            bond2 = bond2_list[0]
+            atom2 = bond2.atom1 if bond1.atom1 is not atom1 else bond1.atom2
+            mol.rotate_bond(bond2, atom2, a2, unit='degree')
     rdmol_list = [molkit.to_rdmol(mol, properties=False) for mol in mol_list]
 
     # Optimize the (constrained) geometry for all dihedral angles in angle_list
     # The geometry that yields the minimum energy is returned
-    fixed = _find_idx(mol, bond)
+    fixed = _find_idx(mol, bond1, mol[bond_tuple[0]])
     for rdmol in rdmol_list:
         # Partially relax the geometry to avoid major conformational changes
         ff = UFF(rdmol)
