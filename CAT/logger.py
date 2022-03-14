@@ -13,6 +13,7 @@ API
 
 """
 
+import sys
 import logging
 
 from scm.plams import Molecule
@@ -22,7 +23,8 @@ __all__ = ['logger']
 
 #: The CAT logger
 logger = logging.getLogger('CAT')
-_handler = logging.StreamHandler()
+logger.setLevel(logging.DEBUG)
+_handler = logging.StreamHandler(stream=sys.stdout)
 _handler.setLevel(logging.DEBUG)
 _handler.setFormatter(logging.Formatter(
     fmt='[%(asctime)s] %(levelname)s: %(message)s',
