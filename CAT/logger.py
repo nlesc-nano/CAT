@@ -23,6 +23,7 @@ __all__ = ['logger']
 
 #: The CAT logger
 logger = logging.getLogger('CAT')
+logger.setLevel(logging.DEBUG)
 _handler = logging.StreamHandler(stream=sys.stdout)
 _handler.setLevel(logging.DEBUG)
 _handler.setFormatter(logging.Formatter(
