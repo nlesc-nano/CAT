@@ -125,7 +125,8 @@ def test_get_charge_dict() -> None:
         'N': -3, 'P': -3, 'As': -3, 'Sb': -3, 'Bi': -3,
         'O': -2, 'S': -2, 'Se': -2, 'Te': -2, 'Po': -2,
         'H': -1, 'F': -1, 'Cl': -1, 'Br': -1, 'I': -1, 'At': -1,
-        'Cd': 2, 'Pb': 2
+        'Cd': 2, 'Pb': 2,
+        'In': 3,
     }
 
     assertion.eq(charge_dict, ref)
