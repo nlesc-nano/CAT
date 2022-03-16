@@ -328,22 +328,16 @@ def canonicalize_mol(mol: Molecule, inplace: bool = True) -> Optional[Molecule]:
 
 def get_charge_dict() -> Dict[str, int]:
     """Create a dictionary of elements and their formal atomic charge."""
-    # Create a list of atomic charges and elements
-    charges = (1, 2, -3, -2, -1, 2)
-    elements = (
-        ('Li', 'Na', 'K', 'Rb', 'Cs'),      # Group 1: Alkali metals
-        ('Be', 'Mg', 'Ca', 'Sr', 'Ba'),     # Group 2: Alkaline earth metals
-        ('N', 'P', 'As', 'Sb', 'Bi'),       # Group 15: pnictogens
-        ('O', 'S', 'Se', 'Te', 'Po'),       # Group 16: Chalcogens
-        ('H', 'F', 'Cl', 'Br', 'I', 'At'),  # Group 17: Halogens
-        ('Cd', 'Pb')                        # Misc
-    )
-
-    # Combine the elements and atomic charges into a dictionary
-    values = itertools.chain.from_iterable([i] * len(j) for i, j in zip(charges, elements))
-    keys = itertools.chain(*elements)
-
-    return dict(zip(keys, values))
+    elements = [
+        (1, ['Li', 'Na', 'K', 'Rb', 'Cs']),         # Group 1: Alkali metals
+        (2, ['Be', 'Mg', 'Ca', 'Sr', 'Ba']),        # Group 2: Alkaline earth metals
+        (-3, ['N', 'P', 'As', 'Sb', 'Bi']),         # Group 15: pnictogens
+        (-2, ['O', 'S', 'Se', 'Te', 'Po']),         # Group 16: Chalcogens
+        (-1, ['H', 'F', 'Cl', 'Br', 'I', 'At']),    # Group 17: Halogens
+        (2, ['Cd', 'Pb']),                          # Misc 2+
+        (3, ['In']),                                # Misc 3+
+    ]
+    return {at: q for q, at_list in elements for at in at_list}
 
 
 #: A dictionary with default atomic charges
