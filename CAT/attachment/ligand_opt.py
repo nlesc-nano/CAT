@@ -607,7 +607,12 @@ def modified_minimum_scan_rdkit(ligand: Molecule, bond_tuple: Tuple[int, int]) -
         if len(bond2_list):
             bond2 = bond2_list[0]
             atom2 = bond2.atom1 if bond1.atom1 is not atom1 else bond1.atom2
-            mol.rotate_bond(bond2, atom2, a2, unit='degree')
+            try:
+                mol.rotate_bond(bond2, atom2, a2, unit='degree')
+            except MoleculeError:
+                # This can happen if the beta-bond is in a ring,
+                # and can thus not be freely rotated
+                pass
     rdmol_list = [molkit.to_rdmol(mol, properties=False) for mol in mol_list]
 
     # Optimize the (constrained) geometry for all dihedral angles in angle_list
