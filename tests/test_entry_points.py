@@ -73,9 +73,17 @@ class TestMain:
         xfail_windows = xfail_linux | {
             "O=C[COc1ccc[Cl]cc1Cl]Nc1cc[C[=O][O-]]ccc1F@O21.xyz",
         }
+        xfail_unix = {
+            "O=C[[O-]]c1ccc[S[=O][=O]CCCC[F][F]F]o1@O15.xyz",
+            "O=C[COc1ccc[Cl]cc1Cl]Nc1cc[C[=O][O-]]ccc1F@O21.xyz",
+        }
         if filename in xfail_linux and sys.platform.startswith("linux"):
             pytest.xfail("platform dependant geometry")
         elif filename in xfail_windows and sys.platform == "win32":
+            pytest.xfail("platform dependant geometry")
+        elif filename in xfail_unix and (
+            sys.platform.startswith("linux") or sys.platform == "darwin"
+        ):
             pytest.xfail("platform dependant geometry")
 
         # Coordinates
