@@ -44,8 +44,16 @@ def str_to_rdmol(
     **kwargs: Any,
 ) -> Chem.Mol:
     """Convert a SMILES string into an rdkit Mol; supports explicit hydrogens."""
-    # RDKit tends to remove explicit hydrogens if SANITIZE_ADJUSTHS is enabled
+    # NOTE: `Chem.MolFromSmiles` tends to remove explicit hydrogens when the
+    # `SANITIZE_ADJUSTHS` is enabled, but disabling it will lead to a loss of
+    # cis-/trans-information (rdkit/rdkit#5118).
+    #
+    # As a compromise: disable the `SANITIZE_ADJUSTHS` flag only when strictly
+    # necessary (and hope for the best...)
     try:
+        if "H" not in string and "sanitize" in kwargs:
+            kwargs["sanitize"] = True
+
         mol = parser(string, **kwargs)
         assert mol is not None
         if not kwargs.get("sanitize", True):
