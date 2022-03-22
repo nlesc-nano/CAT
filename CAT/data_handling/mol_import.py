@@ -180,20 +180,12 @@ def read_mol_smiles(mol_dict: Settings) -> Optional[Molecule]:
         print_exception('read_mol_smiles', mol_dict.name, ex)
 
 
-def _from_smiles(smiles: str) -> Molecule:
-    if "H" in smiles:
-        # NOTE: `Chem.MolFromSmiles` tends to remove explicit hydrogens when the
-        # `SANITIZE_ADJUSTHS` is enabled, but disabling it will lead to a loss of
-        # cis-/trans-information (rdkit/rdkit#5118).
-        #
-        # As a compromise: disable the `SANITIZE_ADJUSTHS` flag only when strictly
-        # necessary (and hope for the best...)
-        sanitize = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_ADJUSTHS
-        _rdmol = Chem.MolFromSmiles(smiles, sanitize=False)
-        Chem.rdmolops.SanitizeMol(_rdmol, sanitizeOps=sanitize)
-    else:
-        _rdmol = Chem.MolFromSmiles(smiles, sanitize=True)
+SMILES_PARAMS = Chem.SmilesParserParams()
+SMILES_PARAMS.removeHs = False
 
+
+def _from_smiles(smiles: str) -> Molecule:
+    _rdmol = Chem.MolFromSmiles(smiles, params=SMILES_PARAMS)
     rdmol = Chem.AddHs(_rdmol)
     rdmol.SetProp('smiles', smiles)
     return molkit.get_conformations(rdmol, 1, None, None, rms=0.1)
