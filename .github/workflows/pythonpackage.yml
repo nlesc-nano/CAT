@@ -68,7 +68,7 @@ jobs:
                             pip install git+https://github.com/nlesc-nano/nano-CAT@master --upgrade
                             pip install git+https://github.com/nlesc-nano/auto-FOX@master --upgrade
                             pip install git+https://github.com/SCM-NV/qmflows@master --upgrade
-                            pip uninstall plams; pip install git+https://github.com/SCM-NV/PLAMS@master --upgrade
+                            pip uninstall plams -y; pip install git+https://github.com/SCM-NV/PLAMS@master --upgrade
                             ;;
                         *)
                             pip install -e .[test]
