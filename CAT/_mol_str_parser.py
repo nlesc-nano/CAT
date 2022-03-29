@@ -36,6 +36,9 @@ else:
 
 __all__ = ["FormatEnum", "str_to_rdmol"]
 
+SMILES_PARAMS = Chem.SmilesParserParams()
+SMILES_PARAMS.removeHs = False
+
 
 def str_to_rdmol(
     string: str,
@@ -44,7 +47,6 @@ def str_to_rdmol(
     **kwargs: Any,
 ) -> Chem.Mol:
     """Convert a SMILES string into an rdkit Mol; supports explicit hydrogens."""
-    # RDKit tends to remove explicit hydrogens if SANITIZE_ADJUSTHS is enabled
     try:
         mol = parser(string, **kwargs)
         assert mol is not None
@@ -70,7 +72,7 @@ class FormatEnum(enum.Enum):
     PDB_FILE = PartialPrepend(str_to_rdmol, Chem.MolFromPDBFile, "PDB file", sanitize=False, removeHs=False)
     SEQUENCE = PartialPrepend(str_to_rdmol, Chem.MolFromSequence, "sequence string", sanitize=False)
     SMARTS = PartialPrepend(str_to_rdmol, Chem.MolFromSmarts, "SMARTS string")
-    SMILES = PartialPrepend(str_to_rdmol, Chem.MolFromSmiles, "SMILES string", sanitize=False)
+    SMILES = PartialPrepend(str_to_rdmol, Chem.MolFromSmiles, "SMILES string", params=SMILES_PARAMS)
     TPL = PartialPrepend(str_to_rdmol, Chem.MolFromTPLBlock, "TPL block", sanitize=False)
     TPL_FILE = PartialPrepend(str_to_rdmol, Chem.MolFromTPLFile, "TPL file", sanitize=False)
     if RDKIT_VERSION >= Version("2020.03.3"):

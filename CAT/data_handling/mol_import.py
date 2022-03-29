@@ -180,11 +180,12 @@ def read_mol_smiles(mol_dict: Settings) -> Optional[Molecule]:
         print_exception('read_mol_smiles', mol_dict.name, ex)
 
 
-def _from_smiles(smiles: str) -> Molecule:
-    sanitize = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_ADJUSTHS
-    _rdmol = Chem.MolFromSmiles(smiles, sanitize=False)
-    Chem.rdmolops.SanitizeMol(_rdmol, sanitizeOps=sanitize)
+SMILES_PARAMS = Chem.SmilesParserParams()
+SMILES_PARAMS.removeHs = False
 
+
+def _from_smiles(smiles: str) -> Molecule:
+    _rdmol = Chem.MolFromSmiles(smiles, params=SMILES_PARAMS)
     rdmol = Chem.AddHs(_rdmol)
     rdmol.SetProp('smiles', smiles)
     return molkit.get_conformations(rdmol, 1, None, None, rms=0.1)

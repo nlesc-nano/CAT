@@ -20,6 +20,9 @@ input_ligands:
     - CCCCCCCCC(CCCCCC)C(=O)O
     - CCCCCCCCCC[N+](C)(C)CCCCCCCCCC
     - CCCCCCC(CCCCC)CCCC(=O)O
+    - C1=CC=C(C=C1)C(=O)O
+    - 'CCCCCCCC/C=C\CCCCCCCC(=O)O'
+    - 'CCCCCCCC/C=C/CCCCCCCC(=O)O'
 
 optional:
     database:
