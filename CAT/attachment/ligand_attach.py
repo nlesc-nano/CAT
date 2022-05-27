@@ -7,7 +7,6 @@ Index
     init_qd_construction
     construct_mol_series
     _read_database
-    _get_indices
     _get_df
     ligand_to_qd
     _get_rotmat1
@@ -23,7 +22,6 @@ API
 .. autofunction:: init_qd_construction
 .. autofunction:: construct_mol_series
 .. autofunction:: _read_database
-.. autofunction:: _get_indices
 .. autofunction:: _get_df
 .. autofunction:: ligand_to_qd
 .. autofunction:: _get_rotmat1
@@ -36,7 +34,7 @@ API
 
 """
 
-from typing import List, Tuple, Any, Optional, NoReturn, Union, Iterable
+from typing import List, Any, Optional, NoReturn, Union, Iterable
 from collections import abc
 
 import numpy as np
@@ -49,7 +47,7 @@ from assertionlib.ndrepr import aNDRepr
 
 from .perp_surface import get_surface_vec
 from ..mol_utils import get_index, round_coords  # noqa: F401
-from ..utils import AnchorTup
+from ..utils import AnchorTup, KindEnum
 from ..workflows import WorkFlow, HDF5_INDEX, MOL, OPT
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling import mol_to_file, WARN_MAP
@@ -117,53 +115,6 @@ def construct_mol_series(qd_df: SettingsDataFrame, core_df: pd.DataFrame,
 
     mol_list = [_get_mol(i, j, k, m) for i, j, k, m in qd_df.index]
     return pd.Series(mol_list, index=qd_df.index, name=MOL, dtype=object)
-
-
-def _get_indices(mol: Molecule,
-                 index: Tuple[str, str, str, str]) -> List[int]:
-    """Return a list with the indices of all atoms in the core plus ligand anchor atoms.
-
-    Ligand anchor atoms are furthermore marked with the properties.anchor attribute.
-
-    Parameters
-    ----------
-    mol : |plams.Molecule|_
-        A PLAMS molecule.
-
-    index : |tuple|_ [|str|_]
-        A tuple of 4 strings.
-
-    Returns
-    -------
-    |list|_ [|int|_]
-        A list of atomic indices.
-
-    """
-    # Collect the indices of the atoms in the core
-    ret = []
-    for i, at in enumerate(mol, 1):
-        if at.properties.pdb_info.ResidueName == 'COR':
-            ret.append(i)
-        else:
-            break
-
-    # Extract the index (within the ligand) of the ligand anchor atom
-    index = index[3]
-    for j, _ in enumerate(index):
-        try:
-            k = index[j:] - 1
-            break
-        except ValueError:
-            pass
-    k += i - 1
-
-    # Append and return
-    ref_name = mol[k+1].properties.pdb_info.Name
-    for i, at in enumerate(mol.atoms[k:], k+1):
-        if at.properties.pdb_info.Name == ref_name:
-            at.properties.anchor = True
-            ret.append(i)
-    return ret
 
 
 def _get_df(core_index: pd.MultiIndex,
@@ -247,11 +198,17 @@ def ligand_to_qd(
         lig_name = ligand.properties.name
         return f'{core_name}__{anchor}_{lig_name}'
 
+    anchor_tup = ligand.properties.anchor_tup
     idx_subset_ = idx_subset if idx_subset is not None else ...
 
     # Define vectors and indices used for rotation and translation the ligands
     vec1 = np.array([-1, 0, 0], dtype=float)  # All ligands are already alligned along the X-axis
-    idx = ligand.get_index(ligand.properties.dummies) - 1
+    if anchor_tup.kind == KindEnum.MEAN:
+        # Add a dummy anchor atom at the origin, i.e. the mean position of all ligand anchors
+        ligand.add_atom(Atom(coords=(0, 0, 0)))
+        idx = len(ligand) - 1
+    else:
+        idx = ligand.get_index(ligand.properties.dummies) - 1
     ligand.properties.dummies.properties.anchor = True
 
     # Attach the rotated ligands to the core, returning the resulting strucutre (PLAMS Molecule).
@@ -267,7 +224,6 @@ def ligand_to_qd(
         vec2 *= -1
 
     # Rotate the ligands
-    anchor_tup = ligand.properties.anchor_tup
     if anchor_tup.dihedral is None:
         lig_array = rot_mol(
             ligand, vec1, vec2, atoms_other=core.properties.dummies, core=core, idx=idx
@@ -277,6 +233,11 @@ def ligand_to_qd(
             ligand, vec1, vec2, atoms_other=core.properties.dummies, core=core,
             idx=idx, anchor_tup=anchor_tup,
         )
+
+    # Remove the ligands dummy anchor atom at the origin
+    if anchor_tup.kind == KindEnum.MEAN:
+        ligand.delete_atom(ligand[-1])
+        lig_array = lig_array[:, :-1]
 
     # Combine the ligands and core
     qd = core.copy()

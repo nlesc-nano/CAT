@@ -139,7 +139,7 @@ def test_set_mol_prop() -> None:
     mol_dict = Settings({'is_core': False, 'path': PATH, 'name': 'CO'})
 
     set_mol_prop(mol, mol_dict)
-    ref = {'name': 'CO', 'dummies': {}, 'path': PATH, 'job_path': [], 'smiles': 'CO'}
+    ref = {'name': 'CO', 'dummies': None, 'path': PATH, 'job_path': [], 'smiles': 'CO'}
     assertion.eq(mol.properties, ref)
 
     ref1 = Settings({
