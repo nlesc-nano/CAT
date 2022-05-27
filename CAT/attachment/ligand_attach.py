@@ -47,7 +47,7 @@ from assertionlib.ndrepr import aNDRepr
 
 from .perp_surface import get_surface_vec
 from ..mol_utils import get_index, round_coords  # noqa: F401
-from ..utils import AnchorTup
+from ..utils import AnchorTup, KindEnum
 from ..workflows import WorkFlow, HDF5_INDEX, MOL, OPT
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling import mol_to_file, WARN_MAP
@@ -198,11 +198,17 @@ def ligand_to_qd(
         lig_name = ligand.properties.name
         return f'{core_name}__{anchor}_{lig_name}'
 
+    anchor_tup = ligand.properties.anchor_tup
     idx_subset_ = idx_subset if idx_subset is not None else ...
 
     # Define vectors and indices used for rotation and translation the ligands
     vec1 = np.array([-1, 0, 0], dtype=float)  # All ligands are already alligned along the X-axis
-    idx = ligand.get_index(ligand.properties.dummies) - 1
+    if anchor_tup.kind == KindEnum.MEAN:
+        # Add a dummy anchor atom at the origin, i.e. the mean position of all ligand anchors
+        ligand.add_atom(Atom(coords=(0, 0, 0)))
+        idx = len(ligand) - 1
+    else:
+        idx = ligand.get_index(ligand.properties.dummies) - 1
     ligand.properties.dummies.properties.anchor = True
 
     # Attach the rotated ligands to the core, returning the resulting strucutre (PLAMS Molecule).
@@ -218,7 +224,6 @@ def ligand_to_qd(
         vec2 *= -1
 
     # Rotate the ligands
-    anchor_tup = ligand.properties.anchor_tup
     if anchor_tup.dihedral is None:
         lig_array = rot_mol(
             ligand, vec1, vec2, atoms_other=core.properties.dummies, core=core, idx=idx
@@ -228,6 +233,11 @@ def ligand_to_qd(
             ligand, vec1, vec2, atoms_other=core.properties.dummies, core=core,
             idx=idx, anchor_tup=anchor_tup,
         )
+
+    # Remove the ligands dummy anchor atom at the origin
+    if anchor_tup.kind == KindEnum.MEAN:
+        ligand.delete_atom(ligand[-1])
+        lig_array = lig_array[:, :-1]
 
     # Combine the ligands and core
     qd = core.copy()
