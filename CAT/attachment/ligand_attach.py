@@ -7,7 +7,6 @@ Index
     init_qd_construction
     construct_mol_series
     _read_database
-    _get_indices
     _get_df
     ligand_to_qd
     _get_rotmat1
@@ -23,7 +22,6 @@ API
 .. autofunction:: init_qd_construction
 .. autofunction:: construct_mol_series
 .. autofunction:: _read_database
-.. autofunction:: _get_indices
 .. autofunction:: _get_df
 .. autofunction:: ligand_to_qd
 .. autofunction:: _get_rotmat1
@@ -36,7 +34,7 @@ API
 
 """
 
-from typing import List, Tuple, Any, Optional, NoReturn, Union, Iterable
+from typing import List, Any, Optional, NoReturn, Union, Iterable
 from collections import abc
 
 import numpy as np
@@ -117,53 +115,6 @@ def construct_mol_series(qd_df: SettingsDataFrame, core_df: pd.DataFrame,
 
     mol_list = [_get_mol(i, j, k, m) for i, j, k, m in qd_df.index]
     return pd.Series(mol_list, index=qd_df.index, name=MOL, dtype=object)
-
-
-def _get_indices(mol: Molecule,
-                 index: Tuple[str, str, str, str]) -> List[int]:
-    """Return a list with the indices of all atoms in the core plus ligand anchor atoms.
-
-    Ligand anchor atoms are furthermore marked with the properties.anchor attribute.
-
-    Parameters
-    ----------
-    mol : |plams.Molecule|_
-        A PLAMS molecule.
-
-    index : |tuple|_ [|str|_]
-        A tuple of 4 strings.
-
-    Returns
-    -------
-    |list|_ [|int|_]
-        A list of atomic indices.
-
-    """
-    # Collect the indices of the atoms in the core
-    ret = []
-    for i, at in enumerate(mol, 1):
-        if at.properties.pdb_info.ResidueName == 'COR':
-            ret.append(i)
-        else:
-            break
-
-    # Extract the index (within the ligand) of the ligand anchor atom
-    index = index[3]
-    for j, _ in enumerate(index):
-        try:
-            k = index[j:] - 1
-            break
-        except ValueError:
-            pass
-    k += i - 1
-
-    # Append and return
-    ref_name = mol[k+1].properties.pdb_info.Name
-    for i, at in enumerate(mol.atoms[k:], k+1):
-        if at.properties.pdb_info.Name == ref_name:
-            at.properties.anchor = True
-            ret.append(i)
-    return ret
 
 
 def _get_df(core_index: pd.MultiIndex,
