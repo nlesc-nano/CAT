@@ -36,6 +36,10 @@ def _iterfiles(file1, file2):
     Version(rdkit.__version__) < Version("2021.03.4"),
     reason="requires rdkit >= 2021.03.4",
 )
+@pytest.mark.xfail(
+    True,
+    reason="Coordinates need updating; the optimum has been altered by an upstream dependency",
+)
 def test_multi_ligand() -> None:
     """Test :mod:`CAT.multi_ligand`."""
     base.prep(SETTINGS.copy())
