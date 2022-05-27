@@ -66,7 +66,7 @@ def init_ligand_anchoring(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     for lig in ligand_df[MOL]:
         # Functional group search
         dummies = lig.properties.dummies
-        if not dummies:
+        if dummies is None:
             mol_list += find_substructure(lig, functional_groups)
             continue
         else:

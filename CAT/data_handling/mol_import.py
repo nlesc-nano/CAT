@@ -354,7 +354,7 @@ def set_mol_prop(mol: Molecule, mol_dict: Settings) -> None:
         residue_name = 'LIG'
         mol.properties.name = mol_dict.name
 
-    mol.properties.dummies = mol_dict.indices
+    mol.properties.dummies = mol_dict.get("indices")
     mol.properties.path = mol_dict.path
     mol.properties.job_path = []
 

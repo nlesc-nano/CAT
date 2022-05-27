@@ -45,7 +45,7 @@ def set_core_anchors(
 
     # Get the indices of all anchor atom ligand placeholders in the core
     anchors = mol.properties.dummies
-    if not anchors:
+    if anchors is None:
         anchor_idx, remove_idx = find_core_substructure(mol, anchor_tup)
     else:
         anchor_idx = np.fromiter(anchors, count=len(anchors), dtype=np.int64)
