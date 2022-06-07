@@ -8,7 +8,14 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 0.11.0
 ******
-* Improved the ligand conformation optimization.
+* Add the `remove_anchor_hydrogens` option to the cone-angle workflow
+* Minor improvements to computing the ligand conformer optimization cost function
+* Improve the ligand conformation search
+* Fix the CAT logger failing to write to stdout
+* Set the default Indium (formal) charge to 3+
+* Fix the ligand conformation optimizer failing for certain cyclic systems
+* Only disable the rdkit `SANITIZE_ADJUSTHS` when strictly required
+* Fix the `anchor.kind = "mean"` keyword being broke
 
 
 0.10.6
