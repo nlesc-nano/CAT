@@ -53,7 +53,7 @@ setup(
         'console_scripts': ['init_cat=CAT.data_handling.entry_points:main']
     },
     include_package_data=True,
-    license='GNU Lesser General Public License v3 or later',
+    license='GNU Lesser General Public License v3',
     zip_safe=False,
     keywords=[
         'quantum-mechanics',
@@ -72,7 +72,7 @@ setup(
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+        'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
         'Natural Language :: English',
         'Operating System :: Unix',
         'Operating System :: MacOS',
