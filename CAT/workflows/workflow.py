@@ -413,12 +413,12 @@ class WorkFlow(AbstractDataClass):
             else:
                 try:
                     df.loc[slice2] = value
-                except ValueError as ex:
+                except ValueError:
                     logger.debug(f"df = {aNDRepr.repr(df)}")
                     logger.debug(f"index = {aNDRepr.repr(slice2[0])}")
                     logger.debug(f"columns = {aNDRepr.repr(slice2[1])}")
                     logger.debug(f"value = {aNDRepr.repr(value)}")
-                    raise ex
+                    raise
         logger.info(f"Finishing {self.description}\n")
 
     def from_db(self, df: pd.DataFrame, inplace: bool = True, get_mol: bool = False,
@@ -624,7 +624,7 @@ class WorkFlow(AbstractDataClass):
             np.dtype(bool): operator.invert,
             np.dtype(int): _lt_0,
             np.dtype(float): pd.isnull,
-            np.dtype(object): pd.isnull
+            np.dtype(object): lambda i: pd.isnull(i) | (i == ""),
         }
 
         ret = pd.DataFrame(index=df.index)

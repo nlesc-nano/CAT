@@ -59,6 +59,7 @@ try:
     from nanoCAT.cdft import init_cdft
     if Version(nanoCAT.__version__) >= Version("0.7.2"):
         from nanoCAT.cone_angle import init_cone_angle
+        from nanoCAT.bulk.mol_graph2 import init_branch_distance
 
     NANO_CAT: Optional[ImportError] = None
 except ImportError as ex:
@@ -258,6 +259,7 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     crs = ligand_df.settings.optional.ligand.crs
     cdft = ligand_df.settings.optional.ligand.cdft
     cone_angle = ligand_df.settings.optional.ligand.cone_angle
+    branch_distance = ligand_df.settings.optional.ligand.branch_distance
 
     # Identify functional groups within the ligand.
     ligand_df = init_ligand_anchoring(ligand_df)
@@ -277,6 +279,12 @@ def prep_ligand(ligand_df: SettingsDataFrame) -> SettingsDataFrame:
     else:
         for lig in ligand_df[MOL]:
             allign_axis(lig)
+
+    if branch_distance:
+        val_nano_cat("The ligand branch-distance workflow requires the nano-CAT package")
+        if Version(nanoCAT.__version__) < Version("0.7.2"):
+            raise ImportError("The `cone_angle` workflow require Nano-CAT 0.7.2")
+        init_branch_distance(ligand_df)
 
     # Perform a COSMO-RS calculation on the ligands
     if crs:

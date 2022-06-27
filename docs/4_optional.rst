@@ -36,6 +36,7 @@ Option                                    Description
 :attr:`optional.ligand.cosmo-rs`          Perform a property calculation with COSMO-RS on the ligand.
 :attr:`optional.ligand.cdft`              Perform a conceptual DFT calculation with ADF on the ligand.
 :attr:`optional.ligand.cone_angle`        Compute the smallest enclosing cone angle within a ligand.
+:attr:`optional.ligand.branch_distance`   Compute the size of branches and their distance w.r.t. to the anchor within a ligand.
 
 :attr:`optional.qd.dirname`               The name of the directory where all quantum dots will be stored.
 :attr:`optional.qd.construct_qd`          Whether or not the quantum dot should actually be constructed or not.
@@ -588,6 +589,7 @@ Ligand
                 cosmo-rs: False
                 cdft: False
                 cone_angle: False
+                branch_distance: False
 
 |
 
@@ -942,6 +944,14 @@ Ligand
         the nanocrystal surface.
 
         Accepts one or more distances.
+
+
+    .. attribute:: optional.ligand.branch_distance
+
+        :Parameter:     * **Type** - :class:`bool`
+                        * **Default value** – ``False``
+
+        Compute the size of branches and their distance w.r.t. to the anchor within a ligand.
 
 |
 

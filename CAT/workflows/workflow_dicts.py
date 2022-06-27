@@ -44,6 +44,8 @@ from .key_map import (
     CDFT_MU_MINUS,
     CDFT_MU_PLUS,
     CONE_ANGLE,
+    BRANCH_DISTANCE,
+    BRANCH_SIZE,
 )
 
 if TYPE_CHECKING:
@@ -113,6 +115,8 @@ def finalize_templates():
                                     CDFT_MU_MINUS, CDFT_MU_PLUS)},
         'cone_angle': {'import_columns': {CONE_ANGLE: np.nan},
                        'export_columns': (CONE_ANGLE,)},
+        'branch_distance': {'import_columns': {BRANCH_DISTANCE: "", BRANCH_SIZE: ""},
+                            'export_columns': (BRANCH_DISTANCE, BRANCH_SIZE)},
     }
 
     templates = _load_templates()

@@ -68,6 +68,7 @@ def test_validate_input() -> None:
     ref.ligand.split = True
     ref.ligand.cdft = False
     ref.ligand.cone_angle = False
+    ref.ligand.branch_distance = False
 
     ref.qd.bulkiness = False
     ref.qd.construct_qd = True

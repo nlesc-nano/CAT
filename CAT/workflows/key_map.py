@@ -55,6 +55,8 @@ KEY_MAP: Mapping[str, Tuple[str, str]] = MappingProxyType({
     'SETTINGS_CDFT': ('settings', 'cdft 1'),
     'V_BULK': ('V_bulk', ''),
     'CONE_ANGLE': ('cone_angle', 'dist=0.0'),
+    'BRANCH_DISTANCE': ('branch_distance', ''),
+    'BRANCH_SIZE': ('branch_size', ''),
 })
 
 globals().update(KEY_MAP)

@@ -192,3 +192,13 @@ cdft:
         keep_files: [optional, ligand, cdft, keep_files]
         job1: [optional, ligand, cdft, job1]
         s1: [optional, ligand, cdft, s1]
+
+branch_distance:
+    description: Ligand branch size & distance computation
+    mol_type: ligand
+    template:
+        db: [optional, database, db]
+        read: [optional, database, read]
+        write: [optional, database, write]
+        overwrite: [optional, database, overwrite]
+        thread_safe: [optional, database, thread_safe]
