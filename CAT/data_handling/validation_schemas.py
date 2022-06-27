@@ -517,6 +517,12 @@ ligand_schema: Schema = Schema({
             And(bool, Use(lambda n: {'job1': 'ADFJob'} if n else False)),
             error='optional.ligand.cdft expects a boolean or dictionary'
         ),
+
+    Optional_('branch_distance', default=False):
+        Or(
+            bool,
+            error='optional.ligand.branch_distance expects a boolean'
+        ),
 })
 
 
