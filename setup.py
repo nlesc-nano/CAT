@@ -21,7 +21,7 @@ setup(
                  'construction of chemical compounds.'),
     long_description=readme + "\n\n",
     long_description_content_type='text/x-rst',
-    author=['Bas van Beek', 'Jelena Belic'],
+    author='Bas van Beek & Jelena Belic',
     author_email='b.f.van.beek@vu.nl',
     url='https://github.com/nlesc-nano/CAT',
     packages=[
@@ -70,7 +70,7 @@ setup(
         'scientific-workflows'
     ],
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
         'Natural Language :: English',
@@ -99,7 +99,8 @@ setup(
         'contextlib2>=0.6.0; python_version=="3.6"',
         'typing-extensions>=3.7.4.3',
         'qmflows>=0.11.0',
-        'rdkit-pypi>=2018.03.1',
+        'rdkit>=2018.03.1; python_version>="3.7"',
+        'rdkit-pypi>=2018.03.1; python_version=="3.6"',
         'packaging>=1.16.8',
     ],
     setup_requires=[
