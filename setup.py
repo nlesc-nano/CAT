@@ -21,7 +21,7 @@ setup(
                  'construction of chemical compounds.'),
     long_description=readme + "\n\n",
     long_description_content_type='text/x-rst',
-    author=['Bas van Beek', 'Jelena Belic'],
+    author='Bas van Beek & Jelena Belic',
     author_email='b.f.van.beek@vu.nl',
     url='https://github.com/nlesc-nano/CAT',
     packages=[
