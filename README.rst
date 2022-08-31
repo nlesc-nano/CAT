@@ -54,6 +54,10 @@ python script, bypassing the command-line interface
 An extensive description of the various available settings is available in
 the documentation_.
 
+References
+==========
+* Belić, J.; van Beek, B.; Menzel, J. P.; Buda, F.; Visscher, L. `Systematic Computational Design and Optimization of Light Absorbing Dyes <https://doi.org/10.1021/acs.jpca.0c04506>`__. *J. Phys. Chem. A* **2020**, *124* (31), 6380–6388.
+* van Beek, B.; Zito, J.; Visscher, L.; Infante, I. CAT: A Compound Attachment Tool for the construction of composite chemical compounds. *J. Chem. Inf. Model.* (submitted).
 
 .. _yaml: https://yaml.org/
 .. _documentation: https://cat.readthedocs.io/en/latest/
