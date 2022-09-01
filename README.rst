@@ -20,9 +20,9 @@
 .. image:: https://img.shields.io/badge/python-3.10-blue.svg
    :target: https://docs.python.org/3.10/
 
-##############################
-Compound Attachment Tool 1.0.1
-##############################
+########################
+Compound Attachment Tool
+########################
 
 **CAT** is a collection of tools designed for the construction of various chemical compounds.
 Further information is provided in the documentation_.

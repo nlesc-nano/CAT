@@ -6,9 +6,13 @@ from .__version__ import __version__ as __version__
 __author__ = "Bas van Beek"
 __email__ = 'b.f.van.beek@vu.nl'
 
+import sys
 from nanoutils import VersionInfo
-version_info = VersionInfo.from_str(__version__)
-del VersionInfo
+if sys.version_info >= (3, 7):
+    version_info = VersionInfo.from_str(__version__)
+else:
+    version_info = VersionInfo._make(int(i) for i in __version__.split(".") if i.isnumeric())
+del VersionInfo, sys
 
 from .logger import logger
 from .jobs import (
