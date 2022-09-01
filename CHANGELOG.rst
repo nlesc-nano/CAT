@@ -5,6 +5,11 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+1.0.1
+*****
+* *placeholder*.
+
+
 1.0.0
 *****
 * Bump CAT to 1.0.0 in preparation for a new scientific paper.
