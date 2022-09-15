@@ -14,14 +14,14 @@ API
 
 """
 
-from typing import Tuple, Any, Mapping, Iterable, TYPE_CHECKING
+from typing import Tuple, Any, Mapping, TYPE_CHECKING
 
 import numpy as np
-from scm.plams import Molecule, Atom, MoleculeError, to_rdmol
+from scm.plams import Molecule, MoleculeError, to_rdmol
 
 from .perp_surface import get_surface_vec
 from .distribution import distribute_idx
-from ..utils import AllignmentEnum, AllignmentTup, AnchorTup
+from ..utils import AllignmentEnum, AllignmentTup, AnchorTup, KindEnum
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -47,13 +47,17 @@ def set_core_anchors(
     # Get the indices of all anchor atom ligand placeholders in the core
     anchors = mol.properties.dummies
     if anchors is None:
-        anchor_idx, remove_idx = find_core_substructure(mol, anchor_tup)
+        anchor_idx_group, remove_idx = find_core_substructure(mol, anchor_tup)
+        anchor_idx = anchor_idx_group[:, anchor_tup.group_idx[0]].copy()
     else:
         anchor_idx = np.fromiter(anchors, count=len(anchors), dtype=np.int64)
         anchor_idx -= 1
         remove_idx = anchor_idx.copy()
-    if subset_kwargs:
+        anchor_idx_group = anchor_idx.reshape(-1, 1).copy()
+    if subset_kwargs is not None:
+        anchor_idx_old = anchor_idx
         anchor_idx = distribute_idx(mol, anchor_idx, **subset_kwargs)
+        anchor_idx_group = anchor_idx_group[np.isin(anchor_idx_old, anchor_idx)]
     if not len(anchor_idx):
         raise MoleculeError(f"No valid anchoring groups found in the core {formula!r}")
 
@@ -75,7 +79,9 @@ def set_core_anchors(
         )
 
     # Define all core vectors
-    mol.properties.core_vec = _get_core_vectors(mol, mol.properties.dummies, allignment_tup)
+    mol.properties.core_vec = _get_core_vectors(
+        mol, anchor_idx_group, remove_idx, allignment_tup, anchor_tup
+    )
 
     # Delete all core anchor atoms
     if remove_idx is not None:
@@ -88,21 +94,40 @@ def set_core_anchors(
 
 def _get_core_vectors(
     core: Molecule,
-    dummies: Iterable[Atom],
+    anchor_group_idx: "NDArray[i8]",
+    remove_idx: "None | NDArray[i8]",
     allignment: AllignmentTup,
+    anchor_tup: AnchorTup,
 ) -> "NDArray[f8]":
     """Return a 2D array with all core (unit) vectors."""
-    anchor = Molecule.as_array(None, atom_subset=dummies)
+    core_ar = np.array(core)
 
+    # Put the (effective) coordinates of the anchors into an (n, 3) array
+    if anchor_tup.kind == KindEnum.FIRST:
+        anchor_atoms = core_ar[anchor_group_idx[:, anchor_tup.group_idx[0]]]
+    elif anchor_tup.kind == KindEnum.MEAN:
+        anchor_idx = anchor_group_idx[:, np.fromiter(anchor_tup.group_idx, np.int64)]
+        anchor_atoms = core_ar[anchor_idx].mean(axis=1)
+    else:
+        raise ValueError(f"Unknown anchor kind: {anchor_tup.kind!r}")
+
+    # Define vectors based on the various allignment options
     if allignment.kind == AllignmentEnum.SPHERE:
-        vec = np.array(core.get_center_of_mass()) - anchor
+        vec = np.array(core.get_center_of_mass()) - anchor_atoms
         vec /= np.linalg.norm(vec, axis=1)[..., None]
     elif allignment.kind == AllignmentEnum.SURFACE:
-        vec = -get_surface_vec(np.array(core), anchor)
+        if remove_idx is None:
+            vec = -get_surface_vec(core_ar, anchor_atoms)
+        else:
+            no_anchor_mask = np.ones(len(core_ar), dtype=np.bool_)
+            no_anchor_mask[remove_idx] = False
+            vec = -get_surface_vec(core_ar[no_anchor_mask], anchor_atoms)
     elif allignment.kind == AllignmentEnum.ANCHOR:
-        raise NotImplementedError
+        anchor_mean = core_ar[anchor_group_idx].mean(axis=1)
+        vec = anchor_atoms - anchor_mean
+        vec /= np.linalg.norm(vec, axis=1)[..., None]
     else:
-        raise ValueError(f"Unknown allignment kind: {allignment.kind}")
+        raise ValueError(f"Unknown allignment kind: {allignment.kind!r}")
 
     if allignment.invert:
         vec *= -1
@@ -136,9 +161,9 @@ def find_core_substructure(
 
         if remove is not None:
             remove_list += [idx_tup[i] for i in remove]
-        anchor_list.append(anchor_idx_tup[0])
+        anchor_list.append(idx_tup)
 
-    anchor_array = np.fromiter(anchor_list, dtype=np.int64, count=len(anchor_list))
+    anchor_array = np.array(anchor_list, dtype=np.int64)
     if remove is not None:
         remove_array = np.fromiter(remove_list, dtype=np.int64, count=len(remove_list))
         return anchor_array, remove_array
