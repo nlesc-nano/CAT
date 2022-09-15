@@ -113,6 +113,7 @@ setup(
             'pytest-cov',
             'pytest-mock',
             'h5py>=2.7.0',
+            'ipython>=5.0.0',
             'sphinx>=2.4; python_version>="3.7"',
             'sphinx_rtd_theme; python_version>="3.7"',
             'data-CAT>=0.7.0; python_version>="3.7"',
