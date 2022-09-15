@@ -582,16 +582,36 @@ class MultiAnchorEnum(enum.Enum):
 class AnchorTup(NamedTuple):
     """A named tuple with anchoring operation instructions."""
 
+    #: The rdkit molecule representing the functional group.
     mol: "None | Mol"
+
+    #: The string representation of the function group (usually SMILES).
     group: "None | str" = None
+
+    #: The indices of the anchoring atom(s) in :attr:`AnchorTup.group`.
     group_idx: Tuple[int, ...] = (0,)
+
+    #: The indices of the anchor inside a specific core or ligand.
     anchor_idx: Tuple[int, ...] = ()
-    anchor_group_idx: Tuple[int, ...] = ()
+
+    #: The indices of the to-be removed atoms in :attr:`AnchorTup.group`.
     remove: "None | Tuple[int, ...]" = None
+
+    #: How atoms are to-be attached when multiple anchor atoms are
+    #: specified in :attr:`AnchorTup.group_idx`.
     kind: KindEnum = KindEnum.FIRST
+
+    #: Manually offset the angle of the ligand vector by a given number in radian.
     angle_offset: "None | float" = None
+
+    #: Manually specify the ligands vector dihedral angle in radian,
+    #: rather than optimizing it w.r.t. the inter-ligand distance.
     dihedral: "None | float" = None
+
+    #: The string format of :attr:`AnchorTup.group`.
     group_format: FormatEnum = FormatEnum.SMILES
+
+    #: The to-be undertaken action when multiple functional groups are encountered.
     multi_anchor_filter: MultiAnchorEnum = MultiAnchorEnum.ALL
 
     def __repr__(self) -> str:
