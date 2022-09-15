@@ -101,7 +101,7 @@ def _multi_lig_anchor(qd_series, ligands, path, anchor, allignment) -> np.ndarra
             qd.properties.dummies = np.array(coords, ndmin=2, dtype=float)
             qd = ligand_to_qd(qd, ligand, path=path,
                               allignment=allignment,
-                              idx_subset=qd.properties.indices)
+                              idx_subset=qd.properties.indices)  # FIXME
             ret[j, i] = qd
             for at in reversed(atoms):
                 qd.delete_atom(qd[at.id])

@@ -14,17 +14,18 @@ API
 
 """
 
-from typing import Tuple, Any, Mapping, TYPE_CHECKING
+from typing import Tuple, Any, Mapping, Iterable, TYPE_CHECKING
 
 import numpy as np
-from scm.plams import Molecule, MoleculeError, to_rdmol
+from scm.plams import Molecule, Atom, MoleculeError, to_rdmol
 
+from .perp_surface import get_surface_vec
 from .distribution import distribute_idx
 from ..utils import AllignmentEnum, AllignmentTup, AnchorTup
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
-    from numpy import int64 as i8
+    from numpy import int64 as i8, float64 as f8
 
 __all__ = ["set_core_anchors", "find_core_substructure"]
 
@@ -63,11 +64,18 @@ def set_core_anchors(
 
     # Returns an error if no anchor atoms were found
     if (len(mol) - len(anchor_idx)) < 4 and allignment_tup.kind == AllignmentEnum.SURFACE:
-        raise NotImplementedError(
+        raise ValueError(
             '`optional.core.allignment = "surface"` is not supported for cores with less '
             f'than 4 (non-anchor) atoms ({mol.get_formula()}); consider using '
             '`optional.core.allignment = "sphere"`'
         )
+    elif len(anchor_tup.mol.GetAtoms()) < 2 and allignment_tup.kind == AllignmentEnum.ANCHOR:
+        raise ValueError(
+            '`optional.core.allignment = "anchor"` is not supported for mono-atomic core anchors'
+        )
+
+    # Define all core vectors
+    mol.properties.core_vec = _get_core_vectors(mol, mol.properties.dummies, allignment_tup)
 
     # Delete all core anchor atoms
     if remove_idx is not None:
@@ -76,6 +84,29 @@ def set_core_anchors(
         for i in reversed(remove_idx):
             mol.delete_atom(mol[i])
     return formula, ' '.join(anchor_idx.astype(str))
+
+
+def _get_core_vectors(
+    core: Molecule,
+    dummies: Iterable[Atom],
+    allignment: AllignmentTup,
+) -> "NDArray[f8]":
+    """Return a 2D array with all core (unit) vectors."""
+    anchor = Molecule.as_array(None, atom_subset=dummies)
+
+    if allignment.kind == AllignmentEnum.SPHERE:
+        vec = np.array(core.get_center_of_mass()) - anchor
+        vec /= np.linalg.norm(vec, axis=1)[..., None]
+    elif allignment.kind == AllignmentEnum.SURFACE:
+        vec = -get_surface_vec(np.array(core), anchor)
+    elif allignment.kind == AllignmentEnum.ANCHOR:
+        raise NotImplementedError
+    else:
+        raise ValueError(f"Unknown allignment kind: {allignment.kind}")
+
+    if allignment.invert:
+        vec *= -1
+    return vec
 
 
 def find_core_substructure(

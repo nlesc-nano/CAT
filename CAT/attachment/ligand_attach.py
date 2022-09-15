@@ -45,7 +45,6 @@ from scipy.spatial.distance import cdist
 from scm.plams import Molecule, Atom, Settings, MoleculeError
 from assertionlib.ndrepr import aNDRepr
 
-from .perp_surface import get_surface_vec
 from ..mol_utils import get_index, round_coords  # noqa: F401
 from ..utils import AnchorTup, KindEnum
 from ..workflows import WorkFlow, HDF5_INDEX, MOL, OPT
@@ -212,16 +211,7 @@ def ligand_to_qd(
     ligand.properties.dummies.properties.anchor = True
 
     # Attach the rotated ligands to the core, returning the resulting strucutre (PLAMS Molecule).
-    anchor = sanitize_dim_2(core.properties.dummies)
-    if allignment.kind == AllignmentEnum.SPHERE:
-        vec2 = np.array(core.get_center_of_mass()) - anchor
-        vec2 /= np.linalg.norm(vec2, axis=1)[..., None]
-    elif allignment.kind == AllignmentEnum.SURFACE:
-        vec2 = -get_surface_vec(np.array(core)[idx_subset_], anchor)
-    else:
-        raise ValueError(f"Unknown allignment kind: {allignment.kind}")
-    if allignment.invert:
-        vec2 *= -1
+    vec2 = core.properties.core_vec
 
     # Rotate the ligands
     if anchor_tup.dihedral is None:

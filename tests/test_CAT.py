@@ -37,7 +37,7 @@ def test_cat_fail() -> None:
     arg.optional.qd.optimize = False
     del arg.input_cores[0]["Cd68Se55.xyz"]
     arg.input_cores[0]["CdCl.xyz"] = {"indices": [2]}
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(ValueError):
         prep(arg)
 
 
