@@ -569,6 +569,7 @@ class AllignmentEnum(enum.Enum):
 
     SPHERE = 0
     SURFACE = 1
+    ANCHOR = 2
 
 
 class MultiAnchorEnum(enum.Enum):

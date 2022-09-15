@@ -291,10 +291,13 @@ mol_schema: Schema = Schema({
 allignment_mapping = {
     'sphere': AllignmentTup(AllignmentEnum.SPHERE, False),
     'surface': AllignmentTup(AllignmentEnum.SURFACE, False),
+    'anchor': AllignmentTup(AllignmentEnum.ANCHOR, False),
     'sphere_invert': AllignmentTup(AllignmentEnum.SPHERE, True),
     'sphere invert': AllignmentTup(AllignmentEnum.SPHERE, True),
     'surface_invert': AllignmentTup(AllignmentEnum.SURFACE, True),
     'surface invert': AllignmentTup(AllignmentEnum.SURFACE, True),
+    'anchor_invert': AllignmentTup(AllignmentEnum.ANCHOR, True),
+    'anchor invert': AllignmentTup(AllignmentEnum.ANCHOR, True),
 }
 
 #: Schema for validating the ``['optional']['core']`` block.
