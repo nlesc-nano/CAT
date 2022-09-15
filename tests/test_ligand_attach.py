@@ -190,7 +190,19 @@ class TestAllignment:
 
 class TestCoreAnchor:
     PARAMS = {
-        "HCl": {"group": "[H]Cl", "group_idx": 0, "remove": 0}
+        "HCl": ("Cd68Se55_HCl.pdb", {"group": "[H]Cl", "group_idx": 0, "remove": 0}),
+        "formate": ("Cd68Cl26Se55__26_O=C[O-]@O2O3.pdb", {
+            "group": "[H]C([O-])=O",
+            "group_idx": [2, 3],
+            "remove": [0, 1, 2, 3],
+            "kind": "mean",
+        }),
+        "ethoxide": ("Cd68Cl26Se55__26_CC[O-]@O3.pdb", {
+            "group": "[O-]C([H])([H])C([H])([H])[H]",
+            "group_idx": 0,
+            "remove": [0, 1, 2, 3, 4, 5, 6, 7],
+            "kind": "first",
+        }),
     }
 
     @pytest.fixture(scope="class", name="output", params=PARAMS.items(), ids=PARAMS)
@@ -198,14 +210,16 @@ class TestCoreAnchor:
         self, request: "_pytest.fixtures.SubRequest"
     ) -> Generator[AllignmentTup, None, None]:
         # Setup
-        name, kwargs = request.param  # type: str, dict[str, Any]
+        name, (core, kwargs) = request.param  # type: str, tuple[str, dict[str, Any]]
         yaml_path = PATH / 'CAT_allignment.yaml'
         with open(yaml_path, 'r') as f1:
             arg = Settings(yaml.load(f1, Loader=yaml.FullLoader))
 
         arg.path = PATH
-        arg.input_cores = ["Cd68Se55_HCl.pdb"]
+        arg.input_cores = [core]
         arg.optional.core.anchor = kwargs
+        if name == "formate":
+            arg.optional.core.allignment = "anchor"
         qd_df, _, _ = prep(arg)
         qd = qd_df[MOL].iloc[0]
 

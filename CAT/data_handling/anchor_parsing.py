@@ -219,8 +219,8 @@ def parse_anchors(
                     raise TypeError("`dihedral != None` is not supported for core anchors")
                 elif angle_offset is not None:
                     raise TypeError("`angle_offset != None` is not supported for core anchors")
-                elif kwargs["kind"] != KindEnum.FIRST:
-                    raise NotImplementedError('`kind != "first"` is not yet supported')
+                elif kwargs["kind"] == KindEnum.MEAN_TRANSLATE:
+                    raise ValueError('`kind == "mean translate"` is not supported for core anchors')
             else:
                 # Check that at least 3 atoms are available for `angle_offset`
                 # (so a plane can be defined)

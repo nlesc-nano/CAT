@@ -1,0 +1,254 @@
+HETATM    1 Cdab COR A   1      12.318  13.562  10.963  1.00  0.00          CD2+
+HETATM    2 Cdac COR A   1      12.417  10.883  14.270  1.00  0.00          CD2+
+HETATM    3 Cdad COR A   1      10.032  14.341  14.385  1.00  0.00          CD2+
+HETATM    4 Cdae COR A   1      15.737  15.828  10.109  1.00  0.00          CD2+
+HETATM    5 Cdaf COR A   1      15.831  13.031  13.270  1.00  0.00          CD2+
+HETATM    6 Cdag COR A   1      13.406  16.762  13.522  1.00  0.00          CD2+
+HETATM    7 Cdah COR A   1      15.749  10.334  16.598  1.00  0.00          CD2+
+HETATM    8 Cdai COR A   1      13.418  13.886  16.920  1.00  0.00          CD2+
+HETATM    9 Cdaj COR A   1      11.238  17.526  17.081  1.00  0.00          CD2+
+HETATM   10 Cdak COR A   1      19.255  15.384  12.536  1.00  0.00          CD2+
+HETATM   11 Cdal COR A   1      16.932  18.995  12.789  1.00  0.00          CD2+
+HETATM   12 Cdam COR A   1      19.226  12.677  15.755  1.00  0.00          CD2+
+HETATM   13 Cdan COR A   1      17.061  16.289  16.027  1.00  0.00          CD2+
+HETATM   14 Cdao COR A   1      14.657  19.776  16.225  1.00  0.00          CD2+
+HETATM   15 Cdap COR A   1      16.947  13.501  19.281  1.00  0.00          CD2+
+HETATM   16 Cdaq COR A   1      14.702  16.928  19.384  1.00  0.00          CD2+
+HETATM   17 Sear COR A   1      13.804  11.687  12.137  1.00  0.00          SE2-
+HETATM   18 Seas COR A   1      11.275  15.576  12.368  1.00  0.00          SE2-
+HETATM   19 Seat COR A   1      11.273  12.588  15.962  1.00  0.00          SE2-
+HETATM   20 Seau COR A   1      17.358  14.032  11.248  1.00  0.00          SE2-
+HETATM   21 Seav COR A   1      14.851  17.917  11.513  1.00  0.00          SE2-
+HETATM   22 Seaw COR A   1      17.330  11.195  14.617  1.00  0.00          SE2-
+HETATM   23 Seax COR A   1      14.939  14.990  14.931  1.00  0.00          SE2-
+HETATM   24 Seay COR A   1      12.477  18.770  15.068  1.00  0.00          SE2-
+HETATM   25 Seaz COR A   1      14.856  12.094  18.398  1.00  0.00          SE2-
+HETATM   26 SeaA COR A   1      12.456  15.724  18.620  1.00  0.00          SE2-
+HETATM   27 SeaB COR A   1      18.640  17.431  14.125  1.00  0.00          SE2-
+HETATM   28 SeaC COR A   1      18.614  14.597  17.496  1.00  0.00          SE2-
+HETATM   29 SeaD COR A   1      16.280  18.248  17.686  1.00  0.00          SE2-
+HETATM   30 CdaE COR A   1      11.541  10.498   8.382  1.00  0.00          CD2+
+HETATM   31 CdaF COR A   1       9.108  14.485   8.726  1.00  0.00          CD2+
+HETATM   32 CdaG COR A   1      11.088   7.971  11.317  1.00  0.00          CD2+
+HETATM   33 CdaH COR A   1       8.869  10.953  11.645  1.00  0.00          CD2+
+HETATM   34 CdaI COR A   1       6.965  15.147  12.049  1.00  0.00          CD2+
+HETATM   35 CdaJ COR A   1       9.068   8.786  15.547  1.00  0.00          CD2+
+HETATM   36 CdaK COR A   1       6.956  12.188  15.560  1.00  0.00          CD2+
+HETATM   37 CdaL COR A   1      14.652  12.541   7.429  1.00  0.00          CD2+
+HETATM   38 CdaM COR A   1      12.188  16.464   7.714  1.00  0.00          CD2+
+HETATM   39 CdaN COR A   1      14.718   9.621  10.384  1.00  0.00          CD2+
+HETATM   40 CdaO COR A   1       9.761  17.522  10.928  1.00  0.00          CD2+
+HETATM   41 CdaP COR A   1      14.444   7.205  13.615  1.00  0.00          CD2+
+HETATM   42 CdaQ COR A   1       7.763  18.067  14.494  1.00  0.00          CD2+
+HETATM   43 CdaR COR A   1      12.161   8.118  17.585  1.00  0.00          CD2+
+HETATM   44 CdaS COR A   1       9.729  11.483  18.098  1.00  0.00          CD2+
+HETATM   45 CdaT COR A   1       7.750  15.108  18.009  1.00  0.00          CD2+
+HETATM   46 CdaU COR A   1      17.878  14.558   6.966  1.00  0.00          CD2+
+HETATM   47 CdaV COR A   1      15.306  18.600   7.232  1.00  0.00          CD2+
+HETATM   48 CdaW COR A   1      18.144  11.830   9.612  1.00  0.00          CD2+
+HETATM   49 CdaX COR A   1      13.119  19.724  10.153  1.00  0.00          CD2+
+HETATM   50 CdaY COR A   1      18.095   9.209  12.726  1.00  0.00          CD2+
+HETATM   51 CdaZ COR A   1      10.898  20.551  13.485  1.00  0.00          CD2+
+HETATM   52 Cdbc COR A   1      17.702   7.035  15.795  1.00  0.00          CD2+
+HETATM   53 Cdbd COR A   1       9.115  20.839  16.869  1.00  0.00          CD2+
+HETATM   54 Cdbe COR A   1      15.259   8.002  19.787  1.00  0.00          CD2+
+HETATM   55 Cdbf COR A   1      13.095  11.073  20.391  1.00  0.00          CD2+
+HETATM   56 Cdbg COR A   1      10.864  14.488  20.652  1.00  0.00          CD2+
+HETATM   57 Cdbh COR A   1       9.109  17.876  20.380  1.00  0.00          CD2+
+HETATM   58 Cdbi COR A   1      21.189  14.125   9.275  1.00  0.00          CD2+
+HETATM   59 Cdbj COR A   1      19.009  17.973   9.590  1.00  0.00          CD2+
+HETATM   60 Cdbk COR A   1      16.433  21.577   9.757  1.00  0.00          CD2+
+HETATM   61 Cdbl COR A   1      21.434  11.666  12.183  1.00  0.00          CD2+
+HETATM   62 Cdbm COR A   1      14.489  22.569  12.884  1.00  0.00          CD2+
+HETATM   63 Cdbn COR A   1      21.101   9.218  15.104  1.00  0.00          CD2+
+HETATM   64 Cdbo COR A   1      12.336  23.048  15.974  1.00  0.00          CD2+
+HETATM   65 Cdbp COR A   1      18.959  10.187  18.825  1.00  0.00          CD2+
+HETATM   66 Cdbq COR A   1      12.566  20.753  19.942  1.00  0.00          CD2+
+HETATM   67 Cdbr COR A   1      16.381  10.974  22.311  1.00  0.00          CD2+
+HETATM   68 Cdbs COR A   1      14.471  14.231  22.761  1.00  0.00          CD2+
+HETATM   69 Cdbt COR A   1      12.284  17.286  22.743  1.00  0.00          CD2+
+HETATM   70 Cdbu COR A   1      22.523  17.659  12.268  1.00  0.00          CD2+
+HETATM   71 Cdbv COR A   1      20.345  21.074  12.490  1.00  0.00          CD2+
+HETATM   72 Cdbw COR A   1      22.738  15.115  15.106  1.00  0.00          CD2+
+HETATM   73 Cdbx COR A   1      20.757  18.765  15.488  1.00  0.00          CD2+
+HETATM   74 Cdby COR A   1      18.271  22.120  15.534  1.00  0.00          CD2+
+HETATM   75 Cdbz COR A   1      22.442  12.786  18.123  1.00  0.00          CD2+
+HETATM   76 CdbA COR A   1      20.713  16.162  18.613  1.00  0.00          CD2+
+HETATM   77 CdbB COR A   1      18.491  19.633  18.853  1.00  0.00          CD2+
+HETATM   78 CdbC COR A   1      16.140  22.674  18.674  1.00  0.00          CD2+
+HETATM   79 CdbD COR A   1      20.209  13.698  21.436  1.00  0.00          CD2+
+HETATM   80 CdbE COR A   1      18.130  16.993  21.895  1.00  0.00          CD2+
+HETATM   81 CdbF COR A   1      15.764  20.390  21.818  1.00  0.00          CD2+
+HETATM   82 SebG COR A   1      12.597   8.337   9.231  1.00  0.00          SE2-
+HETATM   83 SebH COR A   1      10.187  12.319   9.743  1.00  0.00          SE2-
+HETATM   84 SebI COR A   1       7.563  16.216   9.797  1.00  0.00          SE2-
+HETATM   85 SebJ COR A   1      10.292   9.509  13.354  1.00  0.00          SE2-
+HETATM   86 SebK COR A   1       7.856  12.948  13.198  1.00  0.00          SE2-
+HETATM   87 SebL COR A   1       7.505  10.163  17.031  1.00  0.00          SE2-
+HETATM   88 SebM COR A   1      16.149  10.647   8.372  1.00  0.00          SE2-
+HETATM   89 SebN COR A   1      13.715  14.598   8.896  1.00  0.00          SE2-
+HETATM   90 SebO COR A   1      11.139  18.523   8.888  1.00  0.00          SE2-
+HETATM   91 SebP COR A   1      16.116   7.800  11.715  1.00  0.00          SE2-
+HETATM   92 SebQ COR A   1       8.740  19.394  12.490  1.00  0.00          SE2-
+HETATM   93 SebR COR A   1      13.733   8.941  15.570  1.00  0.00          SE2-
+HETATM   94 SebS COR A   1       9.089  16.290  16.005  1.00  0.00          SE2-
+HETATM   95 SebT COR A   1      11.112   9.636  19.411  1.00  0.00          SE2-
+HETATM   96 SebU COR A   1       8.697  13.346  19.662  1.00  0.00          SE2-
+HETATM   97 SebV COR A   1      19.748  12.927   7.553  1.00  0.00          SE2-
+HETATM   98 SebW COR A   1      17.259  16.946   7.972  1.00  0.00          SE2-
+HETATM   99 SebX COR A   1      14.642  20.908   8.077  1.00  0.00          SE2-
+HETATM  100 SebY COR A   1      19.761  10.170  10.895  1.00  0.00          SE2-
+HETATM  101 SebZ COR A   1      12.363  21.772  11.635  1.00  0.00          SE2-
+HETATM  102 Secd COR A   1      19.651   7.348  14.171  1.00  0.00          SE2-
+HETATM  103 Sece COR A   1       9.957  22.568  15.174  1.00  0.00          SE2-
+HETATM  104 Secf COR A   1      17.240   8.396  18.058  1.00  0.00          SE2-
+HETATM  105 Secg COR A   1      10.369  19.598  18.827  1.00  0.00          SE2-
+HETATM  106 Sech COR A   1      14.584   9.214  21.921  1.00  0.00          SE2-
+HETATM  107 Seci COR A   1      12.339  12.877  22.161  1.00  0.00          SE2-
+HETATM  108 Secj COR A   1       9.890  16.468  22.372  1.00  0.00          SE2-
+HETATM  109 Seck COR A   1      20.927  16.472  10.502  1.00  0.00          SE2-
+HETATM  110 Secl COR A   1      18.505  20.235  10.757  1.00  0.00          SE2-
+HETATM  111 Secm COR A   1      20.833  13.678  13.862  1.00  0.00          SE2-
+HETATM  112 Secn COR A   1      16.133  21.011  14.328  1.00  0.00          SE2-
+HETATM  113 Seco COR A   1      20.867  10.853  17.191  1.00  0.00          SE2-
+HETATM  114 Secp COR A   1      13.781  21.849  17.809  1.00  0.00          SE2-
+HETATM  115 Secq COR A   1      18.492  11.718  20.874  1.00  0.00          SE2-
+HETATM  116 Secr COR A   1      16.158  15.364  21.005  1.00  0.00          SE2-
+HETATM  117 Secs COR A   1      13.776  18.730  21.156  1.00  0.00          SE2-
+HETATM  118 Sect COR A   1      22.385  19.899  13.466  1.00  0.00          SE2-
+HETATM  119 Secu COR A   1      22.365  17.079  16.747  1.00  0.00          SE2-
+HETATM  120 Secv COR A   1      19.980  20.800  16.964  1.00  0.00          SE2-
+HETATM  121 Secw COR A   1      22.292  14.364  20.112  1.00  0.00          SE2-
+HETATM  122 Secx COR A   1      19.957  17.996  20.342  1.00  0.00          SE2-
+HETATM  123 Secy COR A   1      17.612  21.644  20.484  1.00  0.00          SE2-
+ATOM    124 Cab  LIG A   2      12.520  22.373  22.450  1.00  0.00           C  
+HETATM  125 Oac  LIG A   2      13.685  22.273  21.703  1.00  0.00           O1-
+HETATM  126 Oad  LIG A   2      11.692  21.426  22.456  1.00  0.00           O  
+ATOM    127 Hae  LIG A   2      12.324  23.266  23.029  1.00  0.00           H  
+ATOM    128 Cab  LIG A   3      16.892  24.065  10.033  1.00  0.00           C  
+HETATM  129 Oac  LIG A   3      16.186  23.623  11.143  1.00  0.00           O1-
+HETATM  130 Oad  LIG A   3      17.280  23.241   9.166  1.00  0.00           O  
+ATOM    131 Hae  LIG A   3      17.107  25.119   9.914  1.00  0.00           H  
+ATOM    132 Cab  LIG A   4       9.049  14.601   6.171  1.00  0.00           C  
+HETATM  133 Oac  LIG A   4      10.288  15.067   6.588  1.00  0.00           O1-
+HETATM  134 Oad  LIG A   4       8.190  14.252   7.021  1.00  0.00           O  
+ATOM    135 Hae  LIG A   4       8.822  14.540   5.115  1.00  0.00           H  
+ATOM    136 Cab  LIG A   5      16.861  11.662  24.726  1.00  0.00           C  
+HETATM  137 Oac  LIG A   5      16.132  12.670  24.111  1.00  0.00           O1-
+HETATM  138 Oad  LIG A   5      17.277  10.685  24.051  1.00  0.00           O  
+ATOM    139 Hae  LIG A   5      17.071  11.717  25.786  1.00  0.00           H  
+ATOM    140 Cab  LIG A   6       7.346   8.493  10.789  1.00  0.00           C  
+HETATM  141 Oac  LIG A   6       8.601   8.784  10.274  1.00  0.00           O1-
+HETATM  142 Oad  LIG A   6       7.055   8.829  11.965  1.00  0.00           O  
+ATOM    143 Hae  LIG A   6       6.617   7.977  10.177  1.00  0.00           H  
+ATOM    144 Cab  LIG A   7      24.730  12.259  17.098  1.00  0.00           C  
+HETATM  145 Oac  LIG A   7      24.101  13.207  16.303  1.00  0.00           O1-
+HETATM  146 Oad  LIG A   7      24.091  11.683  18.015  1.00  0.00           O  
+ATOM    147 Hae  LIG A   7      25.770  12.014  16.927  1.00  0.00           H  
+ATOM    148 Cab  LIG A   8       6.593  18.377  20.028  1.00  0.00           C  
+HETATM  149 Oac  LIG A   8       6.915  17.202  19.364  1.00  0.00           O1-
+HETATM  150 Oad  LIG A   8       7.503  19.170  20.380  1.00  0.00           O  
+ATOM    151 Hae  LIG A   8       5.558  18.610  20.242  1.00  0.00           H  
+ATOM    152 Cab  LIG A   9      16.280  24.981  16.363  1.00  0.00           C  
+HETATM  153 Oac  LIG A   9      17.209  24.084  16.871  1.00  0.00           O1-
+HETATM  154 Oad  LIG A   9      15.165  24.568  15.954  1.00  0.00           O  
+ATOM    155 Hae  LIG A   9      16.515  26.037  16.321  1.00  0.00           H  
+ATOM    156 Cab  LIG A  10      14.526   5.566  19.590  1.00  0.00           C  
+HETATM  157 Oac  LIG A  10      13.738   6.335  18.745  1.00  0.00           O1-
+HETATM  158 Oad  LIG A  10      15.479   6.096  20.217  1.00  0.00           O  
+ATOM    159 Hae  LIG A  10      14.320   4.510  19.709  1.00  0.00           H  
+ATOM    160 Cab  LIG A  11      18.204  19.349  23.953  1.00  0.00           C  
+HETATM  161 Oac  LIG A  11      17.059  18.773  23.419  1.00  0.00           O1-
+HETATM  162 Oad  LIG A  11      19.122  19.746  23.191  1.00  0.00           O  
+ATOM    163 Hae  LIG A  11      18.304  19.457  25.025  1.00  0.00           H  
+ATOM    164 Cab  LIG A  12      12.890  25.348  14.045  1.00  0.00           C  
+HETATM  165 Oac  LIG A  12      13.838  24.471  14.553  1.00  0.00           O1-
+HETATM  166 Oad  LIG A  12      11.788  24.910  13.627  1.00  0.00           O  
+ATOM    167 Hae  LIG A  12      13.099  26.409  14.010  1.00  0.00           H  
+ATOM    168 Cab  LIG A  13      12.919  10.560   5.509  1.00  0.00           C  
+HETATM  169 Oac  LIG A  13      12.495  11.604   6.319  1.00  0.00           O1-
+HETATM  170 Oad  LIG A  13      13.648   9.652   5.983  1.00  0.00           O  
+ATOM    171 Hae  LIG A  13      12.622  10.528   4.469  1.00  0.00           H  
+ATOM    172 Cab  LIG A  14       9.006   6.260  16.053  1.00  0.00           C  
+HETATM  173 Oac  LIG A  14      10.234   6.760  16.466  1.00  0.00           O1-
+HETATM  174 Oad  LIG A  14       8.148   7.033  15.555  1.00  0.00           O  
+ATOM    175 Hae  LIG A  14       8.788   5.206  16.160  1.00  0.00           H  
+ATOM    176 Cab  LIG A  15       4.743  13.442  15.933  1.00  0.00           C  
+HETATM  177 Oac  LIG A  15       5.725  14.056  16.697  1.00  0.00           O1-
+HETATM  178 Oad  LIG A  15       5.066  12.640  15.020  1.00  0.00           O  
+ATOM    179 Hae  LIG A  15       3.699  13.654  16.123  1.00  0.00           H  
+ATOM    180 Cab  LIG A  16      20.671  14.991  23.806  1.00  0.00           C  
+HETATM  181 Oac  LIG A  16      19.373  15.061  23.319  1.00  0.00           O1-
+HETATM  182 Oad  LIG A  16      21.639  14.916  23.006  1.00  0.00           O  
+ATOM    183 Hae  LIG A  16      20.850  15.003  24.873  1.00  0.00           H  
+ATOM    184 Cab  LIG A  17      23.368   8.862  13.513  1.00  0.00           C  
+HETATM  185 Oac  LIG A  17      22.956  10.170  13.727  1.00  0.00           O1-
+HETATM  186 Oad  LIG A  17      22.518   7.937  13.452  1.00  0.00           O  
+ATOM    187 Hae  LIG A  17      24.420   8.638  13.398  1.00  0.00           H  
+ATOM    188 Cab  LIG A  18      16.677   4.580  14.841  1.00  0.00           C  
+HETATM  189 Oac  LIG A  18      15.793   5.557  15.277  1.00  0.00           O1-
+HETATM  190 Oad  LIG A  18      17.728   4.909  14.233  1.00  0.00           O  
+ATOM    191 Hae  LIG A  18      16.462   3.536  15.025  1.00  0.00           H  
+ATOM    192 Cab  LIG A  19      23.677  13.548   9.433  1.00  0.00           C  
+HETATM  193 Oac  LIG A  19      23.009  12.914  10.472  1.00  0.00           O1-
+HETATM  194 Oad  LIG A  19      23.074  14.388   8.718  1.00  0.00           O  
+ATOM    195 Hae  LIG A  19      24.717  13.319   9.240  1.00  0.00           H  
+ATOM    196 Cab  LIG A  20      20.812  23.646  13.255  1.00  0.00           C  
+HETATM  197 Oac  LIG A  20      19.511  23.204  13.451  1.00  0.00           O1-
+HETATM  198 Oad  LIG A  20      21.765  22.826  13.280  1.00  0.00           O  
+ATOM    199 Hae  LIG A  20      21.006  24.696  13.079  1.00  0.00           H  
+ATOM    200 Cab  LIG A  21       4.973  17.450  12.840  1.00  0.00           C  
+HETATM  201 Oac  LIG A  21       5.730  16.621  13.657  1.00  0.00           O1-
+HETATM  202 Oad  LIG A  21       5.516  18.048  11.876  1.00  0.00           O  
+ATOM    203 Hae  LIG A  21       3.917  17.580  13.033  1.00  0.00           H  
+ATOM    204 Cab  LIG A  22      12.704   5.152  11.809  1.00  0.00           C  
+HETATM  205 Oac  LIG A  22      12.290   6.116  12.717  1.00  0.00           O1-
+HETATM  206 Oad  LIG A  22      13.449   5.471  10.847  1.00  0.00           O  
+ATOM    207 Hae  LIG A  22      12.386   4.124  11.930  1.00  0.00           H  
+ATOM    208 Cab  LIG A  23      14.598  17.963   4.868  1.00  0.00           C  
+HETATM  209 Oac  LIG A  23      13.789  17.285   5.769  1.00  0.00           O1-
+HETATM  210 Oad  LIG A  23      15.570  18.644   5.285  1.00  0.00           O  
+ATOM    211 Hae  LIG A  23      14.392  17.905   3.808  1.00  0.00           H  
+ATOM    212 Cab  LIG A  24      16.956  13.453   4.643  1.00  0.00           C  
+HETATM  213 Oac  LIG A  24      15.975  13.856   5.538  1.00  0.00           O1-
+HETATM  214 Oad  LIG A  24      18.081  13.083   5.067  1.00  0.00           O  
+ATOM    215 Hae  LIG A  24      16.752  13.456   3.580  1.00  0.00           H  
+ATOM    216 Cab  LIG A  25      25.109  16.920  12.972  1.00  0.00           C  
+HETATM  217 Oac  LIG A  25      24.145  15.923  13.026  1.00  0.00           O1-
+HETATM  218 Oad  LIG A  25      24.794  18.113  13.216  1.00  0.00           O  
+ATOM    219 Hae  LIG A  25      26.131  16.670  12.722  1.00  0.00           H  
+ATOM    220 Cab  LIG A  26      13.050  17.016  25.192  1.00  0.00           C  
+HETATM  221 Oac  LIG A  26      13.780  16.138  24.402  1.00  0.00           O1-
+HETATM  222 Oad  LIG A  26      12.146  17.722  24.676  1.00  0.00           O  
+ATOM    223 Hae  LIG A  26      13.258  17.091  26.251  1.00  0.00           H  
+ATOM    224 Cab  LIG A  27       6.416  21.041  16.108  1.00  0.00           C  
+HETATM  225 Oac  LIG A  27       6.919  19.764  16.319  1.00  0.00           O1-
+HETATM  226 Oad  LIG A  27       7.151  21.933  15.612  1.00  0.00           O  
+ATOM    227 Hae  LIG A  27       5.391  21.268  16.369  1.00  0.00           H  
+CONECT  124  125  126  126  127
+CONECT  128  129  130  130  131
+CONECT  132  133  134  134  135
+CONECT  136  137  138  138  139
+CONECT  140  141  142  142  143
+CONECT  144  145  146  146  147
+CONECT  148  149  150  150  151
+CONECT  152  153  154  154  155
+CONECT  156  157  158  158  159
+CONECT  160  161  162  162  163
+CONECT  164  165  166  166  167
+CONECT  168  169  170  170  171
+CONECT  172  173  174  174  175
+CONECT  176  177  178  178  179
+CONECT  180  181  182  182  183
+CONECT  184  185  186  186  187
+CONECT  188  189  190  190  191
+CONECT  192  193  194  194  195
+CONECT  196  197  198  198  199
+CONECT  200  201  202  202  203
+CONECT  204  205  206  206  207
+CONECT  208  209  210  210  211
+CONECT  212  213  214  214  215
+CONECT  216  217  218  218  219
+CONECT  220  221  222  222  223
+CONECT  224  225  226  226  227
+END

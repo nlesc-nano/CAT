@@ -292,7 +292,7 @@ class TestInputParsing:
         angle_offset=({"group": "Cl", "group_idx": 0, "angle_offset": 90}, TypeError),
         dihedral=({"group": "Cl", "group_idx": 0, "dihedral": 90}, TypeError),
         multiple=(["OC", "OCC"], NotImplementedError),
-        kind=({"group": "Cl", "group_idx": 0, "kind": "mean"}, NotImplementedError),
+        kind=({"group": "Cl", "group_idx": 0, "kind": "mean_translate"}, ValueError),
     )
 
     @pytest.mark.parametrize("inp,exc_type", PARAM_RAISE_CORE.values(), ids=PARAM_RAISE_CORE)

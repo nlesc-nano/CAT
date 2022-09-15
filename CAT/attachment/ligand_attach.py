@@ -34,7 +34,7 @@ API
 
 """
 
-from typing import List, Any, Optional, NoReturn, Union, Iterable
+from typing import List, Any, Optional, NoReturn, Union
 from collections import abc
 
 import numpy as np
@@ -45,13 +45,11 @@ from scipy.spatial.distance import cdist
 from scm.plams import Molecule, Atom, Settings, MoleculeError
 from assertionlib.ndrepr import aNDRepr
 
-from .perp_surface import get_surface_vec
 from ..mol_utils import get_index, round_coords  # noqa: F401
 from ..utils import AnchorTup, KindEnum
 from ..workflows import WorkFlow, HDF5_INDEX, MOL, OPT
 from ..settings_dataframe import SettingsDataFrame
 from ..data_handling import mol_to_file, WARN_MAP
-from ..utils import AllignmentTup, AllignmentEnum
 
 __all__ = ['init_qd_construction']
 
@@ -111,7 +109,7 @@ def construct_mol_series(qd_df: SettingsDataFrame, core_df: pd.DataFrame,
     def _get_mol(i, j, k, m):
         ij = i, j
         km = k, m
-        return ligand_to_qd(core_df.at[ij, MOL], ligand_df.at[km, MOL], path, allignment=allignment)
+        return ligand_to_qd(core_df.at[ij, MOL], ligand_df.at[km, MOL], path)
 
     mol_list = [_get_mol(i, j, k, m) for i, j, k, m in qd_df.index]
     return pd.Series(mol_list, index=qd_df.index, name=MOL, dtype=object)
@@ -154,13 +152,7 @@ def _get_df(core_index: pd.MultiIndex,
     return SettingsDataFrame(data, index=index, columns=columns, settings=settings)
 
 
-def ligand_to_qd(
-    core: Molecule,
-    ligand: Molecule,
-    path: str,
-    allignment: AllignmentTup,
-    idx_subset: "None | Iterable[int]" = None,
-) -> Molecule:
+def ligand_to_qd(core: Molecule, ligand: Molecule, path: str) -> Molecule:
     """Function that handles quantum dot (qd, *i.e.* core + all ligands) operations.
 
     Combine the core and ligands and assign properties to the quantom dot.
@@ -172,19 +164,6 @@ def ligand_to_qd(
 
     ligand : |plams.Molecule|_
         A ligand molecule.
-
-    allignment : :class:`str`
-        How the core vector(s) should be defined.
-        Accepted values are ``"sphere"`` and ``"surface"``:
-
-        * ``"sphere"``: Vectors from the core anchor atoms to the center of the core.
-        * ``"surface"``: Vectors perpendicular to the surface of the core.
-
-        Note that for a perfect sphere both approaches are equivalent.
-
-    idx_subset : :class:`Iterable<collections.anc.Iterable>` [:class:`int`], optional
-        An iterable with the (0-based) indices defining a subset of atoms in **core**.
-        Only relevant in the construction of the convex hull when ``allignment=surface``.
 
     Returns
     -------
@@ -199,7 +178,6 @@ def ligand_to_qd(
         return f'{core_name}__{anchor}_{lig_name}'
 
     anchor_tup = ligand.properties.anchor_tup
-    idx_subset_ = idx_subset if idx_subset is not None else ...
 
     # Define vectors and indices used for rotation and translation the ligands
     vec1 = np.array([-1, 0, 0], dtype=float)  # All ligands are already alligned along the X-axis
@@ -212,16 +190,7 @@ def ligand_to_qd(
     ligand.properties.dummies.properties.anchor = True
 
     # Attach the rotated ligands to the core, returning the resulting strucutre (PLAMS Molecule).
-    anchor = sanitize_dim_2(core.properties.dummies)
-    if allignment.kind == AllignmentEnum.SPHERE:
-        vec2 = np.array(core.get_center_of_mass()) - anchor
-        vec2 /= np.linalg.norm(vec2, axis=1)[..., None]
-    elif allignment.kind == AllignmentEnum.SURFACE:
-        vec2 = -get_surface_vec(np.array(core)[idx_subset_], anchor)
-    else:
-        raise ValueError(f"Unknown allignment kind: {allignment.kind}")
-    if allignment.invert:
-        vec2 *= -1
+    vec2 = core.properties.core_vec
 
     # Rotate the ligands
     if anchor_tup.dihedral is None:

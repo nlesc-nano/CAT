@@ -302,9 +302,13 @@ Core
           The surface is herein defined by a convex hull constructed from the core.
         * ``"sphere"``: Define the core vectors as those drawn from the core anchor
           atoms to the cores center.
+        * ``"anchor"``: Define the core vectors based on the optimal vector of its anchors.
+          Only available in when the core contains molecular anchors, *e.g.* acetates.
         * ``"surface invert"``/``"surface_invert"``: The same as ``"surface"``,
           except the core vectors are inverted.
         * ``"sphere invert"``/``"sphere_invert"``: The same as ``"sphere"``,
+          except the core vectors are inverted.
+        * ``"anchor invert"``/``"anchor_invert"``: The same as ``"anchor"``,
           except the core vectors are inverted.
 
         Note that for a spherical core both approaches are equivalent.

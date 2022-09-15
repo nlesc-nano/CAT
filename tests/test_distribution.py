@@ -2,15 +2,25 @@
 
 from pathlib import Path
 
+import yaml
+import pytest
 import numpy as np
-
-from scm.plams import Molecule
+from scm.plams import Molecule, Settings, readpdb
 from assertionlib import assertion
+from nanoutils import delete_finally
 
+from CAT.test_utils import assert_mol_allclose
+from CAT.base import prep
+from CAT.workflows import MOL as MOL_KEY
 from CAT.attachment.distribution import distribute_idx
 
 PATH = Path('tests') / 'test_files'
+LIG_PATH = PATH / 'ligand'
+QD_PATH = PATH / 'qd'
+DB_PATH = PATH / 'database'
+
 MOL = Molecule(PATH / 'core' / 'Cd68Se55.xyz')
+
 IDX = np.array([i for i, at in enumerate(MOL) if at.symbol == 'Cl'])
 IDX.setflags(write=False)
 
@@ -65,3 +75,20 @@ def test_distribute_idx() -> None:
     assertion.assert_(distribute_idx, MOL, IDX, f=0.5, randomness='bob', exception=TypeError)
     assertion.assert_(distribute_idx, MOL, IDX, f=0.5, randomness=-10, exception=ValueError)
     assertion.assert_(distribute_idx, MOL, IDX, f=0.5, randomness=1.5, exception=ValueError)
+
+
+@pytest.mark.slow
+@delete_finally(LIG_PATH, QD_PATH, DB_PATH)
+def test_cat() -> None:
+    """Tests for the CAT package."""
+    yaml_path = PATH / 'CAT_subset.yaml'
+    with open(yaml_path, 'r') as f:
+        arg = Settings(yaml.load(f, Loader=yaml.FullLoader))
+
+    arg.path = PATH
+    qd_df, _, _ = prep(arg)
+
+    assertion.len_eq(qd_df, 1)
+    qd = qd_df[MOL_KEY].iloc[0]
+    qd_ref = readpdb(PATH / "qd_test_distribution.pdb")
+    assert_mol_allclose(qd, qd_ref)

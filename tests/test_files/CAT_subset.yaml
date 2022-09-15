@@ -1,0 +1,24 @@
+path: .
+
+input_cores:
+    - Cd68Se55.xyz
+
+input_ligands:
+    - CO
+
+optional:
+    database:
+        dirname: database
+        mol_format: [pdb]
+    core:
+        dirname: core
+        anchor: Cl
+        subset:
+            f: 0.5
+            mode: uniform
+    ligand:
+        dirname: ligand
+        optimize: True
+        split: True
+    qd:
+        dirname: QD
