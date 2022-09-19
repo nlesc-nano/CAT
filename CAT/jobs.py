@@ -64,7 +64,7 @@ def get_main_molecule(self) -> Optional[Molecule]:
 @add_to_class(Cp2kResults)
 def get_frequencies(self, unit: str = "cm-1") -> np.ndarray:
     file = self['cp2k-VIBRATIONS-1.mol']
-    return qmflows.parsers.cp2KParser.get_cp2k_freq(file, unit=unit)
+    return qmflows.parsers.cp2k.get_cp2k_freq(file, unit=unit)
 
 
 def _xyz_to_mol(filename: str) -> Molecule:

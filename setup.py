@@ -99,7 +99,7 @@ setup(
         'plams>=1.5.1',
         'contextlib2>=0.6.0; python_version=="3.6"',
         'typing-extensions>=3.7.4.3',
-        'qmflows>=0.11.0',
+        'qmflows>=0.12.0',
         'rdkit>=2018.03.1; python_version>="3.7"',
         'rdkit-pypi>=2018.03.1; python_version=="3.6"',
         'packaging>=1.16.8',
