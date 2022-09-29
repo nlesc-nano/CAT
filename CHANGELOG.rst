@@ -7,7 +7,7 @@ This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
 1.1.0
 *****
-* *placeholder*.
+* Add support for polyatomic core anchors.
 
 
 1.0.0
