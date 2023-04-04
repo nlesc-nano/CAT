@@ -1,36 +1,55 @@
 name: Publish
 
 on:
-    release:
-        types: [published, edited]
+  release:
+    types: [published]
+  workflow_dispatch:
 
 jobs:
-    publish:
-        runs-on: ubuntu-latest
-        steps:
-            -   uses: actions/checkout@v3
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
 
-            -   name: Set up Python
-                uses: actions/setup-python@v4
-                with:
-                    python-version: '3.x'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
 
-            -   name: Install dependencies
-                run: pip install build
+      - name: Install dependencies
+        run: pip install build twine
 
-            -   name: Python info
-                run: |
-                    which python
-                    python --version
+      - name: Python info
+        run: |
+          which python
+          python --version
 
-            -   name: Installed packages
-                run: pip list
+      - name: Installed packages
+        run: pip list
 
-            -   name: Build the package
-                run: python -m build --sdist --wheel
+      - name: Build the package
+        run: python -m build --sdist --wheel
 
-            -   name: Publish the package
-                uses: pypa/gh-action-pypi-publish@release/v1
-                with:
-                    user: __token__
-                    password: ${{ secrets.PYPI_TOKEN }}
+      - name: Validate wheels
+        run: |
+          tree dist
+          twine check dist/*
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: ./build/*
+
+      - name: Publish the package
+        if: github.event_name == 'release'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_TOKEN }}
+
+      - name: Attach wheels to GitHub release
+        if: github.event_name == 'release'
+        uses: AButler/upload-release-assets@v2.0.2
+        with:
+          files: 'dist/*'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
