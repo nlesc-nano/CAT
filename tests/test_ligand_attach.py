@@ -2,7 +2,7 @@
 
 import shutil
 from pathlib import Path
-from typing import Generator, NamedTuple, TYPE_CHECKING, Any
+from typing import Generator, NamedTuple, TYPE_CHECKING
 
 import rdkit
 import yaml
@@ -210,7 +210,7 @@ class TestCoreAnchor:
         self, request: "_pytest.fixtures.SubRequest"
     ) -> Generator[AllignmentTup, None, None]:
         # Setup
-        name, (core, kwargs) = request.param  # type: str, tuple[str, dict[str, Any]]
+        name, (core, kwargs) = request.param
         yaml_path = PATH / 'CAT_allignment.yaml'
         with open(yaml_path, 'r') as f1:
             arg = Settings(yaml.load(f1, Loader=yaml.FullLoader))
