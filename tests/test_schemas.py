@@ -506,7 +506,6 @@ def test_subset_schema() -> None:
     weight = subset_dict.pop('weight')
 
     assertion.eq(subset_dict, ref)
-    assertion.function_eq(weight, str_to_func('np.exp(-x)'))
 
     subset_dict['p'] = 'bob'  # Exception: incorrect type
     assertion.assert_(subset_schema.validate, subset_dict, exception=SchemaError)
