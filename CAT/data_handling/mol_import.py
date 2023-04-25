@@ -125,7 +125,7 @@ def read_mol_xyz(mol_dict: Settings) -> Optional[Molecule]:
         mol = Molecule(mol_dict.mol, inputformat='xyz')
         if mol_dict.guess_bonds and not mol_dict.is_qd:
             mol.guess_bonds()
-        if not mol_dict.is_core:
+        if mol_dict.canonicalize:
             canonicalize_mol(mol)
         return mol
     except Exception as ex:
@@ -138,7 +138,7 @@ def read_mol_pdb(mol_dict: Settings) -> Optional[Molecule]:
         mol = molkit.readpdb(mol_dict.mol)
         if mol_dict.guess_bonds and not mol_dict.is_qd:
             mol.guess_bonds()
-        if not mol_dict.is_core:
+        if mol_dict.canonicalize:
             canonicalize_mol(mol)
         return mol
     except Exception as ex:
@@ -151,7 +151,7 @@ def read_mol_mol(mol_dict: Settings) -> Optional[Molecule]:
         mol = molkit.from_rdmol(Chem.MolFromMolFile(mol_dict.mol, removeHs=False))
         if mol_dict.guess_bonds and not mol_dict.is_qd:
             mol.guess_bonds()
-        if not mol_dict.is_core:
+        if mol_dict.canonicalize:
             canonicalize_mol(mol)
         return mol
     except Exception as ex:
@@ -197,7 +197,7 @@ def read_mol_plams(mol_dict: Settings) -> Optional[Molecule]:
         mol = mol_dict.mol
         if mol_dict.guess_bonds and not mol_dict.is_qd:
             mol.guess_bonds()
-        if not mol_dict.is_core:
+        if mol_dict.canonicalize:
             canonicalize_mol(mol)
         return mol
     except Exception as ex:
@@ -210,7 +210,7 @@ def read_mol_rdkit(mol_dict: Settings) -> Optional[Molecule]:
         mol = molkit.from_rdmol(mol_dict.mol)
         if mol_dict.guess_bonds and not mol_dict.is_qd:
             mol.guess_bonds()
-        if not mol_dict.is_core:
+        if mol_dict.canonicalize:
             canonicalize_mol(mol)
         return mol
     except Exception as ex:

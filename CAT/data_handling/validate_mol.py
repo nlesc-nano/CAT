@@ -153,13 +153,19 @@ def validate_mol(args: Sequence[Union[Any, Settings]],
     for i, dict_ in enumerate(args):
         if not isinstance(dict_, dict):  # No optional arguments provided
             mol = dict_
-            mol_dict = Settings({'path': _path, 'is_core': is_core, 'is_qd': is_qd})
+            mol_dict = Settings({
+                'path': _path,
+                'is_core': is_core,
+                'is_qd': is_qd,
+                'canonicalize': not is_core,
+            })
         else:  # Optional arguments have been provided: parse and validate them
             if dict_.get('parsed'):
                 continue
             mol, mol_dict = next(iter(dict_.items()))
             mol_dict.setdefault('is_core', is_core)
             mol_dict.setdefault('is_qd', is_qd)
+            mol_dict.setdefault('canonicalize', not mol_dict.is_core)
             mol_dict = mol_schema.validate(mol_dict)
             mol_dict.setdefault('path', _path)
 

@@ -78,39 +78,51 @@ def test_validate_mol() -> None:
     ]
 
     ref1 = [
-        {'path': PATH,
-         'is_core': True,
-         'is_qd': False,
-         'mol': join(PATH, 'Methanol.xyz'),
-         'type': 'xyz',
-         'name': 'Methanol',
-         'parsed': True},
-        {'path': PATH,
-         'is_core': True,
-         'is_qd': False,
-         'mol': join(PATH, 'Ethylene.xyz'),
-         'type': 'xyz',
-         'name': 'Ethylene',
-         'parsed': True}
+        {
+            'path': PATH,
+            'is_core': True,
+            'is_qd': False,
+            'mol': join(PATH, 'Methanol.xyz'),
+            'type': 'xyz',
+            'name': 'Methanol',
+            'parsed': True,
+            'canonicalize': False,
+        },
+        {
+            'path': PATH,
+            'is_core': True,
+            'is_qd': False,
+            'mol': join(PATH, 'Ethylene.xyz'),
+            'type': 'xyz',
+            'name': 'Ethylene',
+            'parsed': True,
+            'canonicalize': False,
+        },
     ]
 
     ref2 = [
-        {'guess_bonds': False,
-         'is_core': False,
-         'is_qd': False,
-         'path': PATH,
-         'mol': join(PATH, 'Acetate.xyz'),
-         'type': 'xyz',
-         'name': 'Acetate',
-         'parsed': True},
-        {'guess_bonds': False,
-         'is_core': False,
-         'is_qd': False,
-         'path': PATH,
-         'mol': join(PATH, 'Methanol_rotate.xyz'),
-         'type': 'xyz',
-         'name': 'Methanol_rotate',
-         'parsed': True}
+        {
+            'guess_bonds': False,
+            'is_core': False,
+            'is_qd': False,
+            'path': PATH,
+            'mol': join(PATH, 'Acetate.xyz'),
+            'type': 'xyz',
+            'name': 'Acetate',
+            'parsed': True,
+            'canonicalize': True,
+        },
+        {
+            'guess_bonds': False,
+            'is_core': False,
+            'is_qd': False,
+            'path': PATH,
+            'mol': join(PATH, 'Methanol_rotate.xyz'),
+            'type': 'xyz',
+            'name': 'Methanol_rotate',
+            'parsed': True,
+            'canonicalize': True,
+        }
     ]
 
     validate_mol(args1, 'input_cores', PATH)
