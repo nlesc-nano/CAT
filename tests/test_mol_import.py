@@ -24,7 +24,7 @@ canonicalize_mol(REF_MOL)
 def test_read_mol_xyz() -> None:
     """Test :func:`CAT.data_handling.validate_input.read_mol_xyz`."""
     xyz = join(PATH, 'Methanol.xyz')
-    mol_dict = Settings({'mol': xyz, 'guess_bonds': True})
+    mol_dict = Settings({'mol': xyz, 'guess_bonds': True, 'canonicalize': True})
     mol = read_mol_xyz(mol_dict)
 
     assertion.isinstance(mol, Molecule)
@@ -35,7 +35,7 @@ def test_read_mol_xyz() -> None:
 def test_read_mol_pdb() -> None:
     """Test :func:`CAT.data_handling.validate_input.read_mol_pdb`."""
     pdb = join(PATH, 'Methanol.pdb')
-    mol_dict = Settings({'mol': pdb, 'guess_bonds': False})
+    mol_dict = Settings({'mol': pdb, 'guess_bonds': False, 'canonicalize': True})
     mol = read_mol_pdb(mol_dict)
 
     assertion.isinstance(mol, Molecule)
@@ -46,7 +46,7 @@ def test_read_mol_pdb() -> None:
 def test_read_mol_mol() -> None:
     """Test :func:`CAT.data_handling.validate_input.read_mol_mol`."""
     mol_file = join(PATH, 'Methanol.mol')
-    mol_dict = Settings({'mol': mol_file, 'guess_bonds': False})
+    mol_dict = Settings({'mol': mol_file, 'guess_bonds': False, 'canonicalize': True})
     mol = read_mol_mol(mol_dict)
 
     assertion.isinstance(mol, Molecule)
@@ -57,7 +57,7 @@ def test_read_mol_mol() -> None:
 def test_read_mol_smiles() -> None:
     """Test :func:`CAT.data_handling.validate_input.read_mol_smiles`."""
     smiles = 'CO'
-    mol_dict = Settings({'mol': smiles, 'guess_bonds': False})
+    mol_dict = Settings({'mol': smiles, 'guess_bonds': False, 'canonicalize': True})
     mol = read_mol_smiles(mol_dict)
 
     assertion.isinstance(mol, Molecule)
@@ -68,7 +68,7 @@ def test_read_mol_plams() -> None:
     """Test :func:`CAT.data_handling.validate_input.read_mol_smiles`."""
     mol = REF_MOL.copy()
     random.shuffle(mol.atoms)
-    mol_dict = Settings({'mol': mol, 'guess_bonds': False})
+    mol_dict = Settings({'mol': mol, 'guess_bonds': False, 'canonicalize': True})
     mol = read_mol_plams(mol_dict)
 
     assertion.isinstance(mol, Molecule)
@@ -81,7 +81,7 @@ def test_read_mol_rdkit() -> None:
     mol = REF_MOL.copy()
     random.shuffle(mol.atoms)
     rdmol = molkit.to_rdmol(mol)
-    mol_dict = Settings({'mol': rdmol, 'guess_bonds': False})
+    mol_dict = Settings({'mol': rdmol, 'guess_bonds': False, 'canonicalize': True})
     mol = read_mol_rdkit(mol_dict)
 
     assertion.isinstance(mol, Molecule)
@@ -91,7 +91,13 @@ def test_read_mol_rdkit() -> None:
 
 def test_read_mol_folder() -> None:
     """Test :func:`CAT.data_handling.validate_input.read_mol_folder`."""
-    mol_dict = Settings({'mol': PATH, 'path': PATH, 'guess_bonds': True, 'is_core': False})
+    mol_dict = Settings({
+        'mol': PATH,
+        'path': PATH,
+        'guess_bonds': True,
+        'is_core': False,
+        'canonicalize': True,
+    })
     _mol_list = read_mol_folder(mol_dict)
     mol_list = [mol for mol in _mol_list if get_formula(mol) == 'C1H4O1']
 
@@ -104,7 +110,13 @@ def test_read_mol_folder() -> None:
 def test_read_mol_txt() -> None:
     """Test :func:`CAT.data_handling.validate_input.read_mol_txt`."""
     txt = join(PATH, 'Methanol.txt')
-    mol_dict = Settings({'mol': txt, 'path': PATH, 'guess_bonds': True, 'is_core': False})
+    mol_dict = Settings({
+        'mol': txt,
+        'path': PATH,
+        'guess_bonds': True,
+        'is_core': False,
+        'canonicalize': True,
+    })
     mol_list = read_mol_txt(mol_dict)
 
     for mol in mol_list[:-1]:

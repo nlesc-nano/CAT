@@ -238,6 +238,9 @@ mol_schema: Schema = Schema({
     Optional_('is_core'):
         And(bool, error=".is_core expects a boolean"),
 
+    Optional_('canonicalize'):
+        And(bool, error=".canonicalize expects a boolean"),
+
     Optional_('is_qd'):
         And(bool, error=".is_qd expects a boolean"),
 

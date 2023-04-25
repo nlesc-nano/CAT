@@ -71,6 +71,15 @@ Optional arguments
     Relevant for .txt and .csv files.
     Numbering starts from 0.
 
+
+.. attribute:: .canonicalize
+
+    :Parameter:     * **Type** - :class:`bool`
+                    * **Default value** – ``False`` for cores and ``True`` for ligands
+
+    Whether the atom order of the passed molecules should be canonicalized.
+
+
 .. attribute:: .indices
 
     :Parameter:     * **Type** - :class:`int` or :class:`tuple` [:class:`int`]
