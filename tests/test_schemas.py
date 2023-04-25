@@ -11,7 +11,6 @@ from scm.plams import AMSJob, ADFJob, Settings, CRSJob
 from assertionlib import assertion
 
 from CAT.utils import get_template, AllignmentTup, AllignmentEnum
-from CAT.data_handling.str_to_func import str_to_func
 from CAT.data_handling.validation_schemas import (
     mol_schema, core_schema, ligand_schema, qd_schema, database_schema,
     mongodb_schema, bde_schema, qd_opt_schema, crs_schema, subset_schema
@@ -503,8 +502,7 @@ def test_subset_schema() -> None:
     }
 
     subset_dict = subset_schema.validate(subset_dict)
-    weight = subset_dict.pop('weight')
-
+    del subset_dict["weight"]
     assertion.eq(subset_dict, ref)
 
     subset_dict['p'] = 'bob'  # Exception: incorrect type
