@@ -48,7 +48,10 @@ def set_core_anchors(
     anchors = mol.properties.dummies
     if anchors is None:
         anchor_idx_group, remove_idx = find_core_substructure(mol, anchor_tup)
-        anchor_idx = anchor_idx_group[:, anchor_tup.group_idx[0]].copy()
+        if anchor_idx_group.size:
+            anchor_idx = anchor_idx_group[:, anchor_tup.group_idx[0]].copy()
+        else:
+            anchor_idx = np.empty(0, dtype=anchor_idx_group.dtype)
     else:
         anchor_idx = np.fromiter(anchors, count=len(anchors), dtype=np.int64)
         anchor_idx -= 1
@@ -163,7 +166,7 @@ def find_core_substructure(
             remove_list += [idx_tup[i] for i in remove]
         anchor_list.append(idx_tup)
 
-    anchor_array = np.array(anchor_list, dtype=np.int64)
+    anchor_array = np.array(anchor_list, dtype=np.int64, ndmin=2)
     if remove is not None:
         remove_array = np.fromiter(remove_list, dtype=np.int64, count=len(remove_list))
         return anchor_array, remove_array
