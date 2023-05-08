@@ -35,7 +35,6 @@ import operator
 import threading
 import functools
 import pprint
-import pkg_resources as pkg
 from types import MappingProxyType, TracebackType
 from shutil import rmtree
 from logging import Logger
@@ -60,6 +59,7 @@ from scm.plams import (
     from_smiles, AMSJob, ADFJob, Cp2kJob, DiracJob, GamessJob, CRSJob
 )
 
+from . import __file__ as _cat_file
 from .logger import logger
 from .mol_utils import to_atnum
 from .gen_job_manager import GenJobManager
@@ -140,8 +140,9 @@ def get_template(template_name: str, from_cat_data: bool = True) -> Settings:
     """Grab a yaml template and return it as Settings object."""
     if from_cat_data:
         path = join('data/templates', template_name)
-        xs = pkg.resource_string('CAT', path)
-        return Settings(yaml.load(xs.decode(), Loader=yaml.FullLoader))
+        xs = os.path.dirname(_cat_file)
+        with open(os.path.join(xs, path), "r", encoding="utf8") as f:
+            return Settings(yaml.load(f.read(), Loader=yaml.FullLoader))
     with open(template_name, 'r') as file:
         return Settings(yaml.load(file, Loader=yaml.FullLoader))
 
