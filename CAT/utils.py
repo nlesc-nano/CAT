@@ -59,7 +59,6 @@ from scm.plams import (
     from_smiles, AMSJob, ADFJob, Cp2kJob, DiracJob, GamessJob, CRSJob
 )
 
-from . import __file__ as _cat_file
 from .logger import logger
 from .mol_utils import to_atnum
 from .gen_job_manager import GenJobManager
@@ -139,8 +138,8 @@ def dict_concatenate(dict_list: Iterable[Mapping[KT, VT]]) -> Dict[KT, VT]:
 def get_template(template_name: str, from_cat_data: bool = True) -> Settings:
     """Grab a yaml template and return it as Settings object."""
     if from_cat_data:
-        path = join('data/templates', template_name)
-        xs = os.path.dirname(_cat_file)
+        path = join('data', 'templates', template_name)
+        xs = os.path.dirname(__file__)
         with open(os.path.join(xs, path), "r", encoding="utf8") as f:
             return Settings(yaml.load(f.read(), Loader=yaml.FullLoader))
     with open(template_name, 'r') as file:
