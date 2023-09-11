@@ -43,7 +43,7 @@ jobs:
                         version: "3.6"
                         conda: false
         steps:
-            -   uses: actions/checkout@v3
+            -   uses: actions/checkout@v4
 
             -   name: Setup Conda
                 if: matrix.conda == true
@@ -120,7 +120,7 @@ jobs:
     Linting:
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v3
+            -   uses: actions/checkout@v4
 
             -   name: Set up Python on ubuntu-latest
                 uses: actions/setup-python@v4
