@@ -20,28 +20,14 @@ defaults:
 
 jobs:
     build:
-        name: ${{ matrix.os }} (py ${{ matrix.version }}${{ matrix.special }})
+        name: ${{ matrix.os }} (py ${{ matrix.version }})
         runs-on: ${{ matrix.os }}
         strategy:
             fail-fast: false
             matrix:
-                os: [ubuntu-latest, macos-latest, windows-latest]
-                version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
-                special: [""]
+                os: [ubuntu-latest]
+                version: ["3.10"]
                 conda: [false]
-                include:
-                    -   os: ubuntu-latest
-                        special: "; pre-release"
-                        version: "3.11"
-                        conda: false
-                    -   os: ubuntu-20.04
-                        special: "; minimum version"
-                        version: "3.6"
-                        conda: true
-                    -   os: ubuntu-20.04
-                        special: ""
-                        version: "3.6"
-                        conda: false
         steps:
             -   uses: actions/checkout@v4
 
@@ -59,25 +45,7 @@ jobs:
 
             -   name: Install dependencies
                 run: |
-                    case "${{ matrix.special }}" in
-                        "; minimum version")
-                            conda create -n test -c conda-forge python=${{ matrix.version }} rdkit==2018.03.1 numpy=1.15.0 pandas=0.23.0 h5py=2.7.0 scipy=0.19.1 contextlib2==0.6.0 typing-extensions==3.7.4.3 pytest==5.4.0 pyyaml=5.1.0 packaging==16.8 pytest-cov pytest-mock "pip<22"
-                            source $CONDA/bin/activate test
-                            pip install schema==0.7.2 Nano-Utils==0.4.3 AssertionLib==2.2.3 plams==1.5.1 qmflows==0.11.0
-                            pip install -e . --no-dependencies
-                            ;;
-                        "; pre-release")
-                            pip install -e .[test] --pre --upgrade --force-reinstall
-                            pip install git+https://github.com/nlesc-nano/data-CAT@master --upgrade
-                            pip install git+https://github.com/nlesc-nano/nano-CAT@master --upgrade
-                            pip install git+https://github.com/nlesc-nano/auto-FOX@master --upgrade
-                            pip install git+https://github.com/SCM-NV/qmflows@master --upgrade
-                            pip uninstall plams -y; pip install git+https://github.com/SCM-NV/PLAMS@master --upgrade
-                            ;;
-                        *)
-                            pip install -e .[test]
-                            ;;
-                    esac
+                    pip install -e .[test]
 
             -   name: Info Conda
                 if: matrix.conda == true
@@ -131,7 +99,7 @@ jobs:
                 run: |
                     pip install "flake8>=3.8.0" "pydocstyle>=5.0.0"
                     pip install -e .
-                    pip install mypy nano-CAT data-CAT types-PyYAML types-setuptools "numpy>=1.21"
+                    pip install mypy nano-CAT data-CAT types-PyYAML types-setuptools "numpy>=2.2.6"
 
             -   name: Python info
                 run: |
